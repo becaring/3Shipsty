@@ -118,3 +118,25 @@ Initial result: 1,094 application source files, 133 host-tool files, 141 LUS
 files awaiting target review, three speech transports awaiting platform review,
 117 files excluded by upstream's own CMake rules. Three ownership/determinism
 tests were observed failing before implementation, then passing.
+
+## Compilation checkpoints
+
+- Binary provider: `tools/shipyard/prepare_binary.py`, support under
+  `platform/shipyard/binary`. Actual current nine inputs; seven matched modern
+  donor, modern MemoryStream semantics retained. Four native TUs and two
+  contracts compile. Six generator tests and original/projected host behavior
+  pass. Native-endian bug reproduced with actual XDK, then corrected centrally.
+- Graphics provider: `tools/shipyard/prepare_graphics.py`, support under
+  `platform/shipyard/graphics`. Exact modern interfaces and decoder, donor
+  generic HLSL lowering. Three native objects; four projection tests; 2,097,152
+  host decoder/layout cases pass. Extracted decoder is audit-only: eventual
+  production must link its full interpreter definition exactly once.
+- Ruling: reject broad preprocessed-C-as-C++ compilation after actor/graph
+  probes demonstrated incompatible pointer conversion rules. Preserve true C
+  semantics through a narrower projection. Cost: additional typed boolean and
+  C99 lowering work, instead of invasive changes to modern feature code.
+- Official Windows 9.2.3 archive SHA256:
+  `cc7bd5ada1332be50013976fc3db3289cacde1df57e7e6cf73d4a1df81313e30`.
+  Package is PC extraction tooling/data only, never Xbox application evidence.
+  API metadata's target_commitish says develop; the immutable tag resolves to
+  the pinned cb71e22 commit. No develop source is used.

@@ -1,0 +1,31 @@
+{
+  "donor_root": "D:\\Projects\\Smash360",
+  "adapted_inputs": {
+    "tools/prepare_binary_reader_xdk.py": "adc4ac17198797c9dc26602b0059ffe4e2d15d11655249543d6b566be6e9883d",
+    "platform/xbox360/cpp-compat/binary/compat.h": "76b0140eb0c8b8860d0a0078648379608975117507f271f4cbdc59a711391aec"
+  },
+  "modern_lus_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "modern_normalized_inputs": {
+    "include/ship/utils/binarytools/BinaryWriter.h": "bf37667f3e438c1ab0e42a23c72c222ddde6800b774e1ea27bd376a110a9b66a",
+    "include/ship/utils/binarytools/BinaryReader.h": "46405096528e34f312c650e83e83d215216184ffb5b98db9d31f8354d9376d03",
+    "include/ship/utils/binarytools/MemoryStream.h": "806e12c9c18bd2fe14d52a87bca781da94ac377e75183a8080d8278fb2f0cc65",
+    "include/ship/utils/binarytools/Stream.h": "dfcbfc93989d71ea12306c7b576810ee1714782d1468ba3417695900f9b2afad",
+    "include/ship/utils/binarytools/endianness.h": "459a76b1b81cbffdca3005e9ed0ef6712af0e893cc0587aa447adccee508a7f7",
+    "src/ship/utils/binarytools/BinaryWriter.cpp": "f2805a7f5cfd9ae691b6341ae1f88bb6d6a66a8056a43593df396f184db40975",
+    "src/ship/utils/binarytools/BinaryReader.cpp": "0060874646084935b1c7de52486ea16968c3866ca6abfb0311c2804ed37f16ac",
+    "src/ship/utils/binarytools/MemoryStream.cpp": "b39db54658c4b8c923082c48846118f02f0f75a7b31eb01641578d0c53fb92f8",
+    "src/ship/utils/binarytools/Stream.cpp": "6a9574c06b0fad06d48a564d221918a1a2eb8ae3b3559824482f8c14f1dfc185"
+  },
+  "owned_helpers": {
+    "compat.h": "04346301b0626b4de06e41bcd6551fda1412b3b1435a9587e76d64cf3371b993",
+    "endian.h": "4fc6b78cdd0ede693acdbddde7bc5a6ffae6d77e79835a34463f16d5e12c8784"
+  },
+  "changes": [
+    "Shipyard::Binary namespace",
+    "Modern MemoryStream has no offset constructor",
+    "Owned normalized source and helper locks",
+    "Stable repository-relative source mappings",
+    "Central C/C++ native endian selection",
+    "No donor paths required by generator or tests"
+  ]
+}

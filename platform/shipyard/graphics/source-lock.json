@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "lus_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "inputs": {
+    "libultraship/include/fast/backends/gfx_rendering_api.h": "dd64644029d5f02f1e1776c86e8e456135542573dc34528491203a822b2a2c66",
+    "libultraship/include/fast/backends/gfx_window_manager_api.h": "34b2cfd7661a0de2f088466f9d19d875d2a3e43a84207b84cf0e269997800d6a",
+    "libultraship/include/fast/interpreter.h": "c9acd3385d7e8202b446ee092071afd0dfd1eb01cef225f6149217d41f0be2b9",
+    "libultraship/src/fast/interpreter.cpp": "24b99b3ebc2f7f6b729f724740f9deda8f36e1b27b4132d690e32110ceca21f7",
+    "libultraship/src/fast/backends/gfx_direct3d11.cpp": "a8ebf281d494bc63dfd59b04e6b2b14d98e3121b2d0e251bbbf9778d02a9141d",
+    "libultraship/src/fast/shaders/directx/default.shader.hlsl": "ae79a9cb4f4abde2a75e099b4bb7590d0f22d12cc6b03ac126a1d66bf546372e",
+    "libultraship/cmake/dependencies/patches/imgui-fixes-and-config.patch": "9f3f01b0f197aa761a84d9d49f26abcb052283049ac5e8f88a563581ada96e80",
+    "libultraship/cmake/dependencies/common.cmake": "fc33342abaa27528dfd05210840b39ce32652400558b2946e611072ece3a40fd"
+  },
+  "donor": {
+    "local": "platform/shipyard/graphics/donor/shader_lower.cpp",
+    "source": "D:/Projects/Smash360/platform/xbox360/graphics/shader_lower.cpp",
+    "sha256": "9bb5c187f1e1c5a38867c755969392b19c0d32668e4145732d8cda7d876537cb"
+  }
+}
