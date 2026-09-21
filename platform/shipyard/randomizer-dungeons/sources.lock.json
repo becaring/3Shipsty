@@ -1,0 +1,14 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/dungeon.cpp": "b8cb584093840a4bed96cf53534317482e665c7c5d722863945e7f2253c5d6f3",
+    "soh/soh/Enhancements/randomizer/dungeon.h": "5670b17756dbf8cd534b97e8c3e14a6e25816d4b39de08a47cfb36f034868cd2",
+    "soh/soh/Enhancements/randomizer/trial.cpp": "292c6824cb261bda9cd451e3b68ffa162282856e0e51a451a308864f687d0e7f",
+    "soh/soh/Enhancements/randomizer/trial.h": "1c5f6b5012838e4a47f99e473958ca967efaa682b1e17892b7e61eb8addcf0e2",
+    "soh/soh/Enhancements/randomizer/3drando/pool_functions.hpp": "ecbd3248ce266d3223936adc6b0c6de895502d5dd5cdc69a82db3bc3eb9e0825"
+  },
+  "dependencies": {
+    "soh/soh/Enhancements/randomizer/static_data.cpp": "bce00dbc71d796d9e9421d0bbfe94ceeb700f39462f902ba3fe1573512738de4"
+  }
+}

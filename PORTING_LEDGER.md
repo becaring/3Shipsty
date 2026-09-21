@@ -21,6 +21,12 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-21: user challenged the excessively granular progress and remaining
+  scope. Batch subsequent work by functional subsystem and report those milestones.
+  Revise first genuine bring-up estimate to 60–65% with considerable uncertainty;
+  the previous 70% estimate overweighted compile progress. No application has
+  linked or executed; 260 application C++ units still remain at this checkpoint.
+
 - 2026-09-21, A/B/H/I: complete SaveManager.cpp compiles with all 42 members,
   12 C bridges and every serialization key retained. Canonical raw legacy
   conversion replaces the old raw-pointer parser; the existing decoder remains
@@ -755,3 +761,35 @@ tests were observed failing before implementation, then passing.
   porting/LEGACY_SAVE_AUDIT.md. An explicit byte decoder remains separate from
   modern JSON serialization; blanket swapping and native reinterprets are not
   acceptable. Implementation and controller editor are independent active tasks.
+
+
+## 2026-09-21 — complete randomizer runtime batch
+
+Integrated full SeedContext, ItemLocation, fishsanity, Kaleido collectibles,
+ItemTableManager, Hint, Dungeon and Trial implementation sources plus canonical
+StaticHintInfo construction. No alternate runtime or gameplay services were
+introduced. This batch preserves 171 original definitions in the root provider
+and all complete agent-provided hint/dungeon/trial definitions.
+
+A/B adaptations retain constructor/default/value semantics, real JSON ordering,
+set/map behavior, full option/texture/fish tables, hook registration and actual
+Gfx command arguments. Header-only seed textures have one external definition.
+KaleidoEntry remains abstract: pure virtual '= 0' declarations are explicitly
+protected from member-default lowering. No endian conversion is introduced.
+Detailed ownership and limitations are in platform/shipyard/randomizer-context,
+randomizer-hints and randomizer-dungeons README files.
+
+Original/projected value execution passes for 2,520 ItemLocation states, all
+65,536 item IDs, fish helper tables, all 12 dungeon definitions/65,536 scenes/
+4,096 MQ masks/64 trial masks, and hint formatting/ordered JSON/default behavior.
+Full XDK integration passes: 1,545 selected production objects, 696 C plus 146
+of 398 application C++ units. All source hashes/PPC object hashes are recorded in
+scratch/project-xdk/randomizer-runtime-verification.json. Nine manifest/project
+checks pass. Full application linking and execution remain outstanding.
+
+The user's concern about granularity is valid: earlier compile milestones were
+not the last remaining steps. Work/reporting is grouped by functional batch;
+first-bring-up remains approximately 60–65% with high uncertainty, superseding
+the overly optimistic 70% estimate. Complete application windows, remaining
+randomizer/data/runtime and network implementations, speech, link integration,
+and genuine Xenia validation remain. No modern XEX has run.

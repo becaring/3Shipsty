@@ -41,7 +41,9 @@
       ]
     },
     "soh-c": {
-      "subsystems": ["game"],
+      "subsystems": [
+        "game"
+      ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
         "F3DEX_GBI_2",
@@ -81,7 +83,10 @@
         "randomizer-logic",
         "savestates",
         "save-manager",
-        "randomizer-settings"
+        "randomizer-settings",
+        "randomizer-context",
+        "randomizer-dungeons",
+        "randomizer-hints"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -258,6 +263,15 @@
     ],
     "randomizer-settings": [
       "scratch/randomizer-settings-xdk/xdk/build.json"
+    ],
+    "randomizer-context": [
+      "scratch/randomizer-context-xdk/xdk/build.json"
+    ],
+    "randomizer-dungeons": [
+      "scratch/randomizer-dungeons-xdk/xdk/build.json"
+    ],
+    "randomizer-hints": [
+      "scratch/randomizer-hints-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -277,7 +291,8 @@
     "scratch/randomizer-item-xdk/generated/LogicConstructor.cpp": "Superseded by full canonical randomizer-logic provider; exclude to avoid duplicate constructor",
     "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": "Superseded by complete randomizer-settings provider; exclude to avoid duplicate constructor",
     "scratch/save-storage-xdk/generated/SaveSerialization.cpp": "Superseded by full modern SaveManager.cpp; native storage sources remain selected",
-    "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": "Audited conversion body is now incorporated in full SaveManager.cpp; retain LegacyDecode.cpp only"
+    "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": "Audited conversion body is now incorporated in full SaveManager.cpp; retain LegacyDecode.cpp only",
+    "scratch/randomizer-hints-xdk/xdk/declarations.cpp": "Full Hint and variant declarations ABI probe; not production"
   },
   "supplemental_sources": [
     {
@@ -328,6 +343,10 @@
     "scratch/application-gui-xdk/generated/WindowStatics.cpp": {
       "source": "soh/soh/Enhancements/debugger/MessageViewer.h",
       "scope": "One definition of the original TABLE_ID inline static member; no MessageViewer implementation supplied here."
+    },
+    "scratch/randomizer-hints-xdk/generated/StaticHintInfo.cpp": {
+      "source": "soh/soh/Enhancements/randomizer/3drando/hints.hpp",
+      "scope": "Canonical StaticHintInfo constructor split from header, no full hint-generation implementation supplied"
     }
   },
   "integration_gates": [

@@ -1,0 +1,16 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/SeedContext.cpp": "3abca6e85ca219119a300fa268bfefd228e8adac558e61229b042605b6760409",
+    "soh/soh/Enhancements/randomizer/item_location.cpp": "61f0873dd30781ef4a49b8b357ce41ab681c968475bbf9df4283036211ea91b4",
+    "soh/soh/Enhancements/randomizer/fishsanity.cpp": "d35f749902af0c426bcad3fd0803cc8914f1fee66f8a4ee584f38898038283fb",
+    "soh/soh/Enhancements/kaleido.cpp": "f9e12ed010fb6887a63de4f7b0c85ca75a537773b806d372d0b7d3d49ca7f929",
+    "soh/soh/Enhancements/item-tables/ItemTableManager.cpp": "65a67e67e9172ea18f2a8ce60455c438ce41071d86a546b27d8cefb984287f94",
+    "soh/soh/Enhancements/randomizer/SeedContext.h": "34437218cb3a2ff8f3b28047260193a84a02c2bd2dc40e24b02418573a84f1ee",
+    "soh/soh/Enhancements/randomizer/item_location.h": "66a8f8a3f266b850a7d13e7d3f204feb89fe2197081a0489ee136c904e2c8049",
+    "soh/soh/Enhancements/kaleido.h": "4c23a54441ff343f5eeda6801069ae8462471f62876fe78eb8908a1563d34378",
+    "soh/soh/Enhancements/randomizer/fishsanity.h": "abf1e983c517aaf794263a1607522304debf2c2fd1a3cad1ab35e08028379f7e",
+    "soh/soh/Enhancements/randomizer/3drando/pool_functions.hpp": "ecbd3248ce266d3223936adc6b0c6de895502d5dd5cdc69a82db3bc3eb9e0825",
+    "soh/soh/Enhancements/randomizer/rando_hash.h": "27ac06f23a76b8eba516c8e11225918c36cca6133f7ec26c335bc2ebc2d890f1"
+  }
+}

@@ -2,15 +2,28 @@
 
 2026-09-21. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 70% complete (50–75%
-uncertainty range). Selected application source coverage is 696/696 C and 138/398 C++ TUs,
+First genuine bring-up estimate: roughly 60–65% complete, with considerable
+uncertainty. The earlier 70% estimate weighted compilation too heavily before
+linking or native execution. Selected application source coverage is 696/696 C and 146/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
 this first-bring-up estimate in meaningful milestone reports as requested.
+Remaining work is being grouped by complete application subsystems; individual
+compile units remain internal evidence rather than user-facing milestones.
 
 Latest integration work (earlier milestones below retain their historical scope):
 
+- Complete seed Context, ItemLocation, fishsanity, Kaleido collectibles, item
+  tables, hints, dungeons and trials are integrated. The full project passes with
+  1,545 PPC objects/source hashes verified in randomizer-runtime-verification.json.
+  Original/projected checks cover 2,520 location states, 65,536 item IDs, complete
+  dungeon/trial combinations, hint formatting and ordered JSON. No target
+  application execution is implied. Remaining application C++ count is 252.
+- The user requested less granular work/reporting. Work is now grouped into
+  complete functional batches. Two independent follow-on tasks cover location/
+  static data and audio/cosmetic editors; root handles application/debug windows.
+  Agents deliver one handoff and become idle. No more than three are active.
 - Complete OTRGlobals.cpp now compiles with XDK. Actual initialization order,
   resource registrations, archive version readers and all application functions
   remain. Original/projected value checks match all 65,536 item IDs, accepted ROM
