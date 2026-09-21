@@ -1,0 +1,30 @@
+{
+  "scope": "Exact reached statements only; surrounding save/config/seed/timesplit functions are not integrated by this probe.",
+  "sources": {
+    "soh/soh/SaveManager.cpp": {
+      "sha256": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+      "statements": [
+        "input >> metaSaveBlock;",
+        "output << std::setw(1) << saveBlock << std::endl;"
+      ]
+    },
+    "libultraship/src/ship/config/Config.cpp": {
+      "sha256": "a9105f8abba32ffc174198f0bd7c5efff21083b8b3a1295a3971d2b934f599d2",
+      "statements": [
+        "mNestedJson = nlohmann::json::parse(ifs);"
+      ]
+    },
+    "soh/soh/Enhancements/timesplits/TimeSplits.cpp": {
+      "sha256": "6e306e8e8afbc5dcfb294dcdec382643f05c4fca4b70de156a93619844a5e936",
+      "statements": [
+        "inputFile >> saveFile;"
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/SeedContext.cpp": {
+      "sha256": "3abca6e85ca219119a300fa268bfefd228e8adac558e61229b042605b6760409",
+      "statements": [
+        "spoilerFileStream >> spoilerFileJson;"
+      ]
+    }
+  }
+}

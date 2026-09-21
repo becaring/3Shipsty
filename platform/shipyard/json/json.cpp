@@ -282,13 +282,14 @@ class Parser {
     typedef Lexer::token_type Token;
     Lexer lexer;
     Token token;
+    bool strict_scanned;
     struct Frame {
         json *value;
         int state;
         std::string key;
         Frame(json *v) : value(v), state(0) {}
     };
-    void next() { token = lexer.scan(); }
+    void next(bool final_scan = false) { if (final_scan) strict_scanned = true; token = lexer.scan(); }
     void fail(Token expected, const std::string &context, const std::string &overrideText = "") {
         ShipyardJsonAlgorithm::detail::position_t p = lexer.get_position();
         std::string message = overrideText;
@@ -354,14 +355,16 @@ class Parser {
 
   public:
     Parser(const std::string &text, bool comments)
-        : lexer(ShipyardJsonAlgorithm::detail::StringInput(text), comments), token(Tok::uninitialized) {}
-    json parse() {
+        : lexer(ShipyardJsonAlgorithm::detail::StringInput(text), comments), token(Tok::uninitialized), strict_scanned(false) {}
+    Parser(std::istream &stream, bool comments)
+        : lexer(ShipyardJsonAlgorithm::detail::StringInput(stream), comments), token(Tok::uninitialized), strict_scanned(false) {}
+    void consume_strict_after_error() { if (!strict_scanned) next(); }
+    void parse(json &root, bool strict) {
         next();
-        json root;
         std::vector<Frame> stack;
         if (value(root))
             stack.push_back(Frame(&root));
-        next();
+        if (!stack.empty() || strict) next(stack.empty());
         while (!stack.empty()) {
             Frame &f = stack.back();
             json *target = 0;
@@ -369,12 +372,13 @@ class Parser {
                 if (f.state == 0 || f.state == 4) {
                     if (f.state == 0 && token == Tok::end_object) {
                         stack.pop_back();
-                        next();
+                        if (!stack.empty() || strict) next(stack.empty());
                         continue;
                     }
                     if (token != Tok::value_string)
                         fail(Tok::value_string, "object key");
                     f.key = lexer.get_string();
+                    (*f.value)[f.key]; // SAX key event inserts null before checking the colon.
                     f.state = 1;
                     next();
                     continue;
@@ -392,7 +396,7 @@ class Parser {
                 } else if (f.state == 3) {
                     if (token == Tok::end_object) {
                         stack.pop_back();
-                        next();
+                        if (!stack.empty() || strict) next(stack.empty());
                         continue;
                     }
                     if (token != Tok::value_separator)
@@ -405,16 +409,21 @@ class Parser {
                 if (f.state == 0 || f.state == 4) {
                     if (f.state == 0 && token == Tok::end_array) {
                         stack.pop_back();
-                        next();
+                        if (!stack.empty() || strict) next(stack.empty());
                         continue;
                     }
-                    f.value->push_back(json());
+                    json element;
+                    const bool structured = value(element); // Invalid tokens do not append an array element.
+                    f.value->push_back(element);
                     target = &(*f.value)[f.value->size() - 1];
                     f.state = 3;
+                    if (structured) stack.push_back(Frame(target));
+                    next();
+                    continue;
                 } else {
                     if (token == Tok::end_array) {
                         stack.pop_back();
-                        next();
+                        if (!stack.empty() || strict) next(stack.empty());
                         continue;
                     }
                     if (token != Tok::value_separator)
@@ -428,14 +437,15 @@ class Parser {
                 stack.push_back(Frame(target));
             next();
         }
-        if (token != Tok::end_of_input)
+        if (strict && token != Tok::end_of_input)
             fail(Tok::end_of_input, "value");
-        return root;
     }
 };
 json json::parse(const std::string &text, std::nullptr_t, bool allow, bool comments) {
     try {
-        return Parser(text, comments).parse();
+        json result;
+        Parser(text, comments).parse(result, true);
+        return result;
     } catch (const exception &) {
         if (allow)
             throw;
@@ -444,9 +454,33 @@ json json::parse(const std::string &text, std::nullptr_t, bool allow, bool comme
         return result;
     }
 }
-json json::parse(std::istream &stream, std::nullptr_t callback, bool allow, bool comments) {
-    std::string text((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-    return parse(text, callback, allow, comments);
+// Same lifetime cleanup as pinned input_stream_adapter; only eofbit survives.
+// With eofbit exceptions enabled, upstream may terminate from this destructor too.
+class StreamInputScope {
+    std::istream &stream;
+  public:
+    explicit StreamInputScope(std::istream &s) : stream(s) {}
+    ~StreamInputScope() { stream.clear(stream.rdstate() & std::ios::eofbit); }
+};
+json json::parse(std::istream &stream, std::nullptr_t, bool allow, bool comments) {
+    StreamInputScope scope(stream);
+    json result;
+    Parser parser(stream, comments);
+    try {
+        parser.parse(result, true);
+    } catch (const exception &) {
+        if (allow) throw;
+        // Upstream performs its strict trailing-token scan even after a suppressed SAX error.
+        parser.consume_strict_after_error();
+        result = json();
+        result.type_ = detail::value_t::discarded;
+    }
+    return result;
+}
+std::istream &operator>>(std::istream &stream, json &result) {
+    StreamInputScope scope(stream);
+    Parser(stream, false).parse(result, false);
+    return stream;
 }
 
 static std::string EscapePointer(const std::string &text) {
@@ -733,6 +767,15 @@ std::string json::dump(int indent, char indent_char, bool ascii) const {
     std::string result;
     append(result, indent, indent_char, ascii, 0);
     return result;
+}
+#include "json/generated/stream_writer.hpp"
+std::ostream &operator<<(std::ostream &stream, const json &value) {
+    const bool pretty = stream.width() > 0;
+    const std::streamsize indentation = pretty ? stream.width() : 0;
+    stream.width(0);
+    StreamWriter writer(stream, stream.fill());
+    writer.dump(value, pretty, false, static_cast<unsigned int>(indentation));
+    return stream;
 }
 bool json::operator==(const json &r) const {
     if (type_ == r.type_) {

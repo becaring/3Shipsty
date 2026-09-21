@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <limits>
 #include <istream>
+#include <ostream>
 #include <utility>
 #include <cstddef>
 #include <type_traits>
@@ -18,6 +19,7 @@
 
 namespace nlohmann {
 class json;
+class StreamWriter;
 namespace detail {
 struct value_t {
     enum type {
@@ -182,6 +184,9 @@ class json {
         return parse(std::string(s), c, a, i);
     }
     static json parse(std::istream &, std::nullptr_t c = nullptr, bool a = true, bool i = false);
+    friend std::istream &operator>>(std::istream &, json &);
+    friend std::ostream &operator<<(std::ostream &, const json &);
+    friend class StreamWriter;
     template <class Iterator> static json parse(Iterator begin, Iterator end) {
         return parse(std::string(begin, end));
     }

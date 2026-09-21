@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <istream>
 #include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,8 +60,18 @@ struct StringInput {
     typedef char char_type;
     const std::string *source;
     size_t position;
-    explicit StringInput(const std::string &text) : source(&text), position(0) {}
+    std::istream *stream;
+    std::streambuf *buffer;
+    explicit StringInput(const std::string &text) : source(&text), position(0), stream(0), buffer(0) {}
+    explicit StringInput(std::istream &input) : source(0), position(0), stream(&input), buffer(input.rdbuf()) {}
     int get_character() {
+        // Pinned input_stream_adapter bypasses sentry, skipws and fail/bad bits.
+        if (stream) {
+            int result = buffer->sbumpc();
+            if (result == std::char_traits<char>::eof())
+                stream->clear(stream->rdstate() | std::ios::eofbit);
+            return result;
+        }
         return position == source->size() ? std::char_traits<char>::eof()
                                           : static_cast<unsigned char>((*source)[position++]);
     }

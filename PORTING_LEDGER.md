@@ -445,3 +445,17 @@ tests were observed failing before implementation, then passing.
   explicit throughout native C++ build recipes. Input, binary tools and thirteen
   runtime components rebuild successfully; receipts are in scratch/rtti-rebuild.
   Resource leaf rebuild and final uniform build composition still remain.
+
+### 2026-09-20: JSON stream contracts and RTTI resource rebuild
+
+- The completed independent JSON stream change was reviewed and reverified:
+  eight generation checks, seven original/backend differentials and five full
+  native objects pass. Input extraction versus strict parse, stream flags,
+  partial DOM mutations, serializer write boundaries, encoding failures and
+  file-backed current consumer statements are covered. Serializer methods are
+  projected from pinned nlohmann 3.12; no replacement save policy was imported.
+- Ordered JSON, initializer lists, custom ADL/macros and binary DOM remain
+  unsupported. The stream probes do not establish whole SaveManager execution.
+- All nine complete resource leaf TUs now rebuild with explicit /GR and their
+  original/projected factory differential passes against the updated JSON.
+  Final uniform application build composition and runtime remain open.

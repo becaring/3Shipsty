@@ -56,20 +56,20 @@
     "json.cpp": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\json.cpp",
       "donor_sha256": "f68d239f43564dd4d08b39b55f907ecf65f4c77cb8bd51a284c6b19e425e3ba5",
-      "owned_sha256": "8a362710df22618096769b1df15688d2d53d112bef158424b2f05f665ed9fc90",
-      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488"
+      "owned_sha256": "2feb9552334fb9a9f7def2c7b38f3cc8cd4f0beb64fe101f5ea88934954d7585",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488; bounded istream parse/extraction using pinned input_stream_adapter behavior; partial SAX DOM mutation and strict/error lookahead; ostream width/fill and generated pinned text serializer"
     },
     "include/nlohmann/json.hpp": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\include\\nlohmann\\json.hpp",
       "donor_sha256": "a4f6f35b7aba1e4c30e350f55d31d38bbc6c6e998dc406d002da6be36aff5837",
-      "owned_sha256": "f35cb0fcbe42cc8a1de8d268c3d0dda034bb2fe3cafb36a857cda845af1a7611",
-      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488; string-key map, std::array and C-array conversion, enum underlying-type registry, get_to reference and partial-mutation semantics following pinned detail/conversions/{from_json,to_json}.hpp; upstream non-native arithmetic boolean acceptance"
+      "owned_sha256": "f650ab52c53d180f829f348c9689c35e1321f1b4466186230ad6113f5b3e14f4",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488; string-key map, std::array and C-array conversion, enum underlying-type registry, get_to reference and partial-mutation semantics following pinned detail/conversions/{from_json,to_json}.hpp; upstream non-native arithmetic boolean acceptance; bounded istream parse/extraction using pinned input_stream_adapter behavior; partial SAX DOM mutation and strict/error lookahead; ostream width/fill and generated pinned text serializer"
     },
     "algorithm_support.h": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\algorithm_support.h",
       "donor_sha256": "1ff6772d891a86fb782505f2b82cdfdf3e2d445bfa256dd85b74e3ef7eccde59",
-      "owned_sha256": "64f1c359ff13cfcb137eb4194017173540047dccf0476cc3d6ab1b187679d6f5",
-      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only"
+      "owned_sha256": "bbcf1cdfcfe48db471e8cef90ac9d68e9e580b15af683a55042e49e534441842",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; bounded istream parse/extraction using pinned input_stream_adapter behavior; partial SAX DOM mutation and strict/error lookahead; ostream width/fill and generated pinned text serializer"
     },
     "generate_algorithms.py": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\generate_algorithms.py",
@@ -87,6 +87,8 @@
   "scope": "Generic compiler-library backend; no Smash application/game policy. Not full basic_json or modern SoH consumer coverage.",
   "owned_additions": {
     "generate_containers.py": "c246adf1ae42488ba0fddbf5386ff047c2167523b790d7f46914763101e6f856",
-    "container-consumer-source.json": "6278dd35ba9370710fd35b74c158d2daf2b9308bd6fa35f6d4b58c02f586bc42"
+    "container-consumer-source.json": "6278dd35ba9370710fd35b74c158d2daf2b9308bd6fa35f6d4b58c02f586bc42",
+    "generate_streams.py": "923900e1e4fc755dcbcf0f719bc14ed11d73d44db470984526387ab5afbcecce",
+    "stream-consumer-source.json": "f26f4be410bcbfd9831cef17e751a1e51c01d03b0a51bab0ad51e8ec5c2961ff"
   }
 }
