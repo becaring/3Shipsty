@@ -1,0 +1,182 @@
+{
+  "schema": 1,
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "libultraship_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "target_definition_policies": {
+    "libultraship": {
+      "subsystems": [
+        "binary",
+        "resources",
+        "resource-manager",
+        "configuration",
+        "console-variables",
+        "context",
+        "window",
+        "audio",
+        "gui-resources",
+        "fast3d",
+        "fast-resources",
+        "input",
+        "graphics",
+        "xenos",
+        "presentation",
+        "native-imgui",
+        "gui"
+      ],
+      "sources": [
+        "scratch/prism-xdk/generated/shader_builder.cpp"
+      ],
+      "definitions": [
+        "CONTROLLERBUTTONS_T=uint32_t",
+        "F3DEX_GBI_2",
+        "INCLUDE_MPQ_SUPPORT",
+        "NDEBUG",
+        "SPDLOG_ACTIVE_LEVEL=0",
+        "GFX_DEBUG_DISASSEMBLER"
+      ],
+      "evidence": [
+        "CMakeLists.txt:156-175",
+        "libultraship/src/CMakeLists.txt:133-208"
+      ]
+    },
+    "soh": {
+      "subsystems": [
+        "game",
+        "soh-resources",
+        "interpolation"
+      ],
+      "definitions": [
+        "CONTROLLERBUTTONS_T=uint32_t",
+        "F3DEX_GBI_2",
+        "INCLUDE_MPQ_SUPPORT",
+        "NDEBUG",
+        "SPDLOG_ACTIVE_LEVEL=0",
+        "LOG_LEVEL_GAME_PRINTS=6"
+      ],
+      "evidence": [
+        "CMakeLists.txt:168-175",
+        "soh/CMakeLists.txt:333-409"
+      ]
+    }
+  },
+  "reports": {
+    "game": [
+      "scratch/game-xdk/full/compile-report.json"
+    ],
+    "binary": [
+      "scratch/binary-xdk/xdk-generated/*.json"
+    ],
+    "resources": [
+      "scratch/resources-xdk/xdk-generated/*.json"
+    ],
+    "resource-manager": [
+      "scratch/resource-manager-xdk/xdk/report.json"
+    ],
+    "async": [
+      "scratch/async-xdk/xdk/native.json"
+    ],
+    "filesystem": [
+      "scratch/filesystem-xdk/xdk/filesystem.json"
+    ],
+    "json": [
+      "scratch/json-xdk/xdk-backend/command.json"
+    ],
+    "archives": [
+      "scratch/libzip-xdk/xdk/build.json"
+    ],
+    "stormlib": [
+      "scratch/stormlib-xdk/xdk/build.json"
+    ],
+    "codecs": [
+      "scratch/codec-xdk/xdk/build.json"
+    ],
+    "imgui": [
+      "scratch/imgui-xdk/xdk-generated/report.json"
+    ],
+    "configuration": [
+      "scratch/configuration-xdk/xdk/build.json"
+    ],
+    "console-variables": [
+      "scratch/console-variables-xdk/xdk/build.json"
+    ],
+    "context": [
+      "scratch/context-xdk/xdk/build.json"
+    ],
+    "window": [
+      "scratch/window-xdk/xdk/build.json"
+    ],
+    "audio": [
+      "scratch/audio-xdk/xdk/build.json"
+    ],
+    "gui-resources": [
+      "scratch/gui-resources-xdk/xdk/build.json"
+    ],
+    "fast3d": [
+      "scratch/fast3d-xdk/xdk/build.json"
+    ],
+    "fast-resources": [
+      "scratch/fast-resources-xdk/xdk/build.json"
+    ],
+    "input": [
+      "scratch/input-xdk/xdk/build.json"
+    ],
+    "prism": [
+      "scratch/prism-xdk/xdk/build.json"
+    ],
+    "graphics": [
+      "scratch/graphics-xdk/compiled/compile-report.json"
+    ],
+    "xenos": [
+      "scratch/xenos-xdk/xdk/build.json"
+    ],
+    "presentation": [
+      "scratch/presentation-xdk/xdk/build.json"
+    ],
+    "native-imgui": [
+      "scratch/native-imgui-xdk/xdk/build.json"
+    ],
+    "gui": [
+      "scratch/gui-xdk/xdk/build.json"
+    ],
+    "soh-resources": [
+      "scratch/soh-resources-xdk/xdk/build.json",
+      "scratch/soh-resources-xdk/xdk/scene-build.json"
+    ],
+    "interpolation": [
+      "scratch/interpolation-xdk/xdk/build.json"
+    ],
+    "gfxd": [
+      "scratch/gfxd-xdk/xdk/build.json"
+    ]
+  },
+  "production_exclusions": {
+    "scratch/graphics-xdk/cc_features.cpp": "Early isolated decoder projection; the complete selected current interpreter.cpp already defines gfx_cc_get_features. Do not link both.",
+    "platform/shipyard/graphics/interface_contract.cpp": "ABI compile probe; never part of production",
+    "platform/shipyard/soh-resources/xdk_abi.cpp": "ABI compile probe; never part of production"
+  },
+  "supplemental_sources": [
+    {
+      "source": "platform/shipyard/logging/environment.cpp",
+      "subsystem": "logging",
+      "options_from": "async"
+    },
+    {
+      "source": "platform/shipyard/logging/chrono/chrono.cpp",
+      "subsystem": "logging",
+      "options_from": "async"
+    }
+  ],
+  "source_fragments": {
+    "scratch/prism-xdk/generated/shader_builder.cpp": {
+      "source": "libultraship/src/fast/backends/gfx_direct3d11.cpp",
+      "scope": "Current shader builder functions only; does not claim the desktop backend translation unit is ported"
+    }
+  },
+  "integration_gates": [
+    "Application translation coverage must be complete and all platform-review decisions resolved",
+    "Common ABI and header ordering must be reviewed across subsystem recipes; individual compile success is insufficient",
+    "Application entry point, current initialization, resource registration and PC-only extraction boundary remain to be integrated",
+    "Xbox storage/save lifecycle and link dependencies require explicit production integration",
+    "No executable project or XEX is emitted by this compile-only generator"
+  ]
+}

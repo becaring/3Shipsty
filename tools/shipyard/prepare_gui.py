@@ -202,13 +202,13 @@ def prepare():
 
 def includes():
     from prepare_presentation import includes as presentation_includes
-    return [OUT/'generated/include',ROOT/'platform/shipyard/native-imgui',verified('stb'),ROOT/'scratch/async-xdk/generated',ROOT/'scratch/prism-xdk/generated']+presentation_includes()
+    return [OUT/'generated/include',ROOT/'platform/shipyard/native-imgui',verified('stb'),verified('libgfxd'),ROOT/'scratch/async-xdk/generated',ROOT/'scratch/prism-xdk/generated']+presentation_includes()
 
 
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DCONTROLLERBUTTONS_T=uint32_t',
+    flags=['/nologo','/c','/TP','/EHsc','/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DF3DEX_GBI_2','/DGFX_DEBUG_DISASSEMBLER','/DSPDLOG_ACTIVE_LEVEL=0','/DCONTROLLERBUTTONS_T=uint32_t',
            '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h'),'/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in includes()]
     rows=[]

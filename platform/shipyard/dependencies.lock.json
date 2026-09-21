@@ -53,5 +53,10 @@
     "commit": "0bc88af4de5fb022db643c2d8e549a0927749354",
     "url": "https://github.com/nothings/stb.git",
     "receipt_sha256": "a30117781e107c4cfcdf5cefdb8e4b0b508452f854253649893f137d5cf3eb91"
+  },
+  "libgfxd": {
+    "commit": "008f73dca8ebc9151b205959b17773a19c5bd0da",
+    "url": "https://github.com/glankk/libgfxd.git",
+    "receipt_sha256": "29f5ddb7e938efcd46038a88d65baf67f9149a88e17d5f15e07ad8d2b9f885f6"
   }
 }

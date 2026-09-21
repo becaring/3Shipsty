@@ -489,3 +489,20 @@ tests were observed failing before implementation, then passing.
 - Translation/first-bring-up estimate is now approximately 64% (50–70% range),
   with 696 C and 78 C++ application TUs compiled. Full modern application C++,
   release-definition integration, linking and genuine Xenia execution remain.
+
+### 2026-09-20: Deterministic XDK project and required disassembler
+
+- The completed independent project-generator handoff was reviewed. Declarative
+  subsystem recipes produce inspectable XML and full pending-source coverage,
+  with stable unique object names and explicit C/C++ ABI flags. Seven genuine
+  production TUs compile through MSBuild; six generator checks pass. An ordinary
+  incomplete Build fails before emitting a library/executable. The generator
+  marks old preprocessed-C definition omissions for regeneration, not late /D fixes.
+- The audit exposed root's enabled GFX_DEBUG_DISASSEMBLER. Exact libgfxd was
+  acquired, all seven full C TUs translated, and 15,360 full original/projected
+  disassemblies agree across opcode/ucode/endian cases. Table field order and
+  C99 formatting are preserved; the host-word endian algorithm stays verbatim.
+- All six full current GUI TUs now rebuild with disassembler and F3DEX_GBI_2
+  enabled. The early isolated decoder object is excluded from final composition
+  because the full interpreter owns the same symbol. No feature was disabled to
+  obtain the generated project or successful GUI compile.

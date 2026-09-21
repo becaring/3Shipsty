@@ -45,6 +45,8 @@ This is not linked GUI execution or native GPU validation.
 
 Outstanding: actual SoH Menu/SohGui/enhancement windows and their application
 dependencies, physical keyboard/text entry, storage-backed settings, full
-ResourceManager/Context execution, final linking and Xenia interaction. Optional
-GFX_DEBUG_DISASSEMBLER requires its real dependency before enabling that build
-option. No XEX or gameplay is claimed by these compiler checks.
+ResourceManager/Context execution, final linking and Xenia interaction. The
+release actually enables GFX_DEBUG_DISASSEMBLER: the full six-TU native build
+now passes with that definition, F3DEX_GBI_2 and exact libgfxd revision
+008f73dca8ebc9151b205959b17773a19c5bd0da. Its seven real C TUs compile separately;
+see gfxd/README.md. No XEX or gameplay is claimed by these compiler checks.

@@ -76,7 +76,7 @@ this first-bring-up estimate in meaningful milestone reports as requested.
 - Ten full application resource type/factory TUs now compile: Background,
   PlayerAnimation, Text, Array and Cutscene. Original/projected LE/BE and XML
   payload contracts agree; mixed-width cutscene helpers remain verbatim.
-  Other application resource/scene/audio consumers and registration remain open.
+  This initial batch has since expanded to the 77 production resource TUs below.
 - Exact Prism and current shader builder compile (six TUs), retaining real
   resource acquisition. All 936 host generation cases match; 264 unique Xbox
   vertex/pixel shader compilations pass. GPU execution remains unvalidated.
@@ -86,12 +86,17 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   checks pass; window/GUI wiring and native GPU behavior remain unvalidated.
 - Full current Fast3dWindow/FastMouseStateManager and native presentation compile
   (three TUs). The real GUI/interpreter draw sequence remains byte-identical;
-  2,024,400 pacing checks pass. Native GUI wiring and execution remain open.
+  2,024,400 pacing checks pass. Native GUI is wired; execution remains open.
 - Application resource coverage expanded to Animation, AudioSequence,
   AudioSoundFont, CollisionHeader, Path and SkeletonLimb, including PathLogger.
   All 23 complete application TUs plus ABI checks compile. Seven full factory
   pairs and 2,068 sequence/method cases match original host behavior. Actual
-  sample resolution, archive/CVar integration, AudioSample/Skeleton/Scene remain.
+  sample resolution, archive/CVar integration and AudioSample/Skeleton remain.
+- All 25 current scene-command type/factory pairs plus Scene, dispatch support
+  and loggers compile, bringing resources to 77 TUs. Original/projected XML,
+  mesh, logger, ID/endian audits pass; actual service-backed/binary dispatch is open.
+- Complete current frame interpolation compiles; 589,824 angle cases plus
+  matrix/inverse/recorder lifecycle checks match in a bounded host audit.
 - Complete current Gui, ConsoleWindow, InputEditorWindow, StatsWindow and
   GfxDebuggerWindow compile, with native Gui initialization (six TUs). The
   primary native ImGui renderer/platform compile (two TUs), and both UI shaders
@@ -100,7 +105,15 @@ this first-bring-up estimate in meaningful milestone reports as requested.
 - Native C++ recipes now explicitly enable RTTI, which current dynamic casts
   require. Input, binary tools and thirteen runtime components were rebuilt;
   the former /GR- cast warnings are absent in the inspected rebuilt logs.
-  Resource-leaf rebuilding and final uniform build composition remain pending.
+  Nine resource leaf TUs also rebuilt and their host factory differential passes.
+  Final uniform build composition remains pending.
+- Deterministic XDK project inventory now records every application source,
+  pending translations, unique objects and release definition corrections.
+  Generated MSBuild compilation passes seven genuine C/C++ production files;
+  incomplete application builds are explicitly rejected before linking.
+- Exact release-enabled libgfxd compiles all seven C TUs; 15,360 complete host
+  disassembly cases match. Full GUI rebuild passes with both GFX_DEBUG_DISASSEMBLER
+  and F3DEX_GBI_2, correcting omissions in the earlier isolated GUI recipe.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

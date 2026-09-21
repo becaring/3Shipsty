@@ -14,11 +14,11 @@ to separate owned paths. No reference tree writes or upstream source edits.
 - [x] Graphics boundary: capture original interface failures; preserve 64/32
   keys and exact virtual signatures in projection; compile current decoder,
   compare outputs/layout; source-lock generic Xenos shader lowering.
-- [ ] Game C boundary: capture original main/actor failures; isolate desktop
+- [x] Game C boundary: capture original main/actor failures; isolate desktop
   entry guard, missing C headers and real C99 constructs in generated files.
   Preserve boolean conversion (a byte typedef is not equivalent). Verify chosen
   source-language projection with actual compiler and differential semantics.
-- [ ] Generate inspectable XDK projects from the audited source inventory.
+- [x] Generate inspectable XDK compile projects from the audited source inventory.
   Unknown sources/errors remain reported; no source silently removed to link.
 - [ ] Adapt complete current resource/async/filesystem/config consumers, retaining
   new save filesystem operations and errors absent from the Smash donor.
