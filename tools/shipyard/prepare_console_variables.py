@@ -67,7 +67,7 @@ def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     from prepare_window import includes
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    command=[str(sdk/'bin/win32/cl.exe'),'/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    command=[str(sdk/'bin/win32/cl.exe'),'/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
              '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]
     command+=['/I'+str(p) for p in [OUT/'generated/include']+includes()]
     source=OUT/'generated/src/ship/config/ConsoleVariable.cpp';obj=folder/'ConsoleVariable.obj'

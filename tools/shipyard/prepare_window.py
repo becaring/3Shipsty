@@ -128,7 +128,7 @@ def includes():
 def build():
     prepare(); folder=OUT/'xdk'; folder.mkdir(parents=True,exist_ok=True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/I'+str(sdk/'include/xbox')]+['/I'+str(p) for p in includes()]
     records=[]
     for name in ('Window.cpp','MouseStateManager.cpp','gui/GuiElement.cpp','gui/GuiWindow.cpp','gui/GuiMenuBar.cpp'):

@@ -41,7 +41,7 @@ def transform(name,text):
                   ': Ship::Window(std::make_shared<Ship::Gui>(std::vector<std::shared_ptr<Ship::GuiWindow>>()), std::make_shared<FastMouseStateManager>()) { InitializeInterpreter();\n}')
         # Context destroys a window whose Init throws. Interpreter records its
         # APIs at the start of Init; a constructed but uninitialized one has none.
-        text=once(text,'    mInterpreter->Destroy();','    if (mInterpreter->mWapi) mInterpreter->Destroy();')
+        text=once(text,'    mInterpreter->Destroy();','    GetGui()->ShutDownImGui(this);\n    if (mInterpreter->mWapi) mInterpreter->Destroy();')
         text=once(text,'    InitWindowManager();','    // Native presentation surface is fixed at 720p; internal game resolution remains upstream-owned.\n    isFullscreen=true; width=1280; height=720; posX=posY=0;\n    InitWindowManager();')
         text=once(text,'switch (GetWindowBackend()) {','switch (GetWindowBackend().GetValue()) {\n        case Ship::WindowBackend::FAST3D_XENOS:\n            mWindowManagerApi=new GfxWindowBackendXenos();\n            mRenderingApi=new GfxRenderingAPIXenos();\n            break;')
         text=once(text,'            SPDLOG_ERROR("Could not load the correct rendering backend");\n            break;',
@@ -83,7 +83,7 @@ def includes():
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/DCONTROLLERBUTTONS_T=uint32_t','/Dnssv_CONFIG_SELECT_STRING_VIEW=1',
            '/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h'),'/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in includes()]

@@ -88,6 +88,15 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   All 23 complete application TUs plus ABI checks compile. Seven full factory
   pairs and 2,068 sequence/method cases match original host behavior. Actual
   sample resolution, archive/CVar integration, AudioSample/Skeleton/Scene remain.
+- Complete current Gui, ConsoleWindow, InputEditorWindow, StatsWindow and
+  GfxDebuggerWindow compile, with native Gui initialization (six TUs). The
+  primary native ImGui renderer/platform compile (two TUs), and both UI shaders
+  compile with XDK. The exact font bytes produce matching 903-glyph atlases;
+  real ImGui controller-event host checks pass. No native UI has executed.
+- Native C++ recipes now explicitly enable RTTI, which current dynamic casts
+  require. Input, binary tools and thirteen runtime components were rebuilt;
+  the former /GR- cast warnings are absent in the inspected rebuilt logs.
+  Resource-leaf rebuilding and final uniform build composition remain pending.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

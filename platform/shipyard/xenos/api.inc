@@ -30,7 +30,8 @@ void GfxRenderingAPIXenos::SetViewport(int x,int y,int w,int h){Viewport(x,y,w,h
 void GfxRenderingAPIXenos::SetScissor(int x,int y,int w,int h){Scissor(x,y,w,h);}
 void GfxRenderingAPIXenos::SetUseAlpha(bool alpha){Alpha(alpha);}
 void GfxRenderingAPIXenos::DrawTriangles(float v[],size_t count,size_t tris){Draw(v,count,tris);}
-void GfxRenderingAPIXenos::Init(){::Fast::Init();}
+void InitializeGuiForXenos();
+void GfxRenderingAPIXenos::Init(){::Fast::Init();InitializeGuiForXenos();}
 void GfxRenderingAPIXenos::OnResize(){Resize();}
 void GfxRenderingAPIXenos::StartFrame(){Start();}
 void GfxRenderingAPIXenos::EndFrame(){End();}

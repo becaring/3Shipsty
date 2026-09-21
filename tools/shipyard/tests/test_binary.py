@@ -52,7 +52,7 @@ def fixture_paths():
 def host(label, source):
     folder = OUT / label; folder.mkdir(parents=True, exist_ok=True)
     compiler, env = host_environment()
-    command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/MD', '/W4',
+    command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/GR', '/MD', '/W4',
                '/I' + str(source / 'include'), '/I' + str(ROOT / 'platform/shipyard'),
                '/Fe:' + str(folder / 'contract.exe'), '/Fo:' + str(folder) + '/',
                TESTS / 'test_binary_contract.cpp']
@@ -65,7 +65,7 @@ def host(label, source):
 
 def xdk(label, source, expected_success):
     folder = OUT / label; folder.mkdir(parents=True, exist_ok=True)
-    base = [XDK / 'bin/win32/cl.exe', '/nologo', '/EHsc', '/D_XBOX', '/D_XBOX_VER=200',
+    base = [XDK / 'bin/win32/cl.exe', '/nologo', '/EHsc', '/GR', '/D_XBOX', '/D_XBOX_VER=200',
             '/I' + str(XDK / 'include/xbox'), '/I' + str(source / 'include'),
             '/I' + str(ROOT / 'platform/shipyard')]
     records = []

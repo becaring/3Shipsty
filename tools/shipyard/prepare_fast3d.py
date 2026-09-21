@@ -245,7 +245,7 @@ def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     from prepare_window import includes
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h'),'/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in [OUT/'generated/include',ROOT/'scratch/gui-resources-xdk/generated/include',ROOT/'scratch/context-xdk/generated/include']+includes()+[ROOT/'scratch/async-xdk/generated']]
     source=OUT/'generated/src/fast/interpreter.cpp';obj=folder/'interpreter.obj'

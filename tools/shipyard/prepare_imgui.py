@@ -87,7 +87,7 @@ def compile_xdk(original=False):
     records = []
     for unit in UNITS:
         obj = output / (unit + '.obj')
-        command = [str(sdk / 'bin/win32/cl.exe'), '/nologo', '/c', '/TP', '/EHsc', '/MT', '/W3', '/D_XBOX', '/DNOMINMAX',
+        command = [str(sdk / 'bin/win32/cl.exe'), '/nologo', '/c', '/TP', '/EHsc', '/GR', '/MT', '/W3', '/D_XBOX', '/DNOMINMAX',
                    '/I' + str(sdk / 'include/xbox'), '/I' + str(OUT / label),
                    str(OUT / label / (unit + '.cpp')), '/Fo' + str(obj)]
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)

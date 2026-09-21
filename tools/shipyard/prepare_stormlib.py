@@ -84,7 +84,7 @@ def build(host=False):
     records=[];objects=[]
     for name in units:
         obj=folder/(name[4:].replace('/','__').rsplit('.',1)[0]+'.obj')
-        command=[str(compiler)]+flags+(['/EHsc','/TP'] if name.endswith('.cpp') else ['/TC'])+[str(OUT/'generated'/name),'/Fo'+str(obj)]
+        command=[str(compiler)]+flags+(['/EHsc', '/GR','/TP'] if name.endswith('.cpp') else ['/TC'])+[str(OUT/'generated'/name),'/Fo'+str(obj)]
         result=subprocess.run(command,env=environment,cwd=ROOT,capture_output=True,text=True)
         stable(obj.with_suffix('.log'),result.stdout+result.stderr)
         records.append(dict(source=name,exit=result.returncode,command=command))

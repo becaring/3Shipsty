@@ -1,0 +1,16 @@
+{
+  "source_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "sources": {
+    "include/ship/window/gui/Gui.h": "d2a758a3adb33b67e33ef557088912cebeb1a5a8b11529f0591870b8b9718a3a",
+    "include/ship/window/gui/ConsoleWindow.h": "ea7f6afcaa13306da28b7e579e5a2a78d44b757e3621060601721ba9ef0c0eaa",
+    "include/ship/window/gui/InputEditorWindow.h": "d928d1ee2bbc269ae39bd5a0d50df150e125b9fac6cbe31a91fefc82dbe4e11e",
+    "include/ship/window/gui/StatsWindow.h": "ead9030ee60c823b1eaed0a9d327e834b9992de78b1289761d30f7ef5aaa7041",
+    "include/libultraship/window/gui/GfxDebuggerWindow.h": "8569ada821debe963b3fb51b299545a9080f5ace301ba7ee192304d628d91e43",
+    "src/ship/window/gui/Gui.cpp": "b1a56515a8ed7e5ea08b919d1d305679eef30632e307e6d90784c7a7a1b2887b",
+    "src/ship/window/gui/StatsWindow.cpp": "69d5995cd3b214c82ddbf4e22d36126df8054e401a412000dce55dd6c9e3648c",
+    "include/ship/window/gui/Fonts.h": "97adc6fe7155b297623fc9448a5cfdac68928a716342261df04f89627116440e",
+    "src/ship/window/gui/ConsoleWindow.cpp": "a95d9d904c0b601a361c1e48a9bff91aa05ec3b2e20304c84fb6a214b7cc7492",
+    "src/ship/window/gui/InputEditorWindow.cpp": "fdd16542020af1e1fc060c3c0f5c7bf77d36c655e8497d9f8c84d82b11af616f",
+    "src/libultraship/window/gui/GfxDebuggerWindow.cpp": "c4b8c5b8a47c20e380a1bee5543e9c83c4f84cb6ddf45cb55d9f8467a11f2ed7"
+  }
+}

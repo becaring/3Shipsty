@@ -95,7 +95,7 @@ def build():
     env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_resources.py'))
     includes=[OUT/'generated/include',ROOT/'scratch/audio-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+env['includes'](True)+[ROOT/'libultraship/include']
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    command=[str(sdk/'bin/win32/cl.exe'),'/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    command=[str(sdk/'bin/win32/cl.exe'),'/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
              '/FI'+str(cvar_header),'/I'+str(sdk/'include/xbox')]+['/I'+str(p) for p in includes]
     source=OUT/'generated/src/ship/config/Config.cpp';obj=folder/'Config.obj';command+=[str(source),'/Fo'+str(obj)]
     result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(folder/'Config.log',result.stdout+result.stderr)

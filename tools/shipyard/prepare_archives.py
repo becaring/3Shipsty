@@ -86,7 +86,7 @@ def build(host=False):
         objects = []
         for source in sources:
             obj = folder / (group + '-' + source.stem + '.obj'); objects.append(obj)
-            command = [str(compiler)] + flags + (['/TP', '/EHsc'] if source.suffix == '.cpp' else ['/TC']) + [str(source), '/Fo' + str(obj)]
+            command = [str(compiler)] + flags + (['/TP', '/EHsc', '/GR'] if source.suffix == '.cpp' else ['/TC']) + [str(source), '/Fo' + str(obj)]
             result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
             stable(folder / (obj.stem + '.log'), result.stdout + result.stderr)
             records.append(dict(source=source.relative_to(ROOT).as_posix(), command=command, exit=result.returncode))

@@ -28,7 +28,7 @@ def includes(projected):
 def xdk(projected):
     folder=OUT/('xdk-generated' if projected else 'xdk-original');folder.mkdir(parents=True,exist_ok=True)
     source=(OUT/'generated' if projected else ROOT/'libultraship')/'src/ship/resource'
-    base=[ENV.XDK/'bin/win32/cl.exe','/nologo','/EHsc','/D_XBOX','/D_XBOX_VER=200',
+    base=[ENV.XDK/'bin/win32/cl.exe','/nologo','/EHsc', '/GR','/D_XBOX','/D_XBOX_VER=200',
           '/DSPDLOG_ACTIVE_LEVEL=0','/I'+str(ENV.XDK/'include/xbox')]
     base+=['/I'+str(p) for p in includes(projected)]
     records=[]
@@ -51,7 +51,7 @@ def host(projected):
     compiler,env=ENV.host_environment()
     source=(OUT/'generated' if projected else ROOT/'libultraship')/'src/ship/resource'
     binary=(ROOT/'scratch/binary-xdk/generated' if projected else ROOT/'libultraship')/'src/ship/utils/binarytools'
-    command=[compiler,'/nologo','/std:c++20','/utf-8','/EHsc','/MD','/DSPDLOG_ACTIVE_LEVEL=0',
+    command=[compiler,'/nologo','/std:c++20','/utf-8','/EHsc', '/GR','/MD','/DSPDLOG_ACTIVE_LEVEL=0',
              '/Fe:'+str(folder/'contract.exe'),'/Fo:'+str(folder)+'/']
     command+=['/I'+str(p) for p in includes(projected)]
     command+=[Path(__file__).with_name('test_resources_contract.cpp')]
@@ -60,7 +60,7 @@ def host(projected):
     if projected:
         # Windows folds Json.cpp and json.cpp to one basename; compile the backend separately.
         backend=folder/'json-backend.obj'
-        ENV.invoke([compiler,'/nologo','/std:c++20','/utf-8','/EHsc','/MD','/c','/Fo'+str(backend)]+
+        ENV.invoke([compiler,'/nologo','/std:c++20','/utf-8','/EHsc', '/GR','/MD','/c','/Fo'+str(backend)]+
                    ['/I'+str(p) for p in includes(True)]+[ROOT/'platform/shipyard/json/json.cpp'],folder,'backend',env)
         command += [backend,ROOT/'platform/shipyard/async/native.cpp',
                     ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
@@ -79,7 +79,7 @@ def integration_probe():
            'archive/ArchiveManager.cpp','archive/FolderArchive.cpp','archive/O2rArchive.cpp','archive/OtrArchive.cpp']
     inc=includes(True)+[ROOT/'scratch/async-xdk/generated',ROOT/'scratch/libzip-xdk/generated',
                         ROOT/'scratch/deps/tinyxml2',ROOT/'libultraship/include']
-    command=[ENV.XDK/'bin/win32/cl.exe','/nologo','/EHsc','/D_XBOX','/D_XBOX_VER=200',
+    command=[ENV.XDK/'bin/win32/cl.exe','/nologo','/EHsc', '/GR','/D_XBOX','/D_XBOX_VER=200',
              '/DINCLUDE_MPQ_SUPPORT','/I'+str(ENV.XDK/'include/xbox')]+['/I'+str(p) for p in inc]
     inventory={}
     for path in paths:

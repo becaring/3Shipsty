@@ -107,7 +107,7 @@ def build():
     cvars=OUT/'generated/include/compile_definitions.h'
     stable(cvars,'#pragma once\n'+''.join('#define '+n+' "'+v+'"\n' for n,v in release_cvars().items()))
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DCONTROLLERBUTTONS_T=uint32_t','/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DCONTROLLERBUTTONS_T=uint32_t','/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]
     flags+=['/FI'+str(cvars)]+['/I'+str(p) for p in includes()]
     sources=[OUT/'generated'/n for n in json.loads((OWN/'sources.lock.json').read_text())['sources'] if n.endswith('.cpp')]+[OWN/'physical.cpp',OWN/'xinput.cpp']
     records=[]

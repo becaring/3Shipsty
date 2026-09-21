@@ -142,7 +142,7 @@ def compile_xdk(out=OUT, raw=False):
     dest = out / ('raw' if raw else 'compiled')
     dest.mkdir(parents=True, exist_ok=True)
     flags = [str(xdk / 'bin/win32/cl.exe'), '/nologo', '/c', '/TP', '/D_XBOX', '/DNOMINMAX',
-             '/EHsc', '/MT', '/W4', '/I' + str(includes), '/I' + str(xdk / 'include/xbox')]
+             '/EHsc', '/GR', '/MT', '/W4', '/I' + str(includes), '/I' + str(xdk / 'include/xbox')]
     sources = [BASE / 'interface_contract.cpp', out / 'cc_features.cpp']
     if not raw:
         sources.append(out / 'shader_lower.cpp')

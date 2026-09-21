@@ -93,7 +93,7 @@ def build():
     includes=[OUT/'generated/include',ROOT/'scratch/configuration-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+resource['includes'](True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/O2','/fp:precise','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/O2','/fp:precise','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/I'+str(sdk/'include/xbox')]+['/I'+str(p) for p in includes]
     sources=[OUT/'generated/src/ship/audio'/(n+'.cpp') for n in ('SoundMatrixDecoder','AudioPlayer','NullAudioPlayer','Audio')]
     sources += [OWN/(n+'.cpp') for n in ('PcmBufferPool','XAudio2AudioPlayer','audio_log')]

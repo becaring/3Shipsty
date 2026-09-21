@@ -1,0 +1,91 @@
+"""Real current ImGui events with physical fixtures, plus native shader compilation."""
+from pathlib import Path
+import ast
+import json
+import re
+import runpy
+import subprocess
+import sys
+ROOT=Path(__file__).resolve().parents[3]
+sys.path.insert(0,str(ROOT/'tools/shipyard'))
+from prepare_native_imgui import prepare,OUT,OWN
+from prepare_archives import stable
+
+
+def main():
+    prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
+    sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
+    native=(OUT/'generated/imgui_xenos.cpp').read_text()
+    begin=native.index('    static const char* source =');end=native.index('\n    ID3DXBuffer* code=',begin)
+    shader=''.join(ast.literal_eval(m[0]) for m in re.finditer(r'"(?:[^"\\]|\\.)*"',native[begin:end]))
+    shaderpath=folder/'gui.hlsl';stable(shaderpath,shader)
+    for profile,entry in [('vs_3_0','VSMain'),('ps_3_0','PSMain')]:
+        command=[str(sdk/'bin/win32/fxc.exe'),'/nologo','/T',profile,'/E',entry,'/Fo',str(folder/(entry+'.bin')),str(shaderpath)]
+        result=subprocess.run(command,capture_output=True,text=True);stable(folder/(entry+'.log'),result.stdout+result.stderr)
+        if result.returncode:raise RuntimeError('Native GUI shader compile failed '+entry)
+    # Constants come from the actual XDK header. The host supplies only native
+    # time and physical-device fixtures, keeping the complete platform TU body.
+    defines=(sdk/'include/xbox/xinputdefs.h').read_text()
+    masks='\n'.join(m[0] for m in re.finditer(r'^#define XINPUT_GAMEPAD_\w+\s+0x[0-9A-Fa-f]+',defines,re.M))
+    platform=(OWN/'platform_frame.cpp').read_text().replace('#include "imgui_xenos.h"','')
+    text='''#include "imgui.h"
+#include "input/physical.h"
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <stdexcept>
+typedef uint16_t WORD;
+#define CHECK(c) do{if(!(c))throw std::runtime_error(#c);}while(0)
+static double seconds=1;
+double Shipyard_Time(){return seconds;}
+static unsigned physicalSlot=0,refreshes=0;
+static ShipyardInputRawPad physicalPad={0};
+void ShipyardInput_RefreshGamepadsForGui(){++refreshes;}
+bool ShipyardInput_ReadCachedGamepad(unsigned slot,ShipyardInputRawPad* out){
+    if(slot==physicalSlot){*out=physicalPad;return true;}std::memset(out,0,sizeof(*out));return false;
+}
+'''+masks+'\n'+platform+'''
+static void frame(){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720);ImGui::NewFrame();ImGui::EndFrame();}
+int main(){
+    ImGui::CreateContext();ImGuiIO& io=ImGui::GetIO();io.IniFilename=NULL;
+    io.ConfigFlags|=ImGuiConfigFlags_NavEnableGamepad;
+    unsigned char* pixels;int w,h;io.Fonts->GetTexDataAsRGBA32(&pixels,&w,&h);
+    Shipyard_ImGuiPlatformInit();
+    struct Binding{unsigned mask;ImGuiKey key;};
+    const Binding keys[]={
+        {XINPUT_GAMEPAD_START,ImGuiKey_GamepadStart},{XINPUT_GAMEPAD_BACK,ImGuiKey_GamepadBack},
+        {XINPUT_GAMEPAD_A,ImGuiKey_GamepadFaceDown},{XINPUT_GAMEPAD_B,ImGuiKey_GamepadFaceRight},
+        {XINPUT_GAMEPAD_X,ImGuiKey_GamepadFaceLeft},{XINPUT_GAMEPAD_Y,ImGuiKey_GamepadFaceUp},
+        {XINPUT_GAMEPAD_DPAD_LEFT,ImGuiKey_GamepadDpadLeft},{XINPUT_GAMEPAD_DPAD_RIGHT,ImGuiKey_GamepadDpadRight},
+        {XINPUT_GAMEPAD_DPAD_UP,ImGuiKey_GamepadDpadUp},{XINPUT_GAMEPAD_DPAD_DOWN,ImGuiKey_GamepadDpadDown},
+        {XINPUT_GAMEPAD_LEFT_SHOULDER,ImGuiKey_GamepadL1},{XINPUT_GAMEPAD_RIGHT_SHOULDER,ImGuiKey_GamepadR1},
+        {XINPUT_GAMEPAD_LEFT_THUMB,ImGuiKey_GamepadL3},{XINPUT_GAMEPAD_RIGHT_THUMB,ImGuiKey_GamepadR3}};
+    for(unsigned slot=0;slot<4;++slot){
+        physicalSlot=slot;
+        for(unsigned k=0;k<14;++k){
+            physicalPad.buttons=keys[k].mask;frame();CHECK(ImGui::IsKeyDown(keys[k].key));
+            for(unsigned j=0;j<14;++j)if(j!=k)CHECK(!ImGui::IsKeyDown(keys[j].key));
+            physicalPad.buttons=0;frame();CHECK(!ImGui::IsKeyDown(keys[k].key));
+        }
+    }
+    physicalPad.leftX=-32768;physicalPad.leftY=32767;physicalPad.leftTrigger=255;frame();
+    CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft));CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp));
+    CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadL2));CHECK(io.BackendFlags&ImGuiBackendFlags_HasGamepad);
+    physicalSlot=4;frame();CHECK(!(io.BackendFlags&ImGuiBackendFlags_HasGamepad));
+    CHECK(!ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft));CHECK(!ImGui::IsKeyDown(ImGuiKey_GamepadL2));
+    const int policy=io.ConfigFlags;Shipyard_ImGuiPlatformNewFrame(640,480);
+    CHECK(io.DeltaTime==0.000001f);CHECK(io.DisplaySize.x==640 && io.DisplaySize.y==480);
+    CHECK(io.ConfigFlags==policy);Shipyard_ImGuiPlatformShutdown();CHECK(io.BackendPlatformName==NULL);
+    ImGui::DestroyContext();std::printf("56 real ImGui button bindings, analog/disconnect, timing and navigation ownership pass (%u refreshes)\\n",refreshes);
+}
+'''
+    stable(folder/'contract.cpp',text)
+    env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
+    includes=[OUT/'generated',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard']
+    units=[ROOT/'scratch/imgui-xdk/generated'/(n+'.cpp') for n in ('imgui','imgui_draw','imgui_tables','imgui_widgets')]
+    command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/O2']+['/I'+str(p) for p in includes]+[folder/'contract.cpp']+units+['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
+    env['invoke'](command,folder,'build',environment)
+    result=env['invoke']([folder/'contract.exe'],folder,'run')
+    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],native_shader_stages=2,target_runtime_executed=False),indent=2)+'\n')
+    print(result['stdout'])
+if __name__=='__main__':main()

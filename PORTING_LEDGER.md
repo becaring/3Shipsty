@@ -421,3 +421,27 @@ tests were observed failing before implementation, then passing.
   RTTI is enabled for actual sample patch casts. See soh-resources/README.md.
 - The three relevant sound-font audio enums are emitted from the pinned header;
   all production resource registrations and real service execution remain open.
+
+### 2026-09-20: Genuine current GUI and native ImGui integration
+
+- All current Gui/default concrete window methods compile, including the full
+  controller editor, console and graphics debugger. Xenos initialization calls
+  actual Gui::Init, preserving upstream Context/window/renderer ownership.
+  Native GUI shutdown runs before graphics destruction and is idempotent for
+  the existing base-window cleanup. Controller navigation defaults on only if
+  its existing CVar is absent; saved choices remain authoritative.
+- XDK's 65535-byte concatenated-string limit is resolved with a deterministic
+  numeric array of the exact 155711-byte font. Independent compiled source
+  literals and both real ImGui font atlases match (903 glyphs, 56e5f0b0).
+- The debugger's unsupported default lambda parameter caused C1001/C3486.
+  Exactly 32 call sites now provide its same default explicitly. Experiments
+  with return annotations/formatter hoisting were discarded. Full console
+  metadata, optional textures, clipboard and current UI paths remain.
+- Native renderer/platform compile and actual shader stages pass XDK fxc;
+  56 real ImGui controller bindings, disconnect/analog/timing checks pass.
+  Native GPU rendering, SoH feature windows, text entry and persistence remain
+  unvalidated/unintegrated as documented in gui and native-imgui READMEs.
+- Auditing dynamic casts exposed /GR- in earlier native recipes. /GR is now
+  explicit throughout native C++ build recipes. Input, binary tools and thirteen
+  runtime components rebuild successfully; receipts are in scratch/rtti-rebuild.
+  Resource leaf rebuild and final uniform build composition still remain.

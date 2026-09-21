@@ -65,7 +65,7 @@ def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     from prepare_window import includes
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h'),'/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in [OUT/'generated/include',ROOT/'scratch/context-xdk/generated/include',verified('stb')]+includes()+[ROOT/'scratch/async-xdk/generated']]
     sources=[OUT/'generated'/n for n in json.loads((OWN/'sources.lock.json').read_text())['sources'] if n.endswith('.cpp')]+[OUT/'generated/stb_impl.c']

@@ -145,7 +145,7 @@ def build():
          ROOT/'scratch/deps/tinyxml2', ROOT/'scratch/stormlib-xdk/generated/src', ROOT/'libultraship/include']
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     folder=OUT/'xdk'; folder.mkdir(parents=True,exist_ok=True)
-    flags=['/nologo','/c','/EHsc','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DINCLUDE_MPQ_SUPPORT','/DSPDLOG_ACTIVE_LEVEL=0',
+    flags=['/nologo','/c','/EHsc', '/GR','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DINCLUDE_MPQ_SUPPORT','/DSPDLOG_ACTIVE_LEVEL=0',
            '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]+['/I'+str(p) for p in inc]
     records=[]
     for name in UNITS:

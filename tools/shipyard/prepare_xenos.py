@@ -71,7 +71,7 @@ def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     from prepare_window import includes
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags=['/nologo','/c','/TP','/EHsc','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/I'+str(sdk/'include/xbox')]
+    flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in [OUT/'generated',OWN,ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'scratch/graphics-xdk/include']+includes()]
     rows=[]
     for source in [OUT/'generated/native.cpp',OWN/'shader_provider.cpp',OWN/'services.cpp']:
