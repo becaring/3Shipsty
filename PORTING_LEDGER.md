@@ -305,3 +305,22 @@ tests were observed failing before implementation, then passing.
   paths are noted for execution review, not silently rewritten or removed.
 - Generic source ownership, header precedence and commands are in
   platform/shipyard/gui-resources/README.md. No application/runtime milestone.
+
+### 2026-09-20: Complete modern Fast3D interpreter
+
+- Full pinned interpreter compiles as one Xenon object. Every original command
+  handler remains; six opcode tables retain names, function identities and
+  insertion order. No old interpreter, Smash policy or wider shader key imported.
+- Generic A/B/H projections preserve in-class defaults, scope and aggregate
+  assignment. Raw RSP/RDP storage is zeroed before placement construction to
+  preserve value initialization despite the XDK nested non-POD defect; live
+  resource ownership is never overwritten. ShaderMod and raw texture metadata
+  retain their original value-initialized state and default scales.
+- Current texture-cache equality includes both palette pointers and size, and
+  combiner ordering includes the exact two current fields. Depth-map range
+  insertion preserves the current merge destination; its temporary source dies
+  immediately. Round/clamp preserve the current numerical contracts.
+- Host original/projected state and twelve-method audit passes alongside actual
+  full-TU native compilation. GPU readback keeps the original host-endian guard;
+  native backend must return numeric RGB5551. Native upload/readback and full
+  renderer execution are still pending. See platform/shipyard/fast3d/README.md.

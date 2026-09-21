@@ -10,7 +10,7 @@
   Host original/generated contract and six generator tests pass.
 - Current graphics interfaces, extracted current combiner decoder and generic
   shader lowerer compile with XDK. Four generator tests and 2,097,152 host
-  decoder/layout cases pass. Full graphics backend/interpreter remain unbuilt.
+  decoder/layout cases pass. Full graphics backend remains unbuilt.
 - All 696/696 selected current application C TUs compile in one corrected
   XDK C run; no failed files are excluded.
   Async/futures/pool and filesystem platform
@@ -51,6 +51,10 @@
   compile (seven TUs). Full host factory tests match upstream for binary font
   bytes, RGBA image decode/alpha, failure and size contracts. A logging argument
   conversion-order defect found during this integration was fixed and tested.
+- Complete current Fast3D interpreter now compiles as a Xenon object, with no
+  handler omissions. Original/projected state, stack, cache keys, opcode-domain
+  and scale/math audits pass; all six real opcode table entries match exactly.
+  Xenos backend/shader integration and actual renderer execution remain open.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

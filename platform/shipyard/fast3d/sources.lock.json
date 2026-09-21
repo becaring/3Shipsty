@@ -1,0 +1,14 @@
+{
+  "sources": {
+    "src/fast/interpreter.cpp": "17cbe9ade427ffd061deac7270bef3c02ec427d34d6b53e9a6a55d3d51686118",
+    "include/fast/interpreter.h": "f7b7ee1af7775f1a54b7d16405a297e9ef34ba081b4a0ac7902378c99004c353",
+    "include/fast/types.h": "5e1f92e5d223d1bc1a974c5022f60166633760de2497aa6b9e29721b9db9bb24",
+    "include/fast/ucodehandlers.h": "7a6aebfaa71de03637a1218fe700d042b2a84a903bad989f3d65eef192e69ff3",
+    "include/fast/lus_gbi.h": "b1b15cc16fbd31d0393457864abf7a7f2d7e7e551d45a30cdd2b9bcb5d5af671",
+    "include/fast/f3dex.h": "e7fde9a8f1c25ccf095b3dbff801d4ba09a4c10f7e3783f1cebf0789cfcf4efe",
+    "include/fast/f3dex2.h": "b554a374d560e61882125f78849a23d13e353dddd68d21e0d18c9118a6dd9ac9",
+    "include/fast/resource/type/Light.h": "0b7ef2e18f2f47105d70bdd1204cd02d5b55421a853dc1af247fe378e4cea6b6",
+    "include/fast/backends/gfx_rendering_api.h": "8e14e38ee67b74dbd063c9d280fd11fd4e7cf20b02dc3a08de35d34964698550",
+    "include/fast/backends/gfx_window_manager_api.h": "ef2c472436fe03793a86b57d3c55f44341ac0b063ab6a8ffe46f4c25e0ced133"
+  }
+}
