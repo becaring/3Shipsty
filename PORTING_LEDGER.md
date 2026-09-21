@@ -275,3 +275,19 @@ tests were observed failing before implementation, then passing.
   These headers preserve full declarations, not replacement implementations.
 - Detailed commands, evidence and limitations: platform/shipyard/window,
   console-variables and context READMEs. All reference trees remain read-only.
+
+### 2026-09-20: Logging conversion ordering regression
+
+- Resource integration exposed a projected host crash at a trace call during
+  destruction of a default Texture with null metadata. Original IResource's
+  trace expression itself assumes non-null metadata; the final factory test
+  uses the real factory's valid ResourceInitData ownership rather than relying
+  on that undefined null-reference case.
+- A separate well-defined counted-conversion test proved the platform defect:
+  fmt4 overload macros packed filtered arguments eagerly (four conversions for
+  two calls), while current spdlog performed none. Generate all logger arities
+  with the original log/backtrace gate before packing; global overloads forward
+  references, and packing stays inside the error-handler boundary. Generic
+  Shipyard B compatibility correction; no game/resource behavior is replaced.
+- The regression also checks global/source-location/extended-argument paths
+  and preserves backtrace collection of messages filtered from normal output.

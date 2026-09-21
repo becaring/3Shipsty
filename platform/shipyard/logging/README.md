@@ -95,3 +95,17 @@ changed-source rejection.
 
 These results do not establish final application linkage, Xbox log-file success,
 native clock accuracy, scheduler behavior, or Xenia/hardware execution.
+
+## Filter-before-conversion correction
+
+Integration exposed eager fmt4 argument packing before the current logger's
+level/backtrace gate. A defined conversion-count regression confirmed that
+filtered messages converted their argument while the original spdlog did not.
+All zero-to-39-argument logger overloads are now generated with the existing
+`should_log || should_backtrace` condition before packing. Global helpers forward
+unpacked references to the actual logger. Packing exceptions remain inside the
+logger error-handler boundary. No sink, queue or formatting algorithm changed.
+
+Coverage includes direct and global calls, source-location overloads, packed
+and extended argument lists, and backtrace retention when ordinary output is
+filtered. The separate default-float precision gap remains unresolved.

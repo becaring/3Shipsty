@@ -23,6 +23,18 @@ struct Capture:spdlog::sinks::base_sink<Shipyard::Async::mutex> {
     void flush_(){++flushes;}
 };
 static std::string contents(const std::string& p){std::ifstream file(p.c_str(),std::ios::binary);std::ostringstream out;out<<file.rdbuf();return out.str();}
+struct CountedInteger {
+    int* conversions;
+    explicit CountedInteger(int& count):conversions(&count){}
+    operator int() const { ++*conversions; return 42; }
+};
+#if ORIGINAL_SPDLOG
+template<> struct fmt::formatter<CountedInteger>:fmt::formatter<int> {
+    auto format(const CountedInteger& value,fmt::format_context& ctx) const {
+        return fmt::formatter<int>::format(static_cast<int>(value),ctx);
+    }
+};
+#endif
 int main(int argc,char** argv){
     assert(argc==2);std::string path=std::string(argv[1])+"/rotation.log";
     assert(spdlog::default_logger()!=nullptr);
@@ -33,6 +45,26 @@ int main(int argc,char** argv){
     sync.log(spdlog::source_loc("unit.cpp",17,"Test"),spdlog::level::info,"{} {:08X}","owned",42);
     assert(capture->lines[0]=="[sync] [unit.cpp:17] [info] owned 0000002A\n");assert(capture->flushes==1);
     sync.set_level(spdlog::level::warn);sync.info("filtered");assert(capture->lines.size()==1);
+    int conversions=0;CountedInteger counted(conversions);
+    sync.info("filtered argument {}",counted);
+    sync.log(spdlog::source_loc("filter.cpp",1,"filter"),spdlog::level::info,"filtered argument {}",counted);
+    sync.log(spdlog::level::info,"filtered argument {}",counted);
+    sync.info("{16}",0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,counted);
+    spdlog::default_logger()->set_level(spdlog::level::off);
+    spdlog::info("filtered global {}",counted);
+    spdlog::log(spdlog::level::info,"filtered global {}",counted);
+    spdlog::log(spdlog::source_loc("filter.cpp",2,"global"),spdlog::level::info,"filtered global {}",counted);
+    spdlog::default_logger()->set_level(spdlog::level::info);
+    if(conversions!=0){std::fprintf(stderr,"Filtered logs converted arguments %d times\n",conversions);return 2;}
+    {
+        std::shared_ptr<Capture> backtraceCapture(new Capture);
+        spdlog::logger backtraceLogger("argument-backtrace",backtraceCapture);
+        backtraceLogger.set_pattern("%v");backtraceLogger.set_level(spdlog::level::warn);backtraceLogger.enable_backtrace(1);
+        backtraceLogger.info("backtrace argument {}",counted);
+        if(conversions==0){std::fprintf(stderr,"Backtrace dropped a filtered argument\n");return 3;}
+        backtraceLogger.dump_backtrace();
+        assert(backtraceCapture->lines.size()==3 && backtraceCapture->lines[1]=="backtrace argument 42\n");
+    }
     sync.enable_backtrace(2);sync.info("backtrace1");sync.info("backtrace2");sync.dump_backtrace();assert(capture->lines.size()==5);
     int errors=0;sync.set_error_handler([&errors](const std::string&){++errors;});sync.set_level(spdlog::level::info);
 #if ORIGINAL_SPDLOG

@@ -15,24 +15,43 @@ def read(name):
     if hashlib.sha256(raw).hexdigest()!=locks[name]:raise ValueError('core source changed '+name)
     return raw.decode().replace('\r\n','\n')
 
-def large_format_overloads(t):
-    # fmt4's C++03 convenience macros stop at15, but its actual ArgList stores
-    # longer lists as typed Arg[N+1]. Fast3D reaches39 arguments. Preserve that
-    # representation, including the first16 type tags and NONE terminator.
+def large_format_overloads(t,free_functions=False):
+    # Preserve upstream's filter/backtrace check before argument conversion.
+    # fmt4 convenience macros eagerly pack values, so generate all arities.
     def expand(match):
-        name=match.group(1);fixed=match.group(2).split(',');result=match.group(0)+'\n'
-        for n in range(16,40):
+        name=match.group(1);fixed=match.group(2).split(',');result=''
+        for n in range(40):
             types=','.join('class A%d'%i for i in range(n))
             params=','.join('%s p%d'%(typ,i) for i,typ in enumerate(fixed))
-            params+=','+','.join('const A%d& a%d'%(i,i) for i in range(n))
-            result+='template<'+types+'> inline void '+name+'('+params+'){\n'
-            result+='fmt::internal::ArgArray<%d>::Type arr;\n'%n
-            for i in range(n):result+='arr[%d]=fmt::internal::MakeArg<fmt::BasicFormatter<char> >(a%d);\n'%(i,i)
-            result+='arr[%d].type=fmt::internal::Arg::NONE;\nfmt::ULongLong types=0;\n'%n
-            result+='for(unsigned i=0;i<16;++i)types|=static_cast<fmt::ULongLong>(arr[i].type)<<(i*4);\n'
-            result+=name+'('+','.join('p%d'%i for i in range(len(fixed)))+',fmt::ArgList(types,arr));}\n'
+            args=','.join('p%d'%i for i in range(len(fixed)))
+            if n:
+                params+=','+','.join('const A%d& a%d'%(i,i) for i in range(n))
+                result+='template<'+types+'> '
+            result+='inline void '+name+'('+params+'){\n'
+            if free_functions:
+                values=','+','.join('a%d'%i for i in range(n)) if n else ''
+                result+='default_logger_raw()->'+name+'('+args+values+');}\n'
+                continue
+            level='p%d'%fixed.index('level::level_enum') if name=='log' else 'level::'+{'error':'err'}.get(name,name)
+            location='p0' if fixed[0]=='source_loc' else 'source_loc()'
+            result+='if(!should_log('+level+') && !should_backtrace()) return;\nSPDLOG_TRY {\n'
+            if n:
+                result+='fmt::internal::ArgArray<%d>::Type arr;\n'%n
+                for i in range(n):
+                    kind='MakeValue' if n<16 else 'MakeArg'
+                    result+='arr[%d]=fmt::internal::%s<fmt::BasicFormatter<char> >(a%d);\n'%(i,kind,i)
+                result+='fmt::ULongLong types=0;\n'
+                if n<16:
+                    for i in range(n):result+='types|=static_cast<fmt::ULongLong>(fmt::internal::make_type(a%d))<<%d;\n'%(i,i*4)
+                else:
+                    result+='arr[%d].type=fmt::internal::Arg::NONE;\n'%n
+                    result+='for(unsigned i=0;i<16;++i)types|=static_cast<fmt::ULongLong>(arr[i].type)<<(i*4);\n'
+                result+=name+'('+args+',fmt::ArgList(types,arr));\n'
+            else:result+=name+'('+args+',fmt::ArgList());\n'
+            result+='} SPDLOG_LOGGER_CATCH('+location+') }\n'
         return result
     return re.sub(r'FMT_VARIADIC\(void,(\w+),([^\)]+)\)',expand,t)
+
 def generic(t):
     t=t.replace('SPDLOG_NOEXCEPT','throw()').replace('SPDLOG_TRY','try')
     for inc in ('atomic','chrono','condition_variable','mutex','thread','initializer_list'):t=re.sub(r'^\s*#include <'+inc+r'>\s*$', '',t,flags=re.M)
@@ -243,7 +262,7 @@ def generate(out):
     api+='inline void log(level::level_enum lvl,fmt::CStringRef format,fmt::ArgList args){default_logger_raw()->log(source_loc(),lvl,format,args);}\nFMT_VARIADIC(void,log,level::level_enum,fmt::CStringRef)\n'
     for name,lvl in [('trace','trace'),('debug','debug'),('info','info'),('warn','warn'),('error','err'),('critical','critical')]:api+='inline void '+name+'(fmt::CStringRef format,fmt::ArgList args){default_logger_raw()->log(source_loc(),level::'+lvl+',format,args);}\nFMT_VARIADIC(void,'+name+',fmt::CStringRef)\n'
     t=t[:start]+api+t[end:];t=t.replace('spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}','spdlog::source_loc(__FILE__, __LINE__, SPDLOG_FUNCTION)').replace('spdlog::source_loc{}','spdlog::source_loc()')
-    texts['spdlog.h']=generic(large_format_overloads(t));texts['spdlog-inl.h']=generic(read('spdlog-inl.h'));texts['version.h']=read('version.h')
+    texts['spdlog.h']=generic(large_format_overloads(t,free_functions=True));texts['spdlog-inl.h']=generic(read('spdlog-inl.h'));texts['version.h']=read('version.h')
     t=read('details/null_mutex.h').replace('null_atomic_int() = default;','null_atomic_int() : value(0) {}').replace('std::memory_order = std::memory_order_relaxed','')
     t=t.replace('int new_value, )','int new_value)');texts['details/null_mutex.h']=generic(t)
     t=read('sinks/base_sink.h').replace('~base_sink() override = default;','~base_sink() {}').replace(' = delete;',';');texts['sinks/base_sink.h']=generic(t)
