@@ -58,6 +58,10 @@
 - JSON string-key maps, std::array, C arrays and registered enum conversions now
   pass original/projected tests and native compilation. Full consumer integration
   and the remaining JSON APIs are still pending.
+- All 47 current input/controller TUs and two native XInput/physical TUs compile.
+  Original/projected defaults, high-bit bindings and 40,401 stick vectors agree;
+  physical fixtures pass topology/axis/rumble cases. Actual input execution,
+  menu capture, remapping persistence and four-port routing remain unvalidated.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

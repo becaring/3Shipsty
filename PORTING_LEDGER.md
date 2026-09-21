@@ -336,3 +336,17 @@ tests were observed failing before implementation, then passing.
   registrations are generated for inclusion after real declarations. Other
   enums fail closed until audited; this is not full packet/save integration.
   Ordered/custom/initializer-list/stream APIs remain open. See JSON audit.
+
+### 2026-09-20: Full current input core and native physical interface
+
+- All 97 pinned input files are retained: 47 full controller/mapping TUs plus
+  two generic native physical/XInput TUs compile. Modern defaults, blocking,
+  lag buffer and mappings own input behavior. Controller/pad bits remain uint32.
+- Primary SoH physical button/axis/trigger/rumble semantics inform the backend;
+  generic Smash API/syntax lessons adapt modern SDL-named mapping calls to XInput.
+  Old profiles, Smash defaults, Raphnet and game callbacks are not imported.
+- Six default containers, custom high-bit bindings, 40,401 stick vectors and
+  physical reconnect/axis/rumble fixtures pass. This is not native execution.
+  Original mButtonNames/GetControllerBits/topology-ignore/copied-map quirks are
+  documented for actual consumer integration, not silently changed. See input
+  README for provenance, commands and remaining menu/device validation.

@@ -1,0 +1,14 @@
+{
+  "D:\\Projects\\Smash360\\platform\\xbox360\\input\\physical.h": "e7ad6b7555d7f99462ed5c62d437be613e292c02c6f8c13f7f4e525e176a3e5d",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\input\\physical.cpp": "a59a0a72e3cabe66d0b714cc935287279279902fc692001af45c56737606a7ee",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\input\\xinput.cpp": "75ec442049511b06a668b5cadd4417c035d50cc79e9fad01bb04100c99dca7b3",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\input\\smash360_input_sdl.h": "47fe8eb0ab3f1540e36fa380faa271c4c46fdaf874cacb1b3e7b09083ef862dc",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\controllers\\lowering.py": "d50b798806368d7af881b394907a748ad3d68275c3c19044ba2889e6f1332cc3",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\controllers\\initializers.py": "f9973ae374b8411ab4ba5921d59efe8954ae41c61967bdef4e40d2213079af88",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\controllers\\constructors.py": "271c597591d3904a14237251b751b66701fc5f6635142b13cf62cf427a624d59",
+  "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\controllers\\compiler.h": "e4ba1bc823949da3b1a705fb0d17e0f28548a5704600e6e77ae87cc36ed6e34a",
+  "D:\\Projects\\SoH360\\platform\\xbox360\\xinput_controller.cpp": "9b3d7a9f4c3ade083ddc7bb334542671e22fdbdd892fff58a339b86a8ddac03b",
+  "D:\\Projects\\SoH360\\platform\\xbox360\\input_xinput.cpp": "6c947d0715f91124e1ee4d782c774a8c968663b7475cec31e4a650b5fb4bbe5b",
+  "D:\\Projects\\Smash360\\tools\\prepare_controllers_xdk.py": "c89a82127ea674090f0d16a40fea3d3bb3a719a41314adc89a2c539e8f822c74",
+  "D:\\Projects\\Smash360\\tools\\prepare_input_xdk.py": "5a665a17a7df3fcba4376c1d8386cb87c14132f5fb340801a0af7ea5f6663d0f"
+}
