@@ -68,6 +68,14 @@ class ProjectTests(unittest.TestCase):
         self.assertFalse(any(r.endswith('/LogicConstructor.cpp') for r in selected))
         self.assertEqual(sum(r['upstream_source']=='soh/soh/Enhancements/randomizer/logic.cpp' for r in self.manifest['sources']),1)
 
+    def test_complete_save_and_settings_replace_fragments(self):
+        selected={r['source'] for r in self.manifest['sources']}
+        for name in ['SaveSerialization.cpp','LegacyConversion.cpp','SettingsConstructor.cpp']:
+            self.assertFalse(any(r.endswith('/'+name) for r in selected),name)
+        for name in ['soh/soh/SaveManager.cpp','soh/soh/Enhancements/randomizer/settings.cpp']:
+            self.assertEqual(sum(r['upstream_source']==name for r in self.manifest['sources']),1)
+        self.assertIn('scratch/legacy-save-xdk/generated/LegacyDecode.cpp',selected)
+
     def test_preprocessed_probe_excluded_and_full_message_origin(self):
         source,language,options=gen.parse_command(dict(command=[str(gen.SDK/'bin/win32/cl.exe'),
             '/c','/TC',str(gen.ROOT/'scratch/ship-utils-xdk/xdk/c_abi.i'),'/Foignored.obj']))

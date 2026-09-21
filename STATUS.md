@@ -3,7 +3,7 @@
 2026-09-21. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
 Translation/first genuine bring-up estimate: roughly 70% complete (50–75%
-uncertainty range). Selected application source coverage is 696/696 C and 135/398 C++ TUs,
+uncertainty range). Selected application source coverage is 696/696 C and 138/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -30,13 +30,20 @@ Latest integration work (earlier milestones below retain their historical scope)
 - Desktop permissions dialog is resolved; the user confirmed this. Supplied
   baserom.z64 has already produced a verified retail NTSC 1.0 modern archive.
 - Expanded main integration build passes: 1,536 selected PPC objects and all
-  source hashes verified in scratch/project-xdk/startup-state-verification.json.
+  source hashes verified in scratch/project-xdk/save-settings-verification.json.
   Full Logic and save states are included; the obsolete standalone Logic
   constructor is excluded. No modern XEX or native execution yet.
-- One agent is translating complete randomizer settings; root owns further
-  application/save integration. Other agents remain idle. The 263 remaining
-  application C++ implementations, speech backend, final linking and native
-  execution remain open; no placeholder link providers are supplied.
+- Full SaveManager.cpp now compiles: all 42 members, all 12 C bridges and all
+  serialization keys remain. Four named default temporaries fix an isolated XDK
+  EH backend crash without changing JSON/default values; actual string/JSON
+  fallback, type-error and 1,818 enum round-trip checks agree with upstream.
+- Full settings.cpp and option_descriptions.cpp compile, retaining 24 definitions,
+  all 383 initializer values, 44 callbacks, 323 CVars and modern option/trick
+  registrations. Full SaveManager/settings pass the main build, replacing their
+  earlier fragments. Two agents are now independently translating hints and
+  dungeon/trial implementations; root is working on genuine randomizer Context.
+- The 260 remaining application C++ implementations, speech backend, final linking
+  and native execution remain open; no placeholder link providers are supplied.
 
 - Exact release and all three submodules fetched and verified; pristine baseline
   recorded in UPSTREAM_BASELINE.md.

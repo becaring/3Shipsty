@@ -1,0 +1,14 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/settings.cpp": "f6e1e23f881554b40a7ec29cdda5fbf8321e767e786aec31cbc98e7aa04d56e2",
+    "soh/soh/Enhancements/randomizer/settings.h": "3a9ce8322ae1f3c7248e3a4fe19ff6d6e7770ddb3ef6e755dcf7e2450a3a639f",
+    "soh/soh/Enhancements/randomizer/option_descriptions.cpp": "734d8fa3de77cb6098276258dc87ff8b16ddfb75daa62c2f9e72ade11ac64551"
+  },
+  "dependencies": {
+    "soh/soh/Enhancements/randomizer/option.h": "cada67d2abff7b5fc3846684050ef694ef53ebbbc71539def67f1330f21b645a",
+    "soh/soh/Enhancements/randomizer/option.cpp": "22b9faaf970495335ae7912f404cdfa0381edf902217cf5069699258a14fdc6c",
+    "soh/soh/Enhancements/randomizer/tricks.h": "830334d5cefcf22eee58c6a956217f8d73d5a814705bff82dc4a39749303be6f"
+  }
+}

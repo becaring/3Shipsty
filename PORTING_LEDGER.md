@@ -21,6 +21,26 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-21, A/B/H/I: complete SaveManager.cpp compiles with all 42 members,
+  12 C bridges and every serialization key retained. Canonical raw legacy
+  conversion replaces the old raw-pointer parser; the existing decoder remains
+  separate. XDK ehexcept.c:971 was isolated to nontrivial default arguments in
+  nested LoadRandomizer callbacks (the diagnostic pointed at the next method).
+  Four scoped, named temporaries preserve exact string/JSON defaults and call
+  lifetime; removing SaveRandomizer or /Od did not fix the compiler failure.
+  Real load templates/array/structure methods agree for missing/nested values,
+  errors and all 1,818 valid numeric enum values. See save-manager/README.md.
+- Complete settings.cpp and option_descriptions.cpp compile against canonical
+  full declarations. All 24 definitions, 383 initializer values, 125 U8 options,
+  111 Boolean options, 193 trick registrations, 44 callbacks and 323 CVar
+  expressions remain. Constructor/list/description/numeric contracts agree;
+  actual callbacks/finalization need runtime validation. The main manifest
+  excludes superseded SaveSerialization, LegacyConversion and SettingsConstructor
+  fragments and tests guard against duplicate ownership. The full 1,536-item
+  project passes with all source/object hashes verified in
+  scratch/project-xdk/save-settings-verification.json (834 application units
+  selected, 260 C++ units pending). First-bring-up estimate remains roughly 70%.
+
 - 2026-09-21, A/B/C/D/E/F: complete OTRGlobals.cpp now compiles with its original
   function inventory, application initializer order and all resource factory
   registrations. Canonical full application/window/Item/AudioCollection headers

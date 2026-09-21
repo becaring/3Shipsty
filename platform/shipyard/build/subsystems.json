@@ -79,7 +79,9 @@
         "audio-collection",
         "randomizer-item",
         "randomizer-logic",
-        "savestates"
+        "savestates",
+        "save-manager",
+        "randomizer-settings"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -250,6 +252,12 @@
     ],
     "savestates": [
       "scratch/savestates-xdk/xdk/build.json"
+    ],
+    "save-manager": [
+      "scratch/save-manager-xdk/xdk/build.json"
+    ],
+    "randomizer-settings": [
+      "scratch/randomizer-settings-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -266,7 +274,10 @@
     "platform/shipyard/network/loopback.cpp": "Host transport/real Network validation only; not production",
     "scratch/application-gui-xdk/xdk/declarations.cpp": "Complete application window declarations probe; not production",
     "scratch/audio-collection-xdk/xdk/declarations.cpp": "Complete AudioCollection declarations and ABI probe; not production",
-    "scratch/randomizer-item-xdk/generated/LogicConstructor.cpp": "Superseded by full canonical randomizer-logic provider; exclude to avoid duplicate constructor"
+    "scratch/randomizer-item-xdk/generated/LogicConstructor.cpp": "Superseded by full canonical randomizer-logic provider; exclude to avoid duplicate constructor",
+    "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": "Superseded by complete randomizer-settings provider; exclude to avoid duplicate constructor",
+    "scratch/save-storage-xdk/generated/SaveSerialization.cpp": "Superseded by full modern SaveManager.cpp; native storage sources remain selected",
+    "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": "Audited conversion body is now incorporated in full SaveManager.cpp; retain LegacyDecode.cpp only"
   },
   "supplemental_sources": [
     {
