@@ -53,6 +53,11 @@ def project(name,text):
             text=text.replace('!'+owner+'.contains('+key+')',owner+'.find('+key+') == '+owner+'.end()')
             text=text.replace(owner+'.contains('+key+')',owner+'.find('+key+') != '+owner+'.end()')
         text=text.replace('Ship::Context::GetPathRelativeToAppDirectory("Save")','Shipyard::Storage::SaveDirectory()')
+        text=once(text,'Ship::Context::GetPathRelativeToAppDirectory("oot_save.sav")','Shipyard::LegacySave::Path()')
+        text=once(text,'Ship::Context::GetPathRelativeToAppDirectory("oot_save.bak")','Shipyard::LegacySave::BackupPath()')
+        text='#include "legacy-save/storage_path.h"\n'+text
+        text=once(text,'        ConvertFromUnversioned();\n        xbox_compat::filesystem::rename(sOldSavePath, sOldBackupSavePath);',
+                  '        if (xbox_compat::filesystem::exists(sOldBackupSavePath)) throw std::runtime_error("Legacy save backup already exists; preserve both files before importing");\n        ConvertFromUnversioned();\n        xbox_compat::filesystem::rename(sOldSavePath, sOldBackupSavePath);\n        Shipyard::Storage::Commit();')
         text=text.replace('std::ofstream(savePath,','std::ofstream(savePath.c_str(),').replace('std::ifstream(savePath,','std::ifstream(savePath.c_str(),')
         text=re.sub(r'(std::(?:i|o)fstream \w+\()((?:sGlobalPath|fileName|tempFile|GetFileName\(fileNum\)))\)',r'\1\2.c_str())',text)
         text=text.replace('std::vector<char> data(std::istreambuf_iterator<char>(input), {});','std::vector<char> data((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());')
@@ -91,6 +96,7 @@ def prepare():
     prefix='''#include "resources/runtime_support.h"
 #include "soh/SaveManager.h"
 #include "save-storage/save_support.h"
+#include "legacy-save/storage_path.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "OTRGlobals.h"

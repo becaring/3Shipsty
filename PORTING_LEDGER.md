@@ -21,6 +21,23 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-20: complete modern controller editor retains 41 functions, all 50
+  CVar expressions and seven search widgets. Actual state/value contracts and
+  native UTF-8 bytes pass. Full 1,526-item integration compilation includes its
+  production TU and the two explicit legacy conversion/decoder fragments.
+  Source/PPC object receipts: scratch/project-xdk/editor-legacy-verification.json.
+- Legacy conversion now reads the selected storage namespace, validates all
+  occupied slots before writing, preserves producer-order song durations and
+  uses unchanged CopyV0Save. 192 complete destination comparisons and 15,592
+  truncations pass. Existing backup refusal precedes conversion; synchronous
+  conversion/flush precedes backup rename/flush. Stricter damaged/ambiguous
+  input rejection is explicit in platform/shipyard/legacy-save/README.md.
+- Pinned release CI enables remote control. Complete modern Network.cpp and
+  actual XDK transport compile with the matching conditional class layout.
+  Nine loopback packets, fragmentation, malformed JSON, large input/output,
+  reconnect and joined shutdown pass. Native XNet/WSA startup must precede
+  resource/RNG initialization and cleanup must follow every consumer worker.
+  External/Xenia/hardware connectivity remains unverified; see network README.
 - 2026-09-20: release verified online and locally; see UPSTREAM_BASELINE.md.
 - Ruling: use ZAPDTR/OTRExporter selected by 9.2.3; Torch is absent from its
   gitlinks. Importing BattleShip's extraction architecture would violate source

@@ -1,0 +1,20 @@
+{
+  "upstream": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/SaveManager.cpp": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+    "soh/soh/SaveManager.h": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+    "soh/include/z64save.h": "6646cefc247380efe9a9fac15a67319172f8f6c5ca3571d6de7b6209b7f04585",
+    "soh/include/z64audio.h": "1483033ecfa71edd9429c9872c2edc84e44c5161dfab5652062b66a0eee45717"
+  },
+  "producer": {
+    "commit": "73ff7ef3dae83ec85afb20ec6453c69967bb0b96",
+    "files": {
+      "soh/include/z64save.h": "2ff93015f33b4bd2ff891a2d5e9f0a84bcdf3c7464e5a8f3073d41d83aff14a1",
+      "soh/include/z64math.h": "a7247d7712f208ffaf1ed13985a1e992f8e26efedba178e7b20853e7d9dbb76d",
+      "soh/include/z64audio.h": "237d40a89b6abf8dc4bb9d1c4dbc069cc1cb69c0f8880c0bcf1dfb9bba617045",
+      "soh/src/code/z_sram.c": "3bc690efac4cd75b9f33e7334b41fed1bd0cfe0b11e43d9dafc0a292a877e777",
+      "soh/src/code/z_ss_sram.c": "d7722a0956956a470750291c25260ec82e31b2671c29971d9ba90276c30193c1",
+      "libultraship/libultraship/Lib/Fast3D/U64/PR/ultra64/convert.h": "82c6b74e252653cde40be8cb49d9fad8599fd2f22a2d0ac577c975715d4f4ac6"
+    }
+  }
+}

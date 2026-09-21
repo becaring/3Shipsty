@@ -55,7 +55,9 @@
         "soh-ui",
         "soh-menus",
         "save-storage",
-        "randomizer-options"
+        "randomizer-options",
+        "soh-input-editor",
+        "legacy-save"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -197,6 +199,12 @@
     ],
     "randomizer-options": [
       "scratch/randomizer-options-xdk/xdk/build.json"
+    ],
+    "soh-input-editor": [
+      "scratch/soh-input-editor-xdk/xdk/build.json"
+    ],
+    "legacy-save": [
+      "scratch/legacy-save-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -243,6 +251,14 @@
     "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": {
       "source": "soh/soh/Enhancements/randomizer/settings.cpp",
       "scope": "Actual Settings constructor and in-place option/trick initialization only. Complete settings.cpp remains pending and must not redefine this constructor."
+    },
+    "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": {
+      "source": "soh/soh/SaveManager.cpp",
+      "scope": "Complete ConvertFromUnversioned method only; canonical SaveManager remains owner, other methods use separate fragments."
+    },
+    "scratch/legacy-save-xdk/generated/LegacyDecode.cpp": {
+      "source": "soh/soh/SaveManager.cpp",
+      "scope": "Unchanged CopyV0Save with explicit bounded producer-order decoding; not full application source coverage."
     }
   },
   "integration_gates": [

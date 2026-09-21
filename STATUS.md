@@ -3,7 +3,7 @@
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
 Translation/first genuine bring-up estimate: roughly 65–70% complete (50–75%
-uncertainty range). Selected application source coverage is 696/696 C and 127/398 C++ TUs,
+uncertainty range). Selected application source coverage is 696/696 C and 128/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -66,8 +66,18 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   four base loaders, worker drain and failure preservation pass. The fragment is
   explicitly partial; randomizer methods and legacy conversion are still pending.
   Device mounting, producer shutdown, worker join and configuration persistence
-  still need final startup integration. Controller editor and explicit legacy
-  conversion work are independent active tasks; option task is now idle.
+  still need final startup integration. The complete controller editor now
+  compiles with its original 41 functions and passes state/widget contracts.
+  Legacy conversion explicitly validates producer order before writes and
+  preserves existing backups. Both LE/BE decoder checks and 161 modern save
+  outputs pass. The expanded 1,526-item integration compilation passes; source
+  and PPC object hashes are in editor-legacy-verification.json. No target run.
+- Full release-enabled Network.cpp and native XDK transport compile; actual
+  host loopback passes framing, fragmented/coalesced data, reconnect and joined
+  shutdown. Full application remote handlers and XNet lifetime integration are
+  pending. GUI registration retains all 28 real windows and all 12 original
+  method bodies; 2,485 table rows match, but its full compile still needs the
+  canonical Item header. Item and AudioCollection are the two active subtasks.
 - All fifteen modern cheat units compile, including the real randomizer bombchu
   capacity path. Three object-extension units and both ActorDB/config-migration
   units compile. ShipInit, variadic cursors, owning any/registry and ActorDB

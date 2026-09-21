@@ -1,0 +1,11 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Network/Network.h": "632a00311c8386be7dee8f04513cbb0f8e9d8795fe4d78624608dfd0a05ba0ca",
+    "soh/soh/Network/Network.cpp": "6a7391ee9fdd8546a97659145951dee2879acd52a98a5798e0a7d87ae381370a",
+    "soh/soh/Network/CrowdControl/CrowdControl.h": "4ebbfb2f63eda2328a03604f1026c17bfe2acb9f24e93a02b8b72f72aca008ba",
+    "soh/soh/Network/Sail/Sail.h": "576d21cc5d4a5d9f3f457148387e176c8b2303cbb48a3e0d934be8780e404307",
+    "soh/soh/Network/Anchor/Anchor.h": "6102fd5325f3c22f9d210b814a51ca296e04808bc307d8cf4e6dd1d970ed4b17",
+    ".github/workflows/generate-builds.yml": "a94b299cfa4b5a913f684156d482024c6c21d63e93e1c083cc926a676e397445"
+  }
+}

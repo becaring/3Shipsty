@@ -88,7 +88,7 @@ Offsets below are relative to the named structure. Nested bases are in the SaveC
 
 Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc`.
 
-### ItemEquips_v0 — size 0xA, alignment 2
+### ItemEquips_v0 â€” size 0xA, alignment 2
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -96,7 +96,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0004` | `cButtonSlots` | `u8[3]` | 3 |
 | `0x0008` | `equipment` | `u16` | 2 |
 
-### Inventory_v0 — size 0x60, alignment 4
+### Inventory_v0 â€” size 0x60, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -110,7 +110,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x005B` | `defenseHearts` | `s8` | 1 |
 | `0x005C` | `gsTokens` | `s16` | 2 |
 
-### SavedSceneFlags_v0 — size 0x1C, alignment 4
+### SavedSceneFlags_v0 â€” size 0x1C, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -122,7 +122,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0014` | `rooms` | `u32` | 4 |
 | `0x0018` | `floors` | `u32` | 4 |
 
-### Vec3i_v0 — size 0xC, alignment 4
+### Vec3i_v0 â€” size 0xC, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -130,7 +130,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0004` | `y` | `s32` | 4 |
 | `0x0008` | `z` | `s32` | 4 |
 
-### FaroresWindData_v0 — size 0x28, alignment 4
+### FaroresWindData_v0 â€” size 0x28, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -143,7 +143,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0020` | `tempSwchFlags` | `s32` | 4 |
 | `0x0024` | `tempCollectFlags` | `s32` | 4 |
 
-### Vec3s_v0 — size 0x6, alignment 2
+### Vec3s_v0 â€” size 0x6, alignment 2
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -151,7 +151,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0002` | `y` | `s16` | 2 |
 | `0x0004` | `z` | `s16` | 2 |
 
-### HorseData_v0 — size 0xA, alignment 2
+### HorseData_v0 â€” size 0xA, alignment 2
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -159,7 +159,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0002` | `pos` | `Vec3s_v0` | 6 |
 | `0x0008` | `angle` | `s16` | 2 |
 
-### Vec3f_v0 — size 0xC, alignment 4
+### Vec3f_v0 â€” size 0xC, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -167,7 +167,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0004` | `y` | `f32` | 4 |
 | `0x0008` | `z` | `f32` | 4 |
 
-### RespawnData_v0 — size 0x1C, alignment 4
+### RespawnData_v0 â€” size 0x1C, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -180,7 +180,7 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x0014` | `tempSwchFlags` | `u32` | 4 |
 | `0x0018` | `tempCollectFlags` | `u32` | 4 |
 
-### SaveContext_v0 — size 0x1428, alignment 4
+### SaveContext_v0 â€” size 0x1428, alignment 4
 
 | Offset | Field | Type | Bytes |
 |---|---|---|---:|
@@ -296,3 +296,9 @@ Pinned SaveManager.cpp SHA-256: `7fe420b55cd0679069eb7f484b386b45910b5fff7fe227c
 | `0x1420` | `worldMapArea` | `s16` | 2 |
 | `0x1422` | `sunsSongState` | `s16` | 2 |
 | `0x1424` | `healthAccumulator` | `s16` | 2 |
+
+## Implementation addendum
+
+The bounded audit has now been implemented independently in `platform/shipyard/legacy-save` with `tools/shipyard/prepare_legacy_save.py` and `test_legacy_save.py`. Full ConvertFromUnversioned and the generated decoder compile for native PPC; the actual unchanged CopyV0Save matches 192 complete modern destination objects against actual historical-producer fixtures in LE and synthesized BE. Reader checks include every 16-bit pattern and 15,592 truncated lengths. The implementation normalizes song durations before the unchanged upstream memcpy, rather than overriding destination notes afterward. It performs stricter checksum/marker/order validation explicitly and preserves unknown input by throwing before writes. The historical producer's OS_K1_TO_PHYSICAL macro was independently verified as `(0)` in its locked libultraship convert.h.
+
+The owning generator must still bind Init's existence/read/rename to the supplied selected-storage Path/BackupPath and commit the successful backup rename. The isolated method already flushes real modern outputs before returning. See the module README for precise integration and the remaining full-application/XContent runtime validation limits.

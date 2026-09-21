@@ -18,6 +18,15 @@ def main():
         return result
     original=(ROOT/'soh/soh/SaveManager.cpp').read_text();projected_source=(OUT/'generated/soh/soh/SaveManager.cpp').read_text()
     assert keys(original)==keys(projected_source),'serialized keys changed'
+    init=methods(projected_source)['Init']
+    ordered=['Shipyard::LegacySave::Path()', 'Shipyard::LegacySave::BackupPath()',
+             'if (xbox_compat::filesystem::exists(sOldSavePath))',
+             'if (xbox_compat::filesystem::exists(sOldBackupSavePath)) throw',
+             'ConvertFromUnversioned();', 'xbox_compat::filesystem::rename(sOldSavePath, sOldBackupSavePath);',
+             'Shipyard::Storage::Commit();']
+    positions=[init.index(s) for s in ordered]
+    assert positions==sorted(positions),'Legacy path/validation/publication order changed'
+    assert 'catch' not in init[positions[3]:positions[-1]],'Import failure must not fall through to backup'
     for projected in (False,True):
         folder=OUT/('host-projected' if projected else 'host-original');folder.mkdir(exist_ok=True)
         base=OUT/'generated' if projected else ROOT
