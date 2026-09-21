@@ -1,5 +1,52 @@
 # Deterministic Xbox source/project inventory
 
+Current integration (2026-09-21): all 1,094 application TUs are selected. Sixteen
+desktop/mobile backends have explicit Xbox replacement decisions; unchanged
+upstream stox.cpp is included directly. The historical checkpoints below retain
+their original scope. The complete build and genuine link run through:
+
+```powershell
+C:/Python313/python.exe -B tools/shipyard/build_xdk_project.py
+C:/Python313/python.exe -B tools/shipyard/link_xdk_application.py
+```
+
+The build wrapper invokes the ordinary generated MSBuild compile target and
+verifies current source hashes and PPC object headers/hashes only on success.
+It also records the owned headers actually consumed in MSBuild's compiler read
+log; linking rejects changed headers or a changed project configuration.
+The link refuses missing application/platform decisions or stale verified inputs.
+All application objects are linked directly to preserve registration initializers;
+LUS/platform/dependencies use ordinary Shipyard.lib archive extraction. This
+retains the pinned application's ownership of the five os_pi/os_cache overlap
+symbols. No whole-archive, unresolved-symbol override, replacement entry point
+or old game object is supplied. The actual generated modern main.c owns startup.
+
+Canonical header-provider rules place the complete Window and Gui declarations
+ahead of earlier standalone-stage copies. The only observed differences were
+nonvirtual constructor helpers, but using one declaration avoids divergent class
+definitions across the genuine combined application.
+
+XDK link and ImageXex produce 3Shipsty.exe/.map/.pdb/.xex in
+scratch/link-integration only when their real tools succeed. The development
+title ID 0x534F4809 separates the modern target's storage namespace from the
+private donor's 0x534F4804. The 4 MiB stack and XDK graphics/audio/network
+libraries follow the working donor link configuration. Every command/exit is
+recorded in link-verification.json. Artifact production is not execution proof.
+
+The `build-metadata` recipe configures the actual pinned `soh/src/boot/build.c.in`
+using version/team values parsed from the pinned root CMakeLists.txt. It supplies
+the ten real build globals through a generated C translation unit, with no edit
+to upstream. Classification I (CMake configuration outside the XDK build); this
+generator is application-specific. Its only type substitution is libultra u16
+to uint16_t. Build date uses SOURCE_DATE_EPOCH, otherwise the port commit's UTC
+timestamp. Re-run `prepare_build_metadata.py` after creating a new checkpoint
+before building a package so the displayed commit identifies that checkpoint.
+
+The `crt` recipe provides the four genuinely missing C runtime functions using
+two generic Shipyard sources; preserve its `/fp:strict` option and exclude its
+host contract source. See `platform/shipyard/crt/README.md` for semantics and
+evidence. These sources and configured metadata are ordinary production objects.
+
 `tools/shipyard/generate_xdk_project.py` emits an ordinary inspectable Visual
 Studio/XDK project and a complete source coverage manifest below
 `scratch/project-xdk`. It does not run projection scripts, copy donor sources,

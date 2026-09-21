@@ -84,5 +84,14 @@ def main():
     for row in native:
         assert not row['exit'],row['path'];assert row['source_sha256']==hashlib.sha256((ROOT/row['source']).read_bytes()).hexdigest(),row['path']
         assert row['object_sha256']==hashlib.sha256((ROOT/row['object']).read_bytes()).hexdigest()
+    # The XDK lambda used to turn redundant block-scope declarations in the
+    # display macros into C++ imports. Verify the actual complete object imports
+    # the real C implementations, rather than supplying duplicate wrappers.
+    file_select=next(row for row in native if row['path'].endswith('/FileSelectMoreInfo.cpp'))
+    symbols=subprocess.check_output(['C:/Program Files (x86)/Microsoft Xbox 360 SDK/bin/win32/dumpbin.exe',
+                                     '/symbols',str(ROOT/file_select['object'])],text=True)
+    for name in ('FrameInterpolation_RecordOpenChild','FrameInterpolation_RecordCloseChild'):
+        references=[line.split('|',1)[1].strip() for line in symbols.splitlines() if 'UNDEF' in line and name in line]
+        assert references==[name],references
     stable(OUT/'verification.json',json.dumps(dict(inventories=inventories,host=rows,native=native,native_gameplay_executed=False),indent=2)+'\n');print('All 89 source inventories and six original/projected contracts pass.')
 if __name__=='__main__':main()

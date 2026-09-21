@@ -32,6 +32,13 @@ class ProjectTests(unittest.TestCase):
         self.assertFalse(any(r['status']=='excluded' for r in app))
         self.assertFalse(self.manifest['final_application_ready'])
 
+    def test_real_metadata_and_crt_providers(self):
+        selected={r['source']:r for r in self.manifest['sources']}
+        self.assertEqual(selected['scratch/build-metadata-xdk/build.c']['language'],'c')
+        for name in ('float.cpp','format.cpp'):
+            self.assertIn('platform/shipyard/crt/'+name,selected)
+        self.assertNotIn('platform/shipyard/crt/contract.cpp',selected)
+
     def test_new_source_is_pending_and_removed_projection_detectable(self):
         files = self.manifest['coverage'] + [dict(path='soh/soh/NewFeature.cpp',role='application')]
         updated = gen.coverage(files, self.manifest['sources'])
@@ -50,6 +57,16 @@ class ProjectTests(unittest.TestCase):
             gen.coverage([app],[],{app['path']:{'reason':'Invalid exclusion'}})
         self.assertTrue(any(r['upstream_source']=='libultraship/src/ship/utils/stox.cpp' for r in self.manifest['sources']))
 
+    def test_complete_owner_headers_precede_earlier_declarations(self):
+        policies=json.loads(gen.CONFIG.read_text())['canonical_header_providers']
+        for row in self.manifest['sources']:
+            if row['language']!='cpp':continue
+            for policy in policies:
+                a='/I$(ShipyardRoot)/'+policy['root'];b='/I$(ShipyardRoot)/'+policy['earlier_root']
+                if b in row['options']:
+                    self.assertIn(a,row['options'])
+                    self.assertLess(row['options'].index(a),row['options'].index(b))
+
     def test_compile_contract(self):
         self.assertNotIn('scratch/graphics-xdk/cc_features.cpp', {r['source'] for r in self.manifest['sources']})
         for r in self.manifest['sources']:
@@ -57,6 +74,7 @@ class ProjectTests(unittest.TestCase):
             self.assertNotIn('/tests/', r['source'])
             self.assertFalse(r['source'].startswith('tools/'))
             self.assertFalse(r['source'].endswith(('contract.cpp','xdk_abi.cpp')))
+            self.assertFalse(r['source'].endswith('/xdk/declarations.cpp'))
             if r['language']=='cpp':
                 self.assertIn('/GR',r['options']);self.assertIn('/TP',r['options'])
                 self.assertNotIn('/TC',r['options'])

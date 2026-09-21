@@ -1,14 +1,20 @@
 # 3Shipsty status
 
-2026-09-21. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
+2026-09-21. **Resumed at user request: fix the 16 symbols and proceed.**
+Forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
+The previous stopped-state checkpoint is recorded in [HANDOFF.md](HANDOFF.md).
+Last committed checkpoint: `c0e0343406cda289762ff1b892239a62796ec041`.
+Uncommitted link fixes are preserved and listed in the handoff.
 
-First genuine bring-up estimate: roughly 60–65% complete, with considerable
-uncertainty. The earlier 70% estimate weighted compilation too heavily before
-linking or native execution. Selected application source coverage is now 696/696 C and 398/398 C++ TUs.
-All completed application batches pass individual XDK compilation and focused
-translation checks; the complete combined build/link is still being verified. This
+First genuine bring-up estimate: roughly 70% complete, with considerable
+uncertainty until actual gameplay. Selected application source coverage is now
+696/696 C and 398/398 C++ TUs.
+The refreshed complete combined build passed with 1,836 verified PPC objects.
+All 16 unresolved symbols are closed: genuine application link and ImageXex
+both returned zero. The 45,834,240-byte XEX starts its guest main thread in Xenia,
+but a captured startup exception prevents UI/gameplay. This
 estimate includes required integration and first execution; it does not measure
-the complete polished-port effort or imply that a modern XEX has run. Update
+the complete polished-port effort or imply that gameplay works. Update
 this first-bring-up estimate in meaningful milestone reports as requested.
 Remaining work is being grouped by complete application subsystems; individual
 compile units remain internal evidence rather than user-facing milestones.
@@ -19,16 +25,23 @@ Latest integration work (earlier milestones below retain their historical scope)
   extras, seed generation, randomizer hooks/trackers and speech pass individual
   XDK compilation and focused original/projected checks. The complete source
   manifest now selects every one of the 1,094 pinned application TUs, plus real
-  LUS/dependencies/platform providers (1,834 production objects in total).
-  Ten inventory checks pass; no unresolved platform source selections remain.
+  LUS/dependencies/platform providers (1,836 production objects in total).
+  Twelve inventory checks pass; no unresolved platform source selections remain.
 - Real OTRGlobals now selects Xbox speech ahead of desktop SAPI, destroys the
   concrete speech worker/voices safely, and joins unfinished seed generation
   before teardown. Full startup compiles and five boundary checks pass. Speech's
   six tests and all 35 randomizer application source/object checks pass.
-- All subagents have finished and are idle. Combined release compilation is
-  still running (large data-table optimization is slow); no complete-build,
-  link or XEX execution milestone is claimed. Last verified main receipt remains
-  the 1,570-object application-core build. Link integration is being prepared.
+- Full production compilation and linking pass. Metadata, four CRT providers and
+  interpolation linkage are integrated and verified; CRT review/root tests passed.
+- First Xenia run faults while copying the real conditionalAlwaysHints callback
+  table during static initialization. Generated source has twelve entries; XDK
+  optimized assembly initializes only three. A generated ordered-construction
+  adaptation is under verification. Startup/UI/resources/gameplay remain unproven.
+- Retail NTSC 1.0 archives and speech data are staged in scratch/runtime/3Shipsty.
+  Build evidence, exact dirty files and resume steps are in HANDOFF.md.
+
+Historical milestones below describe their state at the time and are superseded
+by the current summary above.
 
 - Full scene/message/resource bridges, GBI wrappers, notifications, utilities
   and crash context pass the main XDK build: 1,570 production objects verified

@@ -74,6 +74,17 @@ def parse_command(record):
     return source, language, options
 
 
+def canonical_headers(options, policies):
+    # Earlier standalone stages emitted declarations before constructor helpers
+    # were introduced. Production consumes the complete owner declaration even
+    # when a consumer's original compile recipe predates that owner.
+    for policy in policies:
+        canonical='/I$(ShipyardRoot)/'+policy['root']
+        shadow='/I$(ShipyardRoot)/'+policy['earlier_root']
+        if shadow in options and canonical not in options:
+            options.insert(options.index(shadow),canonical)
+
+
 def upstream_for(source, record, known):
     if source in known:
         return source
@@ -161,6 +172,7 @@ def collect(config=None):
                 if parsed is None:
                     continue
                 source, language, options = parsed
+                if language=='cpp':canonical_headers(options,config.get('canonical_header_providers',[]))
                 reason = config['production_exclusions'].get(source)
                 if source.startswith('tools/') or '/tests/' in source:
                     reason = 'Contract/test source, outside the production source set'

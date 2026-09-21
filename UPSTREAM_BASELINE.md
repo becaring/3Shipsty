@@ -52,3 +52,12 @@ hashes are under `platform/shipyard/json/source-authority.json`. Logging's
 explicit spdlog/fmt selections are recorded in its separate dependency-lock.
 These added pins do not alter any release gitlink. PC asset provenance and
 9.2.3 archive hashes are in `porting/ASSET_BASELINE.md`.
+
+The Xbox speech provider adds official eSpeak NG **1.52.0**, commit
+`4870adfa25b1a32b4361592f1be8a40337c58d6c`, from
+https://github.com/espeak-ng/espeak-ng. This is a port-added GPL-3.0-or-later
+runtime dependency, not an upstream Shipwright gitlink. Its official build-time
+Sonic dependency is pinned to `fbf75c3d6d846bad3bb3d456cbc5d07d9fd8c104` from
+https://github.com/waywardgeek/sonic and is not linked into the Xbox runtime.
+`platform/shipyard/speech/README.md` records source/configuration provenance,
+native data boundaries, source-distribution obligations and PC data packaging.

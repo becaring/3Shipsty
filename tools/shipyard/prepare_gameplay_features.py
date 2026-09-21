@@ -16,6 +16,8 @@ def project(name,text):
         text=once(text,'enum class IndexDirection {','enum IndexDirection {')
         return text
     text=text.replace('overrideBlueWarpDestinations','shipyard_original_overrideBlueWarpDestinations')
+    if name.endswith('/FileSelectMoreInfo.cpp'):
+        text=once(text,'#include "macros.h"','#include "gameplay-features/interpolation_scope.h"')
     lowering=runpy.run_path(str(ROOT/'platform/shipyard/input/lowering.py'))
     text=lowering['pair_bindings'](text.encode()).decode()
     raw=text.encode();edits=[]
@@ -152,6 +154,19 @@ def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());outputs={}
     for name,digest in lock.get('dependencies',{}).items():
         if sha((ROOT/name).read_text(encoding='utf-8-sig'))!=digest:raise ValueError('Gameplay dependency source drift '+name)
+    macros=(ROOT/'soh/include/macros.h').read_text(encoding='utf-8-sig')
+    start=macros.index('#ifndef NDEBUG\n#define OPEN_DISPS')
+    scope=macros[start:macros.index('// #endregion',start)]
+    for declaration in ('void FrameInterpolation_RecordOpenChild(const void* a, int b);',
+                        'void FrameInterpolation_RecordCloseChild(void);'):
+        assert scope.count(declaration)==2
+        scope=scope.replace(declaration,'')
+    # XDK loses C linkage for a block-scope declaration inside a lambda. Use
+    # the actual namespace-scope C declarations; retain both original macro
+    # bodies, including recording, debug scopes, source location and ordering.
+    scope='#pragma once\n#include "macros.h"\n#include "soh/frame_interpolation.h"\n#undef OPEN_DISPS\n#undef CLOSE_DISPS\n'+scope
+    stable(OUT/'generated/soh/gameplay-features/interpolation_scope.h',scope)
+    outputs['soh/gameplay-features/interpolation_scope.h']=sha(scope)
     for name,digest in lock['sources'].items():
         text=(ROOT/name).read_text(encoding='utf-8-sig')
         if sha(text)!=digest:raise ValueError('Gameplay feature source drift '+name)

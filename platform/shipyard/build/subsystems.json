@@ -324,6 +324,12 @@
     ],
     "speech-engine": [
       "scratch/speech-xdk/xdk-engine/build.json"
+    ],
+    "build-metadata": [
+      "scratch/build-metadata-xdk/xdk/build.json"
+    ],
+    "crt": [
+      "scratch/crt-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -345,7 +351,8 @@
     "scratch/save-storage-xdk/generated/SaveSerialization.cpp": "Superseded by full modern SaveManager.cpp; native storage sources remain selected",
     "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": "Audited conversion body is now incorporated in full SaveManager.cpp; retain LegacyDecode.cpp only",
     "scratch/randomizer-hints-xdk/xdk/declarations.cpp": "Full Hint and variant declarations ABI probe; not production",
-    "scratch/randomizer-hints-xdk/generated/StaticHintInfo.cpp": "Superseded by complete modern hints.cpp from randomizer-generation; preserve exactly one StaticHintInfo/HintText implementation."
+    "scratch/randomizer-hints-xdk/generated/StaticHintInfo.cpp": "Superseded by complete modern hints.cpp from randomizer-generation; preserve exactly one StaticHintInfo/HintText implementation.",
+    "scratch/randomizer-generation-xdk/xdk/declarations.cpp": "Native generation class-layout/template probe (GenerationABI and GenerationTemplateProbe); never production application code."
   },
   "supplemental_sources": [
     {
@@ -479,5 +486,17 @@
       "reason": "Actual XboxSpeechSynthesizer uses static eSpeak NG and XAudio2 behind the original speech interface; OTRGlobals selects it before desktop branches.",
       "evidence": "platform/shipyard/speech/README.md"
     }
-  }
+  },
+  "canonical_header_providers": [
+    {
+      "root": "scratch/window-xdk/generated/include",
+      "earlier_root": "scratch/configuration-xdk/generated/include",
+      "reason": "Complete Window declaration includes the canonical constructor helper."
+    },
+    {
+      "root": "scratch/gui-xdk/generated/include",
+      "earlier_root": "scratch/window-xdk/generated/include",
+      "reason": "Complete Gui declaration includes the canonical constructor helper."
+    }
+  ]
 }

@@ -863,7 +863,7 @@ and hook behavior remain. This lifecycle change is not yet runtime validated.
 All 696 C and 398 C++ application TUs now have complete selected production
 providers. Individually verified batches include all enhancements, network
 packets, randomizer content/regions/generation/hooks/trackers, application extras
-and speech. The deterministic manifest contains 1,834 production objects, with
+and speech. The deterministic manifest contains 1,833 production objects, with
 16 explicit desktop/mobile platform decisions; unmodified upstream stox.cpp
 closes the remaining generic LUS utility gap. No application TU is excluded.
 The combined release build is still running, so this is not a full-project
@@ -891,3 +891,62 @@ object directly and preserves ordinary LUS/dependency archive extraction; it
 supplies no replacement entry point, forced unresolved symbols or donor game
 objects. They are awaiting full combined execution. First-bring-up estimate
 remains about 60–65%, uncertain until linking and real runtime evidence.
+
+## 2026-09-21 - user-requested stop and handoff
+
+Stopped at the user's explicit request. See HANDOFF.md for the complete resume
+record. Last commit: c0e0343406cda289762ff1b892239a62796ec041; uncommitted fixes
+are preserved separately and are not represented as a verified checkpoint.
+
+Full combined XDK compilation passed: 1,833 production PPC objects, all 1,094
+application translation units selected, eleven inventory checks passing. Genuine
+linking failed with 16 unresolved symbols: ten generated build metadata globals,
+four CRT functions and two interpolation references with incorrect C++ linkage.
+No modern XEX or application execution has occurred. First bring-up estimate is
+about 65%, with runtime uncertainty.
+
+Uncommitted metadata generator compiles the actual upstream template and verifies
+native version fields. Interpolation macro projection preserves the original
+macro bodies while eliminating block-scope declarations that confuse XDK lambda
+linkage; its standalone rebuild completed 89/89 units. CRT agent was interrupted;
+its standalone host/native receipts exist but implementation review and integration
+remain. No combined build or link verifies these latest changes. The earlier
+complete receipt must be refreshed after source regeneration.
+
+Runtime retail NTSC 1.0 O2R archives and speech data are staged. All agents are
+completed or interrupted; no new builds or fixes were started after the stop.
+Reference trees and upstream application sources remain untouched. Resume steps,
+commands, evidence and uncommitted file inventory are recorded in HANDOFF.md.
+## 2026-09-21 - resumed link closure
+
+User requested fixing all 16 unresolved symbols and continuing real bring-up.
+The generated metadata provider and two generic CRT production sources are now
+selected by the inspectable manifest. A new inventory check first failed because
+the metadata recipe was absent, then all 12 checks passed after integration.
+Metadata native version/string fields pass. CRT root rerun passes 1,273,868 float
+cases across all rounding modes and 66,950 formatting cases; SDK sources establish
+the control-word mapping and formatting boundary. Preserve /fp:strict.
+
+The complete FileSelectMoreInfo native object now imports the actual unmangled C
+interpolation symbols. The focused gameplay test checks that object linkage and
+all 89 full source inventories/six original-projected contracts pass. This is an
+H-class XDK block-scope declaration/lambda linkage adaptation, preserving both
+original display macro bodies through generated source. No duplicate interpolation
+implementations are supplied. Combined build/link verification is underway.
+## 2026-09-21 - genuine application link achieved; runtime startup fault
+
+Fresh combined build verified 1,836 production PPC objects. All 1,094 application
+TUs remain selected. Genuine link and ImageXex returned zero: 3Shipsty.xex is
+45,834,240 bytes, SHA256 3b6d82d9c29c4fe2787bd61a6da9d5758b8abd5b4fc2c763d272dad5f67f4fe0.
+All sixteen previous symbols are resolved without suppressing unresolved symbols.
+The exact prior failure is preserved in scratch/link-integration/before-symbol-closure.
+Retail archives and speech data accompany the staged XEX. This is no gameplay claim.
+
+Initial Xenia run pauses on an invalid read during conditionalAlwaysHints static
+initialization. Noninvasive debugger captures under scratch/runtime/xenia map the
+fault to hints.cpp vector<pair<RandomizerCheck,function<bool()>>> copy. Actual source
+contains all twelve lambdas, but /O2 native GenerationList56 initializes only three
+array elements then copies twelve. This is an H compiler-codegen defect at the
+initializer-list projection boundary. Ordered named-element construction is being
+verified; original callbacks/order/predicates are preserved. No game path bypass.
+First-bring-up engineering estimate remains around 70% pending runtime correctness.
