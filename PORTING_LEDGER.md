@@ -506,3 +506,29 @@ tests were observed failing before implementation, then passing.
   enabled. The early isolated decoder object is excluded from final composition
   because the full interpreter owns the same symbol. No feature was disabled to
   obtain the generated project or successful GUI compile.
+
+### 2026-09-20: Combined runtime compilation and complete sample decoders
+
+- All 737 selected runtime/dependency units compile together through the generated
+  XDK project; unique output objects verify as PPC BE. Evidence is
+  scratch/project-xdk/runtime-integration-verification.json. All 696 application
+  C units were regenerated and recompiled with INCLUDE_MPQ_SUPPORT and
+  SPDLOG_ACTIVE_LEVEL=0; no lost preprocessor branches were repaired with late flags.
+- Complete AudioSample type/factory adds two application TUs and every real codec
+  branch. Exact upstream dr_libs is pinned; system Vorbis is explicitly pinned to
+  v1.3.7, with all 22 source units mechanically compiled for XDK. Encoded bytes
+  remain untouched. Vorbis output requests native PCM order because the genuine
+  CODEC_S16 mixer reads copied bytes as native signed 16-bit values.
+- Actual original/projected binary and codec-worker tests agree, digest
+  10424164288805436507; 8,192-frame PCM fixture, four codecs, both serialized
+  orders and opposite Vorbis byte orders. Host XML Context acquisition is outside
+  this audit; its complete native method remains. See audio-verification.json.
+- Generic Shipyard detached worker preserves callable ownership, real concurrency,
+  creation-error propagation and termination on uncaught exceptions. Original
+  std::thread comparison passes lifetime, 1,000 fast completions and exception
+  subprocess checks. Existing upstream early decoder-buffer publication remains
+  a runtime audit item, not a silently altered application behavior.
+- Resource inventory is now 79 complete TUs; current application coverage is
+  696 C plus 80 C++. The generated manifest contains 1,458 production compile
+  items, with 318 application C++ units still explicitly pending. Estimate stays
+  64% (50–70% range); no modern link, startup or gameplay claim.

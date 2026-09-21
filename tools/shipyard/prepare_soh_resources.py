@@ -97,6 +97,25 @@ def transform(name, text):
         text = once(text, 'using Resource::Resource;', 'AudioSample(std::shared_ptr<Ship::ResourceInitData> initData) : Ship::Resource<Sample>(initData), tuning(-1.0f) {}')
         text = once(text, 'AudioSample() : Resource(std::shared_ptr<Ship::ResourceInitData>())', 'AudioSample() : Resource(std::shared_ptr<Ship::ResourceInitData>()), tuning(-1.0f)')
         text = once(text, 'float tuning = -1.0f;', 'float tuning;')
+    if name.endswith('/AudioSampleFactory.cpp'):
+        text='#include "async/detached.h"\n#include "soh-resources/format.h"\n#include <ship/utils/binarytools/endianness.h>\n'+text
+        text=once(text,'#include "z64.h"','// Only the actual codec/medium declarations are needed from game audio headers.')
+        text=once(text,'#include "z64audio.h"','#include "soh/resource/audio_enums.h"')
+        match=re.search(r'typedef enum class OggType \{(.*?)\} OggType;',text,re.S)
+        if not match:raise ValueError('Ogg type inventory drift')
+        text=once(text,match[0],strong_enum('OggType',match[1]))
+        text=once(text,'switch (GetOggType(&fileData))','switch (GetOggType(&fileData).GetValue())')
+        text=text.replace('[[maybe_unused]] ','').replace('snprintf(', 'Shipyard::SohResources::snprintf(')
+        text,count=re.subn(r'(?m)^(\s*)\.(data|pos|size) = ',r'\1',text)
+        if count!=3:raise ValueError('Ogg file-data initializer drift')
+        for worker,args in [('Mp3','audioSample, sampleFile'),('Flac','audioSample, sampleFile'),('Ogg','audioSample, sampleFile, initData')]:
+            text=once(text,'std::thread fileDecoderThread = std::thread('+worker+'DecoderWorker, '+args+');\n            fileDecoderThread.detach();',
+                      'Shipyard::Async::launch_detached(['+args+']() { '+worker+'DecoderWorker('+args+'); });')
+        # The mixer consumes native int16 PCM: aLoadBuffer copies bytes directly
+        # into the native signed-sample array. Only Vorbis requests an explicit
+        # byte order; dr_* decode APIs already produce native signed samples.
+        text=once(text,'ov_read(&vf, dataBuff, 4096, 0, 2, 1, &bitStream)',
+                  'ov_read(&vf, dataBuff, 4096, Ship::Endianness::Native == Ship::Endianness::Big ? 1 : 0, 2, 1, &bitStream)')
     if name.endswith('/AudioSequenceFactory.cpp'):
         text = re.sub(r'static_assert\((std::is_fundamental[^;]+)\);', r'static_assert(\1, "Instruction arguments must be fundamental");', text)
         text = text.replace('constexpr ', 'const ').replace('0b11', '3')
@@ -152,7 +171,8 @@ def prepare(source_root=ROOT, output=OUT / 'generated'):
 def includes(projected):
     resources = runpy.run_path(str(ROOT / 'tools/shipyard/tests/test_resources.py'))
     base = OUT / 'generated' if projected else ROOT
-    paths = [base / 'soh', verified('tinyxml2'), ROOT / 'soh/include', ROOT / 'soh']
+    paths = [base / 'soh', verified('tinyxml2'), verified('dr-libs'), ROOT/'scratch/vorbis-xdk/source/include',
+             ROOT/'scratch/codec-xdk/include', ROOT / 'soh/include', ROOT / 'soh']
     if projected:
         paths += [ROOT / 'scratch/fast3d-xdk/generated/include', ROOT / 'platform/shipyard/game/include',
                   ROOT / 'scratch/console-variables-xdk/generated/include', ROOT / 'scratch/audio-xdk/generated/include',
@@ -163,7 +183,9 @@ def includes(projected):
 def units(base):
     return [Path(base) / 'soh/soh/resource' / folder / (n + suffix + '.cpp')
             for n in NAMES for folder, suffix in (('type', ''), ('importer', 'Factory'))] + [
-                Path(base) / 'soh/soh/resource/logging/PathLogger.cpp'] + scene_units(base)
+                Path(base) / 'soh/soh/resource/logging/PathLogger.cpp',
+                Path(base) / 'soh/soh/resource/type/AudioSample.cpp',
+                Path(base) / 'soh/soh/resource/importer/AudioSampleFactory.cpp'] + scene_units(base)
 
 
 def scene_units(base):
@@ -173,17 +195,18 @@ def scene_units(base):
                 Path(base) / 'soh/soh/resource/logging/SceneCommandLoggers.cpp']
 
 
-def build(scene_only=False):
+def build(scene_only=False,sample_only=False):
     prepare()
     folder = OUT / 'xdk'; folder.mkdir(parents=True, exist_ok=True)
     sdk = Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    flags = ['/nologo', '/c', '/TP', '/EHsc', '/GR', '/MT', '/D_XBOX', '/D_XBOX_VER=200', '/DNOMINMAX',
+    flags = ['/nologo', '/c', '/TP', '/EHsc', '/GR', '/MT', '/D_XBOX', '/D_XBOX_VER=200', '/DNOMINMAX','/DF3DEX_GBI_2','/DINCLUDE_MPQ_SUPPORT','/DCONTROLLERBUTTONS_T=uint32_t',
              '/DSPDLOG_ACTIVE_LEVEL=0', '/I' + str(sdk / 'include/xbox')]
     flags += ['/FI' + str(ROOT / 'scratch/configuration-xdk/generated/include/compile_definitions.h')]
     flags += ['/I' + str(p) for p in includes(True)]
     records = []
     sources = units(OUT / 'generated') if not scene_only else scene_units(OUT / 'generated') + [
         OUT / 'generated/soh/soh/resource/type/Scene.cpp', OUT / 'generated/soh/soh/resource/importer/SceneFactory.cpp']
+    if sample_only:sources=[p for p in units(OUT/'generated') if p.stem in ('AudioSample','AudioSampleFactory')]+[ROOT/'platform/shipyard/async/detached.cpp']
     for source in sources + [OWN / 'xdk_abi.cpp']:
         obj = folder / (source.stem + '.obj')
         command = [str(sdk / 'bin/win32/cl.exe')] + flags + [str(source), '/Fo' + str(obj)]
@@ -194,7 +217,7 @@ def build(scene_only=False):
                             object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest() if not result.returncode else None))
         if not result.returncode and struct.unpack_from('<H', obj.read_bytes())[0] != 0x1f2:
             raise ValueError('Not a Xenon object')
-    stable(folder / ('scene-build.json' if scene_only else 'build.json'), json.dumps(records, indent=2) + '\n')
+    stable(folder / ('sample-build.json' if sample_only else 'scene-build.json' if scene_only else 'build.json'), json.dumps(records, indent=2) + '\n')
     for row in records: print(str(row['exit']) + ' ' + row['source'])
     if any(r['exit'] for r in records): raise SystemExit(1)
 
@@ -203,6 +226,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', action='store_true')
     parser.add_argument('--build-scene', action='store_true')
+    parser.add_argument('--build-sample', action='store_true')
     args = parser.parse_args()
-    if args.build or args.build_scene: build(args.build_scene)
+    if args.build or args.build_scene or args.build_sample: build(args.build_scene,args.build_sample)
     else: prepare()

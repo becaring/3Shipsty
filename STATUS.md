@@ -3,7 +3,7 @@
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
 Translation/first genuine bring-up estimate: roughly 64% complete (50–70%
-uncertainty range). Application source coverage is 696/696 C and 78/398 C++ TUs,
+uncertainty range). Application source coverage is 696/696 C and 80/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -33,6 +33,15 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   JSON ordered/custom/initializer-list APIs and fmt default float precision
   remain explicit compatibility gaps; no features have been removed.
 - No modern XEX has been produced or run. No gameplay or hardware claim.
+- The assembled XDK project compiles all 737 previously selected runtime and
+  dependency units; every resulting object is verified PowerPC BE. All 696
+  game C units also pass regeneration/recompilation with the exact release
+  MPQ/logging definitions. This is integration compilation, not application linking.
+- Full AudioSample binary/XML factory and actual WAV/MP3/FLAC/Vorbis workers
+  now compile; resources total 79 production units. Host original/projected
+  decoding matches across actual codec fixtures and serialized LE/BE samples.
+  Native Vorbis contributes 22 real dependency units. Detached worker lifetime,
+  rapid completion and exception contracts match std::thread on the host.
 - Complete current Fast3D display-list/matrix/vertex/light factories and texture
   factory versions compile. Original/projected results match all 19,167 applicable
   official archive records plus LE/BE/XML fixtures. Real resource mounting and

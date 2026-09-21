@@ -148,12 +148,33 @@ linked application, archive startup, renderer integration or boot proof.
 
 ## Remaining application resource consumers
 
-AudioSample and Skeleton type/factory pairs remain outside this increment.
-AudioSampleFactory embeds the real dr_wav/dr_mp3/dr_flac implementations and
-requires Vorbis/Ogg plus archive/Context audio loading. Those codec header/build
-closures are not supplied by this resource projection. AudioSample.h is projected
-as a real SoundFont dependency, but its production type/factory pair is not
-counted as completed.
+AudioSample now compiles in full, including every XML codec branch and the real
+dr_wav/dr_mp3/dr_flac implementations. The dr_libs revision is the exact pinned
+root application's revision. Vorbis 1.3.7 supplies the actual Vorbisfile decoder;
+its explicit dependency pin is documented separately because upstream uses a
+system Vorbis package. This raises the production resource inventory to 79 TUs.
+
+`test_soh_audio_samples.py` compares the original and generated complete binary
+factory and actual codec workers using synthesized 8,192-frame, 32 kHz mono
+fixtures. WAV, MP3, FLAC and Vorbis decodes match, with digest
+`10424164288805436507`; lossless FLAC samples match WAV exactly. Both serialized
+byte orders preserve the actual ADPCM book, loop and raw sample fields. The
+host audit excludes precisely XML ReadResource's real Context/archive acquisition;
+the complete method remains in the native object. It does not fake those services.
+
+The Vorbis PCM output byte order is now native: the CODEC_S16 synthesis path
+copies aLoadBuffer bytes and reads them as native int16 in the mixer. Requesting
+little-endian PCM on Xenon would corrupt that boundary. Separate actual Vorbis
+BE/LE decodes prove reversed byte pairs carry the same numeric samples. dr_* PCM
+APIs already return native int16; encoded data remains raw. This does not justify
+blanket swaps elsewhere. The original early publication of asynchronous decoder
+buffers and original decoder cleanup behavior remain for a separate runtime audit.
+
+The three detached decoder calls use `Shipyard::Async::launch_detached`, preserving
+real asynchronous callable ownership, creation failures and uncaught-exception
+termination. Host comparison against std::thread passes captured lifetime,
+1,000 rapid completions, different-thread execution and worker exception checks.
+No joining or pool substitute changes the production worker contract.
 
 Skeleton.cpp contains the actual SkeletonPatcher, including live player,
 pause-player, tunic, alternate/custom model and resource-manager behavior; it

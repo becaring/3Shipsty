@@ -322,7 +322,8 @@ def main():
     xdk = Path(os.environ.get('XEDK', r'C:\Program Files (x86)\Microsoft Xbox 360 SDK'))
     cl = xdk / 'bin/win32/cl.exe'
     includes = [INCLUDE, ROOT / 'scratch/codec-xdk/include', ROOT / 'scratch/deps/opus/include'] + [TREE / p for p in ('libultraship/include', 'soh', 'soh/include', 'soh/src', 'soh/assets', 'ZAPDTR/ZAPD/resource/type')] + [xdk / 'include/xbox']
-    definitions = ['_XBOX', 'XBOX', 'NDEBUG', 'F3DEX_GBI_2', 'CONTROLLERBUTTONS_T=uint32_t', 'SAL_NO_ATTRIBUTE_DECLARATIONS']
+    definitions = ['_XBOX', 'XBOX', 'NDEBUG', 'F3DEX_GBI_2', 'CONTROLLERBUTTONS_T=uint32_t', 'SAL_NO_ATTRIBUTE_DECLARATIONS',
+                   'INCLUDE_MPQ_SUPPORT', 'SPDLOG_ACTIVE_LEVEL=0']
     # Execute the narrow, pinned CVar set/cache-default pattern in release order.
     cvars = release_cvars()
     cvar_header = OUT / 'include/compile_definitions.h'

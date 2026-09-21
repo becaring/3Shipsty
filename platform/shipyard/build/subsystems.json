@@ -139,14 +139,16 @@
       "scratch/gui-xdk/xdk/build.json"
     ],
     "soh-resources": [
-      "scratch/soh-resources-xdk/xdk/build.json",
-      "scratch/soh-resources-xdk/xdk/scene-build.json"
+      "scratch/soh-resources-xdk/xdk/build.json"
     ],
     "interpolation": [
       "scratch/interpolation-xdk/xdk/build.json"
     ],
     "gfxd": [
       "scratch/gfxd-xdk/xdk/build.json"
+    ],
+    "vorbis": [
+      "scratch/vorbis-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -163,6 +165,11 @@
     {
       "source": "platform/shipyard/logging/chrono/chrono.cpp",
       "subsystem": "logging",
+      "options_from": "async"
+    },
+    {
+      "source": "platform/shipyard/async/detached.cpp",
+      "subsystem": "async",
       "options_from": "async"
     }
   ],

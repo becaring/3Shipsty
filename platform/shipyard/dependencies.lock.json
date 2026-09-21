@@ -58,5 +58,15 @@
     "commit": "008f73dca8ebc9151b205959b17773a19c5bd0da",
     "url": "https://github.com/glankk/libgfxd.git",
     "receipt_sha256": "29f5ddb7e938efcd46038a88d65baf67f9149a88e17d5f15e07ad8d2b9f885f6"
+  },
+  "dr-libs": {
+    "commit": "da35f9d6c7374a95353fd1df1d394d44ab66cf01",
+    "url": "https://github.com/mackron/dr_libs.git",
+    "receipt_sha256": "5f191a065067752c08b495e137bad06550859743534923a6e3c880a74c8e4742"
+  },
+  "vorbis": {
+    "commit": "0657aee69dec8508a0011f47f3b69d7538e9d262",
+    "url": "https://github.com/xiph/vorbis.git",
+    "receipt_sha256": "d0f6acf2ca51af9bee4061b32fb1205f40ada177a6e0b81db8ec33801acbad50"
   }
 }

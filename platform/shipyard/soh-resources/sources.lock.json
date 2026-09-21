@@ -160,6 +160,9 @@
     "soh/soh/resource/importer/scenecommand/SceneCommandFactory.h": "578e14f438f3b233853d3b24bf3521ae06d952a1d3f4c08977a90c6ce65439f3",
     "soh/soh/resource/importer/scenecommand/SceneCommandFactory.cpp": "17d17cf506751b8f7b8851a806e8a87105a5230bf209537881599d2b57628014",
     "soh/soh/resource/logging/SceneCommandLoggers.h": "209e085470845b808e3e6e799b45ec981b4ffafbf3a955763e821544adf1e754",
-    "soh/soh/resource/logging/SceneCommandLoggers.cpp": "28801f7d7db24fd41d2b4afd97c3d8a9629c0a5f0b533a5f72bf7aa79517eaaf"
+    "soh/soh/resource/logging/SceneCommandLoggers.cpp": "28801f7d7db24fd41d2b4afd97c3d8a9629c0a5f0b533a5f72bf7aa79517eaaf",
+    "soh/soh/resource/type/AudioSample.cpp": "19559e845b542936a5e158c4af4d35e1280a3dbf8d7a7919aa3693e0bbdd0039",
+    "soh/soh/resource/importer/AudioSampleFactory.cpp": "43b5b9c1746cffd0b293a4eb1d91388f02bbb31270531beb69ab1b8329ac8fc3",
+    "soh/soh/resource/importer/AudioSampleFactory.h": "acb115b6c0de5c4fcefba310e02b6af571f1f045e355bb49262ae777e01e615a"
   }
 }
