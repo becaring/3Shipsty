@@ -34,7 +34,7 @@ closure: an include-only scan cannot prove all indirect/custom conversions.
 | `soh/soh/SaveManager.cpp:481,499,507-509,551` | Stream extraction; find/erase(iterator); implicit s16; value(filenameLanguage,0) | Lookup, erase, narrow integers and value now implemented/tested. Stream extraction now differential-tested with exact reached statements |
 | `soh/soh/Enhancements/randomizer/SeedContext.cpp:418-444` | File parse via operator>>, file-hash array index, item metadata, is_structured | Predicate and scalar/index conversions implemented; operator>> now supported and differential-tested |
 | `soh/soh/Enhancements/randomizer/Plandomizer.cpp:589-636` | items structured bindings, is_number, typed gets, parse_error | Predicate added; existing iterator/exception API retained. XDK lowering of surrounding source still needed |
-| `soh/soh/Enhancements/randomizer/hint.cpp:375`, `hint.h:9`, `3drando/spoiler_log.cpp:30,105,117`, `SeedContext.cpp:449` | Insertion-ordered JSON type; ordered_json references/returns; initializer-list object construction; ordered nested containers and vectors | Not implemented. Aliasing ordered_json to sorted-map json would change ordering and is deliberately rejected |
+| `soh/soh/Enhancements/randomizer/hint.cpp:375`, `hint.h:9`, `3drando/spoiler_log.cpp:30,105,117`, `SeedContext.cpp:449` | Insertion-ordered JSON type; ordered_json references/returns; initializer-list object construction; ordered nested containers and vectors | Distinct insertion-ordered DOM implemented. Explicit object initializer syntax requires the owned compiler helper; full surrounding randomizer functions remain separate |
 | `soh/soh/Enhancements/Presets/Presets.cpp:114` | Recursive update(object,true) preserves existing nested object fields | Added following pinned json.hpp:3434-3488; replacement, merge, conflicting scalar/object errors, null conversion and self-update tested |
 | `soh/soh/Enhancements/Warping.cpp:28-46` | NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE for Vec3f/WarpPoint; implicit map<string,WarpPoint> conversions both ways; find | String-key map construction/get/get_to/implicit assignment and find supported. WarpPoint macro/ADL conversion remains absent |
 | `soh/soh/Enhancements/timesplits/TimeSplits.cpp:256-288,363-418` | Object initializer lists, scalar/string conversion, array iteration, file streams and erase by key | Initializer lists absent; JSON stream operators now supported; scalar/array/name-erase contracts present |
@@ -52,9 +52,11 @@ not added: actual XDK compilation showed it makes an existing `std::string =
 json` expression ambiguous. The full integration must use a checked compiler
 projection for any reached plain-char implicit conversion.
 
-Four isolated compile probes still pass with official JSON and fail with the
-bounded backend: ordered_json, initializer lists, custom ADL conversion and
-conversion macros. JSON stream operators now pass host and XDK probes. String-key std::map, C-array,
+Five isolated compile probes still pass with official JSON and fail with the
+bounded backend: ordinary initializer lists, ordered initializer lists, cross-DOM
+conversion, custom ADL conversion and conversion macros. Distinct ordered JSON
+and JSON stream operators now pass host and XDK probes. Explicit ordered object
+lists have a tested compiler-facing lowering helper, not a fake public API. String-key std::map, C-array,
 std::array and registered enum compile probes now pass on host and XDK.
 The std::array probe is conservative
 container coverage; this audit has not established a direct serialized
@@ -87,8 +89,8 @@ statements. This tests actual type/statement extraction, not the full packet cla
 or packet handling function. The application projection must still include those
 traits; additional reached enum types must receive verified registrations.
 
-The ordered backend, initializer-list lowering and explicit ADL
-conversion registry need deliberate implementation with the actual game types.
+A general initializer-list compiler pass, cross-DOM conversion and explicit ADL
+conversion registry still need deliberate implementation with the actual game types.
 This increment does not safely satisfy the full modern save/seed/feature
 contract. No modern feature can be omitted to make the subset compile. Full
 SaveManager section registration/migrations, actual saved files, legitimate
@@ -119,15 +121,16 @@ in one executable. Generation fails on altered official/helper inputs and
 rejects output paths outside owned scratch/json-xdk. Original files are not
 rewritten.
 
-Fresh evidence in `scratch/json-xdk/verification.json` records seven host
+Fresh evidence in `scratch/json-xdk/verification.json` records ten host
 output hashes, including rich values/errors/pointers, 4,000 deterministic double
 bit patterns, malformed UTF-8/JSON, signed/unsigned64 bounds, comments, deep
 parsing/destruction, exact modern SaveData/LoadData templates, and modern generic
 API additions, container error/mutation semantics, actual enum statements, and
 the stream contract below.
-Backend, API, container contract, stream contract and modern enum probes compile to PowerPC COFF
+Backend, API, container contract, stream contract, ordered DOM, ordered consumer
+and modern enum probes compile to PowerPC COFF
 machine 0x1f2. Added lookup/value/predicate/narrow/update/container/enum probes also
-pass XDK syntax compilation. Eight generation/source-ownership tests pass.
+pass XDK syntax compilation. Eleven generation/source-ownership tests pass.
 Commands and logs are retained
 under scratch/json-xdk. This is host behavior plus XDK object evidence, not
 full application linkage, console execution, real-save parity or hardware proof.
@@ -157,7 +160,7 @@ uses the existing decimal/official Grisu2 path, retaining upstream's zero-intege
 single-character write. Output uses the original put/write boundaries, 512-byte
 UTF-8 buffering, partial output before an encoding exception, width reset and
 fill character behavior. Binary storage is absent from this DOM, so its binary
-case cannot be projected and remains unsupported. This adds no ordered alias,
+case cannot be projected and remains unsupported. The stream increment added no ordered alias,
 initializer-list support, custom ADL conversion or application save semantics.
 Deprecated reversed stream operators, wide streams and callback parsing are not
 reached by the pinned consumers and have not been added.
@@ -173,3 +176,62 @@ run against a file-backed JSON fixture and compile as a complete XDK PowerPC
 object; the surrounding game classes/functions and real save/seed fixtures are
 not part of that probe. The existing seven host differentials and all five
 native objects pass together. Native commands explicitly enable `/GR`.
+
+
+## Distinct ordered JSON increment
+
+`nlohmann::ordered_json` names a separate generated `ordered_backend::json` DOM;
+it is never the sorted `json` type. `generate_ordered.py` projects the existing
+SHA-locked bounded backend into its own implementation namespace and changes
+its object storage to the pinned ordered_map algorithm. Every nested object,
+array element, copy, move, parser, iterator and serializer uses this distinct
+DOM. Canonical JSON exception classes and the verified enum underlying-type
+registry are shared with ordinary JSON. Ordinary map/enum behavior is unchanged.
+
+The owned generator extracts the exact key lookup, insertion and erasure
+methods from official `ordered_map.hpp`, with compiler syntax lowering. Host
+storage uses `vector<pair<const string,T>>`. XDK eagerly compiles an invalid
+assignment in its `pair<const string,T>` and vector clear/resize paths, so target
+storage uses a compiler-facing entry with the same const key and mapped value,
+copy/move construction and deleted-by-access assignment. Ordered erase still
+reconstructs entries in place; shrinking and clearing use pop_back loops. The
+same entry projection runs on the host under
+`SHIPYARD_JSON_ORDERED_ENTRY_PROJECTION`, and its differential output matches
+upstream. Exact `object_t::value_type == std::pair<...>` type identity on XDK is
+not supplied; no mutable-key substitute is used.
+
+Insertion keeps the first key position. Overwrite does not move a key; erasing
+and reinserting appends it. Parse duplicate keys keep their first position and
+last parsed value. Explicit object construction keeps its first duplicate value.
+Object equality is order-sensitive, as with pinned ordered_json. Mutable iterator
+erase returns the reconstructed next position after vector erasure. Deep copying,
+nested vector conversion, flatten/unflatten, recursive update and stream behavior
+have differential coverage. Generic sorted/ordered DOM conversion is not yet
+implemented and has a deliberate failing compile probe.
+
+`ordered-consumer-source.json` locks the actual Hint, SeedContext, spoiler_log
+and EntranceType source files. `generate_ordered_consumers.py` emits original
+and projected probes containing exact reached hint assignments, nested spoiler
+writes, the complete forward entrance object initializer and WriteHintJson
+signature. The original probe uses the exact scoped EntranceType declaration;
+the XDK probe emits its complete enumerator list and a verified int underlying
+trait (`ordered_entrance_traits.hpp`) for a compiler-lowered enum. Fixture operands
+supply values; production Context/Hint/Entrance implementations are not replaced
+or claimed as compiled here.
+
+`json/ordered_projection.hpp` exposes the compiler-facing
+`ShipyardJsonProjection::OrderedMember` aggregate and `ordered_object(members,n)`
+helper for the exact `ordered_json::object({...})` contract. Its duplicate-key
+and insertion behavior match original source. The original initializer and
+projected aggregate/helper calls match on host; the projected probe compiles as
+a full native PowerPC object. The application compiler pass must still lower
+those original expressions to this helper and include the verified enum trait
+where its declaration is reached. No application source or generator was edited.
+Arbitrary initializer-list syntax, custom ADL/macros, sorted/ordered conversion,
+binary DOM, and full legitimate randomizer/seed fixtures remain separate gaps.
+
+Fresh combined verification records ten host differentials and seven native
+PowerPC objects, including ordered DOM and projected consumer objects. Both
+standard host entries and the XDK entry representation pass ordered API and the
+991-line stream contract against official ordered_json. This remains host and
+native object evidence, not application linkage or console-runtime proof.

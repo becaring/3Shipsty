@@ -31,10 +31,17 @@ class Projection(unittest.TestCase):
                 continue
             original = (ROOT / name).read_text(encoding='utf-8-sig')
             def signatures(text):
-                return [n.text.decode().split('{', 1)[0].strip()
+                return [n.text.decode().split('{', 1)[0].strip().replace('[[maybe_unused]] ', '')
                         for n in walk(PARSER.parse(text.encode()).root_node)
                         if n.type == 'function_definition']
-            self.assertEqual(signatures(original), signatures(transform(name, original)), name)
+            actual=signatures(transform(name, original))
+            if name.endswith('/AudioSampleFactory.cpp'):
+                helpers=['OggType()', 'OggType(Value value) : Shipyard::Binary::ScopedEnum<OggType>(value)',
+                         'explicit OggType(int value) : Shipyard::Binary::ScopedEnum<OggType>(value)']
+                for helper in helpers:
+                    self.assertEqual(actual.count(helper),1)
+                    actual.remove(helper)
+            self.assertEqual(signatures(original), actual, name)
 
     def test_deterministic(self):
         one = prepare()

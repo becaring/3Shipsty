@@ -2,8 +2,8 @@
 
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 64% complete (50–70%
-uncertainty range). Application source coverage is 696/696 C and 80/398 C++ TUs,
+Translation/first genuine bring-up estimate: roughly 65% complete (50–75%
+uncertainty range). Application source coverage is 696/696 C and 85/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -30,8 +30,10 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   and utility TUs compile. Focused loader endian/registration and string-view/
   glob checks pass. Context and actual resource-manager execution remain open.
 - Actual spdlog core and typed modern formatting corpus pass host/native checks.
-  JSON ordered/custom/initializer-list APIs and fmt default float precision
-  remain explicit compatibility gaps; no features have been removed.
+  Default float/double formatting now matches 361,013 modern cases; the complete
+  1,475-item XDK compile project passes with the corrected argument encoding. Ordered JSON is now a
+  distinct DOM with tested insertion order. Generic initializer-list syntax,
+  custom ADL/macros, sorted/ordered conversion and binary DOM remain open.
 - No modern XEX has been produced or run. No gameplay or hardware claim.
 - The assembled XDK project compiles all 737 previously selected runtime and
   dependency units; every resulting object is verified PowerPC BE. All 696
@@ -42,6 +44,15 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   decoding matches across actual codec fixtures and serialized LE/BE samples.
   Native Vorbis contributes 22 real dependency units. Detached worker lifetime,
   rapid completion and exception contracts match std::thread on the host.
+- Full Skeleton type/factory and modern player/pause/tunic/custom patcher compile,
+  bringing application resources to 81 production TUs. Bounded pointer/removal
+  methods match upstream; live resource patching remains a runtime gate.
+- Current GameInteractor registry/state/C hook bridge compile (three TUs).
+  Actual registry algorithms pass cross-TU storage, caller metadata, deferred
+  removal, ID/pointer/filter dispatch and callback argument checks on the host.
+- Remaining LUS bridges and libultra compile (11 upstream + one native TU).
+  Final linking must retain static archive extraction because SoH stubs own five
+  symbols in inactive LUS members. Native timers must stop before queue teardown.
 - Complete current Fast3D display-list/matrix/vertex/light factories and texture
   factory versions compile. Original/projected results match all 19,167 applicable
   official archive records plus LE/BE/XML fixtures. Real resource mounting and

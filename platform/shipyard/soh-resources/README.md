@@ -178,10 +178,15 @@ No joining or pool substitute changes the production worker contract.
 
 Skeleton.cpp contains the actual SkeletonPatcher, including live player,
 pause-player, tunic, alternate/custom model and resource-manager behavior; it
-cannot be advanced by compiling only the leaf GetPointer methods. Its OTRGlobals,
-randomizer/game headers, inline static string, starts_with and actual global
-runtime dependencies still need their complete projections. Nothing from those
-patcher methods was removed or replaced here.
+now compiles completely with its factory, bringing this subsystem to 81 TUs.
+Unused OTRGlobals/umbrella includes are replaced with the actual Context and
+game declarations. The existing C header projection preserves the randomizer
+enum definitions; inline static string storage is defined once out of class,
+and prefix/range syntax is mechanically lowered. All player/tunic/pause/custom
+resource calls remain. Nothing from the patcher methods was removed or replaced.
+`test_soh_skeleton.py` compares the exact pointer/size and first-match unregister/
+clear methods. Native ABI checks verify skeleton header/data sizes. Actual live
+player and resource-manager patching remains an execution requirement.
 
 Scene and every current scene-command type/factory/logger now compile in full.
 OTRGlobals registration and ResourceManagerHelpers consumers remain open. The

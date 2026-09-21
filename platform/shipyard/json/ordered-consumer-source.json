@@ -1,0 +1,9 @@
+{
+  "sources": {
+    "soh/soh/Enhancements/randomizer/hint.cpp": "5f8fa147ebd8a6faf89690381695887ab0dfc9e7db738f939c80a8a483bb3d1c",
+    "soh/soh/Enhancements/randomizer/SeedContext.cpp": "3abca6e85ca219119a300fa268bfefd228e8adac558e61229b042605b6760409",
+    "soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp": "8de270f364286461c2ab37ae291b07200259d8be04af7a67740c675358ce7453",
+    "soh/soh/Enhancements/randomizer/entrance.h": "f1920e907616ee818035315ad9ca8de793b84a2c325fa5b020ec0c012d28fd2c"
+  },
+  "scope": "Exact reached JSON statements and original enum declaration; fixture operands, not full randomizer class integration."
+}

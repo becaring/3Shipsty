@@ -532,3 +532,38 @@ tests were observed failing before implementation, then passing.
   696 C plus 80 C++. The generated manifest contains 1,458 production compile
   items, with 318 application C++ units still explicitly pending. Estimate stays
   64% (50–70% range); no modern link, startup or gameplay claim.
+
+### 2026-09-20: Ordered JSON, exact default floating formatting and libultra
+
+- Reviewed and reran the three isolated task handoffs; all agents are finished.
+  Ordered JSON has a distinct insertion-ordered nested DOM, exact ordered_map
+  method projection, original/projected stream and real consumer-statement
+  comparisons. Eleven generation tests, ten host differentials and seven PPC
+  objects pass. No sorted alias or fake seed/application class was introduced.
+- Actual pinned fmt12 Dragonbox supplies binary32/binary64 shortest formatting;
+  361,013 comparisons pass. Native POD tables avoid dynamic cache initialization.
+  This changes internal packed argument codes: an all-consumer XDK rebuild is
+  running, and pre-change objects must not be linked with this formatter. Native
+  CRT explicit-precision rounding and subnormal execution remain unproven.
+- Eleven current LUS bridge/libultra TUs plus one generic Shipyard timer/clock
+  unit compile. All 76 original methods remain. Queue/DMA and 200,004 exact
+  clock checks plus real Win32 timer lifecycle tests pass. Keep the upstream
+  static archive extraction boundary: application stubs override five inactive
+  os_cache/os_pi symbols. StopTimers belongs before callback queue teardown.
+- Native Skeleton type/factory and the complete modern SkeletonPatcher compile.
+  Only unused umbrella includes, scoped enum casts, inline variable storage,
+  string-prefix/range syntax and necessary game declaration order changed.
+  Typed pointer-size ABI and original/projected removal/clear methods pass;
+  actual player/custom/tunic service execution is not claimed.
+- Three complete GameInteractor TUs compile with generated forwarding overloads
+  derived from actual hook-table arity, original registry bodies and shared
+  template storage. Source-location callers supply actual file/line/function
+  metadata; no feature-disabled hook debugger fallback is selected. Host actual
+  registry checks include cross-TU sharing and deferred registration removal.
+  Full enhancement registration and native game execution remain pending.
+- The assembled 1,475-item compile project subsequently passed with the new
+  formatter and ordered JSON. Every object is verified PPC BE and every production
+  source still matches its manifest hash; receipt is
+  scratch/project-xdk/complete-selection-verification.json. Application coverage
+  is 696 C plus 85 C++; 313 C++ TUs remain pending. First-bring-up estimate is
+  now approximately 65%, with a 50–75% uncertainty range pending linking/runtime.

@@ -1,0 +1,15 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/game-interactor/GameInteractionEffect.cpp": "c536e0993f554a9303709925ab2ed7fbe0ef1afb9d67a786013c51b63c2aa162",
+    "soh/soh/Enhancements/game-interactor/GameInteractionEffect.h": "d4e9934d1a47653179bc6598f19cb9e2fb0c5b7dd9afd817be0de92ab7794211",
+    "soh/soh/Enhancements/game-interactor/GameInteractor.cpp": "fdbce4c4b19b62391b5f167e43f5efb5a9a7bddf9a45d429712a4a5ec9776199",
+    "soh/soh/Enhancements/game-interactor/GameInteractor.h": "397362125b341416f363bd7e11b243f41e81ba1f379c77c1a2c1a9d7a456326a",
+    "soh/soh/Enhancements/game-interactor/GameInteractor_Hooks.cpp": "10c022f33bda92b3012f5b147d827506136861154e0c09ac4a5250c2a5608fbd",
+    "soh/soh/Enhancements/game-interactor/GameInteractor_Hooks.h": "0cac595684680481393ddfbe0b62cbe8d51257c449d3c85df35f6c92a82f1bdc",
+    "soh/soh/Enhancements/game-interactor/GameInteractor_HookTable.h": "8cdb989d9567237fb5879ec85b03c5f8a07ebcce8954620f2682539ab5069d8f",
+    "soh/soh/Enhancements/game-interactor/GameInteractor_RawAction.cpp": "2e962bd19eac6bd0dee121f21f0497bebe8c14f98ff0fae98e09a6c4c9ad5a04",
+    "soh/soh/Enhancements/game-interactor/GameInteractor_State.cpp": "ffcea54eeda01d6222b768fd44d620b4f2e08e3a6b38fb9df84411372632877d",
+    "soh/soh/Enhancements/game-interactor/vanilla-behavior/GIVanillaBehavior.h": "4851b08e8557afa47e4bbac6080578625aeaa538018bfbd9a03986e7a0c2c2d9"
+  }
+}

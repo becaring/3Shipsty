@@ -49,6 +49,29 @@ class GenerationTests(unittest.TestCase):
             p.parent.mkdir(parents=True);p.write_text('changed')
             with self.assertRaisesRegex(ValueError,'serializer source mismatch'):
                 generator(source,M['OUT'])
+    def test_ordered_generation_and_consumer_projection(self):
+        manifest=M['generate']()
+        self.assertTrue(manifest['ordered']['distinct_from_sorted_json'])
+        generated=M['OUT']
+        original=(generated/'ordered_consumer_original.cpp').read_text()
+        for statement in manifest['ordered_consumers']['extracted_statements']:
+            self.assertIn(statement,original)
+        self.assertIn('ordered_object(entranceMembers',(generated/'ordered_consumer_projected.cpp').read_text())
+    def test_reject_changed_ordered_consumer(self):
+        generator=runpy.run_path(str(M['BACKEND']/'generate_ordered_consumers.py'))['generate']
+        with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
+            evidence=json.loads((M['BACKEND']/'ordered-consumer-source.json').read_text())
+            source=Path(folder);first=next(iter(evidence['sources']))
+            p=source/first;p.parent.mkdir(parents=True);p.write_text('changed')
+            with self.assertRaisesRegex(ValueError,'ordered consumer SHA-256 mismatch'):
+                generator(M['OUT'],source)
+    def test_reject_changed_ordered_map(self):
+        generator=runpy.run_path(str(M['BACKEND']/'generate_ordered.py'))['generate']
+        with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
+            source=Path(folder);p=source/'include/nlohmann/ordered_map.hpp'
+            p.parent.mkdir(parents=True);p.write_text('changed')
+            with self.assertRaisesRegex(ValueError,'ordered_map source mismatch'):
+                generator(source,M['OUT'])
     def test_reject_changed_enum_source(self):
         generator=runpy.run_path(str(M['BACKEND']/'generate_containers.py'))['generate']
         with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:

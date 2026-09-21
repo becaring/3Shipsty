@@ -814,3 +814,5 @@ bool json::operator!=(const json& r) const {
     return !(*this == r);
 }
 } // namespace nlohmann
+
+#include "json/generated/ordered_json.cpp"

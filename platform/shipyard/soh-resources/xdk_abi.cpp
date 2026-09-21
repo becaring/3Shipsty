@@ -7,6 +7,7 @@
 #include "soh/resource/type/Animation.h"
 #include "soh/resource/type/CollisionHeader.h"
 #include "soh/resource/type/SkeletonLimb.h"
+#include "soh/resource/type/Skeleton.h"
 #include "soh/resource/type/Path.h"
 #include "soh/resource/type/AudioSequence.h"
 #include "soh/resource/type/AudioSoundFont.h"
@@ -26,6 +27,7 @@
 typedef char native_big[(Ship::Endianness::Native == Ship::Endianness::Big) ? 1 : -1];
 typedef char marker_values[(Ship::Endianness::Little == 0 && Ship::Endianness::Big == 1) ? 1 : -1];
 typedef char pointer_size[(sizeof(void*) == 4) ? 1 : -1];
+typedef char skeleton_abi[(sizeof(SOH::SkeletonHeader)==8 && sizeof(SOH::FlexSkeletonHeader)==12 && sizeof(SOH::SkelCurveLimbList)==8 && sizeof(SOH::SkeletonData)==12)?1:-1];
 typedef char scalar_size[(sizeof(SOH::ScalarData) == 8) ? 1 : -1];
 typedef char vertex_size[(sizeof(Fast::F3DVtx) == 16) ? 1 : -1];
 typedef char vertex_tc_offset[(offsetof(Fast::F3DVtx_t, tc) == 8) ? 1 : -1];

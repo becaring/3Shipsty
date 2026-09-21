@@ -69,12 +69,39 @@ CVar keys, menu/flag IDs, debugger integer formats, UTF-8 strings, and explicit
 fixed-precision host extraction progress. Those tests also reject malformed
 format strings without requiring identical exception wording.
 
-**Default floating precision differs.** The separate reproducible gap probe
-writes `scratch/logging-xdk/tests/format-limits.json`; never treat passing
-integer/string tests as permission to change floats used in labels, serialized
-values, shader generation or identifiers. Remaining integration work must
-classify all reached argument types and either prove equivalence or project
-the modern floating formatter. Diagnostic differences are recorded, not hidden.
+**Default binary32/64 floating precision now matches the current formatter.**
+`generate_float.py` extracts the actual fmt12 Dragonbox implementation from the
+pinned spdlog dependency, rejecting changed inputs with `float-source-lock.json`.
+The full cache and portable integer multiplication are used on both the host
+differential and Xenon compilation paths. The double cache is stored as a POD
+constant pair table: losing `constexpr` must not introduce dynamic initialization
+or an unsafe first-use guard into concurrent logging. The numeric-bit boundary
+uses same-size `memcpy` into native unsigned integers; it does not byteswap native
+IEEE values. This is appropriate for either host endian order.
+
+The fmt4 typed argument union now distinguishes `float` from `double`; promoting
+binary32 to binary64 before choosing shortest digits is observably incorrect.
+The new enum still fits the four-bit packed argument representation. **Rebuild
+all formatting consumers together** because those internal type codes changed.
+The bounded writer maps Dragonbox's decimal significand/exponent to fmt12's
+fixed/scientific threshold, alternate form, sign, padding and nonfinite behavior.
+Windows/Xenon `long double` has double precision and uses the binary64 path.
+
+Run `python -B tools/shipyard/tests/test_logging_float.py`. The complete output
+differential covers 361,013 cases: deterministic raw float/double bit patterns,
+extrema, subnormals, signed zero, infinities/NaNs, threshold values, default
+width/alignment/fill/sign/alternate forms, named arguments, and the packed
+argument limit. It additionally compares reached explicit fixed-precision
+forms and representative `e`/`g` precision forms. The whole corpus compiles as
+a real XDK PPC object. Receipts are in `scratch/logging-xdk/float-tests`;
+the former one-value gap probe is now a required equality regression.
+
+Explicit precision or a presentation letter still uses fmt4's CRT branch.
+The host differential does **not** prove XDK CRT rounding/exponent behavior;
+the source inventory's direct `{:.0f}%` is in PC extraction. Newly reached
+explicit floating forms, locale formatting, or extended floating types need
+their own boundary audit. The default shortest path no longer depends on CRT
+decimal conversion. Native subnormal execution remains untested in Xenia.
 
 The donor omits periodic flush/timed dequeue convenience APIs, wide logging,
 variadic logger/sink factories and terminal color controls. None is invented or
@@ -108,4 +135,4 @@ logger error-handler boundary. No sink, queue or formatting algorithm changed.
 
 Coverage includes direct and global calls, source-location overloads, packed
 and extended argument lists, and backtrace retention when ordinary output is
-filtered. The separate default-float precision gap remains unresolved.
+filtered. The default-float regression now requires the modern shortest output.

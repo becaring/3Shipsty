@@ -31,7 +31,8 @@ def main():
         run(['cmd','/d','/c',str(batch)],str(original)+'-gap-compile');gaps.append(run([str(gap_exe)],str(original)+'-gap-run'))
     if results[0]!=results[1]:raise RuntimeError('Original/generated logger outputs differ: '+repr(results))
     if formats[0]!=formats[1]:raise RuntimeError('Original/generated SoH typed format corpus differs')
-    (OUT/'format-limits.json').write_text(json.dumps(dict(default_double=1.23456789012345,original_fmt12=gaps[0].strip(),compiler_fmt4=gaps[1].strip(),equal=gaps[0]==gaps[1],status='Known dependency deviation; not permitted as proof of whole-application format equivalence'),indent=2)+'\n')
+    if gaps[0]!=gaps[1]:raise RuntimeError('Default floating precision regression')
+    (OUT/'format-limits.json').write_text(json.dumps(dict(default_double=1.23456789012345,original_fmt12=gaps[0].strip(),compiler_fmt4_with_fmt12_dragonbox=gaps[1].strip(),equal=True,status='Default binary32/64 float gap resolved; broad corpus in float-tests/verification.json. Explicit precision still uses CRT.'),indent=2)+'\n')
     xdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     for name,src in [('core',source),('format',BASE/'tests/format_cases.cpp'),('chrono',chrono),('environment',BASE/'environment.cpp')]:
         obj=OUT/(name+'-xdk.obj')

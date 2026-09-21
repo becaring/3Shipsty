@@ -500,4 +500,5 @@ struct tuple_element<N, nlohmann::detail::iteration_proxy_value<Iterator>> {
     typedef typename nlohmann::detail::proxy_get<N, Iterator>::type type;
 };
 } // namespace std
+#include "json/generated/ordered_json.hpp"
 #endif

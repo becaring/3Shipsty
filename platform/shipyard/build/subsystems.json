@@ -21,7 +21,8 @@
         "xenos",
         "presentation",
         "native-imgui",
-        "gui"
+        "gui",
+        "libultra"
       ],
       "sources": [
         "scratch/prism-xdk/generated/shader_builder.cpp"
@@ -43,7 +44,8 @@
       "subsystems": [
         "game",
         "soh-resources",
-        "interpolation"
+        "interpolation",
+        "game-interactor"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -149,6 +151,12 @@
     ],
     "vorbis": [
       "scratch/vorbis-xdk/xdk/build.json"
+    ],
+    "libultra": [
+      "scratch/libultra-xdk/xdk/build.json"
+    ],
+    "game-interactor": [
+      "scratch/game-interactor-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -184,6 +192,7 @@
     "Common ABI and header ordering must be reviewed across subsystem recipes; individual compile success is insufficient",
     "Application entry point, current initialization, resource registration and PC-only extraction boundary remain to be integrated",
     "Xbox storage/save lifecycle and link dependencies require explicit production integration",
-    "No executable project or XEX is emitted by this compile-only generator"
+    "No executable project or XEX is emitted by this compile-only generator",
+    "Retain LUS/libultra static archive extraction: application stubs own five symbols in inactive os_cache/os_pi members; do not flatten or whole-archive"
   ]
 }
