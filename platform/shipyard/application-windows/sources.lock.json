@@ -1,0 +1,20 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/debugger/actorViewer.cpp": "1d0a44d6173f4c07216424f588a91b46ad2276644d1cce2377f0e4f4b7627286",
+    "soh/soh/Enhancements/debugger/colViewer.cpp": "7cb3d942ff2aaf5212b5aa015deeae438ccd1622b83bc0b567a64079931dff99",
+    "soh/soh/Enhancements/debugger/debugSaveEditor.cpp": "60ba16888b4c1af77b732dd4ffbf8f886cd2ffd59d094354731673ee7a69e7eb",
+    "soh/soh/Enhancements/debugger/dlViewer.cpp": "75147b76dd21df8c64ae81e3b61ace29c2547cbd94d8d4043c83c42e25e38dda",
+    "soh/soh/Enhancements/debugger/hookDebugger.cpp": "5ab30da2ab3a10e22942834e364f615bcf663ff791fd502440d0091174608ee6",
+    "soh/soh/Enhancements/debugger/MessageViewer.cpp": "b334d5d4775c281371295f9371840b994bc544fbfa57bacd338d99fd4ec8665c",
+    "soh/soh/Enhancements/debugger/performanceTimer.cpp": "c4e7af004d11c29cad5b7652885f78be2d7cad1a9ea8fc4976d1fd5cd8ee2ce4",
+    "soh/soh/Enhancements/debugger/SohConsoleWindow.cpp": "9bb95eb9a04cf129871224003d6f78ecca35413181e6119a81f698ce69eb5995",
+    "soh/soh/Enhancements/debugger/SohGfxDebuggerWindow.cpp": "041bae133e200542398742a7173430225a5ec76cc982529addbad6a353886b25",
+    "soh/soh/Enhancements/debugger/SohStatsWindow.cpp": "22ea6efce634e13edad0e513723f23acc6430c39fa0298545f709c927dfaf21a",
+    "soh/soh/Enhancements/debugger/valueViewer.cpp": "64a65fcf66647ca359818e859df75aa187fa8a35c2d4fa1a8d4a46996d49387e",
+    "soh/soh/SohGui/ImGuiUtils.cpp": "2af3b1477330943dd135046fffc6222215eccaed729161c7971a364030188725",
+    "soh/soh/SohGui/ResolutionEditor.cpp": "4d426548b79b541a83c5937a8d4be099ac921361d09ffbf69386fb3fdb60665e",
+    "soh/soh/Enhancements/debugger/performanceTimer.h": "c10a64b54181a33832b3ae575b83d14dee875d642fd49552303a7e3c695b40f3",
+    "soh/soh/SohGui/ResolutionEditor.h": "5d0be8a9a139ee7d6bdf93f17c82e4f5748d33a4f638c05d14d3f3d832ce7807"
+  }
+}

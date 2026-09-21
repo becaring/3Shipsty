@@ -793,3 +793,27 @@ first-bring-up remains approximately 60–65% with high uncertainty, superseding
 the overly optimistic 70% estimate. Complete application windows, remaining
 randomizer/data/runtime and network implementations, speech, link integration,
 and genuine Xenia validation remain. No modern XEX has run.
+
+
+## 2026-09-21 — complete windows, editors and data integration
+
+Thirteen complete debugger/resolution/icon window sources, both full audio and
+cosmetic editors, and full location/static-data sources now pass the main XDK
+build. All 1,562 selected source hashes and PowerPC objects are verified in
+scratch/project-xdk/application-windows-verification.json. Application coverage
+is 696 C plus 163/398 C++ sources, with 235 C++ sources still pending.
+
+A/B/H adaptations preserve aggregate/default/widget semantics, lambda member
+access, actual callback identity/lifetime, original container contents and UTF-8
+bytes. C/D performance timers use the existing native monotonic clock wrapper.
+Runtime-native geometry retains signed normals and qs105 texture-coordinate
+scaling. There are no new endian conversions. Platform-specific statistics
+correctly label Xbox 360. Details are in application-windows, application-editors
+and randomizer-data READMEs.
+
+Original/projected checks cover actual collision geometry, every 16-bit icon
+input, timers, 161 UTF-8 literals, all cosmetic/audio editor tables and widget
+values, 34 Location factories and 446 static-data entries. These are meaningful
+translation checks, not target gameplay evidence. First bring-up remains about
+60–65%; no modern XEX has linked or run. Work continues by complete functional
+batches, with two independent agents and root integration.

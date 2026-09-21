@@ -86,7 +86,10 @@
         "randomizer-settings",
         "randomizer-context",
         "randomizer-dungeons",
-        "randomizer-hints"
+        "randomizer-hints",
+        "application-windows",
+        "application-editors",
+        "randomizer-data"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -272,6 +275,15 @@
     ],
     "randomizer-hints": [
       "scratch/randomizer-hints-xdk/xdk/build.json"
+    ],
+    "application-windows": [
+      "scratch/application-windows-xdk/xdk/build.json"
+    ],
+    "application-editors": [
+      "scratch/application-editors-xdk/xdk/build.json"
+    ],
+    "randomizer-data": [
+      "scratch/randomizer-data-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {

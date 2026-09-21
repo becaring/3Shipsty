@@ -4,7 +4,7 @@
 
 First genuine bring-up estimate: roughly 60–65% complete, with considerable
 uncertainty. The earlier 70% estimate weighted compilation too heavily before
-linking or native execution. Selected application source coverage is 696/696 C and 146/398 C++ TUs,
+linking or native execution. Selected application source coverage is 696/696 C and 163/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -13,6 +13,15 @@ Remaining work is being grouped by complete application subsystems; individual
 compile units remain internal evidence rather than user-facing milestones.
 
 Latest integration work (earlier milestones below retain their historical scope):
+
+- Complete debugger/resolution/icon windows, audio/cosmetic editors and location/
+  static-data providers pass the main build. All 1,562 production source hashes
+  and PPC objects are verified in application-windows-verification.json.
+  Actual original/projected geometry, icons, timers, widget values and content
+  tables agree. All corresponding agent tasks finished before reassignment.
+  Remaining application C++ count is 235; linking and native execution remain.
+- Current independent batches: gameplay enhancements and randomizer content
+  tables. Root owns complete scene/message/resource bridges and utilities.
 
 - Complete seed Context, ItemLocation, fishsanity, Kaleido collectibles, item
   tables, hints, dungeons and trials are integrated. The full project passes with

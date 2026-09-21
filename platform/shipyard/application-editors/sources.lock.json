@@ -1,0 +1,15 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/audio/AudioEditor.cpp": "86f30d1f7fbd2c5f8597596e8491e098db4f4c055f552f679ce7fed3993f8754",
+    "soh/soh/Enhancements/cosmetics/CosmeticsEditor.cpp": "b917a6cbeedc30df6551b4b11f93f2a5d741e6c85fcc08e1f34348ff37e18e6e",
+    "soh/soh/Enhancements/audio/AudioEditor.h": "8c8a2dad678ac1b33ea46519389299e233c3fe5991f459e5b2cf9e84af64f81e",
+    "soh/soh/Enhancements/cosmetics/CosmeticsEditor.h": "55ca58ff173f5c7463b0caa093e16f1475546c8560eac7c3b958840596ab5c35",
+    "soh/soh/Enhancements/cosmetics/cosmeticsTypes.h": "0a6620d00296d1df9fdccd1472e91dd1ea75a8248a4d5c6d3934f85aab2d5a50",
+    "soh/soh/Enhancements/cosmetics/authenticGfxPatches.h": "671e56c0a4bf789ae0fa58910f0ea842ab1fe3d22a7468fb2a53b7848e3156d9",
+    "soh/soh/Enhancements/audio/AudioCollection.h": "5365a2119653602e0af07b3844c55be7870ad7901791f8ee09184d09d4614119",
+    "soh/soh/Enhancements/enhancementTypes.h": "23c3cad4aa0f3cfd236525c81991cc7a1b2f47ee7246fd6caa954d6f3db37a4f",
+    "soh/soh/cvar_prefixes.h": "7d906208c18e4fb61bfccdf02d59f9023eb73189a387f8ef08589914898ccf73",
+    "libultraship/include/ship/utils/color.h": "004c7c8653985d89d52dc563b8e1a9579df152bf377920239a0b245546dadafd"
+  }
+}

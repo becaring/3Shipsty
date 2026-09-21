@@ -1,0 +1,9 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/location.cpp": "a3cb9f47e6bc252b18f3449db8162faaed8826d23af1739d52017840448d9f54",
+    "soh/soh/Enhancements/randomizer/location.h": "170d6b820b5dce667bd8a9cceca0efd3f4bdb8eccb5c96fcadaed30204acff13",
+    "soh/soh/Enhancements/randomizer/static_data.cpp": "bce00dbc71d796d9e9421d0bbfe94ceeb700f39462f902ba3fe1573512738de4",
+    "soh/soh/Enhancements/randomizer/static_data.h": "8dd848e46cb400f7161470f3e49ed1d11c4e6abda8ea903c6289dc32f1bf51f4"
+  }
+}
