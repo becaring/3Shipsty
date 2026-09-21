@@ -394,3 +394,16 @@ tests were observed failing before implementation, then passing.
   to modern LUS/storage. Real shader compilation/allocation errors remain; no
   alternate resource manager or fake shader is supplied. XContent cache worker,
   window/GUI ownership and actual native validation remain open. See xenos README.
+
+### 2026-09-20: Current Fast3D window and native presentation
+
+- All methods of current Fast3dWindow and FastMouseStateManager compile, with
+  exact draw ordering retained. A concrete native GfxWindowBackend provides
+  real device initialization, presentation, latency, timing and XInput pumping.
+- SoH360 presentation fraction behavior retains remainder on unchanged target
+  rates; actual refresh and 64-bit addition make the native boundary explicit.
+  Three Xenon objects and 2,024,400 host pacing checks pass.
+- Shared fullscreen/pointer constraints remain platform behavior. No synthetic
+  keyboard/pointer events or extra application loop. Native GUI integration,
+  physical input execution and all Xenia validation remain open. First-bring-up
+  estimate stays approximately 60%; see presentation/README.md.

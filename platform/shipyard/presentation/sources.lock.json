@@ -1,0 +1,9 @@
+{
+  "source_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "sources": {
+    "include/fast/Fast3dWindow.h": "94f9a990f4cc1afb9999f1d203bedc4b023737e7e3fd0a796092820acfe01171",
+    "src/fast/Fast3dWindow.cpp": "ff7c4c71a94640e7e9d46bbe0775a36076c7f5586fd3d37db9312d74fb249048",
+    "include/fast/FastMouseStateManager.h": "6646a7bdad6c78958038f3c10c9301eb7c274c81f8f6d496f8d91332efab79b2",
+    "src/fast/FastMouseStateManager.cpp": "8dcb50155e89fc38bb0d942d6e277472b7635e4b6c12e336bfe4efb31307e006"
+  }
+}

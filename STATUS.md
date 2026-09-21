@@ -80,6 +80,9 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   method (three TUs). Six bindings, separate attachment clears, rectangular
   copies and numeric RGB5551 readback are present. Host pixel/cache boundary
   checks pass; window/GUI wiring and native GPU behavior remain unvalidated.
+- Full current Fast3dWindow/FastMouseStateManager and native presentation compile
+  (three TUs). The real GUI/interpreter draw sequence remains byte-identical;
+  2,024,400 pacing checks pass. Native GUI wiring and execution remain open.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 
