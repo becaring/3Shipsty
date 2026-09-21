@@ -116,3 +116,22 @@ There are no remaining production-TU compile blockers in this batch. Whole-game
 linking, generating complete seeds against a live Context, saving spoiler files
 through the console filesystem, and console execution remain integration work.
 These checks are not claimed by the bounded host contracts.
+
+## XDK callback-array code-generation defect (2026-09-21)
+
+First genuine Xenia execution stopped before main while constructing the real
+conditionalAlwaysHints table. Noninvasive debugger snapshots mapped the fault to
+the hints.cpp vector copy: source entry four held stale stack bytes interpreted
+as a callable vtable. The generated helper contained all twelve original rows,
+but the optimized XDK object initialized only three array elements and then
+copied twelve. Before/after disassembly and the captured exception context are in
+scratch/runtime/xenia/{hints-native.disasm.txt,hints-fixed-native.disasm.txt,
+startup-exception-context.txt,startup-callable-array.txt}.
+
+Classification H, generic XDK compiler defect, adapted at the application source
+generator boundary. Callable-vector list projection now constructs named elements
+and inserts them in original order with capacity reserved once. It retains each
+actual check ID, lambda body and std::function ownership; no randomizer logic or
+table entry is omitted. The inventory test compares all twelve actual predicates
+and keys against upstream, in order. Native compile and existing generation
+contracts pass; the complete application's next run establishes startup progress.

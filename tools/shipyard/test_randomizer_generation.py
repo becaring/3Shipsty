@@ -47,6 +47,21 @@ def inventory_check(manifest):
     def table(text):return next(n for n in walk(PARSER.parse(text.encode()).root_node) if n.type=='init_declarator' and n.child_by_field_name('declarator').text==b'hintSettingTable').child_by_field_name('value')
     origrows=kids(kids(table(original))[0]);projrows=kids(kids(table(projected))[0]);assert len(origrows)==len(projrows)==4
     helpers={fname(n):n for n in methods(projected)}
+    # Keep all twelve real predicates, including their ordering and check IDs.
+    # The old XDK silently omitted most nontrivial aggregate initializers; the
+    # generated callback table must instead use explicitly constructed elements.
+    def conditional(text):
+        return next(n for n in walk(PARSER.parse(text.encode()).root_node)
+                    if n.type=='init_declarator' and n.child_by_field_name('declarator').text==b'conditionalAlwaysHints').child_by_field_name('value')
+    source_callbacks=kids(conditional(original))
+    callback_helper=helpers[conditional(projected).child_by_field_name('function').text.decode()]
+    actual_callbacks=[n for n in walk(callback_helper) if n.type=='call_expression'
+                      and n.child_by_field_name('function').text==b'std::make_pair']
+    assert len(source_callbacks)==len(actual_callbacks)==12
+    assert callback_helper.text.count(b'result.push_back(')==12
+    for a,b in zip(source_callbacks,actual_callbacks):
+        # Only the XDK-required explicit lambda return type differs.
+        assert tokens(a.text.decode())==tokens(b.text.decode().replace(' -> bool ',''))
     for old,new in zip(origrows,projrows):
         fields=[n.child_by_field_name('value') for n in kids(old)];values=kids(new)
         assert [tokens(n.text.decode()) for n in fields[:3]]==[tokens(n.text.decode()) for n in values[:3]]

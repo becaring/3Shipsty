@@ -94,6 +94,7 @@ def platform_source(source):
     source=once(source,'    OTRAudio_Exit();','    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();')
     source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
     source=once(source,'extern "C" void InitOTR(int argc, char* argv[]) {','''extern "C" void InitOTR(int argc, char* argv[]) {
+    xbox_compat::filesystem::InitWorkingDirectory("game:/");
     if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
     try { Shipyard::Storage::Mount(); }
     catch (...) { SDLNet_Quit(); throw; }

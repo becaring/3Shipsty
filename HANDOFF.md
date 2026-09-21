@@ -1,5 +1,8 @@
 # 3Shipsty forward-port handoff — 2026-09-21
 
+Historical stop checkpoint. The later link closure and runtime resume point are
+recorded in [RUNTIME_HANDOFF.md](RUNTIME_HANDOFF.md).
+
 Stopped at the user's explicit request. Do not interpret this as completion or
 an architectural blocker. All agents are completed or interrupted; the last
 root-owned build session finished before this handoff. No further engineering

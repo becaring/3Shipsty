@@ -1,18 +1,20 @@
 # 3Shipsty status
 
-2026-09-21. **Resumed at user request: fix the 16 symbols and proceed.**
+2026-09-21. **Runtime bring-up pending full rebuild; approval service unavailable.**
 Forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
-The previous stopped-state checkpoint is recorded in [HANDOFF.md](HANDOFF.md).
-Last committed checkpoint: `c0e0343406cda289762ff1b892239a62796ec041`.
-Uncommitted link fixes are preserved and listed in the handoff.
+Current resume point: [RUNTIME_HANDOFF.md](RUNTIME_HANDOFF.md).
+Last committed checkpoint: `3581983af5a5d3dbc4a100aa6b37a241526c07bc`.
+All 16 link fixes are committed; two startup fixes remain uncommitted.
 
 First genuine bring-up estimate: roughly 70% complete, with considerable
 uncertainty until actual gameplay. Selected application source coverage is now
 696/696 C and 398/398 C++ TUs.
 The refreshed complete combined build passed with 1,836 verified PPC objects.
 All 16 unresolved symbols are closed: genuine application link and ImageXex
-both returned zero. The 45,834,240-byte XEX starts its guest main thread in Xenia,
-but a captured startup exception prevents UI/gameplay. This
+both returned zero. The callback-table fix gets real Xenia execution through
+static initialization into InitOTR and archive discovery. A missing logical CWD
+initialization then causes an exception; its source fix passes native startup
+compilation but awaits the full build/link/runtime test. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that gameplay works. Update
 this first-bring-up estimate in meaningful milestone reports as requested.
@@ -33,10 +35,16 @@ Latest integration work (earlier milestones below retain their historical scope)
   six tests and all 35 randomizer application source/object checks pass.
 - Full production compilation and linking pass. Metadata, four CRT providers and
   interpolation linkage are integrated and verified; CRT review/root tests passed.
-- First Xenia run faults while copying the real conditionalAlwaysHints callback
-  table during static initialization. Generated source has twelve entries; XDK
-  optimized assembly initializes only three. A generated ordered-construction
-  adaptation is under verification. Startup/UI/resources/gameplay remain unproven.
+- The conditionalAlwaysHints compiler defect is corrected with generated ordered
+  construction. All 12 callback predicates/order are checked; full build/link pass
+  and real Xenia execution gets past the original fault.
+- InitOTR now initializes the logical working directory to game:/ before storage
+  or Context consumers. Five startup checks and native OTRGlobals compilation
+  pass. Full rebuild was not executed because automatic approval review hit the
+  account usage limit. Do not bypass that gate. The current XEX lacks this fix.
+- Save-container creation also failed in the profile-less owned Xenia instance.
+  No local test profile has been created yet. Verify that prerequisite and the
+  exact native mount return code. UI/gameplay/audio/save correctness remain unproven.
 - Retail NTSC 1.0 archives and speech data are staged in scratch/runtime/3Shipsty.
   Build evidence, exact dirty files and resume steps are in HANDOFF.md.
 

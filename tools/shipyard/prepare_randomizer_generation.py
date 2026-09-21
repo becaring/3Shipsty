@@ -58,6 +58,15 @@ class Lists:
             vals=[visit(v) for v in vals]
             if typ.startswith('std::vector<') and len(vals)==1:return typ+'(1, '+elem+'('+vals[0]+'))'
             body='{ typedef '+elem+' Element; const Element values[] = {'+', '.join(vals)+'}; return '+typ+'(values,values+sizeof(values)/sizeof(values[0])); }'
+            if 'std::function<' in elem:
+                # XDK /O2 drops nine of the twelve converting pair/lambda array
+                # initializers in conditionalAlwaysHints, then copies all twelve.
+                # Named elements and ordered insertion preserve every callable
+                # without that defective nontrivial aggregate initialization.
+                body='{ typedef '+elem+' Element; '+typ+' result; result.reserve('+str(len(vals))+'); '
+                for index,value in enumerate(vals):
+                    body+='const Element element'+str(index)+'('+value+'); result.push_back(element'+str(index)+'); '
+                body+='return result; }'
             if not capture:
                 name='GenerationList'+str(len(self.audit));self.helpers.append('static '+typ+' '+name+'() '+body+'\n');return name+'()'
             return '(['+capture+']() -> '+typ+' '+body+'())'

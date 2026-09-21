@@ -950,3 +950,22 @@ array elements then copies twelve. This is an H compiler-codegen defect at the
 initializer-list projection boundary. Ordered named-element construction is being
 verified; original callbacks/order/predicates are preserved. No game path bypass.
 First-bring-up engineering estimate remains around 70% pending runtime correctness.
+## 2026-09-21 - runtime progress and external approval-service block
+
+Checkpoint 3581983af5a5d3dbc4a100aa6b37a241526c07bc commits all sixteen link fixes.
+The uncommitted callable-array compiler workaround passes full compile/link and
+real Xenia execution gets through static initialization into InitOTR and archive
+discovery. Latest XEX SHA256 is dc03cb7a53475de94c7ec7e46fe247703843c184ce58516927cdd96feddcf0e5.
+
+A second startup failure is the missing initialization of the logical filesystem
+working directory: an absent optional MQ archive falls back to a relative path,
+which throws ERROR_NOT_READY. InitOTR now calls InitWorkingDirectory("game:/")
+before storage/Context. Five checks and complete native OTRGlobals compilation
+pass. The full build command was not executed: automatic approval review failed
+because the account hit its usage limit. This is an external review-service
+failure, not an unsafe-action determination. Do not bypass the approval gate.
+
+Owned Xenia has zero local profiles and XamContentCreateEx also failed. Verify
+local-profile prerequisites and capture its exact return code when resuming; no
+profile has been created yet. The current XEX lacks the CWD fix. Complete current
+state, dirty files, artifacts, evidence and next commands: RUNTIME_HANDOFF.md.
