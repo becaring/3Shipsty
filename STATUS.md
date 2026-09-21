@@ -2,6 +2,13 @@
 
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
+Translation/first genuine bring-up estimate: roughly 60% complete (50–65%
+uncertainty range). Application source coverage is 696/696 C and 10/398 C++ TUs,
+with substantial LUS/dependency/native backend compilation established. This
+estimate includes required integration and first execution; it does not measure
+the complete polished-port effort or imply that a modern XEX has run. Update
+this first-bring-up estimate in meaningful milestone reports as requested.
+
 - Exact release and all three submodules fetched and verified; pristine baseline
   recorded in UPSTREAM_BASELINE.md.
 - Differential platform audit recorded in PORTING_LEDGER.md and porting/*.md.
@@ -10,7 +17,7 @@
   Host original/generated contract and six generator tests pass.
 - Current graphics interfaces, extracted current combiner decoder and generic
   shader lowerer compile with XDK. Four generator tests and 2,097,152 host
-  decoder/layout cases pass. Full graphics backend remains unbuilt.
+  decoder/layout cases pass. Full native graphics execution remains unvalidated.
 - All 696/696 selected current application C TUs compile in one corrected
   XDK C run; no failed files are excluded.
   Async/futures/pool and filesystem platform
@@ -69,6 +76,10 @@
 - Exact Prism and current shader builder compile (six TUs), retaining real
   resource acquisition. All 936 host generation cases match; 264 unique Xbox
   vertex/pixel shader compilations pass. GPU execution remains unvalidated.
+- The native Xenos backend now compiles against every current rendering virtual
+  method (three TUs). Six bindings, separate attachment clears, rectangular
+  copies and numeric RGB5551 readback are present. Host pixel/cache boundary
+  checks pass; window/GUI wiring and native GPU behavior remain unvalidated.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

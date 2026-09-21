@@ -1,0 +1,46 @@
+"""Native ABI plus host pixel/cache boundaries; never claims GPU execution."""
+from pathlib import Path
+import json
+import runpy
+import sys
+ROOT=Path(__file__).resolve().parents[3]
+sys.path.insert(0,str(ROOT/'tools/shipyard'))
+from prepare_xenos import prepare,OUT,OWN
+from prepare_archives import stable
+
+def main():
+    prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
+    env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
+    text='''#include "pixels.h"
+#include "shader_provider.h"
+#include "xenos_backend.h"
+#include <type_traits>
+#include <map>
+#include <cstdio>
+#include <stdexcept>
+#define CHECK(c) do{if(!(c))throw std::runtime_error(#c);}while(0)
+static_assert(!std::is_abstract<Fast::GfxRenderingAPIXenos>::value,"missing current rendering virtual method");
+int main(){
+    for(unsigned v=0;v<256;++v)for(unsigned alpha=0;alpha<256;++alpha){
+        unsigned five=(31*v+124)/255;
+        CHECK(Shipyard::Xenos::PackReadbackPixel((alpha<<24)|(v<<16))==((five<<11)|(alpha?1:0)));
+        CHECK(Shipyard::Xenos::PackReadbackPixel((alpha<<24)|(v<<8))==((five<<6)|(alpha?1:0)));
+        CHECK(Shipyard::Xenos::PackReadbackPixel((alpha<<24)|v)==((five<<1)|(alpha?1:0)));
+    }
+    CHECK(Shipyard::Xenos::PackReadbackPixel(0xffffffff)==0xffff);
+    std::map<Fast::ShaderProgramKey,int> variants;
+    for(unsigned id=0;id<16;++id)for(unsigned option=0;option<16;++option)for(int filter=0;filter<3;++filter)for(int srgb=0;srgb<2;++srgb){
+        Fast::ShaderProgramKey key={uint64_t(id)<<60,uint32_t(option)<<28,static_cast<Fast::FilteringMode>(filter),srgb!=0};
+        CHECK(variants.insert(std::make_pair(key,static_cast<int>(variants.size()))).second);
+    }
+    CHECK(variants.size()==1536);
+    std::puts("196608 ARGB/RGB5551 channel-alpha cases and 1536 full-width shader identities pass; current interface is concrete");
+}
+'''
+    stable(folder/'contract.cpp',text)
+    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [OWN,OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'scratch/graphics-xdk/include']]
+    env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
+    result=env['invoke']([folder/'contract.exe'],folder,'run')
+    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],target_runtime_executed=False),indent=2)+'\n')
+    print(result['stdout'])
+if __name__=='__main__':main()

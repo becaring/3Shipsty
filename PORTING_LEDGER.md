@@ -377,3 +377,20 @@ tests were observed failing before implementation, then passing.
   representative Xbox VS/PS compilations pass. Test-only template acquisition
   is isolated from the production resource path. GPU execution and native
   callback/stack behavior remain unproven; see prism/README.md.
+
+### 2026-09-20: Native Xenos backend against the current API
+
+- Primary SoH360 native mechanics are byte-locked and adapted with reviewed
+  generic modern six-binding/framebuffer work. All current rendering virtual
+  methods compile with real XDK APIs; old callback tables, test scenes and
+  BattleShip-only rendering/ownership extensions are excluded.
+- Current Prism/decoder own shaders. Internal cache identity also includes
+  filtering/sRGB, with current variant selection for interpreter-held pointers.
+  A 64-bit donor logging specifier was corrected for the genuine uint32 ID.
+- Native ARGB-to-RGB5551 channel/alpha tests and full-width shader identity
+  tests pass. New six-binding constants use direct SDK writes; old exact-value
+  reuse retains invalidation/verification. All GPU behavior remains unexecuted.
+- Old title asset-cache eviction and disk shader persistence are not connected
+  to modern LUS/storage. Real shader compilation/allocation errors remain; no
+  alternate resource manager or fake shader is supplied. XContent cache worker,
+  window/GUI ownership and actual native validation remain open. See xenos README.
