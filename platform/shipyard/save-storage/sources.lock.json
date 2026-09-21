@@ -1,0 +1,18 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/SaveManager.h": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+    "soh/soh/SaveManager.cpp": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+    "soh/soh/SohGui/SohGui.hpp": "4081bc8e1ab45281a59bc4ccbcc380fa79826b433728350f3b173ed51e191bd7"
+  },
+  "evidence": {
+    "soh/soh/util.cpp": "5f54356c374368021a334c9a4209cca2036cb85391b23e81788462e4941e866e",
+    "soh/soh/util.h": "20cb7df7fe7482f2edd5a3777cc03170fd04f35c86f8e6965cf33421854155fc",
+    "platform/shipyard/json/upstream/include/nlohmann/detail/value_t.hpp": "67ed7b164db48556bb4ae409a645401faba459081570f9b9f9ff977fd32c6114",
+    "platform/shipyard/json/upstream/include/nlohmann/json.hpp": "88d7eb42b19599cab48856576dd4ea52538df72ad7c57200c50de98bda246458"
+  },
+  "readonly_donor_evidence": {
+    "D:/Projects/SoH360/platform/xbox360/platform.cpp": "18ed5127d03e933df041a33f1691becf29a058580f335535f3efcd2c832cd419",
+    "D:/Projects/SoH360/platform/xbox360/save_worker.cpp": "64a194f4aa80399f7ce1d5befed876a4f5634c51c3c6d2166d042b3127408b47"
+  }
+}

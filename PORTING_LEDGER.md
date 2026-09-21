@@ -633,3 +633,40 @@ tests were observed failing before implementation, then passing.
   match scratch/project-xdk/ui-services-verification.json. First-bring-up estimate remains 65%.
   Two independent startup/save-storage tasks are active, without delegation
   chains. No XEX, gameplay or hardware claim.
+
+### Full menu, option and save-boundary checkpoint (2026-09-20)
+
+- A/B/G: six complete Menu/SohMenu/modal/settings/enhancement/developer-tool
+  units compile. All 449 feature widget registrations retain original arguments;
+  canonical value-initialization, search/modal ownership and three accented
+  UTF-8 strings pass original/projected and native object checks. Xbox's absent
+  desktop file-manager capability disables its existing folder button with an
+  explanation; game/enhancement controls are retained.
+- A/B/D/F: full option.cpp retains all 59 remaining methods and the original
+  four OptionValue definitions in their existing canonical provider. Complete
+  Settings/Option/LocationOption/TrickSetting/OptionGroup/Tricks declarations
+  preserve all fields/defaults. Five checks cover 232 options, 268 tricks,
+  85 groups and real callbacks. Settings is 242432 bytes on Xenon; options and
+  tricks initialize in place without returning large temporary arrays. The
+  genuine Settings constructor is an explicit fragment, full settings.cpp open.
+- C/D/E/F: startup uses genuine version readers and the same upstream archive
+  acceptance contract, with extraction owned by the PC. Real audio handshake
+  uses native primitives; its unlocked running read is removed in favor of the
+  existing locked exit check. Timer teardown precedes Context destruction.
+  Full startup remains pending; eight method probes are not production coverage.
+- B/D/E/F: 38 actual SaveManager members and 11 C bridges compile with the real
+  modern BS worker. Native XContent selection/mount/flush/close and atomic file
+  publication retain prior saves on pre-replacement failures. Host comparison
+  covers 161 serialized outputs and four real base loaders; worker-drain and
+  file-failure tests pass. No randomizer or legacy methods are substituted.
+  Mount/configuration lifetime and asynchronous failure presentation remain open.
+- The complete 1,521-item integration build passes, with all source identities
+  and PPC objects verified in scratch/project-xdk/menu-storage-verification.json.
+  Two additional randomizer option/constructor recipes pass their generated
+  project with pinned target definitions. Inventory now selects 696 C and 127
+  complete C++ application TUs, 271 C++ pending. Estimate: roughly 65–70% first
+  bring-up, broad 50–75% uncertainty. No modern XEX or target execution claim.
+- Legacy raw-save producer/layout/endian provenance is now recorded in
+  porting/LEGACY_SAVE_AUDIT.md. An explicit byte decoder remains separate from
+  modern JSON serialization; blanket swapping and native reinterprets are not
+  acceptable. Implementation and controller editor are independent active tasks.

@@ -2,8 +2,8 @@
 
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 65% complete (50–75%
-uncertainty range). Selected application source coverage is 696/696 C and 120/398 C++ TUs,
+Translation/first genuine bring-up estimate: roughly 65–70% complete (50–75%
+uncertainty range). Selected application source coverage is 696/696 C and 127/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -43,11 +43,31 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   Native entropy uses XNetRandom and requires startup ownership of XNet.
 - All five GameInteractor units and all 23 selected Cheats/Fixes compile.
   The expanded 1,512-item selection passes; all source hashes and native PPC
-  objects are verified in scratch/project-xdk/ui-services-verification.json. Startup and save/storage are
-  being implemented independently by two agents; no third agent is active.
+  objects are verified in scratch/project-xdk/ui-services-verification.json.
+  The newer menu/storage integration checkpoint is recorded below.
 - Supplied unmodified baserom.z64 extracted with the exact official PC release:
   retail NTSC 1.0 oot.o2r has 38,390 CRC-verified entries and version 9.2.3.
   This archive is available for Xbox bring-up; target execution is unverified.
+- Six complete application menu units compile, retaining all 449 enhancement,
+  settings and developer-tool widget registrations. Actual menu/default/modal/
+  notification and native UTF-8 contracts pass. The 1,521-item full integration
+  build passes with source/object hashes in menu-storage-verification.json.
+- Actual option.cpp now compiles, retaining its four existing canonical
+  OptionValue definitions separately. Complete Settings/Option/OptionGroup and
+  trick declarations pass native layout and original/projected tests covering
+  232 options, 268 tricks and 85 groups. The real Settings constructor compiles
+  in place. These two additional recipes pass the generated project separately;
+  full settings.cpp remains pending and no constructor is duplicated.
+- Startup's real archive acceptance/version readers and audio lifecycle compile
+  as bounded method probes; full OTRGlobals.cpp remains pending its header and
+  application integration. No startup probe counts as complete application TU.
+- Real SaveManager serialization (38/42 members, 11/12 C bridges) and native
+  XContent/atomic publication compile. 161 original/projected serialized outputs,
+  four base loaders, worker drain and failure preservation pass. The fragment is
+  explicitly partial; randomizer methods and legacy conversion are still pending.
+  Device mounting, producer shutdown, worker join and configuration persistence
+  still need final startup integration. Controller editor and explicit legacy
+  conversion work are independent active tasks; option task is now idle.
 - All fifteen modern cheat units compile, including the real randomizer bombchu
   capacity path. Three object-extension units and both ActorDB/config-migration
   units compile. ShipInit, variadic cursors, owning any/registry and ActorDB

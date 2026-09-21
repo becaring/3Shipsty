@@ -2,6 +2,8 @@
   "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
   "sources": {
     "soh/soh/OTRGlobals.h": "e234b4479b3ba8d5d264f437ad1dd5edb41dcf0d666925ec97e913af07a62111",
-    "soh/soh/OTRGlobals.cpp": "648bda58939111f1e477588fa2bec6a701406ef94daddd6a296862692fb0fdf9"
+    "soh/soh/OTRGlobals.cpp": "648bda58939111f1e477588fa2bec6a701406ef94daddd6a296862692fb0fdf9",
+    "soh/soh/OTRAudio.h": "c68a87d5f5be078386d7bb22df3f8503db9d5d5049291c231539b2fac4b9029a",
+    "soh/soh/Enhancements/savestates.h": "7ee720616f7e21497a44e119022987a67a75ed0df981c76bfe36f8e897dc98eb"
   }
 }

@@ -52,7 +52,10 @@
         "randomizer",
         "ship-utils",
         "custom-message",
-        "soh-ui"
+        "soh-ui",
+        "soh-menus",
+        "save-storage",
+        "randomizer-options"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -185,6 +188,15 @@
     ],
     "soh-ui": [
       "scratch/soh-ui-xdk/xdk/build.json"
+    ],
+    "soh-menus": [
+      "scratch/soh-menus-xdk/xdk/build.json"
+    ],
+    "save-storage": [
+      "scratch/save-storage-xdk/xdk/build.json"
+    ],
+    "randomizer-options": [
+      "scratch/randomizer-options-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -194,7 +206,9 @@
     "platform/shipyard/randomizer/xdk_abi.cpp": "Complete class layout/include probe, not production application code",
     "platform/shipyard/ship-utils/xdk_contract.cpp": "Native API compile probe, not production",
     "scratch/ship-utils-xdk/xdk/c_abi.i": "Preprocessed C ABI probe, not production",
-    "scratch/custom-message-xdk/generated/literal_probe.cpp": "Native UTF-8 literal byte verification probe, not production"
+    "scratch/custom-message-xdk/generated/literal_probe.cpp": "Native UTF-8 literal byte verification probe, not production",
+    "scratch/randomizer-options-xdk/xdk/declarations.cpp": "Complete randomizer option/settings declarations probe, not production",
+    "scratch/randomizer-options-xdk/xdk/abi.cpp": "Target field layout probe, not production"
   },
   "supplemental_sources": [
     {
@@ -221,6 +235,14 @@
     "scratch/randomizer-xdk/generated/soh/soh/Enhancements/randomizer/OptionValue.cpp": {
       "source": "soh/soh/Enhancements/randomizer/option.cpp",
       "scope": "Canonical four OptionValue methods split from full option.cpp; full Option/UI TU remains pending and must not redefine these methods"
+    },
+    "scratch/save-storage-xdk/generated/SaveSerialization.cpp": {
+      "source": "soh/soh/SaveManager.cpp",
+      "scope": "38/42 real SaveManager members plus11/12Cbridges; four randomizer/legacy-conversion methods and Save_LoadFile remain pending. Never compile alongside complete SaveManager.cpp."
+    },
+    "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": {
+      "source": "soh/soh/Enhancements/randomizer/settings.cpp",
+      "scope": "Actual Settings constructor and in-place option/trick initialization only. Complete settings.cpp remains pending and must not redefine this constructor."
     }
   },
   "integration_gates": [

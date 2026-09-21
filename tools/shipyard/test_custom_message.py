@@ -131,4 +131,3 @@ class CustomMessageTests(unittest.TestCase):
             original=subprocess.run(['git','show',self.manifest['source_commit']+':'+rel],cwd=ROOT,capture_output=True,check=True).stdout
             self.assertEqual(original.replace(b'\r\n',b'\n'),(ROOT/rel).read_bytes().replace(b'\r\n',b'\n'),rel)
 if __name__=='__main__':unittest.main()
-

@@ -1,0 +1,17 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/SohGui/Menu.h": "15d84edc4fa2fe481235c347505aebef24cceb8f217d3ac668a07fb44393163b",
+    "soh/soh/SohGui/Menu.cpp": "b07ac4f0544f10e31c7610e594b5709c1cfd3f686c4c2e840d3123f0c9996bcd",
+    "soh/soh/SohGui/SohMenu.h": "73947c082aae4b357784b4804563bf062afcf0323a8f885ced0ca52137d2894d",
+    "soh/soh/SohGui/SohMenu.cpp": "38519721de6674fe6279c2d36f51480bc61c577f79564b3ce4d6e77b34466c84",
+    "soh/soh/SohGui/SohModals.h": "82bb8b62dbc5ea02bbd8a5919760b698bfc536fa942c05f36fecc1fb8e5fb047",
+    "soh/soh/SohGui/SohModals.cpp": "c35aecae0338a90904344c9c71eeeb5e917e1ef6c50943b294461ed2e0fe16fe",
+    "soh/soh/SohGui/SohGui.hpp": "4081bc8e1ab45281a59bc4ccbcc380fa79826b433728350f3b173ed51e191bd7",
+    "soh/soh/SohGui/SohMenuEnhancements.cpp": "fa6abf05c5ac51f84fb1018955635db710fe2a25e76cfbe2700a2f744d7e974b",
+    "soh/soh/SohGui/SohMenuSettings.cpp": "706548e84046d0302c25d5ec4617b69408b8fff262a5f2aceab7364f2f6b714e",
+    "soh/soh/SohGui/SohMenuDevTools.cpp": "7019a4ff41489f0191cb0830b6a2f0266e03383f229aed8a431ff4b12531dd7c",
+    "soh/soh/Enhancements/TimeDisplay/TimeDisplay.h": "8ceb27539f11fc946f9fdde36dd00bf0638531fd8079a2cf0505f20d844e4e97",
+    "soh/soh/Notification/Notification.h": "06928b3fe517cd4a40ffa1e5a942beb5248d5f40b8248ce1e1e631be341a4660"
+  }
+}
