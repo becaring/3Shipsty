@@ -1,0 +1,9 @@
+{
+  "classification": "generic XDK C++ syntax and range iteration; no application policy",
+  "donors": {
+    "D:\\Projects\\Smash360\\tools\\prepare_imgui_xdk.py": "e0c2ecf36ff77be60a16690b579451f6fab82dd263b0197d069658650e801fd7",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\config\\lowering.py": "a2e98fd3941255a456229adcbc4c2479f62d7888e6f9734e443d910b6bd3d4d0",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\imgui\\range.h": "2e1936ee898b9c74e0d1d1e0e54befd940de1e70f4d144d7f2b73b97ada9709d"
+  },
+  "current_patch_sha256": "9f3f01b0f197aa761a84d9d49f26abcb052283049ac5e8f88a563581ada96e80"
+}

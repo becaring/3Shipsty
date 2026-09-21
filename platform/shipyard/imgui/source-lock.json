@@ -1,0 +1,21 @@
+{
+  "helpers": {
+    "platform/shipyard/imgui/projection.py": "0cf09feddb10e0c765088a21d8fb88ac5a86a6803047f1c59efb5aa68947d368",
+    "platform/shipyard/imgui/range.h": "3fa61d34b09ca6b5a1a3f9d4c5b57e98fd0b07c5b6d86cb46a7a0fc17065fc91",
+    "tools/shipyard/cpp_ast.py": "5a37cf10f237ec425d816149dd7b8895822771b2df422641f66aa002b4d9e260"
+  },
+  "parser": {
+    "scratch/python-tools/tree_sitter/__init__.py": "b632d915b1ef3a8e0a3c8c12316deb67063ea9eadf89bfda51350733d01a22e2",
+    "scratch/python-tools/tree_sitter/__init__.pyi": "505c2b5a1d167b249afc3ef99d3708db17c05b8c125820f971ee1ac5bfe57dfc",
+    "scratch/python-tools/tree_sitter/_binding.cp313-win_amd64.pyd": "2b7cc585c9c8b091a36b139fbdab75eebb84edd5d43cceeca565da1204f913ed",
+    "scratch/python-tools/tree_sitter/py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scratch/python-tools/tree_sitter_cpp/__init__.py": "64400285f8ebb84d8acd90205abc20cd7c97a3f5c20c3c1835f701e0b345aaaa",
+    "scratch/python-tools/tree_sitter_cpp/__init__.pyi": "c58d914a565a66885029b46c5356709734ac94177a3777c99acf62cc9de2ef93",
+    "scratch/python-tools/tree_sitter_cpp/_binding.pyd": "167193e79bd6dc6a2ded6e6ff6e61f52d2d0ae936a27e51f8c5ce7f5837d4db0",
+    "scratch/python-tools/tree_sitter_cpp/binding.c": "215b265b930e2865758500b0c563129d68c2d24f30cf3534b68736fc9baa9779",
+    "scratch/python-tools/tree_sitter_cpp/py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scratch/python-tools/tree_sitter_cpp/queries/highlights.scm": "52136576a9a9dacd9e95a8de0f351689bf46140738572ab4e9f24c9278e6b458",
+    "scratch/python-tools/tree_sitter_cpp/queries/injections.scm": "0791a308ef7c0a9e40b8415a2e9cee85b528a8bb21697e65c79872e8848dd972",
+    "scratch/python-tools/tree_sitter_cpp/queries/tags.scm": "029731ca946e32f919491d9f76c85a50e5deb5ad1934e37fd6849312c0d4a705"
+  }
+}

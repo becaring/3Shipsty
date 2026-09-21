@@ -1,0 +1,16 @@
+{
+  "spdlog": {
+    "version": "1.16.0",
+    "revision": "486b55554f11c9cccc913e11a87085b2a91f706f",
+    "url": "https://github.com/gabime/spdlog.git",
+    "rationale": "LUS has no spdlog gitlink; its platform find_package is unconstrained, fallback1.14.1. Pin the audited modern1.16 provider."
+  },
+  "fmt_compiler_boundary": {
+    "version": "4.1.0",
+    "revision": "135ab5cf71ed731fc9fa0653051e7d4884a3652f",
+    "url": "https://github.com/fmtlib/fmt.git",
+    "status": "explicit limited compiler dependency; not blanket fmt12 equivalence"
+  },
+  "tree_sitter": "0.25.2",
+  "tree_sitter_cpp": "0.23.4"
+}

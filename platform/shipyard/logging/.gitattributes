@@ -1,0 +1,2 @@
+# Preserve bytes validated by the owned source-lock/provenance manifests.
+* -text -whitespace

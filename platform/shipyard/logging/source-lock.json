@@ -1,0 +1,4 @@
+{
+  "spdlog/details/circular_q.h": "d36a4e64cfd0d905503b60d4870535f9c7e114eba129a8695a0ebe0501414827",
+  "spdlog/details/mpmc_blocking_q.h": "a3fc10aa45211fcc618d8a0c2f99dd735cfeefe3c516b07d69ec0b4781efb58f"
+}

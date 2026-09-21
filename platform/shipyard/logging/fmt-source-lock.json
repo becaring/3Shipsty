@@ -1,0 +1,14 @@
+{
+  "fmt/CMakeLists.txt": "75937254a1ac61eedc6c9e8b1c72b2c2a6ccc0b8e0d564d98db1ed2b216e4f94",
+  "fmt/container.h": "e5ba86f0abf672a2ee1b0ba247bab9e34326fd8a27c391a52131ea837fd3cf7f",
+  "fmt/format.cc": "26d978ab2f1bf7067f4489ef71d5f7a5068f528c0701baa14f5a5ac821b2bc09",
+  "fmt/format.h": "fec52f0394d354b9ca0fab284f4761bcff9c3ab1c9e3836236d6848dba0420b1",
+  "fmt/ostream.cc": "399766ecaa0439dcdc07a2bbb352c21a15866179d3c4c9f67dec60b3211a738e",
+  "fmt/ostream.h": "2a83179fd842a6b609bb6126bed2b260a97cdd807d035b9782dba6445b234aad",
+  "fmt/posix.cc": "9a8d92b6d0f00d24052af8b4eea00c51648b599ac8aa248d693729a4384ebfb0",
+  "fmt/posix.h": "bae7be1f2d245193720f80bfc9dc5d1bd9018f61961a73f2a9bc302e622e2b3f",
+  "fmt/printf.cc": "2c6d05034dac30ffc248f1e2cbf4c23ee790c902552ab2aead25e0d91d6b5c0c",
+  "fmt/printf.h": "cbbf5be47711af3568fa6ed10a73e19ce878361a4cd164ca6ad8e686f823026c",
+  "fmt/string.h": "70e46a4933af3244dfe7f59ace5de7651c6309ff3be6947a8000b43356ee950d",
+  "fmt/time.h": "3ff7ea8531bfc89c7895e9aec4a9c9ddc18f5e9e2a5058216e038156afa6aab0"
+}

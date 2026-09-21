@@ -154,3 +154,17 @@ tests were observed failing before implementation, then passing.
   lifecycle and save snapshot ownership. Filesystem foundation adds modern
   create_directory/copy_file and safe replacement/error semantics. Full
   consumers, runtime and storage durability are not yet validated.
+- Current ImGui dependency: exact tag and release LUS configuration, five native
+  core TUs, host atlas/draw-data/command differential. No substitute SoH GUI.
+- Current resource leaf boundary: 21 exact inputs, nine native TUs, real factory
+  and variant differential. Remaining seven archive/manager/loader TUs retain
+  explicit unresolved integration probes with MPQ enabled.
+- Logging core carries current spdlog algorithms and native queues. Measured
+  fmt4/fmt12 default-double precision difference remains a required integration
+  fix; typed modern integer/string formatting corpus passes.
+- C diagnostic pass under the correct fixed-point matrix ABI reached 656/696.
+  Narrow corrections then passed all 40 residual TUs: typed current color/item
+  factories, proven in-order designated initializers, XDK math macro capture,
+  actual restrict spelling, C textual include closure, exact Opus headers, and
+  canonical bool OR/store and framebuffer completion-pointer boundaries.
+  The entire set is being rebuilt; do not combine differing configurations.

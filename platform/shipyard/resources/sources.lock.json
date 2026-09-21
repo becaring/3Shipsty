@@ -1,0 +1,30 @@
+{
+  "lus_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "sources": {
+    "include/ship/resource/File.h": "8d7bf76868e344e4504c8aa5c544bb3a1790662d23180a519b8b96a5271fdcb0",
+    "include/ship/resource/Resource.h": "819dfa0a43053027b4b9d5e6cda0d55e9cbbd84d09b96f2709e2f593036c2454",
+    "include/ship/resource/ResourceFactory.h": "b9b586abd47c4f2c1f661896f41b28cd439745e98593c0b1db2652f060c427e9",
+    "include/ship/resource/ResourceFactoryBinary.h": "856e02cd2bff1e7976cfeed6c6a9b3484e6571712f16548d8fa1f7f832851834",
+    "include/ship/resource/ResourceFactoryXML.h": "cc14dda27d714ec8685e585738d827cac05534284a6c38a3e6336ea72524b7b3",
+    "include/ship/resource/ResourceType.h": "4ec56feada28ce9825cde4b7326a3c4e425a7251ea6df832230f8e3776b20b7c",
+    "include/ship/resource/factory/BlobFactory.h": "c36e7af078ac0b2949c904d9daf4181acf684cea48170138ffb3d81cf3540aa8",
+    "include/ship/resource/factory/JsonFactory.h": "e722a76bbc24bd43f6e8cee25449feb5d6e64f792b0b161db03199e2c385957c",
+    "include/ship/resource/factory/ShaderFactory.h": "874397e1545ab76ed0f8d98427a8ac4d7413a38242865f2fe26cd6609da20fc9",
+    "include/ship/resource/type/Blob.h": "546c3eb9ace583afde49f8d80acb33930003a894dff2eaaff19f87eec9af633b",
+    "include/ship/resource/type/Json.h": "a046bf7f529aafb193a2021536e19ff5a9dfae79925fa4fe4c379d4dc57657c7",
+    "include/ship/resource/type/Shader.h": "98603dd1cf2fba96b17bff2e03ed78e77885e15a90ea457110be635451a2bfe5",
+    "src/ship/resource/Resource.cpp": "0e602f051d359af1582f4f6075f626a5607937b4b9f7670568c308bc2e7600e3",
+    "src/ship/resource/ResourceFactoryBinary.cpp": "be0502b94377c252e59502701ac6ccc44105289232eebe17178b83f4f73c3809",
+    "src/ship/resource/ResourceFactoryXML.cpp": "0631eff7a664101ee7e8836dc311143e5f73472f7624d55900589ca9c34e798d",
+    "src/ship/resource/factory/BlobFactory.cpp": "d5bd8ab03673189a04f3b6484b8a8a9a7a276f3ccc170405e2bf199fd647475c",
+    "src/ship/resource/factory/JsonFactory.cpp": "4e05113776370986b474ad326e6c12a737a2e2eb450e12b67164db5a1972428a",
+    "src/ship/resource/factory/ShaderFactory.cpp": "4bec83a43ba9def7b361410e10b26528916f19d10c27397b07beb86d0c6726da",
+    "src/ship/resource/type/Blob.cpp": "e3cb70363ce7a977062b4573860da6af2ca37058452b5c43b133efa8260505f9",
+    "src/ship/resource/type/Json.cpp": "982ca0edebdd12a8fc97ce68b43d82a92cb410a348f005c4db2fe3515615bc1e",
+    "src/ship/resource/type/Shader.cpp": "2b3436bbf6a8585d339922ba1b441fa60b12c76c31b29020a09d5353e73d058b"
+  },
+  "helpers": {
+    "variant.h": "4953b3467f00519b52c27768c6ce55e768bae6b0565fe408c9b2c4abf981c874"
+  },
+  "provenance": "Transforms independently authored against pinned owned LUS. Variant independently authored; no Smash resource runtime copied."
+}

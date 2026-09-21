@@ -1,0 +1,19 @@
+{
+  "donor": "Smash360 generic Xbox/logging only; no game behavior",
+  "files": {
+    "platform/xbox360/cpp-compat/logging/native.h": "b9641e00345a77bc494a19ceedd123012db49183ad29ad5e2e81d02ba2357c4a",
+    "platform/xbox360/cpp-compat/logging/format_types.h": "7cc256acbf95e6b21577257dced3ed901b4bcc656890cb170b29131b4afc9bdd",
+    "platform/xbox360/cpp-compat/format/format.h": "51cfa242f70c8b79ae1ca6f34ff4206ff2085b59e9c799afad561c6dc405a86e",
+    "platform/xbox360/cpp-compat/chrono/chrono.h": "738ed980ce0c94064d550043daf61d16468580429c5b52f5290751628b611013",
+    "platform/xbox360/cpp-compat/chrono/chrono.cpp": "3a100803b5e687386479c9e211b82055b79f4ad78d3d718d80c3186ebdcb8d2f",
+    "platform/xbox360/environment.h": "f5ad5449164158205eead0bf952545457485be20c049b8e0e6385e3b9f5e9122",
+    "platform/xbox360/environment.cpp": "c439a71c9398add6a3251f906525be4576eac48743a2971090e601fef68a5d6b",
+    "platform/xbox360/cpp-compat/logging/generate_core.py": "dd4430b13cacd01c3c35c7916a0a7dd5e77ab0d796f29196d47ab2e0c717210f",
+    "tools/prepare_prism_xdk.py": "2911b4a584807c028cd5fd2bc54de4b58ee46b5731b4e3ef13a52972d22ca0e0",
+    "platform/xbox360/cpp-compat/config/lowering.py": "a2e98fd3941255a456229adcbc4c2479f62d7888e6f9734e443d910b6bd3d4d0",
+    "tools/prepare_logging_xdk.py": "c3fced6dc34a94128807680fad41252edd6d680e8a65fc9d3a6a067b841e13b0",
+    "tests/logging/core_cases.cpp": "56bdec52f5b91a8b87899a5f5c3eb1a5665388fd5bc8b94e2a1467d6a1c91c2e",
+    "tests/logging/chrono_cases.cpp": "1bff0b810d81a815483b4b426e9b665eade80072396489f9f5d7698ca7ee693a",
+    "tests/logging/queue_cases.cpp": "3e75d327cff9830caefa6d6d7b6ae42763bfc17a4456e471220a5f55c675c2da"
+  }
+}
