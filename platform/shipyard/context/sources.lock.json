@@ -1,0 +1,26 @@
+{
+  "sources": {
+    "src/ship/Context.cpp": "d471c2352426bbecc26e69e8cb4281078241d169a64609b61f1946a7cb4a48d7",
+    "include/ship/window/gui/GameOverlay.h": "01eb532d96046d5a9016461f107d9cf813132ff09f5746abf3c7972e2d3050aa",
+    "include/ship/debug/Console.h": "27ea583719b88e52a97643281a4ade71d9a8a455a09bf91ec21a4795b63b7d18",
+    "src/ship/debug/Console.cpp": "9537f6df1fcd22e65211463295bf002c7a8ce5afc69966e5476009922ac8ed02",
+    "include/ship/debug/CrashHandler.h": "79d845f23e4bad2a8c918a800a22621a20d56194e7fece8aabb809230b3d031e",
+    "src/ship/debug/CrashHandler.cpp": "f9151bc145a88e434e907a459c0375b39f915ac4e004b4becbe2917de5f3b4f4",
+    "include/ship/window/FileDropMgr.h": "8ed35ee85eaf6adaecdb7408ec996b50300d6a9e7fb21abb2e20ece4791dbe3c",
+    "src/ship/window/FileDropMgr.cpp": "530a9eebfa4f901a9d4765d54dc8d0103063d63717828f3c457a5d5ac81c1231",
+    "include/fast/debug/GfxDebugger.h": "c61dc39ffddc44a900e42eda51dd3fd6c0f92d06fd4e93cf805d3e0fa56e3943",
+    "src/fast/debug/GfxDebugger.cpp": "50438733153e2360c1ed0eed2b67159ae9d4c990680ae39051c7dfcea8dd9fcb",
+    "include/libultraship/bridge/audiobridge.h": "a78cc3de562e031279f0e258224d429ed96fed31af343416e751c6252c6536cb",
+    "src/libultraship/bridge/audiobridge.cpp": "a40445e3eedfeaae24bb682f87f1e46098c24849a31f03b4275d6583268d6cf4",
+    "include/libultraship/bridge/consolevariablebridge.h": "844073fa45248c3d81c709d33331d9625f2b9edbf152791ec053c19571bf28af",
+    "src/libultraship/bridge/consolevariablebridge.cpp": "4fc04ee865e217e91f0e04d7f92a267599608b92103d3f13fd8b2f7f530fc914",
+    "include/libultraship/bridge/crashhandlerbridge.h": "a8bf39a5f53f34cbb562031073e43192f52da19b2a315b5f6c8d56dbef3882e5",
+    "src/libultraship/bridge/crashhandlerbridge.cpp": "9e068278ed972fce0f9aa3d9bac25afaf45f3c629b90e8ead6dad0ecf77dc9d2",
+    "include/libultraship/bridge/gfxdebuggerbridge.h": "ae74e252e7372c3c4f0a9b965506a1eec3c048ea8efd19e184c6c452ee86cc70",
+    "src/libultraship/bridge/gfxdebuggerbridge.cpp": "2c3e208b46a1e5961c7804fe63303b0db79922b3d0b252ab25d68f83ba09a753",
+    "include/libultraship/bridge/windowbridge.h": "dec83f420bc43c30967bdafe785e60772377b7313992eaf1f5b7dabf179ddd05",
+    "src/libultraship/bridge/windowbridge.cpp": "9171f34e17a983a3768ccc1a4e0b00898c0f0f84afdcb8707ef6b880afc9c2c9",
+    "include/libultraship/log/luslog.h": "c2c947103e5e53f1f524236e8e87e0d7557b3acf96bdef6981a2b3078504ae19",
+    "src/libultraship/log/luslog.cpp": "5cbd928952577055acf522a39796c0183d96521969965af1e2ce42e817c066f1"
+  }
+}

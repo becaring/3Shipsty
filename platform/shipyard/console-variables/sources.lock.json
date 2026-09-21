@@ -1,0 +1,9 @@
+{
+  "sources": {
+    "include/ship/config/ConsoleVariable.h": "f3debcb58e8a15f1edb28b2bb018ef0fc113bebfbda0071d03a5e0e44e45ed8c",
+    "src/ship/config/ConsoleVariable.cpp": "9bac8130e1339c7d3b4a193386ae9f5dad1586db70148ade132dced443694c54",
+    "include/ship/utils/filesystemtools/Path.h": "76fe7361dcb7c472ca4e06adf1a338b4101c2d43eaeeb5abf00dc533bf7e9af0",
+    "include/ship/utils/filesystemtools/DiskFile.h": "2b9e1021984a6955b440785ceede532b877f7c82865c1a12912e44e6678eb90b",
+    "include/ship/utils/color.h": "004c7c8653985d89d52dc563b8e1a9579df152bf377920239a0b245546dadafd"
+  }
+}

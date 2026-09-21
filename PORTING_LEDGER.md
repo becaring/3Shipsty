@@ -246,3 +246,32 @@ tests were observed failing before implementation, then passing.
   missing-component traversal behavior was observed and retained in tests.
 - Source/ownership/validation details are in audio/README.md and
   configuration/README.md. No audio playback, XEX, Xenia or hardware claim.
+
+### 2026-09-20: Shared window, CVar and actual Context closure
+
+- Five complete current window/GUI base TUs and ConsoleVariable compile with
+  XDK. Constructor projections preserve target bodies and member defaults,
+  including all four Window -1 scancode paths. Current recursive CVar JSON and
+  legacy migration are retained; full persistence execution is still pending.
+- Twelve Context/lifecycle/bridge/native service TUs compile. Real initialization
+  and ownership remain upstream. Native error reporting uses XShowMessageBoxUI;
+  game: root follows primary SoH360. Writable XContent integration remains open.
+- Ruling: guard partial Context cleanup and reset the published Window after
+  Init throws. The modern donor identifies this real lifecycle failure boundary;
+  ordinary successful startup is unchanged. Cost if wrong: partial GUI cleanup
+  must be revisited during native failed-startup validation, which is pending.
+- Generic Smash context/compiler lessons were read, not executed. No Smash
+  application startup, paths, rumble policy or BattleShip EventSystem was
+  imported; the pinned SoH LUS does not contain that EventSystem subsystem.
+- Full original/projected GuiElement lifecycle and GfxDebugger state checks
+  agree. Current Console method audit (excluding live-Context Run) agrees.
+  Initial linker-discard experiment still needed Context symbols and was
+  discarded; production TU compilation never excludes Run.
+- Current CrashHandler buffer/callback implementation remains, with native
+  exception capture pending. Upstream callback-constructor and truncation
+  issues are documented in context/README.md rather than silently changed.
+- GameOverlay constructor defaults and the direct implementation dependencies
+  removed from Gui.h must accompany their forthcoming implementation projection.
+  These headers preserve full declarations, not replacement implementations.
+- Detailed commands, evidence and limitations: platform/shipyard/window,
+  console-variables and context READMEs. All reference trees remain read-only.

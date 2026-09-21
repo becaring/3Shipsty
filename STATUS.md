@@ -42,6 +42,11 @@
 - Complete current Config compiles. Original/projected configuration method
   audits agree on save/reload, typed/nested values and migrations. Native
   backend registration is present; Context/window execution remains open.
+- Complete current Context and eleven lifecycle/platform/bridge TUs compile,
+  together with five current shared window/menu base TUs and ConsoleVariable.
+  GUI element lifecycle, console registration/usage and debugger state audits
+  match upstream. Full Context/CVar execution and native presentation remain
+  unvalidated; modern application C++ and full graphics remain major work.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

@@ -1,0 +1,16 @@
+{
+  "sources": {
+    "include/ship/window/Window.h": "52d8b775ab150d3008830b17f98b4f153edaf18769bd86f792117e36bdf8c361",
+    "src/ship/window/Window.cpp": "eb4d3319edbd8e62c37d9ff074a17aa8f619442b08719ea0941eaa98c3325553",
+    "include/ship/window/MouseStateManager.h": "6fd99ac4896aa9e5296ce7142138f72a2483f4219102abe3f3a0a26b2b1edae2",
+    "src/ship/window/MouseStateManager.cpp": "8d269b2ffbc5b63dd71c053783f156857e477ecbb5528aea6d72bc2fa94a70eb",
+    "include/ship/window/gui/Gui.h": "d2a758a3adb33b67e33ef557088912cebeb1a5a8b11529f0591870b8b9718a3a",
+    "include/ship/window/gui/resource/GuiTexture.h": "5109f310579f69efb285288b01bfbd7d97c6557f7d5c3255a01979d096f09985",
+    "include/ship/window/gui/GuiElement.h": "7bee62b14602df068fb0acfcf359c8fdab4747a8160b480e65e3fca79527d65e",
+    "src/ship/window/gui/GuiElement.cpp": "c8865b7801d5365f4ce14121a9b44224a61e00fd14452f45233efaf140d94cc3",
+    "include/ship/window/gui/GuiWindow.h": "e9d3dcf62b6f1e63bc543497e9f676f60d7d512ad16c2eb3b8794f31c6227e22",
+    "src/ship/window/gui/GuiWindow.cpp": "d137857e3c170da96368d30a31dfef59cd1189cf7501ad8cf0a42e6965f94974",
+    "include/ship/window/gui/GuiMenuBar.h": "b2982f9417c59b660a9475db12722b71e4bced6c52dfc27843cfcafcd308c4a8",
+    "src/ship/window/gui/GuiMenuBar.cpp": "a5d2015faeaef0736cc61d70d871127124e693566b11ddbbb609a86dd1b63eaf"
+  }
+}
