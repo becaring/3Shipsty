@@ -43,3 +43,12 @@ prism `bbcbc7e3f890a5806b579361e7aa0336acd547e7`; stb_image from
 Reference trees are read-only. SoH360 supplies platform mechanisms, never modern
 application policy. Smash360 supplies audited generic platform/compiler lessons,
 never its game behavior. Reference file hashes are required for any copied input.
+
+Additional resolved dependencies are recorded in
+`platform/shipyard/dependencies.lock.json`: libzip, zlib, tinyxml2, exact current
+Prism and ImGui. Thread-pool provenance is under
+`platform/shipyard/thread-pool/source-provenance.json`; JSON official/donor
+hashes are under `platform/shipyard/json/source-authority.json`. Logging's
+explicit spdlog/fmt selections are recorded in its separate dependency-lock.
+These added pins do not alter any release gitlink. PC asset provenance and
+9.2.3 archive hashes are in `porting/ASSET_BASELINE.md`.

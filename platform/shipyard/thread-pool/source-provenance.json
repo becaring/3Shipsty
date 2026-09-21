@@ -1,0 +1,21 @@
+{
+  "donor_root": "D:\\Projects\\Smash360",
+  "donor_input_sha256": {
+    "platform/xbox360/cpp-compat/async/native.h": "c3e505e1f1626d29e8ccf7a5cedca7a3a6c4593985cd89f1efab31bbab039f41",
+    "platform/xbox360/cpp-compat/async/native.cpp": "07a967940a27d68d49ecc221d1412c3aec0f0a8899f387f2e6a3b4365fbf7ab8",
+    "platform/xbox360/cpp-compat/async/future.h": "0be3fae42222fc0af14a3199969638cf704133b93eb62c6028f1d3354752ba67",
+    "platform/xbox360/cpp-compat/thread-pool/native_support.h": "b99a8b0d25d601d5a3930d0f5a49f0f90ee0417d391be4b5f7305d180b7963d7",
+    "upstream/dependencies/thread-pool/include/BS_thread_pool.hpp": "fed5f7da0bc89fa747e65a8b3896344dc10f57c30d171b51e4fbde820b6d7c03",
+    "upstream/dependencies/thread-pool/LICENSE.txt": "fce3b1dcc557221c2f0a5dc8e987e9e9c044d080faf73de18f8db5622d985574",
+    "tools/prepare_thread_pool_xdk.py": "2987ec2d1c0e71976d79bb1a18558e9ce5448237b934d5e9bc0cde92353a7b7e"
+  },
+  "thread_pool_tag": "v4.1.0",
+  "verified_git_head": "097aa718f25d44315cadb80b407144ad455ee4f9",
+  "verified_git_tag_commit": "097aa718f25d44315cadb80b407144ad455ee4f9",
+  "owned_source_sha256": "1da8bb1562433cb0759d774182d0d6fa3b87a04c26f64c6886f640445bf68efe",
+  "verification_commands": [
+    "git -c safe.directory=D:/Projects/Smash360/upstream/dependencies/thread-pool -C D:/Projects/Smash360/upstream/dependencies/thread-pool rev-parse HEAD",
+    "git -c safe.directory=D:/Projects/Smash360/upstream/dependencies/thread-pool -C D:/Projects/Smash360/upstream/dependencies/thread-pool rev-parse v4.1.0"
+  ],
+  "modern_lus_thread_pool_declaration": "libultraship/CMake/dependencies/common.cmake:96-104"
+}

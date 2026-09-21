@@ -1,0 +1,32 @@
+{
+  "normalization": "UTF-8 BOM removed and CRLF normalized to LF",
+  "lus_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "shipwright_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/audio/AudioCollection.cpp": "1f9930b6e5f6aa8732a3a73509a610b05ccf146bfb5b74d33cd8d81a2d2a455f",
+    "soh/soh/Enhancements/mod_menu.cpp": "d7fb89aeca106a7175dd325c6e566d7532ebf4e64eb48db1a32eb333f5321061",
+    "soh/soh/Enhancements/Presets/Presets.cpp": "7f80fc9457709634bd5fdb9c67cf0c9d3428e3260ea41c2b6c314bdc6555d38f",
+    "soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp": "8de270f364286461c2ab37ae291b07200259d8be04af7a67740c675358ce7453",
+    "soh/soh/Enhancements/randomizer/Plandomizer.cpp": "bf82355bbb4e4a623359fc10e566479bf36f73a1448548567bcded1fe474dc67",
+    "soh/soh/Enhancements/randomizer/randomizer.cpp": "15bf31720655505e3e6e9d1d2d5b76e2e426f624077d8f07385773d9bed52d6c",
+    "soh/soh/Extractor/Extract.cpp": "3e3bc611f3e59f4b24b10947df099a96b5c857bc767976bfdf71d7aaddcd5b7c",
+    "soh/soh/Extractor/portable-file-dialogs.h": "7633cdcf280bf9d3b4ce04dcfcb07aa7c1799cfd9ba8083b186cbdca58d6cb57",
+    "soh/soh/OTRGlobals.cpp": "648bda58939111f1e477588fa2bec6a701406ef94daddd6a296862692fb0fdf9",
+    "soh/soh/SaveManager.cpp": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+    "soh/soh/SaveManager.h": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+    "soh/soh/SohGui/SohMenuSettings.cpp": "706548e84046d0302c25d5ec4617b69408b8fff262a5f2aceab7364f2f6b714e",
+    "libultraship/src/ship/config/Config.cpp": "e82129ad2853f2d89e2582f486ea67db25cdff53699e193b195351e8651b27b5",
+    "libultraship/src/ship/config/ConsoleVariable.cpp": "9bac8130e1339c7d3b4a193386ae9f5dad1586db70148ade132dced443694c54",
+    "libultraship/src/ship/Context.cpp": "d471c2352426bbecc26e69e8cb4281078241d169a64609b61f1946a7cb4a48d7",
+    "libultraship/src/ship/resource/archive/ArchiveManager.cpp": "eaf3a01161057c8bc07901ed551e87c9f397dfe871b21fa0d2dc9860ab3562cb",
+    "libultraship/include/ship/utils/filesystemtools/Directory.h": "45ad0b3d2e9368c5e1260fab8acf69a7445820aff39b6b40f15fe91144f29836",
+    "libultraship/include/ship/utils/filesystemtools/DiskFile.h": "2b9e1021984a6955b440785ceede532b877f7c82865c1a12912e44e6678eb90b",
+    "libultraship/include/ship/utils/filesystemtools/FileHelper.h": "55ad059e316f6b0007de092bd685589f12e4046dd8026af289a4ad0668f3f943",
+    "libultraship/include/ship/utils/filesystemtools/Path.h": "76fe7361dcb7c472ca4e06adf1a338b4101c2d43eaeeb5abf00dc533bf7e9af0",
+    "libultraship/include/ship/utils/filesystemtools/PathHelper.h": "fcf52698eaec1ce6cd6188c40ffffc584942c603e726514eda21d50bc3f3de21"
+  },
+  "helpers": {
+    "filesystem.h": "695f444f4732337094ba0b511460578a725907d4b086113b3476966b8399e2c3",
+    "filesystem.cpp": "76ab615995ebd7101be2f8cd793c6dd058c6e7b7f27681733696472d851126eb"
+  }
+}

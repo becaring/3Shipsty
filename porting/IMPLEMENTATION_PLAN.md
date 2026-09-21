@@ -8,10 +8,10 @@ to separate owned paths. No reference tree writes or upstream source edits.
 - [x] Lock pristine release/submodules and source-backed migration table.
 - [x] Inventory real sources; test main/graph/SaveManager/randomizer/UI retention,
   upstream-only exclusions and deterministic unique output.
-- [ ] Binary boundary: compile original binarytools to capture XDK rejection;
+- [x] Binary boundary: compile original binarytools to capture XDK rejection;
   project source-locked modern files, correct central Xbox endian detection;
   compare real reader/writer/stream outputs on LE/BE data and bounds failures.
-- [ ] Graphics boundary: capture original interface failures; preserve 64/32
+- [x] Graphics boundary: capture original interface failures; preserve 64/32
   keys and exact virtual signatures in projection; compile current decoder,
   compare outputs/layout; source-lock generic Xenos shader lowering.
 - [ ] Game C boundary: capture original main/actor failures; isolate desktop

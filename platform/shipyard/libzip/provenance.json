@@ -1,0 +1,12 @@
+{
+  "classification": "generic Xbox platform, no Smash application behavior",
+  "sources": {
+    "tools/prepare_libzip_xdk.py": "f47e100684bd161851f24d71f4c53975c7fec70741ed9f6ed806a5860faf9519",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\libzip\\native_boundary.cpp": "5110d4affde274a2bf06cd14a6e1fab1b1fe856bffb8bb2237e67a0828820e3a",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\libzip\\native_boundary.h": "388eb95e620e9380353b32ca60ddd241f752559ad9bc12547449865418d8becb"
+  },
+  "changes": [
+    "Owned paths and Shipyard symbol prefix",
+    "Projection split from donor resource mega-script; own verified dependency snapshots"
+  ]
+}

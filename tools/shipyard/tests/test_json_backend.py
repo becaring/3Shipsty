@@ -1,0 +1,58 @@
+"""Fresh differential and PowerPC object evidence for bounded JSON only."""
+from pathlib import Path
+import subprocess,os,json,hashlib,runpy,difflib
+ROOT=Path(__file__).resolve().parents[3]
+OUT=ROOT/'scratch/json-xdk'; TESTS=Path(__file__).parent/'test_json'; BACKEND=ROOT/'platform/shipyard/json'
+def execute(args,label,env=None,success=True):
+    folder=OUT/label;folder.mkdir(parents=True,exist_ok=True)
+    r=subprocess.run(list(map(str,args)),cwd=folder,env=env,text=True,capture_output=True)
+    (folder/'command.json').write_text(json.dumps(list(map(str,args)),indent=2)+'\n')
+    (folder/'result.log').write_text(r.stdout+r.stderr)
+    if success and r.returncode:raise AssertionError(label+':\n'+r.stdout+r.stderr)
+    return r
+def host():
+    msvc=Path('C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808');sdk=Path('C:/Program Files (x86)/Windows Kits/10')
+    env=os.environ.copy();env['PATH']=str(msvc/'bin/Hostx64/x64')+os.pathsep+env['PATH']
+    env['INCLUDE']=';'.join(map(str,[msvc/'include']+[sdk/'Include/10.0.26100.0'/p for p in ('ucrt','shared','um')]))
+    env['LIB']=';'.join(map(str,[msvc/'lib/x64']+[sdk/'Lib/10.0.26100.0'/p/'x64' for p in ('ucrt','um')]))
+    return msvc/'bin/Hostx64/x64/cl.exe',env
+INCLUDES=['/I'+str(BACKEND/'include'),'/I'+str(BACKEND.parent),'/I'+str(OUT/'backend-generated')]
+def build(source,label,backend=True,syntax=False,success=True):
+    compiler,env=host();folder=OUT/label
+    args=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/W4']+(INCLUDES if backend else ['/I'+str(BACKEND/'upstream/include')])
+    args+=['/Zs'] if syntax else ['/Fo'+str(folder)+'\\','/Fe'+str(folder/'test.exe')]
+    args += [source]
+    if backend and not syntax:args+=[BACKEND/'json.cpp']
+    r=execute(args,label,env,success)
+    if syntax or r.returncode:return r
+    return execute([folder/'test.exe'],label+'-run')
+def main():
+    runpy.run_path(str(ROOT/'tools/shipyard/prepare_json.py'))['generate']()
+    checks={}
+    for case in ['reference','edge_contract','modern_save_contract','extended_contract']:
+        before=build(TESTS/(case+'.cpp'),case+'-official',False)
+        after=build(TESTS/(case+'.cpp'),case+'-backend')
+        if before.stdout!=after.stdout:raise AssertionError(''.join(difflib.unified_diff(before.stdout.splitlines(True),after.stdout.splitlines(True))))
+        checks[case]=hashlib.sha256(before.stdout.encode()).hexdigest()
+    sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
+    base=[sdk/'bin/win32/cl.exe','/nologo','/EHsc','/D_XBOX','/D_XBOX_VER=200','/I'+str(sdk/'include/xbox')]+INCLUDES
+    objects={}
+    for name,source in [('backend',BACKEND/'json.cpp'),('api',TESTS/'xdk_api.cpp')]:
+        target=OUT/('xdk-'+name)/(name+'.obj')
+        execute(base+['/c','/Fo'+str(target),source],'xdk-'+name)
+        raw=target.read_bytes();assert int.from_bytes(raw[:2],'little')==0x1f2;objects[name]=hashlib.sha256(raw).hexdigest()
+    unknown=execute(base+['/Zs',TESTS/'unsupported_get.cpp'],'xdk-unsupported-get',success=False)
+    assert unknown.returncode!=0 and 'UnregisteredValue' in unknown.stdout
+    for source in sorted((TESTS/'supported').glob('*.cpp')):
+        build(source,'supported-'+source.stem+'-official',False,True)
+        build(source,'supported-'+source.stem+'-backend',True,True)
+        execute(base+['/Zs',source],'supported-'+source.stem+'-xdk')
+    gaps={}
+    for source in sorted((TESTS/'gaps').glob('*.cpp')):
+        build(source,'gap-'+source.stem+'-official',False,True)
+        r=build(source,'gap-'+source.stem+'-backend',True,True,False)
+        assert r.returncode!=0,'Gap is implemented; update audit: '+source.stem
+        gaps[source.stem]={'official_compiles':True,'backend_compiles':False}
+    (OUT/'verification.json').write_text(json.dumps({'host_differential_sha256':checks,'float_bit_patterns':4000,'xdk_objects':objects,'powerpc_machine':'0x1f2','unknown_conversion_rejected':True,'modern_api_gaps':gaps,'full_modern_application_integrated':False,'console_execution_tested':False},indent=2)+'\n')
+    print('PASS: host rich/edge/modern save-template differential; two PowerPC objects; fail-closed modern API probes')
+if __name__=='__main__':main()

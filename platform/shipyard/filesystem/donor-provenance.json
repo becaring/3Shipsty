@@ -1,0 +1,18 @@
+{
+  "donors": {
+    "filesystem.h": {
+      "source": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\filesystem\\filesystem.h",
+      "sha256": "900528097ed26d176539330ba7e6153583a8a98994cdbbc2339a72877ed64ac8"
+    },
+    "filesystem.cpp": {
+      "source": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\filesystem\\filesystem.cpp",
+      "sha256": "51b4073fb98d0da02f14805927fa85aed93c0307b4fc1016f71ef53784da85c8"
+    }
+  },
+  "adaptations": [
+    "Shipyard header guards and test defines",
+    "Shipyard Async mutex boundary",
+    "Modern SaveManager create_directory and copy_file extensions"
+  ],
+  "reference_projects_executed": false
+}

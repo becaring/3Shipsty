@@ -1,0 +1,9 @@
+{
+  "source": "soh\\soh\\SaveManager.h",
+  "sha256": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+  "methods": [
+    "SaveData",
+    "LoadData"
+  ],
+  "scope": "Unmodified method bodies, synthetic modern section shape. Not full SaveManager or real-save integration."
+}

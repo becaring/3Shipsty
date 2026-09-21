@@ -1,0 +1,4 @@
+# Imported algorithms use exact donor-byte provenance rather than Git's EOL
+# normalization. Other owned code keeps the repository's LF text policy.
+graphics/donor/* -text -whitespace
+game/donor/* -text -whitespace

@@ -140,3 +140,17 @@ tests were observed failing before implementation, then passing.
   Package is PC extraction tooling/data only, never Xbox application evidence.
   API metadata's target_commitish says develop; the immutable tag resolves to
   the pinned cb71e22 commit. No develop source is used.
+- Archive provider: verified owned libzip/zlib/tinyxml2 snapshots produce 131
+  genuine XDK PowerPC BE objects and three libraries. Actual projected host
+  libzip reads all 36,925 modern archive members with CRC/length parity and
+  preserves create/overwrite/reopen and UTF-8 member names. Optional codecs,
+  encryption and MPQ remain explicit integration work, not feature exclusions.
+- Host extraction completed with the exact official 9.2.3 executable and owned
+  copied supplied ROM; porting/ASSET_BASELINE.md records resulting hashes.
+  Critical endian distinction: version records are BE, regular PC-exported
+  binary resource scalar records are LE; preserve per-record markers.
+- True-C projection now compiles main/graph/math/actor; bulk inventory underway.
+  Async foundation preserves exception propagation, future polling, worker
+  lifecycle and save snapshot ownership. Filesystem foundation adds modern
+  create_directory/copy_file and safe replacement/error semantics. Full
+  consumers, runtime and storage durability are not yet validated.

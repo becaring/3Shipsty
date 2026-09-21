@@ -1,0 +1,2302 @@
+{
+  "kind": "Conservative lexical audit aid, not AST/template-instantiation closure; methods may belong to non-JSON values. See consumer-audit.md for confirmed contracts.",
+  "files": {
+    "soh/soh/config/ConfigUpdaters.cpp": {
+      "sha256": "7bf7ee268ec1008bebe1e59e26b50a5254e1964d8cbe7e88241d01c42920a113",
+      "references": [
+        {
+          "line": 1536,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gInjectItemCounts\")) {"
+        },
+        {
+          "line": 1544,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gGameMasterVolume\")) {"
+        },
+        {
+          "line": 1548,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gMainMusicVolume\")) {"
+        },
+        {
+          "line": 1552,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gSubMusicVolume\")) {"
+        },
+        {
+          "line": 1556,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gSFXMusicVolume\")) {"
+        },
+        {
+          "line": 1560,
+          "text": "if (conf->GetNestedJson().contains(\"CVars\") && conf->GetNestedJson()[\"CVars\"].contains(\"gFanfareVolume\")) {"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/Presets/Presets.cpp": {
+      "sha256": "7f80fc9457709634bd5fdb9c67cf0c9d3428e3260ea41c2b6c314bdc6555d38f",
+      "references": [
+        {
+          "line": 6,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json presetValues;"
+        },
+        {
+          "line": 110,
+          "text": "auto currentJson = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();"
+        },
+        {
+          "line": 114,
+          "text": "block.update(item.value(), true);"
+        },
+        {
+          "line": 199,
+          "text": "void ParsePreset(nlohmann::json& json, std::string name) {"
+        },
+        {
+          "line": 222,
+          "text": "auto json = nlohmann::json::parse(ifs);"
+        },
+        {
+          "line": 296,
+          "text": "auto config = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp": {
+      "sha256": "8de270f364286461c2ab37ae291b07200259d8be04af7a67740c675358ce7453",
+      "references": [
+        {
+          "line": 10,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 30,
+          "text": "using json = nlohmann::ordered_json;"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/dungeon.cpp": {
+      "sha256": "b8cb584093840a4bed96cf53534317482e665c7c5d722863945e7f2253c5d6f3",
+      "references": [
+        {
+          "line": 251,
+          "text": "void Dungeons::ParseJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 252,
+          "text": "nlohmann::json mqDungeonsJson = spoilerFileJson[\"masterQuestDungeons\"];"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/dungeon.h": {
+      "sha256": "5670b17756dbf8cd534b97e8c3e14a6e25816d4b39de08a47cfb36f034868cd2",
+      "references": [
+        {
+          "line": 8,
+          "text": "#include \"nlohmann/json.hpp\""
+        },
+        {
+          "line": 92,
+          "text": "void ParseJson(nlohmann::json spoilerFileJson);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/entrance.cpp": {
+      "sha256": "4ace3b031baad504ffc7097eee64037483477781d4c483a9815afd8682cb4443",
+      "references": [
+        {
+          "line": 1682,
+          "text": "void EntranceShuffler::ParseJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 1685,
+          "text": "nlohmann::json entrancesJson = spoilerFileJson[\"entrances\"];"
+        },
+        {
+          "line": 1688,
+          "text": "nlohmann::json entranceJson = *it;"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/entrance.h": {
+      "sha256": "f1920e907616ee818035315ad9ca8de793b84a2c325fa5b020ec0c012d28fd2c",
+      "references": [
+        {
+          "line": 8,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 139,
+          "text": "void ParseJson(nlohmann::json spoilerFileJson);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/hint.cpp": {
+      "sha256": "5f8fa147ebd8a6faf89690381695887ab0dfc9e7db738f939c80a8a483bb3d1c",
+      "references": [
+        {
+          "line": 39,
+          "text": "Hint::Hint(RandomizerHint ownKey_, nlohmann::json json_) {"
+        },
+        {
+          "line": 41,
+          "text": "if (json_.contains(\"enabled\") && !json_[\"enabled\"].get<bool>()) {"
+        },
+        {
+          "line": 47,
+          "text": "hintType = (HintType)StaticData::hintTypeNameToEnum[json_[\"type\"].get<std::string>()];"
+        },
+        {
+          "line": 53,
+          "text": "messages.push_back(CustomMessage(message.get<std::string>()));"
+        },
+        {
+          "line": 56,
+          "text": "messages.push_back(CustomMessage(json_[\"message\"].get<std::string>()));"
+        },
+        {
+          "line": 61,
+          "text": "distribution = json_[\"distribution\"].get<std::string>();"
+        },
+        {
+          "line": 66,
+          "text": "locations.push_back(StaticData::locationNameToEnum[loc.get<std::string>()]);"
+        },
+        {
+          "line": 69,
+          "text": "locations.push_back(StaticData::locationNameToEnum[json_[\"location\"].get<std::string>()]);"
+        },
+        {
+          "line": 74,
+          "text": "itemNamesChosen.push_back(name.get<uint8_t>());"
+        },
+        {
+          "line": 77,
+          "text": "itemNamesChosen.push_back(json_[\"itemNameChosen\"].get<uint8_t>());"
+        },
+        {
+          "line": 90,
+          "text": "areaNamesChosen.push_back(name.get<uint8_t>());"
+        },
+        {
+          "line": 93,
+          "text": "areaNamesChosen.push_back(json_[\"areaNameChosen\"].get<uint8_t>());"
+        },
+        {
+          "line": 106,
+          "text": "hintKeys.push_back((RandomizerHintTextKey)hintKey.get<uint32_t>());"
+        },
+        {
+          "line": 109,
+          "text": "hintKeys.push_back((RandomizerHintTextKey)json_[\"hintKey\"].get<uint32_t>());"
+        },
+        {
+          "line": 114,
+          "text": "hintTextsChosen.push_back(name.get<uint8_t>());"
+        },
+        {
+          "line": 117,
+          "text": "hintTextsChosen.push_back(json_[\"hintTextChosen\"].get<uint8_t>());"
+        },
+        {
+          "line": 121,
+          "text": "num = json_[\"num\"].get<int>();"
+        },
+        {
+          "line": 375,
+          "text": "nlohmann::ordered_json log = {};"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/hint.h": {
+      "sha256": "4b89d1bc1146c78289fa8fc23f3994b0bc3f2130513817d71028f9665b3ff9d2",
+      "references": [
+        {
+          "line": 8,
+          "text": "#include \"nlohmann/json.hpp\""
+        },
+        {
+          "line": 9,
+          "text": "using oJson = nlohmann::ordered_json;"
+        },
+        {
+          "line": 22,
+          "text": "Hint(RandomizerHint ownKey_, nlohmann::json json_);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/Plandomizer.cpp": {
+      "sha256": "bf82355bbb4e4a623359fc10e566479bf36f73a1448548567bcded1fe474dc67",
+      "references": [
+        {
+          "line": 516,
+          "text": "nlohmann::json spoilerSave;"
+        },
+        {
+          "line": 564,
+          "text": "nlohmann::json spoilerLogInput;"
+        },
+        {
+          "line": 612,
+          "text": "if (value[\"price\"].is_number()) {"
+        },
+        {
+          "line": 624,
+          "text": "plandomizerRandoRetrieveItem(Rando::StaticData::itemNameToEnum[value.get<std::string>()]);"
+        },
+        {
+          "line": 636,
+          "text": "} catch (nlohmann::json::parse_error&) {"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer.cpp": {
+      "sha256": "15bf31720655505e3e6e9d1d2d5b76e2e426f624077d8f07385773d9bed52d6c",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 42,
+          "text": "using json = nlohmann::json;"
+        },
+        {
+          "line": 64,
+          "text": "nlohmann::json json;"
+        },
+        {
+          "line": 203,
+          "text": "nlohmann::json contents;"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp": {
+      "sha256": "4f41435ae14e484f8e376c93f12280c9aa6f59d50f938c61e5bb7faeaf3b501c",
+      "references": [
+        {
+          "line": 43,
+          "text": "using json = nlohmann::json;"
+        },
+        {
+          "line": 2108,
+          "text": "void LoadFromPreset(nlohmann::json info) {"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_check_tracker.h": {
+      "sha256": "9b5412764ab2b00e3d332630bfbb8a401d25067d4ee1634884b38d22633bdaa8",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 66,
+          "text": "void LoadFromPreset(nlohmann::json info);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_entrance_tracker.cpp": {
+      "sha256": "2a7900187abff075b4e39302cb2990679e6de2869e3dc1027da7282e41896d71",
+      "references": [
+        {
+          "line": 490,
+          "text": "void LoadFromPreset(nlohmann::json info) {"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_entrance_tracker.h": {
+      "sha256": "4be2184f13a9d929b90072811b094e724574af4010199a938d2f6dfa113581b2",
+      "references": [
+        {
+          "line": 113,
+          "text": "void LoadFromPreset(nlohmann::json info);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_item_tracker.cpp": {
+      "sha256": "bbb49f8dc5017f4b4173732d498011e2c339e9d5bd14572ef89713c0c25e87c8",
+      "references": [
+        {
+          "line": 489,
+          "text": "void ItemTracker_LoadFromPreset(nlohmann::json trackerInfo) {"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/randomizer_item_tracker.h": {
+      "sha256": "42f29f6202c0de6f527e8c2d3ed2f1471bdee8a916303c2e6fcc888e917fbb71",
+      "references": [
+        {
+          "line": 43,
+          "text": "void ItemTracker_LoadFromPreset(nlohmann::json trackerInfo);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/SeedContext.cpp": {
+      "sha256": "3abca6e85ca219119a300fa268bfefd228e8adac558e61229b042605b6760409",
+      "references": [
+        {
+          "line": 401,
+          "text": "nlohmann::json spoilerFileJson;"
+        },
+        {
+          "line": 417,
+          "text": "void Context::ParseHashIconIndexesJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 418,
+          "text": "nlohmann::json hashJson = spoilerFileJson[\"file_hash\"];"
+        },
+        {
+          "line": 426,
+          "text": "void Context::ParseItemLocationsJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 427,
+          "text": "nlohmann::json locationsJson = spoilerFileJson[\"locations\"];"
+        },
+        {
+          "line": 431,
+          "text": "nlohmann::json itemJson = *it;"
+        },
+        {
+          "line": 434,
+          "text": "itemLocationTable[rc].SetPlacedItem(StaticData::itemNameToEnum[itemit.value().get<std::string>()]);"
+        },
+        {
+          "line": 436,
+          "text": "itemLocationTable[rc].SetCustomPrice(itemit.value().get<uint16_t>());"
+        },
+        {
+          "line": 438,
+          "text": "overrides[rc] = ItemOverride(rc, StaticData::itemNameToEnum[itemit.value().get<std::string>()]);"
+        },
+        {
+          "line": 440,
+          "text": "overrides[rc].SetTrickName(Text(itemit.value().get<std::string>()));"
+        },
+        {
+          "line": 444,
+          "text": "itemLocationTable[rc].SetPlacedItem(StaticData::itemNameToEnum[it.value().get<std::string>()]);"
+        },
+        {
+          "line": 449,
+          "text": "void Context::WriteHintJson(nlohmann::ordered_json& spoilerFileJson) {"
+        },
+        {
+          "line": 455,
+          "text": "nlohmann::json getValueForMessage(std::unordered_map<std::string, nlohmann::json> map, CustomMessage message) {"
+        },
+        {
+          "line": 465,
+          "text": "void Context::ParseHintJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 477,
+          "text": "void Context::ParseTricksJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 478,
+          "text": "nlohmann::json enabledTricksJson = spoilerFileJson[\"enabledTricks\"];"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/SeedContext.h": {
+      "sha256": "34437218cb3a2ff8f3b28047260193a84a02c2bd2dc40e24b02418573a84f1ee",
+      "references": [
+        {
+          "line": 16,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 121,
+          "text": "void ParseHashIconIndexesJson(nlohmann::json spoilerFileJson);"
+        },
+        {
+          "line": 122,
+          "text": "void ParseItemLocationsJson(nlohmann::json spoilerFileJson);"
+        },
+        {
+          "line": 123,
+          "text": "void WriteHintJson(nlohmann::ordered_json& spoilerFileJson);"
+        },
+        {
+          "line": 124,
+          "text": "void ParseHintJson(nlohmann::json spoilerFileJson);"
+        },
+        {
+          "line": 125,
+          "text": "void ParseTricksJson(nlohmann::json spoilerFileJson);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/settings.cpp": {
+      "sha256": "f6e1e23f881554b40a7ec29cdda5fbf8321e767e786aec31cbc98e7aa04d56e2",
+      "references": [
+        {
+          "line": 3429,
+          "text": "void Settings::ParseJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 3430,
+          "text": "mContext->SetSeedString(spoilerFileJson[\"seed\"].get<std::string>());"
+        },
+        {
+          "line": 3431,
+          "text": "mContext->SetSeed(spoilerFileJson[\"finalSeed\"].get<uint32_t>());"
+        },
+        {
+          "line": 3432,
+          "text": "nlohmann::json settingsJson = spoilerFileJson[\"settings\"];"
+        },
+        {
+          "line": 3442,
+          "text": "nlohmann::json jsonExcludedLocations = spoilerFileJson[\"excludedLocations\"];"
+        },
+        {
+          "line": 3450,
+          "text": "nlohmann::json enabledTricksJson = spoilerFileJson[\"enabledTricks\"];"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/settings.h": {
+      "sha256": "3a9ce8322ae1f3c7248e3a4fe19ff6d6e7770ddb3ef6e755dcf7e2450a3a639f",
+      "references": [
+        {
+          "line": 11,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 121,
+          "text": "void ParseJson(nlohmann::json spoilerFileJson);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/trial.cpp": {
+      "sha256": "292c6824cb261bda9cd451e3b68ffa162282856e0e51a451a308864f687d0e7f",
+      "references": [
+        {
+          "line": 74,
+          "text": "void Trials::ParseJson(nlohmann::json spoilerFileJson) {"
+        },
+        {
+          "line": 75,
+          "text": "nlohmann::json trialsJson = spoilerFileJson[\"requiredTrials\"];"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/randomizer/trial.h": {
+      "sha256": "1c5f6b5012838e4a47f99e473958ca967efaa682b1e17892b7e61eb8addcf0e2",
+      "references": [
+        {
+          "line": 5,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 39,
+          "text": "void ParseJson(nlohmann::json spoilerFileJson);"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/timesplits/TimeSplits.cpp": {
+      "sha256": "6e306e8e8afbc5dcfb294dcdec382643f05c4fca4b70de156a93619844a5e936",
+      "references": [
+        {
+          "line": 35,
+          "text": "using json = nlohmann::json;"
+        },
+        {
+          "line": 256,
+          "text": "nlohmann::json ImVec4_to_json(const ImVec4& vec) {"
+        },
+        {
+          "line": 257,
+          "text": "return nlohmann::json{ { \"x\", vec.x }, { \"y\", vec.y }, { \"z\", vec.z }, { \"w\", vec.w } };"
+        },
+        {
+          "line": 260,
+          "text": "ImVec4 json_to_ImVec4(const nlohmann::json& jsonVec) {"
+        },
+        {
+          "line": 264,
+          "text": "nlohmann::json SplitObject_to_json(const SplitObject& split) {"
+        },
+        {
+          "line": 265,
+          "text": "return nlohmann::json{ { \"splitType\", split.splitType },"
+        },
+        {
+          "line": 277,
+          "text": "SplitObject json_to_SplitObject(const nlohmann::json& jsonSplit) {"
+        },
+        {
+          "line": 281,
+          "text": "split.splitName = jsonSplit[\"splitName\"].get<std::string>();"
+        },
+        {
+          "line": 282,
+          "text": "split.splitImage = jsonSplit[\"splitImage\"].get<std::string>();"
+        },
+        {
+          "line": 364,
+          "text": "json listArray = nlohmann::json::array();"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/tts/tts.cpp": {
+      "sha256": "70d8cccafbfbe6d6ee2ee2674a2ae5bb304787b5021993e453e6a805b0d9ceaa",
+      "references": [
+        {
+          "line": 8,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 29,
+          "text": "nlohmann::json sceneMap = nullptr;"
+        },
+        {
+          "line": 30,
+          "text": "nlohmann::json miscMap = nullptr;"
+        },
+        {
+          "line": 31,
+          "text": "nlohmann::json kaleidoMap = nullptr;"
+        },
+        {
+          "line": 32,
+          "text": "nlohmann::json fileChooseMap = nullptr;"
+        }
+      ]
+    },
+    "soh/soh/Enhancements/Warping.cpp": {
+      "sha256": "6b7a5fd4b37d7b5cf535b78a45a792baed55ea29229204ea2e613e2e153ba25d",
+      "references": [
+        {
+          "line": 28,
+          "text": "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vec3f, x, y, z)"
+        },
+        {
+          "line": 29,
+          "text": "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarpPoint, entranceId, roomNum, pos, rotY, bootToPoint)"
+        },
+        {
+          "line": 33,
+          "text": "auto allConfig = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();"
+        },
+        {
+          "line": 35,
+          "text": "allConfig[\"WarpPoints\"] = nlohmann::json::object();"
+        },
+        {
+          "line": 41,
+          "text": "auto allConfig = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Anchor.cpp": {
+      "sha256": "713bd38841048779496f67765142b87f796d03d77a127e4b7fb29cda653a3cf9",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 45,
+          "text": "std::queue<nlohmann::json> packetsToSend;"
+        },
+        {
+          "line": 53,
+          "text": "nlohmann::json payload = packetsToSend.front();"
+        },
+        {
+          "line": 63,
+          "text": "void Anchor::SendJsonToRemote(nlohmann::json payload) {"
+        },
+        {
+          "line": 83,
+          "text": "void Anchor::OnIncomingJson(nlohmann::json payload) {"
+        },
+        {
+          "line": 94,
+          "text": "std::string packetType = payload[\"type\"].get<std::string>();"
+        },
+        {
+          "line": 99,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 113,
+          "text": "std::queue<nlohmann::json> packetsToProcess;"
+        },
+        {
+          "line": 121,
+          "text": "nlohmann::json payload = packetsToProcess.front();"
+        },
+        {
+          "line": 124,
+          "text": "std::string packetType = payload[\"type\"].get<std::string>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Anchor.h": {
+      "sha256": "6102fd5325f3c22f9d210b814a51ca296e04808bc307d8cf4e6dd1d970ed4b17",
+      "references": [
+        {
+          "line": 77,
+          "text": "std::queue<nlohmann::json> incomingPacketQueue;"
+        },
+        {
+          "line": 79,
+          "text": "std::queue<nlohmann::json> outgoingPacketQueue;"
+        },
+        {
+          "line": 82,
+          "text": "nlohmann::json PrepClientState();"
+        },
+        {
+          "line": 83,
+          "text": "nlohmann::json PrepRoomState();"
+        },
+        {
+          "line": 88,
+          "text": "void HandlePacket_AllClientState(nlohmann::json payload);"
+        },
+        {
+          "line": 89,
+          "text": "void HandlePacket_ConsumeAdultTradeItem(nlohmann::json payload);"
+        },
+        {
+          "line": 90,
+          "text": "void HandlePacket_DamagePlayer(nlohmann::json payload);"
+        },
+        {
+          "line": 91,
+          "text": "void HandlePacket_DisableAnchor(nlohmann::json payload);"
+        },
+        {
+          "line": 92,
+          "text": "void HandlePacket_EntranceDiscovered(nlohmann::json payload);"
+        },
+        {
+          "line": 93,
+          "text": "void HandlePacket_GameComplete(nlohmann::json payload);"
+        },
+        {
+          "line": 94,
+          "text": "void HandlePacket_GiveItem(nlohmann::json payload);"
+        },
+        {
+          "line": 95,
+          "text": "void HandlePacket_OcarinaSfx(nlohmann::json payload);"
+        },
+        {
+          "line": 96,
+          "text": "void HandlePacket_PlayerSfx(nlohmann::json payload);"
+        },
+        {
+          "line": 97,
+          "text": "void HandlePacket_PlayerUpdate(nlohmann::json payload);"
+        },
+        {
+          "line": 98,
+          "text": "void HandlePacket_RequestTeamState(nlohmann::json payload);"
+        },
+        {
+          "line": 99,
+          "text": "void HandlePacket_RequestTeleport(nlohmann::json payload);"
+        },
+        {
+          "line": 100,
+          "text": "void HandlePacket_ServerMessage(nlohmann::json payload);"
+        },
+        {
+          "line": 101,
+          "text": "void HandlePacket_SetCheckStatus(nlohmann::json payload);"
+        },
+        {
+          "line": 102,
+          "text": "void HandlePacket_SetFlag(nlohmann::json payload);"
+        },
+        {
+          "line": 103,
+          "text": "void HandlePacket_TeleportTo(nlohmann::json payload);"
+        },
+        {
+          "line": 104,
+          "text": "void HandlePacket_UnsetFlag(nlohmann::json payload);"
+        },
+        {
+          "line": 105,
+          "text": "void HandlePacket_UpdateBeansCount(nlohmann::json payload);"
+        },
+        {
+          "line": 106,
+          "text": "void HandlePacket_UpdateClientState(nlohmann::json payload);"
+        },
+        {
+          "line": 107,
+          "text": "void HandlePacket_UpdateDungeonItems(nlohmann::json payload);"
+        },
+        {
+          "line": 108,
+          "text": "void HandlePacket_UpdateRoomState(nlohmann::json payload);"
+        },
+        {
+          "line": 109,
+          "text": "void HandlePacket_UpdateTeamState(nlohmann::json payload);"
+        },
+        {
+          "line": 145,
+          "text": "void OnIncomingJson(nlohmann::json payload);"
+        },
+        {
+          "line": 151,
+          "text": "void SendJsonToRemote(nlohmann::json packet);"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/JsonConversions.hpp": {
+      "sha256": "21f6049a24134ac040ad60ff8fc2a54b441f5b364145c1dfb349c99ca7815852",
+      "references": [
+        {
+          "line": 5,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 13,
+          "text": "using json = nlohmann::json;"
+        },
+        {
+          "line": 16,
+          "text": "j.at(\"r\").get_to(color.r);"
+        },
+        {
+          "line": 17,
+          "text": "j.at(\"g\").get_to(color.g);"
+        },
+        {
+          "line": 18,
+          "text": "j.at(\"b\").get_to(color.b);"
+        },
+        {
+          "line": 34,
+          "text": "j.at(\"x\").get_to(vec.x);"
+        },
+        {
+          "line": 35,
+          "text": "j.at(\"y\").get_to(vec.y);"
+        },
+        {
+          "line": 36,
+          "text": "j.at(\"z\").get_to(vec.z);"
+        },
+        {
+          "line": 40,
+          "text": "j.at(\"x\").get_to(vec.x);"
+        },
+        {
+          "line": 41,
+          "text": "j.at(\"y\").get_to(vec.y);"
+        },
+        {
+          "line": 42,
+          "text": "j.at(\"z\").get_to(vec.z);"
+        },
+        {
+          "line": 50,
+          "text": "j.at(\"pos\").get_to(posRot.pos);"
+        },
+        {
+          "line": 51,
+          "text": "j.at(\"rot\").get_to(posRot.rot);"
+        },
+        {
+          "line": 82,
+          "text": "j.at(\"items\").get_to(inventory.items);"
+        },
+        {
+          "line": 83,
+          "text": "j.at(\"ammo\").get_to(inventory.ammo);"
+        },
+        {
+          "line": 84,
+          "text": "j.at(\"equipment\").get_to(inventory.equipment);"
+        },
+        {
+          "line": 85,
+          "text": "j.at(\"upgrades\").get_to(inventory.upgrades);"
+        },
+        {
+          "line": 86,
+          "text": "j.at(\"questItems\").get_to(inventory.questItems);"
+        },
+        {
+          "line": 87,
+          "text": "j.at(\"dungeonItems\").get_to(inventory.dungeonItems);"
+        },
+        {
+          "line": 88,
+          "text": "j.at(\"dungeonKeys\").get_to(inventory.dungeonKeys);"
+        },
+        {
+          "line": 89,
+          "text": "j.at(\"defenseHearts\").get_to(inventory.defenseHearts);"
+        },
+        {
+          "line": 90,
+          "text": "j.at(\"gsTokens\").get_to(inventory.gsTokens);"
+        },
+        {
+          "line": 102,
+          "text": "j.at(\"entrancesDiscovered\").get_to(sohStats.entrancesDiscovered);"
+        },
+        {
+          "line": 103,
+          "text": "j.at(\"firstInput\").get_to(sohStats.firstInput);"
+        },
+        {
+          "line": 104,
+          "text": "j.at(\"fileCreatedAt\").get_to(sohStats.fileCreatedAt);"
+        },
+        {
+          "line": 115,
+          "text": "j.at(\"triforcePiecesCollected\").get_to(shipRandomizerSaveContextData.triforcePiecesCollected);"
+        },
+        {
+          "line": 116,
+          "text": "j.at(\"bombchuUpgradeLevel\").get_to(shipRandomizerSaveContextData.bombchuUpgradeLevel);"
+        },
+        {
+          "line": 126,
+          "text": "j.at(\"randomizer\").get_to(shipQuestSpecificSaveContextData.randomizer);"
+        },
+        {
+          "line": 137,
+          "text": "j.at(\"id\").get_to(shipQuestSaveContextData.id);"
+        },
+        {
+          "line": 138,
+          "text": "j.at(\"data\").get_to(shipQuestSaveContextData.data);"
+        },
+        {
+          "line": 150,
+          "text": "j.at(\"stats\").get_to(shipSaveContextData.stats);"
+        },
+        {
+          "line": 151,
+          "text": "j.at(\"quest\").get_to(shipSaveContextData.quest);"
+        },
+        {
+          "line": 152,
+          "text": "j.at(\"randomizerInf\").get_to(shipSaveContextData.randomizerInf);"
+        },
+        {
+          "line": 184,
+          "text": "j.at(\"healthCapacity\").get_to(saveContext.healthCapacity);"
+        },
+        {
+          "line": 185,
+          "text": "j.at(\"magicLevel\").get_to(saveContext.magicLevel);"
+        },
+        {
+          "line": 186,
+          "text": "j.at(\"magicCapacity\").get_to(saveContext.magicCapacity);"
+        },
+        {
+          "line": 187,
+          "text": "j.at(\"isMagicAcquired\").get_to(saveContext.isMagicAcquired);"
+        },
+        {
+          "line": 188,
+          "text": "j.at(\"isDoubleMagicAcquired\").get_to(saveContext.isDoubleMagicAcquired);"
+        },
+        {
+          "line": 189,
+          "text": "j.at(\"isDoubleDefenseAcquired\").get_to(saveContext.isDoubleDefenseAcquired);"
+        },
+        {
+          "line": 190,
+          "text": "j.at(\"bgsFlag\").get_to(saveContext.bgsFlag);"
+        },
+        {
+          "line": 191,
+          "text": "j.at(\"swordHealth\").get_to(saveContext.swordHealth);"
+        },
+        {
+          "line": 193,
+          "text": "j.at(\"sceneFlags\").get_to(sceneFlagsArray);"
+        },
+        {
+          "line": 200,
+          "text": "j.at(\"eventChkInf\").get_to(saveContext.eventChkInf);"
+        },
+        {
+          "line": 201,
+          "text": "j.at(\"itemGetInf\").get_to(saveContext.itemGetInf);"
+        },
+        {
+          "line": 202,
+          "text": "j.at(\"infTable\").get_to(saveContext.infTable);"
+        },
+        {
+          "line": 203,
+          "text": "j.at(\"gsFlags\").get_to(saveContext.gsFlags);"
+        },
+        {
+          "line": 204,
+          "text": "j.at(\"inventory\").get_to(saveContext.inventory);"
+        },
+        {
+          "line": 205,
+          "text": "j.at(\"ship\").get_to(saveContext.ship);"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/AllClientState.cpp": {
+      "sha256": "15b84de4b2d6832a060b5c3941ded091c4145e953234134def7786ebe5e6aa21",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 16,
+          "text": "void Anchor::HandlePacket_AllClientState(nlohmann::json payload) {"
+        },
+        {
+          "line": 17,
+          "text": "std::vector<AnchorClient> newClients = payload[\"state\"].get<std::vector<AnchorClient>>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/DamagePlayer.cpp": {
+      "sha256": "6d1ef325758ba99a99c34f4db439d3ad7c7011962a649bad9f46f13f9807e997",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 22,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 31,
+          "text": "void Anchor::HandlePacket_DamagePlayer(nlohmann::json payload) {"
+        },
+        {
+          "line": 32,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 47,
+          "text": "u8 damageEffect = payload[\"damageEffect\"].get<u8>();"
+        },
+        {
+          "line": 48,
+          "text": "u8 damage = payload[\"damage\"].get<u8>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/DisableAnchor.cpp": {
+      "sha256": "1c1aa1df22a5944ad06c25b0136e73b5b6714f146774ca9edeb786eba62f1a92",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 12,
+          "text": "void Anchor::HandlePacket_DisableAnchor(nlohmann::json payload) {"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/EntranceDiscovered.cpp": {
+      "sha256": "ba9a78c3d864f7109d4d817ec13f76463fc236c39b9bd6a7bfb4925c55d36594",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 17,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 26,
+          "text": "void Anchor::HandlePacket_EntranceDiscovered(nlohmann::json payload) {"
+        },
+        {
+          "line": 31,
+          "text": "u16 entranceIndex = payload[\"entranceIndex\"].get<u16>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/GameComplete.cpp": {
+      "sha256": "269675893d5e28083b43b55b7760ff207e88ea4e6d565e48590bfab35a6d1cfa",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 22,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 28,
+          "text": "void Anchor::HandlePacket_GameComplete(nlohmann::json payload) {"
+        },
+        {
+          "line": 29,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/GiveItem.cpp": {
+      "sha256": "157bb82b2d2eb3a0cbab156dea5e5d8a93b4ddb661460c77a4c1e84a0e85797e",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 37,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 47,
+          "text": "void Anchor::HandlePacket_GiveItem(nlohmann::json payload) {"
+        },
+        {
+          "line": 52,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 54,
+          "text": "u16 modId = payload[\"modId\"].get<u16>();"
+        },
+        {
+          "line": 55,
+          "text": "u16 getItemId = payload[\"getItemId\"].get<u16>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/Handshake.cpp": {
+      "sha256": "d19d5a2827a41fe641372d909d665ebbd54ba1041e38edc0eb217fe2becf14cb",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 15,
+          "text": "nlohmann::json payload;"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/OcarinaSfx.cpp": {
+      "sha256": "947a0449b098941e7b756f7a15e7d2955a0287b96e624409fea6ab4a766dd07e",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 25,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 41,
+          "text": "void Anchor::HandlePacket_OcarinaSfx(nlohmann::json payload) {"
+        },
+        {
+          "line": 42,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 43,
+          "text": "uint8_t note = payload[\"note\"].get<uint8_t>();"
+        },
+        {
+          "line": 44,
+          "text": "float modulator = payload[\"modulator\"].get<float>();"
+        },
+        {
+          "line": 45,
+          "text": "int8_t bend = payload[\"bend\"].get<int8_t>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/PlayerSfx.cpp": {
+      "sha256": "b0b5df11635ff461e8cc6c3ca23abe95992ca19ef70499d99dc79524676f7d44",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 38,
+          "text": "void Anchor::HandlePacket_PlayerSfx(nlohmann::json payload) {"
+        },
+        {
+          "line": 39,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 40,
+          "text": "u16 sfxId = payload[\"sfxId\"].get<u16>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/PlayerUpdate.cpp": {
+      "sha256": "305fef187f9dccc7d9ec2966537187664d30d5ae3519336212dab37cc0e6f69d",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 38,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 80,
+          "text": "void Anchor::HandlePacket_PlayerUpdate(nlohmann::json payload) {"
+        },
+        {
+          "line": 81,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/RequestTeamState.cpp": {
+      "sha256": "bab7fd69ef8513d2eda00c620d8e78169ab4b307367ade04e224bd6c47f3748b",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 31,
+          "text": "void Anchor::HandlePacket_RequestTeamState(nlohmann::json payload) {"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/RequestTeleport.cpp": {
+      "sha256": "5ed6588e00e43a3a0189acf8071e329f3e27e1d88b99e403430b352ecafb5e74",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 18,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 25,
+          "text": "void Anchor::HandlePacket_RequestTeleport(nlohmann::json payload) {"
+        },
+        {
+          "line": 30,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/ServerMessage.cpp": {
+      "sha256": "447e57a2adba2117c27479897ca1ecadaeb5d75395e200f22bd474fb716e8e6a",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 11,
+          "text": "void Anchor::HandlePacket_ServerMessage(nlohmann::json payload) {"
+        },
+        {
+          "line": 15,
+          "text": ".message = payload[\"message\"].get<std::string>(),"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/SetCheckStatus.cpp": {
+      "sha256": "ee76442a77eda18c0924a06d7c3f8426e43be4b714ff6038b1633236aee4abae",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 22,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 34,
+          "text": "void Anchor::HandlePacket_SetCheckStatus(nlohmann::json payload) {"
+        },
+        {
+          "line": 41,
+          "text": "RandomizerCheck rc = payload[\"rc\"].get<RandomizerCheck>();"
+        },
+        {
+          "line": 42,
+          "text": "RandomizerCheckStatus status = payload[\"status\"].get<RandomizerCheckStatus>();"
+        },
+        {
+          "line": 43,
+          "text": "bool skipped = payload[\"skipped\"].get<bool>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/SetFlag.cpp": {
+      "sha256": "ceb653c329f97d535e8e11e2cb85eeb1ba9f13105afc32a7e4adf680211cdb26",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 35,
+          "text": "void Anchor::HandlePacket_SetFlag(nlohmann::json payload) {"
+        },
+        {
+          "line": 40,
+          "text": "s16 sceneNum = payload[\"sceneNum\"].get<s16>();"
+        },
+        {
+          "line": 41,
+          "text": "s16 flagType = payload[\"flagType\"].get<s16>();"
+        },
+        {
+          "line": 42,
+          "text": "s16 flag = payload[\"flag\"].get<s16>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/TeleportTo.cpp": {
+      "sha256": "c9b36acdb2c6faff59c13a32a6e308ffdf3c98181b40911f06375fef7a396d67",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 25,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 35,
+          "text": "void Anchor::HandlePacket_TeleportTo(nlohmann::json payload) {"
+        },
+        {
+          "line": 40,
+          "text": "s32 entranceIndex = payload[\"entranceIndex\"].get<s32>();"
+        },
+        {
+          "line": 41,
+          "text": "s8 roomIndex = payload[\"roomIndex\"].get<s8>();"
+        },
+        {
+          "line": 42,
+          "text": "PosRot posRot = payload[\"posRot\"].get<PosRot>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UnsetFlag.cpp": {
+      "sha256": "3ab56379419ced33ebaa088f27aa21900b422d3985bc1d7d6767b7762e7d4b72",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 35,
+          "text": "void Anchor::HandlePacket_UnsetFlag(nlohmann::json payload) {"
+        },
+        {
+          "line": 40,
+          "text": "s16 sceneNum = payload[\"sceneNum\"].get<s16>();"
+        },
+        {
+          "line": 41,
+          "text": "s16 flagType = payload[\"flagType\"].get<s16>();"
+        },
+        {
+          "line": 42,
+          "text": "s16 flag = payload[\"flag\"].get<s16>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UpdateBeansCount.cpp": {
+      "sha256": "53d12e7db9611cf174de62357852d23a8bb767ec1158d41b433cd5cc732d5e92",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 22,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 32,
+          "text": "void Anchor::HandlePacket_UpdateBeansCount(nlohmann::json payload) {"
+        },
+        {
+          "line": 37,
+          "text": "AMMO(ITEM_BEAN) = payload[\"amount\"].get<s8>();"
+        },
+        {
+          "line": 38,
+          "text": "BEANS_BOUGHT = payload[\"amountBought\"].get<s8>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UpdateClientState.cpp": {
+      "sha256": "6dbcc1178f2838f8924b054ccb07ebc754ef465afb3e957f691c6f4f7e651780",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 23,
+          "text": "nlohmann::json Anchor::PrepClientState() {"
+        },
+        {
+          "line": 24,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 49,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 56,
+          "text": "void Anchor::HandlePacket_UpdateClientState(nlohmann::json payload) {"
+        },
+        {
+          "line": 57,
+          "text": "uint32_t clientId = payload[\"clientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 60,
+          "text": "AnchorClient client = payload[\"state\"].get<AnchorClient>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UpdateDungeonItems.cpp": {
+      "sha256": "3146c0f9eee1f19c7dbd11dcba23d7896f6e707ff19991356b4a8c80a6132de5",
+      "references": [
+        {
+          "line": 2,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 19,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 30,
+          "text": "void Anchor::HandlePacket_UpdateDungeonItems(nlohmann::json payload) {"
+        },
+        {
+          "line": 35,
+          "text": "u16 mapIndex = payload[\"mapIndex\"].get<u16>();"
+        },
+        {
+          "line": 36,
+          "text": "gSaveContext.inventory.dungeonItems[mapIndex] = payload[\"dungeonItems\"].get<u8>();"
+        },
+        {
+          "line": 37,
+          "text": "gSaveContext.inventory.dungeonKeys[mapIndex] = payload[\"dungeonKeys\"].get<s8>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UpdateRoomState.cpp": {
+      "sha256": "20b29e5a13d41c1f03c1a359249157d99e92ca1fe18e11820fb27be3e3f6687e",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 16,
+          "text": "nlohmann::json Anchor::PrepRoomState() {"
+        },
+        {
+          "line": 17,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 38,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 45,
+          "text": "void Anchor::HandlePacket_UpdateRoomState(nlohmann::json payload) {"
+        },
+        {
+          "line": 50,
+          "text": "roomState.ownerClientId = payload[\"state\"][\"ownerClientId\"].get<uint32_t>();"
+        },
+        {
+          "line": 51,
+          "text": "roomState.pvpMode = payload[\"state\"][\"pvpMode\"].get<u8>();"
+        },
+        {
+          "line": 52,
+          "text": "roomState.showLocationsMode = payload[\"state\"][\"showLocationsMode\"].get<u8>();"
+        },
+        {
+          "line": 53,
+          "text": "roomState.teleportMode = payload[\"state\"][\"teleportMode\"].get<u8>();"
+        },
+        {
+          "line": 54,
+          "text": "roomState.syncItemsAndFlags = payload[\"state\"][\"syncItemsAndFlags\"].get<u8>();"
+        }
+      ]
+    },
+    "soh/soh/Network/Anchor/Packets/UpdateTeamState.cpp": {
+      "sha256": "d9d09b925e361cf48026a362761d6dab8ff393167bf7aaf7fb62dadfdf385bdc",
+      "references": [
+        {
+          "line": 3,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 122,
+          "text": "void Anchor::HandlePacket_UpdateTeamState(nlohmann::json payload) {"
+        },
+        {
+          "line": 135,
+          "text": "SaveContext loadedData = payload[\"state\"].get<SaveContext>();"
+        },
+        {
+          "line": 228,
+          "text": "// payload[\"state\"][\"rando\"][\"itemLocations\"][i][\"rgID\"].get<RandomizerGet>();"
+        },
+        {
+          "line": 230,
+          "text": "payload[\"state\"][\"rando\"][\"itemLocations\"][i][0].get<RandomizerCheckStatus>());"
+        },
+        {
+          "line": 232,
+          "text": "payload[\"state\"][\"rando\"][\"itemLocations\"][i][1].get<u8>());"
+        },
+        {
+          "line": 237,
+          "text": "//     payload[\"state\"][\"rando\"][\"itemLocations\"][i][\"fakeRgID\"].get<RandomizerGet>()));"
+        },
+        {
+          "line": 239,
+          "text": "//     payload[\"state\"][\"rando\"][\"itemLocations\"][i][\"trickName\"][\"english\"].get<std::string>();"
+        },
+        {
+          "line": 241,
+          "text": "//     payload[\"state\"][\"rando\"][\"itemLocations\"][i][\"trickName\"][\"french\"].get<std::string>();"
+        },
+        {
+          "line": 244,
+          "text": "//     u16 price = payload[\"state\"][\"rando\"][\"itemLocations\"][i][\"price\"].get<u16>();"
+        },
+        {
+          "line": 254,
+          "text": "//     payload[\"state\"][\"rando\"][\"entrances\"][i][\"type\"].get<u16>(); entranceCtx->entranceOverrides[i].index"
+        },
+        {
+          "line": 255,
+          "text": "//     = payload[\"state\"][\"rando\"][\"entrances\"][i][\"index\"].get<s16>();"
+        },
+        {
+          "line": 257,
+          "text": "//     payload[\"state\"][\"rando\"][\"entrances\"][i][\"destination\"].get<s16>();"
+        },
+        {
+          "line": 259,
+          "text": "//     payload[\"state\"][\"rando\"][\"entrances\"][i][\"override\"].get<s16>();"
+        },
+        {
+          "line": 261,
+          "text": "//     payload[\"state\"][\"rando\"][\"entrances\"][i][\"overrideDestination\"].get<s16>();"
+        },
+        {
+          "line": 265,
+          "text": "//     randoContext->hashIconIndexes[i] = payload[\"state\"][\"rando\"][\"seed\"][i].get<u8>();"
+        },
+        {
+          "line": 267,
+          "text": "// randoContext->GetSettings()->SetSeedString(payload[\"state\"][\"rando\"][\"inputSeed\"].get<std::string>());"
+        },
+        {
+          "line": 268,
+          "text": "// randoContext->GetSettings()->SetSeed(payload[\"state\"][\"rando\"][\"finalSeed\"].get<u32>());"
+        },
+        {
+          "line": 271,
+          "text": "//     randoContext->GetOption(RandomizerSettingKey(i)).SetSelectedIndex(payload[\"state\"][\"rando\"][\"randoSettings\"][i].get<u8>());"
+        },
+        {
+          "line": 276,
+          "text": "//     if (payload[\"state\"][\"rando\"][\"masterQuestDungeons\"][i].get<bool>()) {"
+        },
+        {
+          "line": 283,
+          "text": "//     if (payload[\"state\"][\"rando\"][\"requiredTrials\"][i].get<bool>()) {"
+        },
+        {
+          "line": 297,
+          "text": "nlohmann::json itemPayload = nlohmann::json::parse(item.get<std::string>());"
+        }
+      ]
+    },
+    "soh/soh/Network/CrowdControl/CrowdControl.cpp": {
+      "sha256": "df558d146f7e9d063545dd32e3807325b5dd62168a06f7de7adcd085fcac1219",
+      "references": [
+        {
+          "line": 5,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 31,
+          "text": "void CrowdControl::OnIncomingJson(nlohmann::json payload) {"
+        },
+        {
+          "line": 122,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 171,
+          "text": "CrowdControl::Effect* CrowdControl::ParseMessage(nlohmann::json dataReceived) {"
+        },
+        {
+          "line": 191,
+          "text": "auto effectName = dataReceived[\"code\"].get<std::string>();"
+        }
+      ]
+    },
+    "soh/soh/Network/CrowdControl/CrowdControl.h": {
+      "sha256": "4ebbfb2f63eda2328a03604f1026c17bfe2acb9f24e93a02b8b72f72aca008ba",
+      "references": [
+        {
+          "line": 70,
+          "text": "void HandleRemoteData(nlohmann::json payload);"
+        },
+        {
+          "line": 74,
+          "text": "Effect* ParseMessage(nlohmann::json payload);"
+        },
+        {
+          "line": 82,
+          "text": "void OnIncomingJson(nlohmann::json payload);"
+        }
+      ]
+    },
+    "soh/soh/Network/Network.cpp": {
+      "sha256": "6a7391ee9fdd8546a97659145951dee2879acd52a98a5798e0a7d87ae381370a",
+      "references": [
+        {
+          "line": 40,
+          "text": "void Network::OnIncomingJson(nlohmann::json payload) {"
+        },
+        {
+          "line": 59,
+          "text": "void Network::SendJsonToRemote(nlohmann::json payload) {"
+        },
+        {
+          "line": 152,
+          "text": "nlohmann::json jsonPayload;"
+        },
+        {
+          "line": 154,
+          "text": "jsonPayload = nlohmann::json::parse(payload);"
+        }
+      ]
+    },
+    "soh/soh/Network/Network.h": {
+      "sha256": "632a00311c8386be7dee8f04513cbb0f8e9d8795fe4d78624608dfd0a05ba0ca",
+      "references": [
+        {
+          "line": 9,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 44,
+          "text": "virtual void OnIncomingJson(nlohmann::json payload);"
+        },
+        {
+          "line": 49,
+          "text": "virtual void SendJsonToRemote(nlohmann::json packet);"
+        }
+      ]
+    },
+    "soh/soh/Network/Sail/Sail.cpp": {
+      "sha256": "6cc9d6b711053665e0e7afec957dbb3b8e9e21feac99ce6eaa603ff0e8d435ac",
+      "references": [
+        {
+          "line": 4,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 25,
+          "text": "void Sail::OnIncomingJson(nlohmann::json payload) {"
+        },
+        {
+          "line": 28,
+          "text": "nlohmann::json responsePayload;"
+        },
+        {
+          "line": 47,
+          "text": "std::string payloadType = payload[\"type\"].get<std::string>();"
+        },
+        {
+          "line": 56,
+          "text": "std::string command = payload[\"command\"].get<std::string>();"
+        },
+        {
+          "line": 70,
+          "text": "std::string effectType = payload[\"effect\"][\"type\"].get<std::string>();"
+        },
+        {
+          "line": 80,
+          "text": "std::string command = payload[\"effect\"][\"command\"].get<std::string>();"
+        },
+        {
+          "line": 136,
+          "text": "GameInteractionEffectBase* Sail::EffectFromJson(nlohmann::json payload) {"
+        },
+        {
+          "line": 141,
+          "text": "std::string name = payload[\"name\"].get<std::string>();"
+        },
+        {
+          "line": 146,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 147,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 148,
+          "text": "effect->parameters[2] = payload[\"parameters\"][2].get<int32_t>();"
+        },
+        {
+          "line": 154,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 155,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 156,
+          "text": "effect->parameters[2] = payload[\"parameters\"][2].get<int32_t>();"
+        },
+        {
+          "line": 162,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 163,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 169,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 170,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 176,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 186,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 194,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 200,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 206,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 218,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 224,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 240,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 246,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 254,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 260,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 266,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 272,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 278,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 288,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 294,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 300,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 301,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 319,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 320,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 326,
+          "text": "effect->parameters[0] = payload[\"parameters\"][0].get<int32_t>();"
+        },
+        {
+          "line": 327,
+          "text": "effect->parameters[1] = payload[\"parameters\"][1].get<int32_t>();"
+        },
+        {
+          "line": 341,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 354,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 367,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 379,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 394,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 409,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 422,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 435,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 448,
+          "text": "nlohmann::json payload;"
+        },
+        {
+          "line": 462,
+          "text": "nlohmann::json payload;"
+        }
+      ]
+    },
+    "soh/soh/Network/Sail/Sail.h": {
+      "sha256": "576d21cc5d4a5d9f3f457148387e176c8b2303cbb48a3e0d934be8780e404307",
+      "references": [
+        {
+          "line": 10,
+          "text": "GameInteractionEffectBase* EffectFromJson(nlohmann::json payload);"
+        },
+        {
+          "line": 17,
+          "text": "void OnIncomingJson(nlohmann::json payload);"
+        }
+      ]
+    },
+    "soh/soh/OTRGlobals.cpp": {
+      "sha256": "648bda58939111f1e477588fa2bec6a701406ef94daddd6a296862692fb0fdf9",
+      "references": [
+        {
+          "line": 2495,
+          "text": "nlohmann::json configJson;"
+        },
+        {
+          "line": 2519,
+          "text": "CVarSetString(path.c_str(), value.get<std::string>().c_str());"
+        },
+        {
+          "line": 2521,
+          "text": "CVarSetInteger(path.c_str(), value.get<int>());"
+        },
+        {
+          "line": 2523,
+          "text": "CVarSetFloat(path.c_str(), value.get<float>());"
+        }
+      ]
+    },
+    "soh/soh/SaveManager.cpp": {
+      "sha256": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+      "references": [
+        {
+          "line": 225,
+          "text": "nlohmann::json json;"
+        },
+        {
+          "line": 437,
+          "text": "nlohmann::json globalBlock;"
+        },
+        {
+          "line": 446,
+          "text": "switch (globalBlock[\"version\"].get<int>()) {"
+        },
+        {
+          "line": 468,
+          "text": "saveBlock = nlohmann::json::object();"
+        },
+        {
+          "line": 480,
+          "text": "nlohmann::json metaSaveBlock = nlohmann::json::object();"
+        },
+        {
+          "line": 533,
+          "text": "nlohmann::json& baseBlock = metaSaveBlock[\"sections\"][\"base\"][\"data\"];"
+        },
+        {
+          "line": 561,
+          "text": "nlohmann::json& randoBlock = metaSaveBlock[\"sections\"][\"randomizer\"][\"data\"];"
+        },
+        {
+          "line": 1147,
+          "text": "nlohmann::json& sectionBlock = saveBlock[\"sections\"][saveFuncInfo.name];"
+        },
+        {
+          "line": 1167,
+          "text": "nlohmann::json& sectionBlock = saveBlock[\"sections\"][sectionName];"
+        },
+        {
+          "line": 1236,
+          "text": "nlohmann::json globalBlock;"
+        },
+        {
+          "line": 1259,
+          "text": "saveBlock = nlohmann::json::object();"
+        },
+        {
+          "line": 1269,
+          "text": "switch (saveBlock[\"version\"].get<int>()) {"
+        },
+        {
+          "line": 1303,
+          "text": "SPDLOG_ERROR(\"Unrecognized save version \" + std::to_string(saveBlock[\"version\"].get<int>()) + \" in \" +"
+        },
+        {
+          "line": 2331,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        },
+        {
+          "line": 2333,
+          "text": "*currentJsonContext = nlohmann::json::array();"
+        },
+        {
+          "line": 2344,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        },
+        {
+          "line": 2345,
+          "text": "nlohmann::json object = nlohmann::json::object();"
+        },
+        {
+          "line": 2351,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        },
+        {
+          "line": 2353,
+          "text": "*currentJsonContext = nlohmann::json::object();"
+        },
+        {
+          "line": 2361,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        },
+        {
+          "line": 2380,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        },
+        {
+          "line": 2381,
+          "text": "nlohmann::json emptyObject = nlohmann::json::object();"
+        },
+        {
+          "line": 2392,
+          "text": "nlohmann::json* saveJsonContext = currentJsonContext;"
+        }
+      ]
+    },
+    "soh/soh/SaveManager.h": {
+      "sha256": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+      "references": [
+        {
+          "line": 60,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 136,
+          "text": "currentJsonArrayContext.value().get_to(data);"
+        },
+        {
+          "line": 141,
+          "text": "(*currentJsonContext)[name.c_str()].get_to(data);"
+        },
+        {
+          "line": 160,
+          "text": "nlohmann::json saveBlock;"
+        },
+        {
+          "line": 195,
+          "text": "nlohmann::json* currentJsonContext = nullptr;"
+        },
+        {
+          "line": 196,
+          "text": "nlohmann::json::iterator currentJsonArrayContext;"
+        }
+      ]
+    },
+    "libultraship/include/ship/config/Config.h": {
+      "sha256": "36e187fe87aeee9f9e2c981c19f2a3ce30dd39787cb98324c2ad3c2b8f7505bb",
+      "references": [
+        {
+          "line": 5,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 60,
+          "text": "void SetBlock(const std::string& key, nlohmann::json block);"
+        },
+        {
+          "line": 65,
+          "text": "nlohmann::json GetNestedJson();"
+        },
+        {
+          "line": 91,
+          "text": "nlohmann::json Nested(const std::string& key);"
+        },
+        {
+          "line": 97,
+          "text": "nlohmann::json mFlattenedJson;"
+        },
+        {
+          "line": 98,
+          "text": "nlohmann::json mNestedJson;"
+        }
+      ]
+    },
+    "libultraship/include/ship/config/ConsoleVariable.h": {
+      "sha256": "c4a893e7dc74258ecbb29ea96edcff1053cc46599eb261df3a908ace14fce265",
+      "references": [
+        {
+          "line": 4,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 63,
+          "text": "nlohmann::detail::iteration_proxy<nlohmann::detail::iter_impl<nlohmann::json>> items);"
+        }
+      ]
+    },
+    "libultraship/include/ship/resource/type/Json.h": {
+      "sha256": "df55b53891b84732a76377e80808111e59570c86a29f357bb6027bc4f32efced",
+      "references": [
+        {
+          "line": 4,
+          "text": "#include <nlohmann/json.hpp>"
+        },
+        {
+          "line": 17,
+          "text": "nlohmann::json Data;"
+        }
+      ]
+    },
+    "libultraship/src/fast/backends/gfx_direct3d11.cpp": {
+      "sha256": "a8ebf281d494bc63dfd59b04e6b2b14d98e3121b2d0e251bbbf9778d02a9141d",
+      "references": [
+        {
+          "line": 42,
+          "text": "#include \"nlohmann/json.hpp\""
+        }
+      ]
+    },
+    "libultraship/src/ship/config/Config.cpp": {
+      "sha256": "a9105f8abba32ffc174198f0bd7c5efff21083b8b3a1295a3971d2b934f599d2",
+      "references": [
+        {
+          "line": 41,
+          "text": "nlohmann::json Config::Nested(const std::string& key) {"
+        },
+        {
+          "line": 47,
+          "text": "nlohmann::json gjson = mFlattenedJson.unflatten();"
+        },
+        {
+          "line": 62,
+          "text": "nlohmann::json n = Nested(key);"
+        },
+        {
+          "line": 63,
+          "text": "if (n.is_string() && !n.get<std::string>().empty()) {"
+        },
+        {
+          "line": 71,
+          "text": "nlohmann::json n = Nested(key);"
+        },
+        {
+          "line": 80,
+          "text": "nlohmann::json n = Nested(key);"
+        },
+        {
+          "line": 89,
+          "text": "nlohmann::json n = Nested(key);"
+        },
+        {
+          "line": 98,
+          "text": "nlohmann::json n = Nested(key);"
+        },
+        {
+          "line": 134,
+          "text": "void Config::SetBlock(const std::string& key, nlohmann::json block) {"
+        },
+        {
+          "line": 135,
+          "text": "nlohmann::json gjson = mFlattenedJson.unflatten();"
+        },
+        {
+          "line": 137,
+          "text": "nlohmann::json* gjson2 = &gjson;"
+        },
+        {
+          "line": 164,
+          "text": "nlohmann::json gjson = mFlattenedJson.unflatten();"
+        },
+        {
+          "line": 166,
+          "text": "nlohmann::json* gjson2 = &gjson;"
+        },
+        {
+          "line": 202,
+          "text": "mFlattenedJson = nlohmann::json::object();"
+        },
+        {
+          "line": 208,
+          "text": "mNestedJson = nlohmann::json::parse(ifs);"
+        },
+        {
+          "line": 210,
+          "text": "} catch (...) { mFlattenedJson = nlohmann::json::object(); }"
+        },
+        {
+          "line": 220,
+          "text": "if (nlohmann::json tmp = Nested(key); tmp.is_array()) {"
+        },
+        {
+          "line": 221,
+          "text": "return tmp.get<std::vector<T>>();"
+        },
+        {
+          "line": 227,
+          "text": "mFlattenedJson[FormatNestedKey(key)] = nlohmann::json(array);"
+        },
+        {
+          "line": 230,
+          "text": "nlohmann::json Config::GetNestedJson() {"
+        }
+      ]
+    },
+    "libultraship/src/ship/config/ConsoleVariable.cpp": {
+      "sha256": "7274d237da2cc62a649e5ed274ed17cf6c33a070d95a196060d1a2670a9de76d",
+      "references": [
+        {
+          "line": 286,
+          "text": "LoadFromPath(\"\", conf->GetNestedJson()[\"CVars\"].items());"
+        },
+        {
+          "line": 292,
+          "text": "std::string path, nlohmann::detail::iteration_proxy<nlohmann::detail::iter_impl<nlohmann::json>> items) {"
+        },
+        {
+          "line": 301,
+          "text": "case nlohmann::detail::value_t::array:"
+        },
+        {
+          "line": 303,
+          "text": "case nlohmann::detail::value_t::object:"
+        },
+        {
+          "line": 304,
+          "text": "if (value.contains(\"Type\") && value[\"Type\"].get<std::string>() == \"RGBA\") {"
+        },
+        {
+          "line": 306,
+          "text": "clr.r = value[\"R\"].get<uint8_t>();"
+        },
+        {
+          "line": 307,
+          "text": "clr.g = value[\"G\"].get<uint8_t>();"
+        },
+        {
+          "line": 308,
+          "text": "clr.b = value[\"B\"].get<uint8_t>();"
+        },
+        {
+          "line": 309,
+          "text": "clr.a = value[\"A\"].get<uint8_t>();"
+        },
+        {
+          "line": 311,
+          "text": "} else if (value.contains(\"Type\") && value[\"Type\"].get<std::string>() == \"RGB\") {"
+        },
+        {
+          "line": 313,
+          "text": "clr.r = value[\"R\"].get<uint8_t>();"
+        },
+        {
+          "line": 314,
+          "text": "clr.g = value[\"G\"].get<uint8_t>();"
+        },
+        {
+          "line": 315,
+          "text": "clr.b = value[\"B\"].get<uint8_t>();"
+        },
+        {
+          "line": 322,
+          "text": "case nlohmann::detail::value_t::string:"
+        },
+        {
+          "line": 323,
+          "text": "SetString(itemPath.c_str(), value.get<std::string>().c_str());"
+        },
+        {
+          "line": 325,
+          "text": "case nlohmann::detail::value_t::boolean:"
+        },
+        {
+          "line": 326,
+          "text": "SetInteger(itemPath.c_str(), value.get<bool>());"
+        },
+        {
+          "line": 328,
+          "text": "case nlohmann::detail::value_t::number_unsigned:"
+        },
+        {
+          "line": 329,
+          "text": "case nlohmann::detail::value_t::number_integer:"
+        },
+        {
+          "line": 330,
+          "text": "SetInteger(itemPath.c_str(), value.get<int>());"
+        },
+        {
+          "line": 332,
+          "text": "case nlohmann::detail::value_t::number_float:"
+        },
+        {
+          "line": 333,
+          "text": "SetFloat(itemPath.c_str(), value.get<float>());"
+        }
+      ]
+    },
+    "libultraship/src/ship/resource/archive/Archive.cpp": {
+      "sha256": "b4cc912e3c41c6a731c7ab1e71e4664d89b3dc6cb8fd4a0e972c49ca59a209ef",
+      "references": [
+        {
+          "line": 13,
+          "text": "#include <nlohmann/json.hpp>"
+        }
+      ]
+    },
+    "libultraship/src/ship/resource/factory/JsonFactory.cpp": {
+      "sha256": "6e85541e88789ec0d4732a441fb779eb70308b6e4b7708dacd97ce1f89a4de37",
+      "references": [
+        {
+          "line": 16,
+          "text": "json->Data = nlohmann::json::parse(reader->ReadCString(), nullptr, true, true);"
+        }
+      ]
+    },
+    "libultraship/src/ship/resource/ResourceLoader.cpp": {
+      "sha256": "88d4480ce768037afb4083479f1b614d34102ca1cfe330512749320e2d29670b",
+      "references": [
+        {
+          "line": 13,
+          "text": "#include \"nlohmann/json.hpp\""
+        },
+        {
+          "line": 165,
+          "text": "// that causes nlohmann to fail parsing, following the pattern used for"
+        },
+        {
+          "line": 169,
+          "text": "auto parsed = nlohmann::json::parse(binaryReader->ReadCString());"
+        }
+      ]
+    }
+  }
+}

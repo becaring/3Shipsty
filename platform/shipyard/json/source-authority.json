@@ -1,0 +1,88 @@
+{
+  "official_repository": "https://github.com/nlohmann/json",
+  "official_tag": "v3.12.0",
+  "official_commit": "55f93686c01528224f448c19128836e7df245f72",
+  "selection": "Matches libultraship/CMake/dependencies/android.cmake:22 and ios.cmake:21 fallback v3.12.0; Windows vcpkg selection is unversioned.",
+  "upstream_files": {
+    "include/nlohmann/adl_serializer.hpp": "24a711069a968170595c0ee3ad1ccd287ac9f10e8599f32156496855892e6cc6",
+    "include/nlohmann/byte_container_with_subtype.hpp": "b92a72c266b61ff7559e71a33c25dbcb4a6fec256a1bee3b6f093dd3b8a1b277",
+    "include/nlohmann/detail/abi_macros.hpp": "878aea894ebfd3af5095b79506c399017443f02988c2581b177b497202c3ac50",
+    "include/nlohmann/detail/conversions/from_json.hpp": "375516c1aa446ad63e8bebbd6afb7decf705df2f94af9f942070f7333b8b7ef9",
+    "include/nlohmann/detail/conversions/to_chars.hpp": "637b3265abd35a9841fb9be58df92d4424e030d9c94ec763cc3853ca6f59f835",
+    "include/nlohmann/detail/conversions/to_json.hpp": "c781dfac307d7bbae9a2030309188d4a76737ceeb1e267dab1cee523b9a64dd2",
+    "include/nlohmann/detail/exceptions.hpp": "04fdd77aa5d34e8c8be9c0893245b05491856bb8d6f475c0e183a7ab1608298d",
+    "include/nlohmann/detail/hash.hpp": "6275f3f1ac755656e5f59e390b996ae422b4247d93b129d80cf8c1db804affbc",
+    "include/nlohmann/detail/input/binary_reader.hpp": "7c6bc0d95ee283df661adbb4721d40530a439f6276057d76592d08a6dc759893",
+    "include/nlohmann/detail/input/input_adapters.hpp": "76184366c099482f08a07666bbe5e9ce04e39bfbcf58b1518aef121f1a0392e5",
+    "include/nlohmann/detail/input/json_sax.hpp": "de1306a54ff12595495cb5618ae008f36c769d772c366654bb2734fa2d6994b7",
+    "include/nlohmann/detail/input/lexer.hpp": "0bea208e02bf93157785b65c6bebceb423efb483dd698714f11ef2d2691efe8a",
+    "include/nlohmann/detail/input/parser.hpp": "0e69b8331a311dc979d04a9b38358e7baa2788012e37a64577dcab88e8d0e981",
+    "include/nlohmann/detail/input/position_t.hpp": "da21ab02f7f49577ce481fff264015655157a52712639eb60b9786326b566cf1",
+    "include/nlohmann/detail/iterators/internal_iterator.hpp": "9cc2a62f0d1fa7b3b8a9af073332dbf6d9e141124e75ca0350c4a05628e13129",
+    "include/nlohmann/detail/iterators/iter_impl.hpp": "604f7cfc41d909e211a7639a825b9d7fe9dbc2622474f20625751dfa98f9c134",
+    "include/nlohmann/detail/iterators/iteration_proxy.hpp": "1d69ccab58276e48f805cfebf8bb5e318990d29bf763ab2fe494778ada7893e6",
+    "include/nlohmann/detail/iterators/iterator_traits.hpp": "4a5aa3b590740e1ea237950c0ba7efad5c8e3678af7dbe389924fe6e0c9cbef6",
+    "include/nlohmann/detail/iterators/json_reverse_iterator.hpp": "08a93ec1145649273ee00550269f977e745d2845e574a9ce88237732911c3ad7",
+    "include/nlohmann/detail/iterators/primitive_iterator.hpp": "9e0a0a2d5641888b2b55ddd6a3d1123deb9aed33e79d58f60dad72bb7fc089c3",
+    "include/nlohmann/detail/json_custom_base_class.hpp": "597800cf340eee58052c091811fcfc98e7a999695c6356cc6108ed1cf8ac7f09",
+    "include/nlohmann/detail/json_pointer.hpp": "706c10ad655e78a7441ddd0117b186a39f5802af737ad86f0c24485f5b41e031",
+    "include/nlohmann/detail/json_ref.hpp": "21bc1c23e13b2378e90b8976d79026f18bd7f61c5ae11a6acf2fc24f9aa3d70f",
+    "include/nlohmann/detail/macro_scope.hpp": "4ed48cefc99c21c6a660d017c0e2e0d3661e1a26e52e0d3d7bcf8c2084d843ce",
+    "include/nlohmann/detail/macro_unscope.hpp": "7309b75c15f4af6931b9495198be12951336ca0f9f2ec9b4647e0a5a9fb23335",
+    "include/nlohmann/detail/meta/call_std/begin.hpp": "bfa6c2da2b72045d90a49da195b6f1e10f98e07a0f11fae45ede9adc1f58678b",
+    "include/nlohmann/detail/meta/call_std/end.hpp": "15eda48385e9b5db16815e5acf20f861a2e634a4202fcb568b4938520f7eed44",
+    "include/nlohmann/detail/meta/cpp_future.hpp": "75d2710306ab9463e70c714fe430adfc1a8b088a7fe4cf815a067cf43e81b933",
+    "include/nlohmann/detail/meta/detected.hpp": "d262e0ff4e4a63b35e44baf986c1ffe9e8709bf41ee58f78571802f75dc1d252",
+    "include/nlohmann/detail/meta/identity_tag.hpp": "06c289fe5b0066bfc9196ed21f0875f81fa29b5ea87bc3685baea0c69ff10e01",
+    "include/nlohmann/detail/meta/is_sax.hpp": "28dff3918125b1760880658424cb01bd64e2d936714e01d6236e8a88ca714028",
+    "include/nlohmann/detail/meta/std_fs.hpp": "37be48cc5674e1afeb675883b69c99bdcd7144de2b655e9ee432eca2cb9bfabe",
+    "include/nlohmann/detail/meta/type_traits.hpp": "c50fadc087dbc1ef1d8d82289f5b8f9b09c8c76aff2f62f0e6a1be060d37c4e8",
+    "include/nlohmann/detail/meta/void_t.hpp": "20cdb121af3dd047dd725eb790f3f0bd89e8ba2ae115d2a8a5b26bbbb79c1078",
+    "include/nlohmann/detail/output/binary_writer.hpp": "861eb3860dbe090c0a86de74b213de52b6c49fc8f51184a8b32c26abb61d06ed",
+    "include/nlohmann/detail/output/output_adapters.hpp": "3e45ebaf107641184a798731ac3976088cb6c519988ed6783590a664b99e4046",
+    "include/nlohmann/detail/output/serializer.hpp": "53f4f2a89e78980fc36a6658578c14f3fabdcfa769a002faf5674f7992509929",
+    "include/nlohmann/detail/string_concat.hpp": "c69a2a54d94877792e38871af70bf10c8be7f332789d16a3f416d2d3397fde12",
+    "include/nlohmann/detail/string_escape.hpp": "088b06aa33cae1366a0e5ccfbd9c0c86909dbcad8ad52a63ec5acb55e674357e",
+    "include/nlohmann/detail/string_utils.hpp": "e76d50d0d16579cf2d5160e14785ebd4bcb6ff90e7b08cc699607d15044c3284",
+    "include/nlohmann/detail/value_t.hpp": "f5e84abfdde195a477e18d85aed85880775fcb813eeea121dc760c89e73663e7",
+    "include/nlohmann/json.hpp": "d2600b1e9babf0e2928560c46c505c4040a9127c917d2ef891afb70039a01c88",
+    "include/nlohmann/json_fwd.hpp": "a4ccf3b4ce0470de9b1e7be523ed24ce6f66888103352c35c86d5acad8fa44f3",
+    "include/nlohmann/ordered_map.hpp": "3a0b5e2461a6b4d6e294144d3831d65b85f3ab07a3b7d8076f8aa8c3ef594776",
+    "include/nlohmann/thirdparty/hedley/hedley.hpp": "21e26cb7e20c05d43bbdc603c516e78189fbee096054c1bea719aa7bda8adcc3",
+    "include/nlohmann/thirdparty/hedley/hedley_undef.hpp": "f82683959f77cfbd37ebe131e917f35d1a4d65bf904c79cf1cd7f446d64b6b88",
+    "LICENSE.MIT": "b9715282b2f1db1359a919bb3a542dd4362fd9e38ae72d421367eb11abe62eec"
+  },
+  "donor_files": {
+    "json.cpp": {
+      "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\json.cpp",
+      "donor_sha256": "f68d239f43564dd4d08b39b55f907ecf65f4c77cb8bd51a284c6b19e425e3ba5",
+      "owned_sha256": "8a362710df22618096769b1df15688d2d53d112bef158424b2f05f665ed9fc90",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488"
+    },
+    "include/nlohmann/json.hpp": {
+      "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\include\\nlohmann\\json.hpp",
+      "donor_sha256": "a4f6f35b7aba1e4c30e350f55d31d38bbc6c6e998dc406d002da6be36aff5837",
+      "owned_sha256": "37e4eaacbb784a0752a42e562cf61ee29bc9d63d9195368420e6d3f9424cdab6",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488"
+    },
+    "algorithm_support.h": {
+      "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\algorithm_support.h",
+      "donor_sha256": "1ff6772d891a86fb782505f2b82cdfdf3e2d445bfa256dd85b74e3ef7eccde59",
+      "owned_sha256": "64f1c359ff13cfcb137eb4194017173540047dccf0476cc3d6ab1b187679d6f5",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only"
+    },
+    "generate_algorithms.py": {
+      "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\generate_algorithms.py",
+      "donor_sha256": "362b2ac8c1b58a4bda21f8a8e9b27e18b3ca9fae608641630953f56861bca257",
+      "owned_sha256": "15d98246decb34567d0c1d8930ca59ad1c56a17b2cf316733e2c0bc8988e5787",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only"
+    },
+    "LICENSE.nlohmann.MIT": {
+      "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\LICENSE.nlohmann.MIT",
+      "donor_sha256": "b9715282b2f1db1359a919bb3a542dd4362fd9e38ae72d421367eb11abe62eec",
+      "owned_sha256": "b9715282b2f1db1359a919bb3a542dd4362fd9e38ae72d421367eb11abe62eec",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only"
+    }
+  },
+  "scope": "Generic compiler-library backend; no Smash application/game policy. Not full basic_json or modern SoH consumer coverage."
+}

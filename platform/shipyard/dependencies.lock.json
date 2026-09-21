@@ -1,0 +1,27 @@
+{
+  "zlib": {
+    "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf",
+    "url": "https://github.com/madler/zlib.git",
+    "receipt_sha256": "8651b65307d6297c0e1f5adfbcc671d8764036fd83211fdffde0e4d2595ac9b6"
+  },
+  "libzip": {
+    "commit": "6f8a0cdd24a0dc6cce9dac4a7679da784ab124ea",
+    "url": "https://github.com/nih-at/libzip.git",
+    "receipt_sha256": "18a6bbcec8f7e7dd3b94b668f3ab04d24ef993b037a561252c72dda6f3695c7d"
+  },
+  "tinyxml2": {
+    "commit": "9148bdf719e997d1f474be6bcc7943881046dba1",
+    "url": "https://github.com/leethomason/tinyxml2.git",
+    "receipt_sha256": "6379d5b0bfc737b4349d0c01ef4d39799860f4e22643c0cbf42f19c91ebc5bef"
+  },
+  "prism": {
+    "commit": "bbcbc7e3f890a5806b579361e7aa0336acd547e7",
+    "url": "https://github.com/KiritoDv/prism-processor.git",
+    "receipt_sha256": "30d0175217edbe49b51855b51ea2af41ab186b058f158fbc83b31bc9c03e2cb6"
+  },
+  "imgui": {
+    "commit": "4806a1924ff6181180bf5e4b8b79ab4394118875",
+    "url": "https://github.com/ocornut/imgui.git",
+    "receipt_sha256": "cd57d2e911cede76d2635367c8b60ca8dc3dbd5e5c4390041b225fa04acdd937"
+  }
+}

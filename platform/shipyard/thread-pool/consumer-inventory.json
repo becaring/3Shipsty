@@ -1,0 +1,34 @@
+{
+  "soh_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "lus_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "consumers": {
+    "libultraship/CMake/dependencies/common.cmake": {
+      "sha256": "fc33342abaa27528dfd05210840b39ce32652400558b2946e611072ece3a40fd",
+      "reached_contract": "ThreadPool FetchContent GIT_TAG v4.1.0"
+    },
+    "libultraship/include/ship/resource/ResourceManager.h": {
+      "sha256": "c4b088d9f6911b85a5a756c5e6745a02202ab30dc65417498a52c83b50deddcf",
+      "reached_contract": "BS_THREAD_POOL_ENABLE_PRIORITY/PAUSE; shared futures and mutex"
+    },
+    "libultraship/src/ship/resource/ResourceManager.cpp": {
+      "sha256": "ccb2cbddb413522ef9f125b70fb2286816f49177acb48a564fb5ab39a8e829f2",
+      "reached_contract": "submit_task typed resource and batch/void results; promise fast path; synchronous get waits"
+    },
+    "soh/soh/SaveManager.h": {
+      "sha256": "df70aca03ce283a5d9e5e6fec02202a79fa9fde6d58d4ce66eef2c6cd9bb026d",
+      "reached_contract": "BS_THREAD_POOL_ENABLE_PRIORITY/PAUSE; pool and save mutex"
+    },
+    "soh/soh/SaveManager.cpp": {
+      "sha256": "7fe420b55cd0679069eb7f484b386b45910b5fff7fe227cc6832ed0f7eef79dc",
+      "reached_contract": "single worker; memcpy SaveContext snapshot; detach_task(std::bind(...snapshot...)); wait on exit"
+    },
+    "soh/soh/OTRGlobals.cpp": {
+      "sha256": "648bda58939111f1e477588fa2bec6a701406ef94daddd6a296862692fb0fdf9",
+      "reached_contract": "single worker extraction; submit_task void; future::wait_for(milliseconds(0)); separate audio thread/condition variables"
+    },
+    "soh/soh/Enhancements/randomizer/randomizer.cpp": {
+      "sha256": "15bf31720655505e3e6e9d1d2d5b76e2e426f624077d8f07385773d9bed52d6c",
+      "reached_contract": "explicit std::thread with seed by value; join; NOT BS pool"
+    }
+  }
+}
