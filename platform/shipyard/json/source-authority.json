@@ -62,8 +62,8 @@
     "include/nlohmann/json.hpp": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\include\\nlohmann\\json.hpp",
       "donor_sha256": "a4f6f35b7aba1e4c30e350f55d31d38bbc6c6e998dc406d002da6be36aff5837",
-      "owned_sha256": "37e4eaacbb784a0752a42e562cf61ee29bc9d63d9195368420e6d3f9424cdab6",
-      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488"
+      "owned_sha256": "f35cb0fcbe42cc8a1de8d268c3d0dda034bb2fe3cafb36a857cda845af1a7611",
+      "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only; generic modern SoH predicate, exact scalar conversion, value-default, find, mutable-iterator erase additions following pinned json.hpp; recursive update(object, merge_objects) following upstream json.hpp:3434-3488; string-key map, std::array and C-array conversion, enum underlying-type registry, get_to reference and partial-mutation semantics following pinned detail/conversions/{from_json,to_json}.hpp; upstream non-native arithmetic boolean acceptance"
     },
     "algorithm_support.h": {
       "donor": "D:\\Projects\\Smash360\\platform\\xbox360\\cpp-compat\\json\\algorithm_support.h",
@@ -84,5 +84,9 @@
       "transform": "namespace and macro prefix Smash360/SMASH360 to Shipyard/SHIPYARD only"
     }
   },
-  "scope": "Generic compiler-library backend; no Smash application/game policy. Not full basic_json or modern SoH consumer coverage."
+  "scope": "Generic compiler-library backend; no Smash application/game policy. Not full basic_json or modern SoH consumer coverage.",
+  "owned_additions": {
+    "generate_containers.py": "c246adf1ae42488ba0fddbf5386ff047c2167523b790d7f46914763101e6f856",
+    "container-consumer-source.json": "6278dd35ba9370710fd35b74c158d2daf2b9308bd6fa35f6d4b58c02f586bc42"
+  }
 }

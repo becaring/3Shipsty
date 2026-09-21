@@ -29,20 +29,27 @@ def build(source,label,backend=True,syntax=False,success=True):
 def main():
     runpy.run_path(str(ROOT/'tools/shipyard/prepare_json.py'))['generate']()
     checks={}
-    for case in ['reference','edge_contract','modern_save_contract','extended_contract']:
+    for case in ['reference','edge_contract','modern_save_contract','extended_contract','container_contract']:
         before=build(TESTS/(case+'.cpp'),case+'-official',False)
         after=build(TESTS/(case+'.cpp'),case+'-backend')
         if before.stdout!=after.stdout:raise AssertionError(''.join(difflib.unified_diff(before.stdout.splitlines(True),after.stdout.splitlines(True))))
         checks[case]=hashlib.sha256(before.stdout.encode()).hexdigest()
+    modern=OUT/'backend-generated/json/generated/modern_enum_contract.cpp'
+    before=build(modern,'modern-enum-official',False)
+    after=build(modern,'modern-enum-backend')
+    assert before.stdout==after.stdout
+    checks['modern_enum_contract']=hashlib.sha256(before.stdout.encode()).hexdigest()
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     base=[sdk/'bin/win32/cl.exe','/nologo','/EHsc','/D_XBOX','/D_XBOX_VER=200','/I'+str(sdk/'include/xbox')]+INCLUDES
     objects={}
-    for name,source in [('backend',BACKEND/'json.cpp'),('api',TESTS/'xdk_api.cpp')]:
+    for name,source in [('backend',BACKEND/'json.cpp'),('api',TESTS/'xdk_api.cpp'),('containers',TESTS/'container_contract.cpp'),('modern-enum',modern)]:
         target=OUT/('xdk-'+name)/(name+'.obj')
         execute(base+['/c','/Fo'+str(target),source],'xdk-'+name)
         raw=target.read_bytes();assert int.from_bytes(raw[:2],'little')==0x1f2;objects[name]=hashlib.sha256(raw).hexdigest()
     unknown=execute(base+['/Zs',TESTS/'unsupported_get.cpp'],'xdk-unsupported-get',success=False)
     assert unknown.returncode!=0 and 'UnregisteredValue' in unknown.stdout
+    unknown_enum=execute(base+['/Zs',TESTS/'unsupported_enum.cpp'],'xdk-unsupported-enum',success=False)
+    assert unknown_enum.returncode!=0 and 'UnregisteredEnum' in unknown_enum.stdout
     for source in sorted((TESTS/'supported').glob('*.cpp')):
         build(source,'supported-'+source.stem+'-official',False,True)
         build(source,'supported-'+source.stem+'-backend',True,True)
@@ -54,5 +61,5 @@ def main():
         assert r.returncode!=0,'Gap is implemented; update audit: '+source.stem
         gaps[source.stem]={'official_compiles':True,'backend_compiles':False}
     (OUT/'verification.json').write_text(json.dumps({'host_differential_sha256':checks,'float_bit_patterns':4000,'xdk_objects':objects,'powerpc_machine':'0x1f2','unknown_conversion_rejected':True,'modern_api_gaps':gaps,'full_modern_application_integrated':False,'console_execution_tested':False},indent=2)+'\n')
-    print('PASS: host rich/edge/modern save-template differential; two PowerPC objects; fail-closed modern API probes')
+    print('PASS: six host differentials; four PowerPC objects; fail-closed modern API and enum probes')
 if __name__=='__main__':main()

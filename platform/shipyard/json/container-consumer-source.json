@@ -1,0 +1,20 @@
+{
+  "sources": {
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerCheck.h": "62848bec19a511dd274b69f272144514ebef2534b1012478dca51ca15a44bb44",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerMiscEnums.h": "e4b51b082e19fb953b0a4cd69cf96e874ef7eee1fe28bbc4426b78d053232e93",
+    "soh/soh/Network/Anchor/Packets/SetCheckStatus.cpp": "ee76442a77eda18c0924a06d7c3f8426e43be4b714ff6038b1633236aee4abae"
+  },
+  "enums": {
+    "RandomizerCheck": {
+      "source": "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerCheck.h"
+    },
+    "RandomizerCheckStatus": {
+      "source": "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerMiscEnums.h"
+    }
+  },
+  "consumer": "soh/soh/Network/Anchor/Packets/SetCheckStatus.cpp",
+  "consumer_statements": [
+    "    RandomizerCheck rc = payload[\"rc\"].get<RandomizerCheck>();",
+    "    RandomizerCheckStatus status = payload[\"status\"].get<RandomizerCheckStatus>();"
+  ]
+}

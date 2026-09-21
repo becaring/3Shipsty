@@ -23,4 +23,20 @@ class GenerationTests(unittest.TestCase):
                 elif source[end]=='}':depth-=1
                 end+=1
             self.assertIn(source[start:end],contract)
+    def test_actual_enum_sources_and_probe(self):
+        manifest=M['generate']()['containers']
+        self.assertEqual(len(manifest['source_sha256']),3)
+        probe=(M['OUT']/'modern_enum_contract.cpp').read_text()
+        evidence=json.loads((M['BACKEND']/'container-consumer-source.json').read_text())
+        for line in evidence['consumer_statements']:self.assertIn(line,probe)
+        self.assertIn('RC_LINKS_POCKET',probe)
+        self.assertIn('RCSHOW_SAVED',probe)
+    def test_reject_changed_enum_source(self):
+        generator=runpy.run_path(str(M['BACKEND']/'generate_containers.py'))['generate']
+        with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
+            evidence=json.loads((M['BACKEND']/'container-consumer-source.json').read_text())
+            source=Path(folder);first=next(iter(evidence['sources']))
+            p=source/first;p.parent.mkdir(parents=True);p.write_text('changed')
+            with self.assertRaisesRegex(ValueError,'consumer SHA-256 mismatch'):
+                generator(M['OUT'],source)
 if __name__=='__main__':unittest.main()

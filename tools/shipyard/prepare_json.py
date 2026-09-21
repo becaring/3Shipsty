@@ -18,8 +18,11 @@ def generate(source=SOURCE,output=OUT):
         if sha((source/rel).read_bytes())!=digest:raise ValueError('upstream source SHA-256 mismatch: '+rel)
     for rel,record in lock['donor_files'].items():
         if sha((BACKEND/rel).read_bytes())!=record['owned_sha256']:raise ValueError('backend source SHA-256 mismatch: '+rel)
+    for rel,digest in lock.get('owned_additions',{}).items():
+        if sha((BACKEND/rel).read_bytes())!=digest:raise ValueError('backend addition SHA-256 mismatch: '+rel)
     algorithms=runpy.run_path(str(BACKEND/'generate_algorithms.py'))['generate'](source,output)
-    manifest={'official_commit':lock['official_commit'],'backend_kind':'bounded API, not generic basic_json','full_modern_soh_json_contract':False,'upstream_inputs':lock['upstream_files'],'backend_inputs':{r:v['owned_sha256'] for r,v in lock['donor_files'].items()},'generator_sha256':sha(Path(__file__).read_bytes()),'algorithms':algorithms}
+    containers=runpy.run_path(str(BACKEND/'generate_containers.py'))['generate'](output)
+    manifest={'official_commit':lock['official_commit'],'backend_kind':'bounded API, not generic basic_json','full_modern_soh_json_contract':False,'upstream_inputs':lock['upstream_files'],'backend_inputs':{r:v['owned_sha256'] for r,v in lock['donor_files'].items()},'owned_additions':lock.get('owned_additions',{}),'generator_sha256':sha(Path(__file__).read_bytes()),'algorithms':algorithms,'containers':containers}
     (output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return manifest
 if __name__=='__main__':

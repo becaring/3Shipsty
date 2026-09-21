@@ -4,6 +4,7 @@
 // Storage/ownership adapted from SoH360 platform/xbox360/save_json.{h,cpp}.
 // Lexer and Grisu2 algorithms are generated from pinned official nlohmann source.
 #include <map>
+#include <array>
 #include <vector>
 #include <string>
 #include <memory>
@@ -34,7 +35,14 @@ struct value_t {
 };
 template <class T> class iter_impl;
 template <class Iterator> class iteration_proxy;
-template <class T> struct conversion; // Unknown conversions deliberately fail compilation.
+template <class T, class Enable = void> struct conversion; // Unknown conversions deliberately fail compilation.
+// XDK has is_enum but no underlying_type intrinsic. The compiler projection must
+// register the exact underlying type after declaring each reached enum.
+#if defined(_XBOX)
+template <class T> struct enum_underlying;
+#else
+template <class T> struct enum_underlying : std::underlying_type<T> {};
+#endif
 } // namespace detail
 class json {
   public:
@@ -112,8 +120,45 @@ class json {
         for (size_t i = 0; i < v.size(); ++i)
             push_back(json(v[i]));
     }
+    template <class T, class C, class A>
+    json(const std::map<std::string, T, C, A> &v)
+        : type_(detail::value_t::null), signed_(0), unsigned_(0), real_(0) {
+        *this = object();
+        for (typename std::map<std::string, T, C, A>::const_iterator i = v.begin(); i != v.end(); ++i)
+            (*this)[i->first] = json(i->second);
+    }
+    template <class T, size_t N>
+    json(const std::array<T, N> &v)
+        : type_(detail::value_t::null), signed_(0), unsigned_(0), real_(0) {
+        *this = array();
+        for (size_t i = 0; i < N; ++i) push_back(json(v[i]));
+    }
+    template <class T, size_t N>
+    json(const T (&v)[N], typename std::enable_if<!std::is_same<T, char>::value>::type * = 0)
+        : type_(detail::value_t::null), signed_(0), unsigned_(0), real_(0) {
+        *this = array();
+        for (size_t i = 0; i < N; ++i) push_back(json(v[i]));
+    }
+    template <class T>
+    json(T v, typename std::enable_if<std::is_enum<T>::value>::type * = 0)
+        : type_(detail::value_t::null), signed_(0), unsigned_(0), real_(0) {
+        *this = json(static_cast<typename detail::enum_underlying<T>::type>(v));
+    }
     template <class T> T get() const { return detail::conversion<T>::get(*this); }
-    template <class T> void get_to(T &v) const { v = get<T>(); }
+    template <class T> T &get_to(T &v) const { v = get<T>(); return v; }
+    template <class T, size_t N> T (&get_to(T (&v)[N]) const)[N] {
+        for (size_t i = 0; i < N; ++i) at(i).get_to(v[i]);
+        return v;
+    }
+    template <class T, size_t N> std::array<T, N> &get_to(std::array<T, N> &v) const {
+        if (!is_array()) throw type_error(302, std::string("type must be array, but is ") + type_name());
+        for (size_t i = 0; i < N; ++i) v[i] = at(i).get<T>();
+        return v;
+    }
+    template <class T, class C, class A> operator std::map<std::string, T, C, A>() const {
+        return get<std::map<std::string, T, C, A> >();
+    }
+    template <class T, size_t N> operator std::array<T, N>() const { return get<std::array<T, N> >(); }
     operator std::string() const;
     operator bool() const;
     operator int() const;
@@ -211,7 +256,7 @@ class json {
 #undef SHIPYARD_JSON_COMPARE
           private : template <class T>
                     friend class detail::iter_impl;
-    template <class T> friend struct detail::conversion;
+    template <class T, class Enable> friend struct detail::conversion;
     struct ObjectStorage;
     struct ArrayStorage;
     value_t type_;
@@ -238,6 +283,10 @@ namespace detail {
                 return static_cast<T>(j.unsigned_);                                                          \
             case value_t::number_float:                                                                      \
                 return static_cast<T>(j.real_);                                                              \
+            case value_t::boolean:                                                                           \
+                if (!std::is_same<T, json::number_integer_t>::value &&                                       \
+                    !std::is_same<T, json::number_unsigned_t>::value &&                                      \
+                    !std::is_same<T, json::number_float_t>::value) return static_cast<T>(j.signed_);          \
             default:                                                                                         \
                 throw json::type_error(302, std::string("type must be number, but is ") + j.type_name());    \
             }                                                                                                \
@@ -273,6 +322,32 @@ template <> struct conversion<bool> {
 };
 template <> struct conversion<json> {
     static json get(const json &j) { return j; }
+};
+template <class T> struct conversion<T, typename std::enable_if<std::is_enum<T>::value>::type> {
+    static T get(const json &j) {
+        // Enum conversion uses upstream get_arithmetic_value, which rejects bool
+        // even when the enum's underlying arithmetic type accepts it directly.
+        if (!j.is_number())
+            throw json::type_error(302, std::string("type must be number, but is ") + j.type_name());
+        return static_cast<T>(j.get<typename enum_underlying<T>::type>());
+    }
+};
+template <class T, class C, class A> struct conversion<std::map<std::string, T, C, A> > {
+    static std::map<std::string, T, C, A> get(const json &j) {
+        if (!j.is_object())
+            throw json::type_error(302, std::string("type must be object, but is ") + j.type_name());
+        std::map<std::string, T, C, A> result;
+        for (json::object_t::const_iterator i = j.object_->begin(); i != j.object_->end(); ++i)
+            result.insert(std::make_pair(i->first, i->second.get<T>()));
+        return result;
+    }
+};
+template <class T, size_t N> struct conversion<std::array<T, N> > {
+    static std::array<T, N> get(const json &j) {
+        std::array<T, N> result;
+        j.get_to(result);
+        return result;
+    }
 };
 template <class T, class A> struct conversion<std::vector<T, A>> {
     static std::vector<T, A> get(const json &j) {

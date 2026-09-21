@@ -324,3 +324,15 @@ tests were observed failing before implementation, then passing.
   full-TU native compilation. GPU readback keeps the original host-endian guard;
   native backend must return numeric RGB5551. Native upload/readback and full
   renderer execution are still pending. See platform/shipyard/fast3d/README.md.
+
+### 2026-09-20: Modern JSON container and enum contracts
+
+- Generic Shipyard B boundary adds string-key map, std::array, C-array and enum
+  conversion, preserving array partial mutation/error and char-string behavior.
+  A narrow-arithmetic bool conversion mismatch was corrected against 3.12.0;
+  enum conversion still rejects bool. Six host differentials and four native
+  objects pass; unsupported conversions continue to fail compilation.
+- XDK lacks underlying_type. Exact source-checked RandomizerCheck/Status
+  registrations are generated for inclusion after real declarations. Other
+  enums fail closed until audited; this is not full packet/save integration.
+  Ordered/custom/initializer-list/stream APIs remain open. See JSON audit.
