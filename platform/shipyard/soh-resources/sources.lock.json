@@ -1,0 +1,27 @@
+{
+  "source_commit": "b8925e48a02a77f6cd33c6e357dbc1cc9775a8b3",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/resource/type/Background.h": "96ae50772b7fe7a4c2b6c18dc578e62c34ab7d6300c1923d532b29923d33d2f2",
+    "soh/soh/resource/type/Background.cpp": "151cf5f4f3eb316e717740e6d173814984981f3c1ac16b84207dfa4d830f210e",
+    "soh/soh/resource/importer/BackgroundFactory.h": "398a04e2f47b9b6d2e5958c5e5d3d18bd9d457d3e749514aafc2d49b9b0dedc4",
+    "soh/soh/resource/importer/BackgroundFactory.cpp": "bbdfcb793ddb54c7e886f3635a079a6280f2ae98557b24ba67e9893baef7e96a",
+    "soh/soh/resource/type/PlayerAnimation.h": "85eb6a04fd92e5cbb1403def15ef77238dbd2668a23ec44eaf39c7dd5429f621",
+    "soh/soh/resource/type/PlayerAnimation.cpp": "13ca6ddf16b9878f9bbfa98da59d02941f179df04dff4ffe0cad36d8e5f37ece",
+    "soh/soh/resource/importer/PlayerAnimationFactory.h": "63bc8101c503e9612cfd6100dae5002586ac8c89ba0e39fe32c2feacd08243a7",
+    "soh/soh/resource/importer/PlayerAnimationFactory.cpp": "70b5d009df5474316b08c92f940a715064f8e784242827e88187794bb84b5db1",
+    "soh/soh/resource/type/Text.h": "a6dcac1462cfed183e6d2d706f26ebfe386a5e88559c77e679071e5749a90cad",
+    "soh/soh/resource/type/Text.cpp": "e8839a24e04a62963caa94bfcc4a7e96d379a55419903221753edfae49cd5748",
+    "soh/soh/resource/importer/TextFactory.h": "ffdcdb246dab139646d346cbd0a8836d10d6bc714c79b78def3aea17b9759370",
+    "soh/soh/resource/importer/TextFactory.cpp": "207d403a87fac0bd2696d78aea641d770273801f36e07ac99e82818cbe0f332a",
+    "soh/soh/resource/type/Array.h": "e130a0c57d399c4d3ccb5508abb26feddcb87a01e3db1b8cca783972de5e7a12",
+    "soh/soh/resource/type/Array.cpp": "ff48d22c3e196b056970f86d71e40c14f6c5b914e3ad648eaad73ed2d7311ab4",
+    "soh/soh/resource/importer/ArrayFactory.h": "fe2a2d9d1acab65f96dda74439d863fe9ccb7266da2d7dda4ddac3848eec26f0",
+    "soh/soh/resource/importer/ArrayFactory.cpp": "d385892b20395e42c6947065c2f1085b53a6ef46a4fd8a859431f17705346f66",
+    "soh/soh/resource/type/Cutscene.h": "8d496ae48b2e7ab9e59d228661878113e0ceec22adf088c5c953077dc18c175a",
+    "soh/soh/resource/type/Cutscene.cpp": "a49a640ebcf535f43190c0bb05ddaf2da35357d0384061f13c42fe43d2702149",
+    "soh/soh/resource/importer/CutsceneFactory.h": "409b1571b608f0776702be3418e285d4c84a9cf8d786761a0af51f42f7e142ce",
+    "soh/soh/resource/importer/CutsceneFactory.cpp": "16f4de0786514013188d1e131d890549d2c1e5563ddff1d381c572e8e7c866f8",
+    "soh/soh/resource/type/SohResourceType.h": "3626c9f9de631d52345dd2a249b2cf430c8f26578933b63bad01c851589a2cca"
+  }
+}

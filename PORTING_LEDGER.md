@@ -350,3 +350,16 @@ tests were observed failing before implementation, then passing.
   Original mButtonNames/GetControllerBits/topology-ignore/copied-map quirks are
   documented for actual consumer integration, not silently changed. See input
   README for provenance, commands and remaining menu/device validation.
+
+### 2026-09-20: First modern application resource factory closure
+
+- Background, PlayerAnimation, Text, Array and Cutscene types/factories compile
+  as ten complete TUs. Three generation checks, native ABI checks and full
+  original/projected LE/BE/XML factory contracts pass. Narrow A/B projections
+  preserve inherited constructors, distinct enums and reader variants.
+- Cutscene's mixed byte/halfword helpers remain verbatim; the reader compares
+  each payload order against native. Font/image/background byte streams and
+  typed animation/text/array reads keep their separate contracts. No global
+  swap or archive format replacement. Nine other resource pairs and all scene
+  command factories/registration remain open; soh-resources/README.md records
+  the next audio envelope endian boundary and exact validation evidence.

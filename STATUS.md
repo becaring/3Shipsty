@@ -62,6 +62,10 @@
   Original/projected defaults, high-bit bindings and 40,401 stick vectors agree;
   physical fixtures pass topology/axis/rumble cases. Actual input execution,
   menu capture, remapping persistence and four-port routing remain unvalidated.
+- Ten full application resource type/factory TUs now compile: Background,
+  PlayerAnimation, Text, Array and Cutscene. Original/projected LE/BE and XML
+  payload contracts agree; mixed-width cutscene helpers remain verbatim.
+  Other application resource/scene/audio consumers and registration remain open.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 
