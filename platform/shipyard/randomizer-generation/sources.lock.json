@@ -1,0 +1,23 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/3drando/custom_messages.cpp": "f1cfd2ff72dcac5c62fe653ef9517c3fdb76e2eceaabc2291ad84dd31c2263d8",
+    "soh/soh/Enhancements/randomizer/3drando/fill.cpp": "2d2f5275d5411ea1e99979f9e8687697b73bec423b142df0ee845a030b35f4ab",
+    "soh/soh/Enhancements/randomizer/3drando/hints.cpp": "1adbd3f4740b1315a83bd873ef381a4ce3df896f506416f7c112a368b24a26fe",
+    "soh/soh/Enhancements/randomizer/3drando/item_pool.cpp": "e26a2ce67436dcf24cd27b62ca11ca4672b5ec582390c9cd15df2752b23da762",
+    "soh/soh/Enhancements/randomizer/3drando/menu.cpp": "7d0407de6fd54c0b18b05dc894c85b00ea6fb9d4b9b51565ede402cd4309b281",
+    "soh/soh/Enhancements/randomizer/3drando/playthrough.cpp": "38045dd89f5436a3a8479d28afdbbb8b25600ebe0d78778f4e594e24e541ef3f",
+    "soh/soh/Enhancements/randomizer/3drando/rando_main.cpp": "77ce373cc592302a632d3eeb6b9c7bc49fbfb873334607f2f7b134e1aa2134f6",
+    "soh/soh/Enhancements/randomizer/3drando/shops.cpp": "53a909a92919d63f9b666e25e41d2d9de2698337509621cec29441e958b42828",
+    "soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp": "8de270f364286461c2ab37ae291b07200259d8be04af7a67740c675358ce7453",
+    "soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp": "5223b2907289e50319ccefa6b472e4454a4f3ecdebf414a438ff9d243ac2cdc2",
+    "soh/soh/Enhancements/randomizer/3drando/fill.hpp": "7c79b1329a1a258483f8092774d40502e0834a39f5c7485c725a01b805fc8a91",
+    "soh/soh/Enhancements/randomizer/3drando/hints.hpp": "5ba144e487f2f913b366ee0198eb09e6faa31e328f49e0db484c9f9cad72c5c5",
+    "soh/soh/Enhancements/randomizer/3drando/item_pool.hpp": "fc410a0c3caa2510f23f600f125ecaf21abd9eed20ecf9b9d3e1c777e246ce32",
+    "soh/soh/Enhancements/randomizer/3drando/menu.hpp": "f3f57f939d9a242c9ec6e1678962b5af5441fa14eee24483a346832a3c061498",
+    "soh/soh/Enhancements/randomizer/3drando/playthrough.hpp": "581240c830e61c4e63916a450a2520e733dd4367bcf76d4c05750526aac36691",
+    "soh/soh/Enhancements/randomizer/3drando/rando_main.hpp": "c6abb14932b5963ebd639332c5b88a5aa346f2151c3bac00d6c5da419f7a4000",
+    "soh/soh/Enhancements/randomizer/3drando/starting_inventory.hpp": "19f789bcc331394694c2820920118edb27dd0deeb0eff654b7cb0cee03fc90ed",
+    "soh/soh/Enhancements/randomizer/3drando/pool_functions.hpp": "ecbd3248ce266d3223936adc6b0c6de895502d5dd5cdc69a82db3bc3eb9e0825"
+  }
+}

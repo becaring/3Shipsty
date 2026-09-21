@@ -99,6 +99,14 @@ def platform_source(source):
     catch (...) { SDLNet_Quit(); throw; }
 '''.rstrip())
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
+    source=once(source,'#ifdef __APPLE__\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();',
+                '#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();')
+    # Generation may still use Context, settings and resources during shutdown.
+    # Join before any of those owners or callback consumers are destroyed.
+    source=once(source,'extern "C" void DeinitOTR() {',
+                'extern "C" void DeinitOTR() {\n    JoinRandoGenerationThread();')
+    source=once(source,'    SohGui::Destroy();',
+                '    DestroyXboxSpeechSynthesizer(SpeechSynthesizer::Instance);\n    SpeechSynthesizer::Instance = nullptr;\n    SohGui::Destroy();')
     for remote,cvar in [('CrowdControl','CROWD_CONTROL'),('Sail','SAIL'),('Anchor','ANCHOR')]:
         # The shutdown condition follows the real worker state. A changed CVar
         # cannot strand an enabled worker while its dependencies are destroyed.
@@ -212,9 +220,9 @@ def build():
     flags=json.loads((ROOT/'scratch/application-gui-xdk/xdk/build.json').read_text())[0]['command'][:-2]
     from prepare_soh_input_editor import includes as editor_includes
     roots=[OUT/'generated/soh']+[ROOT/('scratch/'+name+'-xdk/generated/soh') for name in
-        ['application-gui','network','randomizer-item','randomizer-options','save-storage','audio-collection','soh-input-editor','soh-resources']]+editor_includes()
+        ['speech','application-gui','network','randomizer-item','randomizer-options','save-storage','audio-collection','soh-input-editor','soh-resources']]+editor_includes()
     roots+=[Path(f[2:]) for f in flags if f.startswith('/I')]
-    roots+=[ROOT/'scratch/libzip-xdk/generated']
+    roots+=[ROOT/'scratch/libzip-xdk/generated',ROOT/'scratch/speech-xdk/generated/espeak-ng/src/include']
     # Application-local relative includes must resolve to the same canonical
     # generated headers as their soh/... spelling.
     roots=[p/'soh' for p in roots if p.name=='soh']+roots+[ROOT/'soh/soh']
@@ -223,7 +231,7 @@ def build():
     # a complete canonical C++ projection from another subsystem.
     roots.sort(key=lambda p: 2 if p.is_relative_to(ROOT/'soh') else 1 if p.is_relative_to(ROOT/'scratch/game-xdk') else 0)
     flags=[f for f in flags if not f.startswith('/I')]
-    flags[1:1]=['/I'+str(p) for p in roots]
+    flags[1:1]=['/DSHIPYARD_ESPEAK_STATIC']+['/I'+str(p) for p in roots]
     source=OUT/'generated/soh/soh/OTRGlobals.cpp';obj=folder/'OTRGlobals.obj';command=flags+[str(source),'/Fo'+str(obj)]
     result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),result.stdout+result.stderr)
     stable(folder/'build.json',json.dumps([dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode,

@@ -1,0 +1,630 @@
+{
+  "manifest": "scratch/project-xdk/manifest.json",
+  "inventory_sha256": "d5ccf62d167fd624532874e2155db11327fb09fc3ab1e093b1630710913daf5b",
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": [
+    {
+      "path": "soh/soh/Enhancements/ArrowCycle.cpp",
+      "sha256": "d9739b58d195ec8e5722e1fd2baaf0b3a2302bfab6a998e1e2b924eab495815d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/AssignableTunicsAndBoots.cpp",
+      "sha256": "d7022c68ae43f0828fcc15c0a5496547a9d98f790c6b141ab7870be70ccdd8da",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/AlwaysWinGoronPot.cpp",
+      "sha256": "09ffe049327fbbb44bf0b455bc4b3bf9b7a166215481c728d7c115c94058d0c2",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/BonkDamage.cpp",
+      "sha256": "3afa67936213a61a513623299c616c83de5c1de9a4510d3a009b3d1e15a5987d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/CuccosToReturn.cpp",
+      "sha256": "2ea21ce0d591cbd51b4d11964399e776022a12179c2625f91e04c14f7cc73e22",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/DampeFire.cpp",
+      "sha256": "e179d7180230120cbd359bff9b1a84f95e1eeaf3219aacb61fdba0b92504e854",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/HyperEnemies.cpp",
+      "sha256": "90faa9fbc74b2cf19843a5563d5bf07f3917c7f17edf605e80129b71b9fa53fa",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/PermanentLosses.cpp",
+      "sha256": "7820dd76e166534d7a26cbcfaec23c27100a949e1c7c544d0a31ce7c2c56007c",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/SwitchTimerMultiplier.cpp",
+      "sha256": "6e6365db5ec7c6f87b701188f03a46efdaee559ec2edf12cbba1211143adb0f5",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Difficulty/TreesDropSticks.cpp",
+      "sha256": "fd2895816ff8994760379c8186e5800bd907565b38c6f84befff24bb40dcfd76",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/DisableJabuWobble.cpp",
+      "sha256": "48da82dbfd11f9510265d7f99395c0011d2e0958993fc58c7b9b9ad8a8cb997e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/DisableKokiriDrawDistance.cpp",
+      "sha256": "d89f642cb06f40831f7b1ea6571ed331d86fd5560aa82892140cfc4fa6352524",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/DisableSandstorm.cpp",
+      "sha256": "3133eef8a9114f983eb2d9cf462dfb35c64adf444f28f6d0deb2c5166d70b603",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/BounceOffWalls.cpp",
+      "sha256": "a3225d64effc33d9205f1493a494c4a051d7aac1beb9f2028d24819e645a352b",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp",
+      "sha256": "b946124aaa9b232472e604a81c842f9ae1c268b380f6e20c8eb4ded81088d037",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/HurtContainer.cpp",
+      "sha256": "1b03a17703ed4c25c57ac1a405b67fe57afe7b62397b6f761f7c98f3a8b6a770",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/MirroredWorld.cpp",
+      "sha256": "13352c1aa33b1affb6da31f0b05b995a064582983205879a8e29e96c0121cf65",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/RandomizedEnemySizes.cpp",
+      "sha256": "ef1f30919e41324ed3265bc1d7317347e4a17a46ef1871d2ea8c980dfc20483a",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/RupeeDash.cpp",
+      "sha256": "fa7a9ee4fd9dd2f2b42d1bb710bb45e37bde1f00b57aef7165f3605cd14f3bb8",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraModes/ShadowTag.cpp",
+      "sha256": "df06659a517ac2ff652c1de7ecca9c7b055ff552230156c03ed93efa8f2a1b6e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ExtraTraps.cpp",
+      "sha256": "68e701b60da243e4f1b802ab5afdf551e7aa5e24dd09522e7afedf6554d5143f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/FileSelectEnhancements.cpp",
+      "sha256": "b5a0ca33b66445c97f8b97a022bf7fbf92a0db530dad0dc791965bcec83c0c0c",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/GameplayStats/BossDefeatTimestamps.cpp",
+      "sha256": "da05534389b70c78eda5d6a398855e37e0fdfedcff17dffca928bf7cff231295",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/GameplayStats/EnemyDefeatCounts.cpp",
+      "sha256": "8fbdb155b21e7f7db07c7367199fb28a39360e6b3a0aae353cae0f06954cdca4",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/AgeDependentEquipment.cpp",
+      "sha256": "d2d28811cb06d55aedf6c0b75ca7fa0bedd0cfa1ae97561b794e04c543daa1d9",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/Disable2DBackgrounds.cpp",
+      "sha256": "fb59b7cf935755ef5b1fce5e6be7c86e088b5d6676b44e38f71fc3259b41fb69",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/DisableFixedCamera.cpp",
+      "sha256": "5f77e634d5a0364877201e54c43ed5726a9ac2f69284901aa48e58bd5f18708d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/DisableLinkSpinWithGoronPot.cpp",
+      "sha256": "be61ed70e7e4060c01ea6039254d60bf7947937ca73c28d9cb01f4de0e1783b7",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/ToTMedallions.cpp",
+      "sha256": "ae38438154193c7099c89b9ab72cd65938717f59a156ea305c4d1d68a7f3b6fa",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Graphics/VisualAgony.cpp",
+      "sha256": "7dfbfc9dc2e8854a4ef9da14974a3fdbaa63923ae46989e9af30f6abbc5ee3c1",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/InjectItemCounts.cpp",
+      "sha256": "c50c4447e23b188dad6253e4a80f8a71c470711fa8c41f5920d56d6747278ca9",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ItemUnequip.cpp",
+      "sha256": "81d349bfbc97776e454c02136284dc8ad056d316f6f923550efa66b4219019c7",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Items/AdditionalReticles.cpp",
+      "sha256": "de2c7f98f321fd0f97347697b520673a457776beb135ca77a98353cae8762600",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Items/BetterBombchuShopping.cpp",
+      "sha256": "3d783dac99de66088efaebf47ca5c0a357ab44af37a88e4115c118936b0ef139",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Items/HookshotReticle.cpp",
+      "sha256": "089b0cea3ae72343d7345641040353c33be2c0f2dcf98e30ea0af271222d65e1",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/MaskSelect.cpp",
+      "sha256": "e6f936353ccaa299aa5933a782d8d295e3215cbe95b43bf86710c33ec15899e5",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/NoSkulltulaFreeze.cpp",
+      "sha256": "2e90bcdc0a359c9e30616c070dbd2c44b8fca5ee8ecc7aa7bb404bcbdf7e3bff",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/QoL/Autosave.cpp",
+      "sha256": "4202c3dccc55784ef9ff534ef952cfdc5982a3886a31fbdd61c87f435c74bad6",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/QoL/DaytimeGS.cpp",
+      "sha256": "d21b7e174c1ab54c1f5fae22d96d24625359a75c806e072be40b5461e4c02198",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/QoL/OpenAllHours.cpp",
+      "sha256": "99a718699fdb201f21e625083e366d4e56ba5b8ccfbe9f09b6d4ffb0fbeae6fa",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/QoL/PauseWarp.cpp",
+      "sha256": "9ee6c6d9d5ae3ab3b209027b587a35e6655c0fbfeb391536cbb143ad8d1a0b5e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/QoL/ResetNaviTimer.cpp",
+      "sha256": "94a0a23cf1bae57806aa40966cdb06f41852a7f9a57f7f421cea619fcc3693a0",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/RebottleBlueFire.cpp",
+      "sha256": "3b6f628b4f395a619aa65176766f1729557880090748ded6fc97ae2049018965",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/RemoteBombchu.cpp",
+      "sha256": "fe2853d14268c8dad8279f18969ec27950ed7b3eaa29532dba4ba46c7b12065d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/RemoveSpinAttackDarkness.cpp",
+      "sha256": "7a99357e07d4280cc75b95b35f62015dbb6eba2442cfb000054e2468c05366b4",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ResetGameplayFrames.cpp",
+      "sha256": "0d30c3a7fb6953a1e3182e28ab58df09487b31e20c8003765471829d748794dd",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ResetHotKey.cpp",
+      "sha256": "976637268d1865ed4600b3200c930684ea5a1a584c683f81b8f3aed2846d32fa",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/BottleAdventure.cpp",
+      "sha256": "ba7aedd0060458254f0b4dbde3fadf47716a2022697fb281f29b2367781130f5",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/GraveHoleJumps.cpp",
+      "sha256": "eb9fc96a3f3258320560ec03721e45ac54646a5d9aed1f416ac03a5ce293a97e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/N64WeirdFrames/N64WeirdFrames.cpp",
+      "sha256": "0277d9626ccf7c38b5bb30d554889ef54ea3404c54171e18ee88e9054301862c",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/N64WeirdFrames/WeirdAnimation.cpp",
+      "sha256": "22076f6cb76de17d82cf3d5d70caa1c39a3e7d217ddfe1cbb84c35252c2be949",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/PauseBufferInputs.cpp",
+      "sha256": "2c16b7932cd3e0daf53180625d221fe05e3e79bccaeeb6c6fc272bb82c00fa14",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Restorations/WideShutterDoorRanges.cpp",
+      "sha256": "5c39bd8e9ea946a23bacd7d28ff97dd7ff9eed2a939d9bd59a3fe3ae779a1443",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/ReworkedTargeting.cpp",
+      "sha256": "9d2f1d5181497dd65ed81110de34e96c2638136607bfbaec7f2e086cec929a41",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/SkipAmyPuzzle.cpp",
+      "sha256": "7b37d7b4ac9e354bb32800bbe524c9169877944d50bf9401eb2ab144519ba6b9",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/SunlightArrows.cpp",
+      "sha256": "aeb732d51ccc7543ce7a54396e0c559a690d15afe7e07579e73c3576078010f6",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/CrawlSpeed.cpp",
+      "sha256": "fd90fc8c94c79f6f3084843bc04764f81b4483799f901f31e1143f4a19821a2f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/DampeAllNight.cpp",
+      "sha256": "393e155165e9a6f53d1d7ceb491321e93404a90b454d7e1db70da1356e7fe0c9",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterBeanSkulltula.cpp",
+      "sha256": "e60aa5be273aa115efd2a3131841536c819d7cb7065c4b9be113eb8dd4fc98b3",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterBottleEmpty.cpp",
+      "sha256": "1ef59553f49f1ce1e0910722241beba433de0dc0ab038a946fabda255aabd9f2",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterHeavyBlockLift.cpp",
+      "sha256": "94e3ced12910e9fe23253f69dba5cd4a7a4fa600c1a4f5b769438aad52c2140c",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterPauseMenu.cpp",
+      "sha256": "68c60f66122e8ee634bcc266d8dc6b290ebf38ef97b3687708b69ce046252f7f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterRupeeAccumulator.cpp",
+      "sha256": "40c8821659d3843f28f6e71a12f950c06595ef526dc55af36935ba4da6fe21c1",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/FasterShadowShip.cpp",
+      "sha256": "cd5507f4aaf55b7d657f175b63def86613be72bad923f096e46db7567bac5462",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/MarketSneak.cpp",
+      "sha256": "77e51fac91fb2f1e2c65a04162dc005bb1c36c608639eb17d0cbdd3c32c5f9de",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/QuitFishingAtDoor.cpp",
+      "sha256": "cb9d963fbc4ec1e539010b8023d536c439eda657b56769468a3b03a068e38861",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/SkipIntro.cpp",
+      "sha256": "892762e56a2406cf863f9cf1ab40fc5590dae13911d4f9800da46aae1d06e076",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/SkipOwlTravel.cpp",
+      "sha256": "6b98f653c7640f145b95eb7f6f94dca354fbf0263fbd1d4dd1bda21ec425ec9d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/Story/SkipBlueWarp.cpp",
+      "sha256": "182274680ee050abf43874b6f1d77761f20079415e17a77ef5498d5c15cb408e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/Story/SkipDekuTreeIntro.cpp",
+      "sha256": "ce122f8854a006b5404abb8f884594a29c0ce9b5ebe092d65dde35512c856fd8",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/Story/SkipLostWoodsBridge.cpp",
+      "sha256": "1dfd7e0335a59f2716bff62a998280ab7851c674f4bca33ddcfc5166f640f086",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/Story/SkipToGivingZeldasLetter.cpp",
+      "sha256": "9a25b7da507999a616f41a0f33968a4a02ea01796c5566ec29ce795c69577f25",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipCutscene/Story/SkipZeldaFleeingCastle.cpp",
+      "sha256": "85b79609d478022f9239877db5f25e220feb4ba806e8930a78f29f898896a825",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipMiscInteractions/MoveJabuJabuElevator.cpp",
+      "sha256": "cacfcb8d53ec4e9f7235c0b3183a12c374bddbe008b32dabad162354d6e5b22a",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipMiscInteractions/MoveMidoInKokiriForest.cpp",
+      "sha256": "e0a6416575bbf6c4be335d87c0f65665ea2c0222cd8ae785a2e543756fa0684c",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipMiscInteractions/SkipChildRutoInteractions.cpp",
+      "sha256": "e22be8b47b67d9f2adbadf3629098dab5b30307cbe346e430986f344fdcaa4be",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeSavers/SkipWaterGateDelay.cpp",
+      "sha256": "2bba5dd11d57d8d1faff3c935a09ff466c1f97e7989a70cd967080259b9b0cb0",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/UnsheatheWithoutSlashing.cpp",
+      "sha256": "060bdeea88ce1f674d11e6ce2bcd078526074607d030a2904d69d0898cb32552",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/Warping.cpp",
+      "sha256": "6b7a5fd4b37d7b5cf535b78a45a792baed55ea29229204ea2e613e2e153ba25d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/audio/AudioHooks.cpp",
+      "sha256": "2190d25d056bfe2861042a7264bb943df4fd18fb71a90268a2947eb991473366",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/audio/EnemyBGMDisable.cpp",
+      "sha256": "9ce9beceedb7e48ce280fb0b643fb130ab141800e5bc462e0fb0e83b599432f6",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/audio/LeeverEnemyBGM.cpp",
+      "sha256": "8190fb9ede17bf8e9af0eff0ed1669d9adc5feb92e1dc5abaf5c601ae1011440",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/A11yNoScreenFlashForFinishingBlow.cpp",
+      "sha256": "e60137d68d2149f4f408e097bb074169ddaae2fbee7349061ee7acd516c58195",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/CustomLogoTitle.cpp",
+      "sha256": "0282c68e2350e71a95d397558286362ebdb6a5286ea8e2fe8d1a8ba707e456bf",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/CustomSkeletons.cpp",
+      "sha256": "650396548d9e2693b99d07d4b615286bada9c4b71aedd00a00fbc2256348d61f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/FileSelectMoreInfo.cpp",
+      "sha256": "cd80e95dd4ec5bbb5fdf9d389009a4e077de36fbdb66129a5f3d3f325baf9fda",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/NoMasterSword.cpp",
+      "sha256": "884650893ffe80938e6bbfc2ed68d4c54eee1475bd704deabc6b9477aa5a4cd0",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/TimeFlowFileSelect.cpp",
+      "sha256": "0c9c44a0fe9a7917ae925794eb021fa2a14b4ece06f4ee7e12a24075ad4795d4",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/cosmetics/authenticGfxPatches.cpp",
+      "sha256": "031877d437cd68c69305ee04bdaf4ff8a82e297f1b59b61afef39d41d00cc0d0",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    }
+  ]
+}

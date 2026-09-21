@@ -28,7 +28,7 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(len(app), 1094)
         self.assertEqual(sum(r['path'].endswith('.c') for r in app), 696)
         self.assertEqual(sum(r['path'].endswith('.cpp') for r in app), 398)
-        self.assertTrue(any(r['status']=='pending' for r in app))
+        self.assertTrue(all(r['status']=='selected' for r in app))
         self.assertFalse(any(r['status']=='excluded' for r in app))
         self.assertFalse(self.manifest['final_application_ready'])
 
@@ -39,6 +39,16 @@ class ProjectTests(unittest.TestCase):
         existing = next(r for r in self.manifest['sources'] if r['upstream_source'] and r['subsystem']=='game')
         updated = gen.coverage(files, [r for r in self.manifest['sources'] if r is not existing])
         self.assertEqual(next(r for r in updated if r['path']==existing['upstream_source'])['status'], 'pending')
+
+    def test_platform_replacements_cannot_hide_application_sources(self):
+        self.assertFalse([r['path'] for r in self.manifest['coverage'] if r['status']=='pending'])
+        replacements=[r for r in self.manifest['coverage'] if r['status']=='platform-replaced']
+        self.assertEqual(len(replacements),16)
+        self.assertTrue(all(r['platform_decision']['reason'] and r['platform_decision']['evidence'] for r in replacements))
+        app=next(r for r in self.manifest['coverage'] if r['role']=='application')
+        with self.assertRaisesRegex(ValueError,'replace application'):
+            gen.coverage([app],[],{app['path']:{'reason':'Invalid exclusion'}})
+        self.assertTrue(any(r['upstream_source']=='libultraship/src/ship/utils/stox.cpp' for r in self.manifest['sources']))
 
     def test_compile_contract(self):
         self.assertNotIn('scratch/graphics-xdk/cc_features.cpp', {r['source'] for r in self.manifest['sources']})
@@ -70,7 +80,7 @@ class ProjectTests(unittest.TestCase):
 
     def test_complete_save_and_settings_replace_fragments(self):
         selected={r['source'] for r in self.manifest['sources']}
-        for name in ['SaveSerialization.cpp','LegacyConversion.cpp','SettingsConstructor.cpp']:
+        for name in ['SaveSerialization.cpp','LegacyConversion.cpp','SettingsConstructor.cpp','StaticHintInfo.cpp']:
             self.assertFalse(any(r.endswith('/'+name) for r in selected),name)
         for name in ['soh/soh/SaveManager.cpp','soh/soh/Enhancements/randomizer/settings.cpp']:
             self.assertEqual(sum(r['upstream_source']==name for r in self.manifest['sources']),1)

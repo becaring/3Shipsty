@@ -36,6 +36,9 @@ class ApplicationContracts(unittest.TestCase):
         init=function(projected,'InitOTR').text.decode()
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
+        xbox_selection='#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)'
+        self.assertIn(xbox_selection,init)
+        init=init.replace(xbox_selection,'#ifdef __APPLE__')
         expected=function(original,'InitOTR').text.decode().replace('#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
         self.assertEqual(expected,init)
         self.assertEqual(function(original,'ReadPortVersionFromOTR').text,
@@ -101,7 +104,8 @@ int main() {
         for remote in ('CrowdControl','Sail','Anchor'):
             self.assertLess(stop.index(remote+'::Instance->Disable();'),stop.index('OTRAudio_Exit();'))
         self.assertLess(stop.index('OTRAudio_Exit();'),stop.index('Shipyard::Libultra::StopTimers();'))
-        order=['Shipyard::Libultra::StopTimers();','SaveManager_ThreadPoolWait();','delete SaveManager::Instance;',
+        order=['JoinRandoGenerationThread();','Shipyard::Libultra::StopTimers();','SaveManager_ThreadPoolWait();','delete SaveManager::Instance;',
+               'DestroyXboxSpeechSynthesizer(SpeechSynthesizer::Instance);','SpeechSynthesizer::Instance = nullptr;',
                'SohGui::Destroy();','WaitForPendingTasks();','wait_for_detached();','context = nullptr',
                'Storage::Shutdown();','SDLNet_Quit();']
         positions=[stop.index(s) for s in order]

@@ -22,7 +22,8 @@
         "presentation",
         "native-imgui",
         "gui",
-        "libultra"
+        "libultra",
+        "lus-utils"
       ],
       "sources": [
         "scratch/prism-xdk/generated/shader_builder.cpp"
@@ -90,7 +91,15 @@
         "application-windows",
         "application-editors",
         "randomizer-data",
-        "application-core"
+        "application-core",
+        "network-app",
+        "gameplay-features",
+        "randomizer-content",
+        "randomizer-regions",
+        "application-extras",
+        "randomizer-generation",
+        "randomizer-application",
+        "speech-application"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -288,6 +297,33 @@
     ],
     "application-core": [
       "scratch/application-core-xdk/xdk/build.json"
+    ],
+    "network-app": [
+      "scratch/network-app-xdk/xdk/build.json"
+    ],
+    "gameplay-features": [
+      "scratch/gameplay-features-xdk/xdk/build.json"
+    ],
+    "randomizer-content": [
+      "scratch/randomizer-content-xdk/xdk/build.json"
+    ],
+    "randomizer-regions": [
+      "scratch/randomizer-regions-xdk/xdk/build.json"
+    ],
+    "application-extras": [
+      "scratch/application-extras-xdk/xdk/build.json"
+    ],
+    "randomizer-generation": [
+      "scratch/randomizer-generation-xdk/xdk/build.json"
+    ],
+    "randomizer-application": [
+      "scratch/randomizer-application-xdk/xdk/build.json"
+    ],
+    "speech-application": [
+      "scratch/speech-xdk/xdk-application/build.json"
+    ],
+    "speech-engine": [
+      "scratch/speech-xdk/xdk-engine/build.json"
     ]
   },
   "production_exclusions": {
@@ -308,7 +344,8 @@
     "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": "Superseded by complete randomizer-settings provider; exclude to avoid duplicate constructor",
     "scratch/save-storage-xdk/generated/SaveSerialization.cpp": "Superseded by full modern SaveManager.cpp; native storage sources remain selected",
     "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": "Audited conversion body is now incorporated in full SaveManager.cpp; retain LegacyDecode.cpp only",
-    "scratch/randomizer-hints-xdk/xdk/declarations.cpp": "Full Hint and variant declarations ABI probe; not production"
+    "scratch/randomizer-hints-xdk/xdk/declarations.cpp": "Full Hint and variant declarations ABI probe; not production",
+    "scratch/randomizer-hints-xdk/generated/StaticHintInfo.cpp": "Superseded by complete modern hints.cpp from randomizer-generation; preserve exactly one StaticHintInfo/HintText implementation."
   },
   "supplemental_sources": [
     {
@@ -325,6 +362,11 @@
       "source": "platform/shipyard/async/detached.cpp",
       "subsystem": "async",
       "options_from": "async"
+    },
+    {
+      "source": "libultraship/src/ship/utils/stox.cpp",
+      "subsystem": "lus-utils",
+      "options_from": "resource-manager"
     }
   ],
   "source_fragments": {
@@ -334,19 +376,19 @@
     },
     "scratch/randomizer-xdk/generated/soh/soh/Enhancements/randomizer/OptionValue.cpp": {
       "source": "soh/soh/Enhancements/randomizer/option.cpp",
-      "scope": "Canonical four OptionValue methods split from full option.cpp; full Option/UI TU remains pending and must not redefine these methods"
+      "scope": "Canonical four OptionValue methods split from option.cpp; the complete option/UI provider excludes these definitions."
     },
     "scratch/save-storage-xdk/generated/SaveSerialization.cpp": {
       "source": "soh/soh/SaveManager.cpp",
-      "scope": "38/42 real SaveManager members plus11/12Cbridges; four randomizer/legacy-conversion methods and Save_LoadFile remain pending. Never compile alongside complete SaveManager.cpp."
+      "scope": "Historical SaveManager fragment, superseded and excluded from production by the full SaveManager.cpp provider."
     },
     "scratch/randomizer-options-xdk/generated/soh/soh/Enhancements/randomizer/SettingsConstructor.cpp": {
       "source": "soh/soh/Enhancements/randomizer/settings.cpp",
-      "scope": "Actual Settings constructor and in-place option/trick initialization only. Complete settings.cpp remains pending and must not redefine this constructor."
+      "scope": "Historical Settings constructor fragment, superseded and excluded from production by full settings.cpp."
     },
     "scratch/legacy-save-xdk/generated/LegacyConversion.cpp": {
       "source": "soh/soh/SaveManager.cpp",
-      "scope": "Complete ConvertFromUnversioned method only; canonical SaveManager remains owner, other methods use separate fragments."
+      "scope": "Historical conversion fragment, superseded and excluded by full SaveManager.cpp."
     },
     "scratch/legacy-save-xdk/generated/LegacyDecode.cpp": {
       "source": "soh/soh/SaveManager.cpp",
@@ -362,15 +404,80 @@
     },
     "scratch/randomizer-hints-xdk/generated/StaticHintInfo.cpp": {
       "source": "soh/soh/Enhancements/randomizer/3drando/hints.hpp",
-      "scope": "Canonical StaticHintInfo constructor split from header, no full hint-generation implementation supplied"
+      "scope": "Historical StaticHintInfo/HintText fragment, superseded and excluded by full hints.cpp."
     }
   },
   "integration_gates": [
-    "Application translation coverage must be complete and all platform-review decisions resolved",
-    "Common ABI and header ordering must be reviewed across subsystem recipes; individual compile success is insufficient",
-    "Application entry point, current initialization, resource registration and PC-only extraction boundary remain to be integrated",
-    "Xbox storage/save lifecycle and link dependencies require explicit production integration",
-    "No executable project or XEX is emitted by this compile-only generator",
+    "Full combined XDK compilation must pass with verified current source/object hashes",
+    "Common ABI, unresolved symbols and archive extraction must be verified in the genuine application link",
+    "Partial-initialization and runtime storage/save/audio/input/resource behavior require execution",
+    "This compile-only generator emits no executable; the genuine application link is a separate explicit target",
     "Retain LUS/libultra static archive extraction: application stubs own five symbols in inactive os_cache/os_pi members; do not flatten or whole-archive"
-  ]
+  ],
+  "platform_decisions": {
+    "libultraship/src/fast/backends/gfx_direct3d11.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_direct3d_common.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_dxgi.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_metal.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_metal_shader.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_opengl.cpp": {
+      "reason": "Existing modern GfxRenderingAPI uses Shipyard Xenos; the required current D3D shader generator is already projected into shader_builder.cpp. Desktop GPU transports are not Xbox implementations.",
+      "evidence": "platform/shipyard/xenos/README.md"
+    },
+    "libultraship/src/fast/backends/gfx_sdl2.cpp": {
+      "reason": "Native Xbox presentation/event backend implements the current window interface.",
+      "evidence": "platform/shipyard/presentation/README.md"
+    },
+    "libultraship/src/ship/audio/CoreAudioAudioPlayer.cpp": {
+      "reason": "Native XAudio2AudioPlayer implements the actual modern AudioPlayer contract.",
+      "evidence": "platform/shipyard/audio/README.md"
+    },
+    "libultraship/src/ship/audio/SDLAudioPlayer.cpp": {
+      "reason": "Native XAudio2AudioPlayer implements the actual modern AudioPlayer contract.",
+      "evidence": "platform/shipyard/audio/README.md"
+    },
+    "libultraship/src/ship/audio/WasapiAudioPlayer.cpp": {
+      "reason": "Native XAudio2AudioPlayer implements the actual modern AudioPlayer contract.",
+      "evidence": "platform/shipyard/audio/README.md"
+    },
+    "libultraship/src/ship/port/mobile/MobileImpl.cpp": {
+      "reason": "Mobile/Apple-only platform implementation; Xbox Context paths, native dialogs, input and window services own these boundaries.",
+      "evidence": "platform/shipyard/context/README.md"
+    },
+    "libultraship/src/ship/utils/AppleFolderManager.mm": {
+      "reason": "Mobile/Apple-only platform implementation; Xbox Context paths, native dialogs, input and window services own these boundaries.",
+      "evidence": "platform/shipyard/context/README.md"
+    },
+    "libultraship/src/ship/utils/macUtils.mm": {
+      "reason": "Mobile/Apple-only platform implementation; Xbox Context paths, native dialogs, input and window services own these boundaries.",
+      "evidence": "platform/shipyard/context/README.md"
+    },
+    "soh/soh/Enhancements/speechsynthesizer/DarwinSpeechSynthesizer.mm": {
+      "reason": "Actual XboxSpeechSynthesizer uses static eSpeak NG and XAudio2 behind the original speech interface; OTRGlobals selects it before desktop branches.",
+      "evidence": "platform/shipyard/speech/README.md"
+    },
+    "soh/soh/Enhancements/speechsynthesizer/ESpeakSpeechSynthesizer.cpp": {
+      "reason": "Actual XboxSpeechSynthesizer uses static eSpeak NG and XAudio2 behind the original speech interface; OTRGlobals selects it before desktop branches.",
+      "evidence": "platform/shipyard/speech/README.md"
+    },
+    "soh/soh/Enhancements/speechsynthesizer/SAPISpeechSynthesizer.cpp": {
+      "reason": "Actual XboxSpeechSynthesizer uses static eSpeak NG and XAudio2 behind the original speech interface; OTRGlobals selects it before desktop branches.",
+      "evidence": "platform/shipyard/speech/README.md"
+    }
+  }
 }

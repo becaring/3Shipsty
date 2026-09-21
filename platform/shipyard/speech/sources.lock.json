@@ -1,0 +1,22 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "files": {
+    "soh/soh/Enhancements/speechsynthesizer/SpeechSynthesizer.h": "df175c3f70ef10890d195fa9c010ee6fb6a7f867a5d469ccabe680f77d5d3cb7",
+    "soh/soh/Enhancements/speechsynthesizer/SpeechSynthesizer.cpp": "ff0310a78c23832cdb7e0cbe9759f98da507940323225355ddc273f983d65f6c",
+    "soh/soh/Enhancements/speechsynthesizer/SpeechLogger.h": "a298c0fc85c3082374c80f5b61bd3662d51109048f4435d632ca59e9bf646351",
+    "soh/soh/Enhancements/speechsynthesizer/SpeechLogger.cpp": "02ca322fa04736509ea3a0d4f5ecc54612f6aa254cc2bdf5ce4f45969fac0cff",
+    "soh/soh/Enhancements/tts/tts.cpp": "70d8cccafbfbe6d6ee2ee2674a2ae5bb304787b5021993e453e6a805b0d9ceaa",
+    "soh/soh/Enhancements/randomizer/ShuffleSpeak.cpp": "29ed3cac191387023aa1c1452de3ad1a6bf1bd0e34c266f997c33700958b3d16"
+  },
+  "espeak_ng": {
+    "repository": "https://github.com/espeak-ng/espeak-ng",
+    "tag": "1.52.0",
+    "commit": "4870adfa25b1a32b4361592f1be8a40337c58d6c",
+    "license": "GPL-3.0-or-later"
+  },
+  "sonic_build_dependency": {
+    "repository": "https://github.com/waywardgeek/sonic",
+    "commit": "fbf75c3d6d846bad3bb3d456cbc5d07d9fd8c104",
+    "linked_into_runtime": false
+  }
+}

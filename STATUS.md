@@ -4,8 +4,9 @@
 
 First genuine bring-up estimate: roughly 60–65% complete, with considerable
 uncertainty. The earlier 70% estimate weighted compilation too heavily before
-linking or native execution. Selected application source coverage is 696/696 C and 171/398 C++ TUs,
-with substantial LUS/dependency/native backend compilation established. This
+linking or native execution. Selected application source coverage is now 696/696 C and 398/398 C++ TUs.
+All completed application batches pass individual XDK compilation and focused
+translation checks; the complete combined build/link is still being verified. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
 this first-bring-up estimate in meaningful milestone reports as requested.
@@ -13,6 +14,21 @@ Remaining work is being grouped by complete application subsystems; individual
 compile units remain internal evidence rather than user-facing milestones.
 
 Latest integration work (earlier milestones below retain their historical scope):
+
+- Full gameplay enhancements, network/packets, content, regions, application
+  extras, seed generation, randomizer hooks/trackers and speech pass individual
+  XDK compilation and focused original/projected checks. The complete source
+  manifest now selects every one of the 1,094 pinned application TUs, plus real
+  LUS/dependencies/platform providers (1,834 production objects in total).
+  Ten inventory checks pass; no unresolved platform source selections remain.
+- Real OTRGlobals now selects Xbox speech ahead of desktop SAPI, destroys the
+  concrete speech worker/voices safely, and joins unfinished seed generation
+  before teardown. Full startup compiles and five boundary checks pass. Speech's
+  six tests and all 35 randomizer application source/object checks pass.
+- All subagents have finished and are idle. Combined release compilation is
+  still running (large data-table optimization is slow); no complete-build,
+  link or XEX execution milestone is claimed. Last verified main receipt remains
+  the 1,570-object application-core build. Link integration is being prepared.
 
 - Full scene/message/resource bridges, GBI wrappers, notifications, utilities
   and crash context pass the main XDK build: 1,570 production objects verified

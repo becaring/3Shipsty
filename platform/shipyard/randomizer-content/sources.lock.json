@@ -1,0 +1,17 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/item_list.cpp": "221adbdc32eaf5c066a3c125b450d6cb067326b76cd155e40fa5ca6701e62f50",
+    "soh/soh/Enhancements/randomizer/location_list.cpp": "9fa0a1e2f5f922748e8655062ce122eb0a301b4b2767c5b3bcda84156d8892b6",
+    "soh/soh/Enhancements/randomizer/item_category_adj.cpp": "e73d02c6b47cbd0386c5314dd7131e68076addaf311e3ff8173dc6fbb44c7976",
+    "soh/soh/Enhancements/randomizer/randomizerEnumStrings.cpp": "c89e15030e0ac9d0753ab983f334f89238d469240ece381005f7f271acd06d4c",
+    "soh/soh/Enhancements/randomizer/randomizer_check_objects.cpp": "e1f1a8ca285599ecf6081f0844dc2a8f7153978c8bf482711ce226edd194fa4a",
+    "soh/soh/Enhancements/randomizer/tricks.cpp": "ff74d405b8db02e24a7e0653ae4e912dcdbc698d1a2a6fcce0a86660f4e22f89",
+    "soh/soh/Enhancements/randomizer/3drando/hint_list.cpp": "ff91d50be16e2ce17c9cb3203bf4f6f2313f32401793ba7001851567482e234f",
+    "soh/soh/Enhancements/randomizer/3drando/hint_list/hint_list_exclude_dungeon.cpp": "6575946e7c813074023701d547e058505d089b0a3634378d570391f11f431337",
+    "soh/soh/Enhancements/randomizer/3drando/hint_list/hint_list_exclude_overworld.cpp": "04e4429df87a642f994f6b68638fc7e4fec51a330f88256042e99969bd0e4c32",
+    "soh/soh/Enhancements/randomizer/3drando/hint_list/hint_list_item.cpp": "37534a158777f734b66070abfa810a1e4a606c28b7cd7bf48185319bd132b277",
+    "soh/soh/Enhancements/randomizer/randomizerEnumStrings.h": "7186445e398796ff1510e8a2e19525bc773b3fd120733ba6f9d21b36cf87a5b9",
+    "soh/soh/Enhancements/randomizer/3drando/custom_messages.hpp": "6c1a3f0e18b6ea5b2f09ac6f8f7c213748c0a5f95959b7bb13951d63d616766a"
+  }
+}

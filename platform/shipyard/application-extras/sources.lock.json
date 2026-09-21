@@ -1,0 +1,30 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/Presets/Presets.cpp": "7f80fc9457709634bd5fdb9c67cf0c9d3428e3260ea41c2b6c314bdc6555d38f",
+    "soh/soh/Enhancements/TimeDisplay/TimeDisplay.cpp": "d607e12dd2250704b7cc95ac00eb29d0485c45a6faab63c3b178683c8286e7c8",
+    "soh/soh/Enhancements/boss-rush/BossRush.cpp": "dc1581cd62ff00457e641b0d306a1bd1462e057981d831f31f74a1f2bccd6e75",
+    "soh/soh/Enhancements/controls/InputViewer.cpp": "9601e9f7f44263808d49b9d7844502ffcc512169ba52635cafe36fb253fd4be2",
+    "soh/soh/Enhancements/controls/Mouse.cpp": "b169220a50ecec9d0f061b2761cb75bda8193c0c015951bb93087ee968c84151",
+    "soh/soh/Enhancements/customequipment.cpp": "d585be464a51343aebaaddbc7863ae002591b203f34dbe521c8c17e67c9afc1f",
+    "soh/soh/Enhancements/debugconsole.cpp": "11b01b4da4075b67db0f5cd931ae621cd9795554bd0669d559a74af8996077d3",
+    "soh/soh/Enhancements/gameplaystats.cpp": "f5173ac24074be0ae37ba18e077b227e38ee7f8d263815c6830e1247490482fc",
+    "soh/soh/Enhancements/mod_menu.cpp": "d7fb89aeca106a7175dd325c6e566d7532ebf4e64eb48db1a32eb333f5321061",
+    "soh/soh/Enhancements/mods.cpp": "94abd07d45533b088c4a50a4ba0bf512cac973d2787587143100514191d1784e",
+    "soh/soh/Enhancements/nametag.cpp": "420f0122861ce84729ecdfb7af0425ffcbe04d87f4fdaf1dba2dc0159108027d",
+    "soh/soh/Enhancements/timesaver_hook_handlers.cpp": "01bd7f61a5a8bd26eb5b61b84b4ea5dcdc5a7f1ff04a3ef4a5cea9c3891da879",
+    "soh/soh/Enhancements/timesplits/TimeSplits.cpp": "6e306e8e8afbc5dcfb294dcdec382643f05c4fca4b70de156a93619844a5e936",
+    "soh/soh/Enhancements/Presets/Presets.h": "3bf8c9851baf36fd9fcfdb862e9cd48c32d955f4febfc8d6dfd352940a7cfe70",
+    "soh/soh/Enhancements/controls/Mouse.h": "25c9cbbf31def4240d534e20eb2369b2932ecccf68255e512be41bddeeeb12da"
+  },
+  "dependencies": {
+    "soh/soh/Enhancements/timesplits/TimeSplits.h": "29fa40ff2b0157f018d046572a4ede090a14177b253249c0db15c50c35353ebc",
+    "soh/soh/Enhancements/TimeDisplay/TimeDisplay.h": "8ceb27539f11fc946f9fdde36dd00bf0638531fd8079a2cf0505f20d844e4e97",
+    "soh/soh/Enhancements/controls/InputViewer.h": "c435a5fac766bee092703352cd56b7c27b530e8efcbcd0f01ad8b0e81e12973a",
+    "soh/soh/Enhancements/boss-rush/BossRush.h": "74adcae8978ae608d40c63cbb714f4a7b2e77e29b66e805f3ebb506d34c0d77b",
+    "soh/soh/Enhancements/savestates.h": "7ee720616f7e21497a44e119022987a67a75ed0df981c76bfe36f8e897dc98eb",
+    "libultraship/include/ship/debug/Console.h": "27ea583719b88e52a97643281a4ade71d9a8a455a09bf91ec21a4795b63b7d18",
+    "soh/soh/SohGui/UIWidgets.hpp": "c1a55a5b44a4e5dad430bd759120a1325278c6a3ea0ebb35e859f2910759a0b4",
+    "soh/soh/SohGui/MenuTypes.h": "f22f0b6f637bbc4577f9a7d9ad0e6229487c3d1142f965a40c7210ea779333ea"
+  }
+}

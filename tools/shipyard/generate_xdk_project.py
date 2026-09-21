@@ -75,6 +75,8 @@ def parse_command(record):
 
 
 def upstream_for(source, record, known):
+    if source in known:
+        return source
     if record.get('path') in known:
         return record['path']
     if '/generated/' in source:
@@ -98,13 +100,19 @@ def project_option(option):
     return subprocess.list2cmdline([expanded]).replace('__SHIPYARD ROOT__', '$(ShipyardRoot)').replace('__XDK ROOT__', '$(XEDK)')
 
 
-def coverage(files, selected):
+def coverage(files, selected, platform_decisions=None):
+    platform_decisions = platform_decisions or {}
     supplied = {r['upstream_source'] for r in selected if r['upstream_source']}
     rows = []
     for entry in files:
         row = dict(entry)
         row['status'] = 'selected' if row['path'] in supplied else (
             'excluded' if row['role'] in ('host-tool', 'upstream-excluded') else 'pending')
+        if row['path'] in platform_decisions:
+            if row['role'] not in ('lus-review','platform-review') or row['status']=='selected':
+                raise ValueError('Platform decision would replace application or selected source: '+row['path'])
+            row['status']='platform-replaced'
+            row['platform_decision']=platform_decisions[row['path']]
         rows.append(row)
     return rows
 
@@ -178,7 +186,7 @@ def collect(config=None):
         template = next(r for r in selected.values() if r['subsystem'] == entry['options_from'])
         selected[source] = dict(source=source, subsystem=entry['subsystem'], language='cpp',
             options=template['options'], object=object_name(source), sha256=digest(ROOT / source),
-            upstream_source=None, report='explicit supplemental_sources; not a prior compile claim',
+            upstream_source=source if source in known else None, report='explicit supplemental_sources; not a prior compile claim',
             prior_compile_exit=None, requires_fresh_build=True, target_definition_corrections=[])
     rows = sorted(selected.values(), key=lambda r: r['source'])
     upstream_sources = [r['upstream_source'] for r in rows if r['upstream_source']]
@@ -186,7 +194,10 @@ def collect(config=None):
         raise ValueError('Multiple production projections selected for one upstream source')
     if len({r['object'].lower() for r in rows}) != len(rows):
         raise ValueError('Object-name collision')
-    cov = coverage(current['files'], rows)
+    decisions=config.get('platform_decisions',{})
+    if set(decisions)-known:
+        raise ValueError('Platform decision names unknown upstream source')
+    cov = coverage(current['files'], rows,decisions)
     app = [r for r in cov if r['role'] == 'application']
     return dict(schema=1, upstream_commit=BASE, libultraship_commit=config['libultraship_commit'],
         inventory_sha256=hashlib.sha256(json.dumps(current, sort_keys=True).encode()).hexdigest(),

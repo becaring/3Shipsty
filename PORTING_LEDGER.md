@@ -835,3 +835,59 @@ An upstream custom-message override size mismatch (allocation messages.size(),
 lookup messages.size()+1) is recorded for runtime review; it is not masked by
 syntax changes. Complete scene execution and loaded archives still await Xenia.
 First bring-up remains roughly 60â€“65%, with no linked/running modern XEX.
+
+
+## Complete application feature integration, 2026-09-21 (in progress)
+
+The full gameplay-enhancement, network application/packet, randomizer content,
+region-graph and application-extras batches compile with XDK individually.
+Root reran all five provider checks. Evidence is under their scratch directories;
+main integration is still running and no link/runtime milestone is claimed.
+
+A shared A/H projection defect was found through EntranceHints: textual removal
+of ` override` also corrupted `overrideIndex`, ordinary fields and comments.
+`prepare_resource_manager.syntax` now removes only AST virtual specifiers.
+`test_contextual_specifiers.py` protects class/function specifiers, legal fields,
+identifiers, strings and comments. Completed gameplay generated differences are
+only restored comments; rebuild receipts will be refreshed before checkpointing.
+
+Randomizer worker shutdown is being adapted to the existing joining_thread
+boundary. The original JoinRandoGenerationThread checks only `generated`, so an
+active incomplete generation could outlive resource teardown. The projection
+joins any joinable real generation worker; original generation, seed, settings
+and hook behavior remain. This lifecycle change is not yet runtime validated.
+
+
+## 2026-09-21 — complete application source selection and lifecycle integration
+
+All 696 C and 398 C++ application TUs now have complete selected production
+providers. Individually verified batches include all enhancements, network
+packets, randomizer content/regions/generation/hooks/trackers, application extras
+and speech. The deterministic manifest contains 1,834 production objects, with
+16 explicit desktop/mobile platform decisions; unmodified upstream stox.cpp
+closes the remaining generic LUS utility gap. No application TU is excluded.
+The combined release build is still running, so this is not a full-project
+compile/link or target execution claim. No modern XEX exists yet.
+
+Real InitOTR selects XboxSpeechSynthesizer ahead of desktop providers. DeinitOTR
+joins any real generation worker before tearing down its dependencies, then
+concretely destroys speech before GUI/Context release (upstream base destruction
+is nonvirtual). The completion flag is cleared after the join, avoiding a write
+racing the worker's completion. The actual join body passes idle, unfinished and
+repeated shutdown contracts. Full OTRGlobals compiles; five startup checks pass.
+
+Speech adds the real static eSpeak NG 1.52.0 engine, pinned to
+4870adfa25b1a32b4361592f1be8a40337c58d6c, behind the existing application interface.
+Six root-rerun checks pass, including actual multilingual PCM equivalence,
+queue ownership and measured native data layouts. This dependency is GPL-3.0-or-later;
+its notices and corresponding source/build changes belong in release packaging.
+Engine data is built on the PC in the standard eSpeak format; field-level endian
+conversion evidence and packaging are documented in speech/README.md. No speech
+or game audio has yet executed on Xenon.
+
+New build/link wrappers keep the normal inspectable XDK compile project and
+record real exit codes/source/object hashes. The link consumes every application
+object directly and preserves ordinary LUS/dependency archive extraction; it
+supplies no replacement entry point, forced unresolved symbols or donor game
+objects. They are awaiting full combined execution. First-bring-up estimate
+remains about 60–65%, uncertain until linking and real runtime evidence.

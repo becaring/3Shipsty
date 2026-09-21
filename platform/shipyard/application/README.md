@@ -27,9 +27,10 @@ linking, partial-initialization cleanup and Xenia validation remain open.
   `game:`. Early device-selector behavior still needs native execution.
 - D: real audio processing uses native joining threads, mutexes and condition
   variables. The worker's running predicate is read only under its existing
-  lock, fixing the upstream unlocked outer read. Normal teardown disables actual
-  active remote workers, joins audio, stops libultra timers, drains/deletes the
-  real SaveManager, destroys GUI ownership, drains resource and detached codec
+  lock, fixing the upstream unlocked outer read. Normal teardown joins the real
+  randomizer generation worker, disables active remote workers, joins audio,
+  stops libultra timers, drains/deletes the
+  real SaveManager, destroys the concrete Xbox speech worker/voices and GUI ownership, drains resource and detached codec
   work while Context remains strong, releases Context, closes storage, then XNet.
   ResourceManager and detached drain contracts are documented separately.
   OTRAudio.h now declares one externally shared state, defined by OTRGlobals.cpp.
@@ -72,7 +73,8 @@ commands are recorded in `scratch/application-xdk/xdk/build.json`.
 
 Remaining application implementations must resolve real link dependencies.
 Partial-initialization failures must drain admitted work while Context is still
-strong. The current `_WIN32` speech selection references desktop SAPI and still
-requires a genuine Xbox platform decision/implementation before linking; no
-spoken accessibility support is claimed. Storage selection, UI rendering,
+strong. `_XBOX` selects the real XboxSpeechSynthesizer before `_WIN32`; its
+concrete destruction is required because upstream's base destructor is not
+virtual. Speech engine/backend and data evidence are in ../speech/README.md;
+audible target execution remains unverified. Storage selection, UI rendering,
 controller routing, audio and real resource mounting have not executed in Xenia.

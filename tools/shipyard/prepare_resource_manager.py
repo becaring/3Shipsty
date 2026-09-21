@@ -25,7 +25,15 @@ def once(text, old, new):
 
 
 def syntax(text):
-    text = text.replace(' final :', ' :').replace(' override', '')
+    # These are contextual specifiers, also legal identifiers. A textual
+    # replacement corrupts e.g. EntranceHints' overrideIndex and data.override.
+    raw = text.encode('utf-8')
+    specifiers = [n for n in walk(PARSER.parse(raw).root_node)
+                  if n.type == 'virtual_specifier' and n.text in (b'override', b'final')]
+    for node in sorted(specifiers, key=lambda n: n.start_byte, reverse=True):
+        start = node.start_byte - (raw[node.start_byte-1:node.start_byte] == b' ')
+        raw = raw[:start] + raw[node.end_byte:]
+    text = raw.decode('utf-8')
     text = text.replace('std::variant<', 'Shipyard::Resources::variant<').replace('std::get<', 'Shipyard::Resources::get<')
     text = text.replace('std::holds_alternative<', 'Shipyard::Resources::holds_alternative<').replace('std::bad_variant_access', 'Shipyard::Resources::bad_variant_access')
     text = text.replace('#include <variant>', '#include "resources/variant.h"').replace('#include <mutex>', '#include "async/native.h"')

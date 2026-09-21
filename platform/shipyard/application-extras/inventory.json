@@ -1,0 +1,97 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "inventory_sha256": "d5ccf62d167fd624532874e2155db11327fb09fc3ab1e093b1630710913daf5b",
+  "sources": [
+    {
+      "path": "soh/soh/Enhancements/Presets/Presets.cpp",
+      "sha256": "7f80fc9457709634bd5fdb9c67cf0c9d3428e3260ea41c2b6c314bdc6555d38f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/TimeDisplay/TimeDisplay.cpp",
+      "sha256": "d607e12dd2250704b7cc95ac00eb29d0485c45a6faab63c3b178683c8286e7c8",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/boss-rush/BossRush.cpp",
+      "sha256": "dc1581cd62ff00457e641b0d306a1bd1462e057981d831f31f74a1f2bccd6e75",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/controls/InputViewer.cpp",
+      "sha256": "9601e9f7f44263808d49b9d7844502ffcc512169ba52635cafe36fb253fd4be2",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/controls/Mouse.cpp",
+      "sha256": "b169220a50ecec9d0f061b2761cb75bda8193c0c015951bb93087ee968c84151",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/customequipment.cpp",
+      "sha256": "d585be464a51343aebaaddbc7863ae002591b203f34dbe521c8c17e67c9afc1f",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/debugconsole.cpp",
+      "sha256": "11b01b4da4075b67db0f5cd931ae621cd9795554bd0669d559a74af8996077d3",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/gameplaystats.cpp",
+      "sha256": "f5173ac24074be0ae37ba18e077b227e38ee7f8d263815c6830e1247490482fc",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/mod_menu.cpp",
+      "sha256": "d7fb89aeca106a7175dd325c6e566d7532ebf4e64eb48db1a32eb333f5321061",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/mods.cpp",
+      "sha256": "94abd07d45533b088c4a50a4ba0bf512cac973d2787587143100514191d1784e",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/nametag.cpp",
+      "sha256": "420f0122861ce84729ecdfb7af0425ffcbe04d87f4fdaf1dba2dc0159108027d",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/timesaver_hook_handlers.cpp",
+      "sha256": "01bd7f61a5a8bd26eb5b61b84b4ea5dcdc5a7f1ff04a3ef4a5cea9c3891da879",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    },
+    {
+      "path": "soh/soh/Enhancements/timesplits/TimeSplits.cpp",
+      "sha256": "6e306e8e8afbc5dcfb294dcdec382643f05c4fca4b70de156a93619844a5e936",
+      "role": "application",
+      "reason": "Pinned soh__ or src__ CMake source inventory",
+      "status": "pending"
+    }
+  ]
+}
