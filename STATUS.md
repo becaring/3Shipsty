@@ -3,7 +3,7 @@
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
 Translation/first genuine bring-up estimate: roughly 65% complete (50–75%
-uncertainty range). Assembled application source coverage is 696/696 C and 106/398 C++ TUs,
+uncertainty range). Selected application source coverage is 696/696 C and 120/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -35,6 +35,19 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   distinct DOM with tested insertion order. Generic initializer-list syntax,
   custom ADL/macros, sorted/ordered conversion and binary DOM remain open.
 - No modern XEX has been produced or run. No gameplay or hardware claim.
+- Full UIWidgets.cpp and the canonical modern option/menu types compile. Actual
+  value/ownership/variant/text/color differentials pass; rendered frames remain
+  untested. Full CustomMessageManager (67 functions) compiles, with 2,462 matching
+  host output lines and 312 native UTF-8/control-byte literal proofs. ShipUtils
+  and the real randomizer RNG compile, with seeded/container/rotation checks.
+  Native entropy uses XNetRandom and requires startup ownership of XNet.
+- All five GameInteractor units and all 23 selected Cheats/Fixes compile.
+  The expanded 1,512-item selection passes; all source hashes and native PPC
+  objects are verified in scratch/project-xdk/ui-services-verification.json. Startup and save/storage are
+  being implemented independently by two agents; no third agent is active.
+- Supplied unmodified baserom.z64 extracted with the exact official PC release:
+  retail NTSC 1.0 oot.o2r has 38,390 CRC-verified entries and version 9.2.3.
+  This archive is available for Xbox bring-up; target execution is unverified.
 - All fifteen modern cheat units compile, including the real randomizer bombchu
   capacity path. Three object-extension units and both ActorDB/config-migration
   units compile. ShipInit, variadic cursors, owning any/registry and ActorDB

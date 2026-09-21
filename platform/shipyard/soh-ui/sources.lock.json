@@ -1,0 +1,8 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/SohGui/UIWidgets.hpp": "c1a55a5b44a4e5dad430bd759120a1325278c6a3ea0ebb35e859f2910759a0b4",
+    "soh/soh/SohGui/UIWidgets.cpp": "a9d48a5639123e3e4544b7ae1fcad986feb400d19d9c9b1be4d447732de6bb9e",
+    "soh/soh/SohGui/MenuTypes.h": "f22f0b6f637bbc4577f9a7d9ad0e6229487c3d1142f965a40c7210ea779333ea"
+  }
+}

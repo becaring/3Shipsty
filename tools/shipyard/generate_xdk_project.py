@@ -62,7 +62,7 @@ def parse_command(record):
         raise ValueError('Report is not an XDK compiler recipe')
     if '/c' not in command:
         return None  # Explicit preprocessing-only records are not production TUs.
-    sources = [arg for arg in command[1:] if not arg.startswith('/') and Path(arg).suffix.lower() in ('.cpp', '.cc', '.c', '.cxx')]
+    sources = [arg for arg in command[1:] if not arg.startswith('/') and Path(arg).suffix.lower() in ('.cpp', '.cc', '.c', '.cxx', '.i')]
     if len(sources) != 1:
         raise ValueError('Expected exactly one source in compile recipe: ' + repr(command))
     source = relative(sources[0])

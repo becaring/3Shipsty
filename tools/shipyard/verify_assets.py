@@ -1,5 +1,6 @@
 """Verify owned official/extracted O2R inputs without rewriting their formats."""
 from collections import Counter
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -58,19 +59,27 @@ def inspect_archive(path):
         return result
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--retail-ntsc10',action='store_true',help='Verify the supplied unmodified retail NTSC 1.0 extraction')
+    args=parser.parse_args()
     package = ASSETS / 'SoH-Ackbar-Delta-Win64.zip'
     expected = 'cc7bd5ada1332be50013976fc3db3289cacde1df57e7e6cf73d4a1df81313e30'
     if sha(package) != expected:
         raise ValueError('Official package hash differs from fetched baseline')
-    rom = ASSETS / 'input.z64'
+    official=ASSETS/'retail-ntsc10' if args.retail_ntsc10 else OFFICIAL
+    rom = ROOT/'baserom.z64' if args.retail_ntsc10 else ASSETS / 'input.z64'
     rom_sha1 = hashlib.sha1(rom.read_bytes()).hexdigest()
-    if rom_sha1 != 'cee6bc3c2a634b41728f2af8da54d9bf8cc14099':
+    expected_rom='ad69c91157f6705e8ab06c79fe08aad47bb57ba7' if args.retail_ntsc10 else 'cee6bc3c2a634b41728f2af8da54d9bf8cc14099'
+    if rom_sha1 != expected_rom:
         raise ValueError('Owned ROM differs from supplied input')
     report = dict(scope='PC archive structure and version verification; Xbox factory decoding unverified',
                   source_release='https://github.com/HarbourMasters/Shipwright/releases/tag/9.2.3',
-                  package_sha256=expected, extractor_sha256=sha(OFFICIAL / 'soh.exe'),
-                  rom_sha1=rom_sha1, archives=[inspect_archive(OFFICIAL / n) for n in ('soh.o2r', 'oot.o2r')])
-    (ASSETS / 'archive-verification.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+                  package_sha256=expected, extractor_sha256=sha(official / 'soh.exe'),
+                  rom_sha1=rom_sha1, archives=[inspect_archive(official / n) for n in ('soh.o2r', 'oot.o2r')])
+    expected_crc='0xec7011b7' if args.retail_ntsc10 else '0x871e1c92'
+    if report['archives'][1]['rom_crc']!=expected_crc:raise ValueError('Archive game version differs from supplied ROM')
+    destination=official if args.retail_ntsc10 else ASSETS
+    (destination / 'archive-verification.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     for row in report['archives']:
         print(f"{row['path']}: {row['entries']} entries, version {row['port_version']}, CRCs pass, sha256 {row['sha256']}")
 

@@ -62,6 +62,17 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('Link',guard.attrib['BeforeTargets'])
         self.assertIsNotNone(guard.find('{'+gen.NS+'}Error'))
 
+    def test_preprocessed_probe_excluded_and_full_message_origin(self):
+        source,language,options=gen.parse_command(dict(command=[str(gen.SDK/'bin/win32/cl.exe'),
+            '/c','/TC',str(gen.ROOT/'scratch/ship-utils-xdk/xdk/c_abi.i'),'/Foignored.obj']))
+        self.assertEqual(language,'c')
+        self.assertEqual(source,'scratch/ship-utils-xdk/xdk/c_abi.i')
+        selected={r['source'] for r in self.manifest['sources']}
+        self.assertNotIn(source,selected)
+        self.assertNotIn('scratch/custom-message-xdk/generated/literal_probe.cpp',selected)
+        message=next(r for r in self.manifest['sources'] if r['subsystem']=='custom-message')
+        self.assertEqual(message['upstream_source'],'soh/soh/Enhancements/custom-message/CustomMessageManager.cpp')
+
     def test_pinned_target_definitions_and_preprocessed_boundaries(self):
         binary=next(r for r in self.manifest['sources'] if r['subsystem']=='binary')
         self.assertIn('/DF3DEX_GBI_2',binary['options'])

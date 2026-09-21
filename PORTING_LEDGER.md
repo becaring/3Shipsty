@@ -607,3 +607,29 @@ tests were observed failing before implementation, then passing.
   its original gs macros through typed Gfx locals, resolving braced-call syntax.
   The complete GameInteractionEffect TU also compiles with a canonical action
   declaration split from the real cosmetics header; the real service is retained.
+
+### Modern widget, message and utility integration (2026-09-20)
+
+- A/B/G: complete UIWidgets.cpp, all twelve option structures and MenuTypes.h
+  projected reproducibly. Original function inventory retained. Explicit value
+  initialization preserves zero defaults without changing default-initialized
+  indeterminate flags. Actual typed variants, ownership, callbacks, filter/text
+  bodies and color results match upstream. Native rendering is not executed.
+- A/B/F: all 67 CustomMessageManager functions compile, including the three live
+  service methods excluded from bounded host execution. Five real language/maps
+  retained; 2,462 host output lines agree and 312 UTF-8/embedded-control literal
+  arrays agree in native COFF data. No message service substitutes.
+- A/B/C: complete ShipUtils and randomizer RNG providers compile. Native entropy
+  uses XNetRandom with real failure propagation; application startup must own
+  XNet initialization. Seeded RNG/container references, 7,744 vertex groups and
+  4,194,304 rotation cases pass. Platform wrappers are generic Shipyard; actual
+  modern game algorithms remain source-derived 3Shipsty application code.
+- Complete GameInteractor RawAction and Effects now join the other three units;
+  all 23 selected modern Cheats/Fixes also compile. The expanded deterministic
+  selection contains 816 application TUs (696 C, 120 C++), 278 C++ pending and
+  1,512 total production units. Test probes are explicitly excluded, and the
+  flattened full message source has its correct original-source identity.
+- Full assembled rebuild passes; all 1,512 object formats and source hashes
+  match scratch/project-xdk/ui-services-verification.json. First-bring-up estimate remains 65%.
+  Two independent startup/save-storage tasks are active, without delegation
+  chains. No XEX, gameplay or hardware claim.

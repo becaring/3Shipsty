@@ -93,6 +93,7 @@ def prepare():
             text=once(text,'#include "soh/Enhancements/cosmetics/CosmeticsEditor.h"','#include "soh/Enhancements/cosmetics/CosmeticsEditorActions.h"')
         if name.endswith('/GameInteractor_RawAction.cpp'):
             text=once(text,'#include "soh/Enhancements/debugger/colViewer.h"','#include "soh/Enhancements/debugger/colViewerTypes.h"')
+            text='#include <cassert>\n'+text
         text=syntax(text)
         stable(OUT/'generated'/name,text)
     # The game-effect caller needs the real action declaration and collision
@@ -117,10 +118,10 @@ def includes():
 
 def build():
     prepare();sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK');folder=OUT/'xdk';folder.mkdir(exist_ok=True);rows=[]
-    flags=['/nologo','/c','/TP','/EHsc','/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DF3DEX_GBI_2','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DINCLUDE_MPQ_SUPPORT','/DCONTROLLERBUTTONS_T=uint32_t',
+    flags=['/nologo','/c','/TP','/EHsc','/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DF3DEX_GBI_2','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DINCLUDE_MPQ_SUPPORT','/DCONTROLLERBUTTONS_T=uint32_t','/DLOG_LEVEL_GAME_PRINTS=6',
            '/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h'),'/FI'+str(ROOT/'platform/shipyard/game/include/xdk_math_boundary.h'),'/I'+str(sdk/'include/xbox')]
     flags+=['/I'+str(p) for p in includes()]
-    for name in ('GameInteractor','GameInteractor_State','GameInteractor_Hooks'):
+    for name in ('GameInteractor','GameInteractor_State','GameInteractor_Hooks','GameInteractionEffect','GameInteractor_RawAction'):
         source=OUT/'generated'/BASE/(name+'.cpp');obj=folder/(name+'.obj');command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(folder/(name+'.log'),result.stdout+result.stderr)
         rows.append(dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode));print(name+': '+str(result.returncode))

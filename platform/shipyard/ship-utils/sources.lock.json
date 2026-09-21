@@ -1,0 +1,10 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/ShipUtils.h": "6b83750de3c70d6de6a9b3d97908603369e331f4c36bf744793873680f02ec20",
+    "soh/soh/ShipUtils.cpp": "3a0137dc20aee882c522ea2517f179da835afeb7a139b8e534d93666065fc757",
+    "soh/soh/Enhancements/randomizer/3drando/random.hpp": "ee57c46ed9350a6610fc112a44798661f1eabaf2ce05ecac59ee667cd4284d11",
+    "soh/soh/Enhancements/randomizer/3drando/random.cpp": "3c231b02443e03218c1a0a6801ee2c1588bad3cb339af25f95939893c6ffd8ac"
+  }
+}

@@ -49,7 +49,10 @@
         "enhancements",
         "object-extension",
         "app-services",
-        "randomizer"
+        "randomizer",
+        "ship-utils",
+        "custom-message",
+        "soh-ui"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -173,13 +176,25 @@
     ],
     "randomizer": [
       "scratch/randomizer-xdk/xdk/build.json"
+    ],
+    "ship-utils": [
+      "scratch/ship-utils-xdk/xdk/build.json"
+    ],
+    "custom-message": [
+      "scratch/custom-message-xdk/xdk/build.json"
+    ],
+    "soh-ui": [
+      "scratch/soh-ui-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
     "scratch/graphics-xdk/cc_features.cpp": "Early isolated decoder projection; the complete selected current interpreter.cpp already defines gfx_cc_get_features. Do not link both.",
     "platform/shipyard/graphics/interface_contract.cpp": "ABI compile probe; never part of production",
     "platform/shipyard/soh-resources/xdk_abi.cpp": "ABI compile probe; never part of production",
-    "platform/shipyard/randomizer/xdk_abi.cpp": "Complete class layout/include probe, not production application code"
+    "platform/shipyard/randomizer/xdk_abi.cpp": "Complete class layout/include probe, not production application code",
+    "platform/shipyard/ship-utils/xdk_contract.cpp": "Native API compile probe, not production",
+    "scratch/ship-utils-xdk/xdk/c_abi.i": "Preprocessed C ABI probe, not production",
+    "scratch/custom-message-xdk/generated/literal_probe.cpp": "Native UTF-8 literal byte verification probe, not production"
   },
   "supplemental_sources": [
     {

@@ -1,0 +1,10 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/custom-message/CustomMessageManager.cpp": "b4d07d6804b6c69225a1a2758ea86b05df3f59cc5fc9c924c252a334cc56c7f1",
+    "soh/soh/Enhancements/custom-message/CustomMessageManager.h": "696d993f6220fc637bf3cf36dc4d5dd90319584dbf664dfb5276a1d6e07b63ab",
+    "soh/soh/Enhancements/custom-message/CustomMessageInterfaceAddon.h": "6d8021943ceffc1c64bbe6d9aa33fac9fca9d669ebe6420419aac41baea51775",
+    "soh/include/z64.h": "dee96f966c0fc2c9ed9ac49c4b2c22c431f1dab9754d135405b682112906ffaf",
+    "soh/soh/Enhancements/randomizer/3drando/text.hpp": "8ad3526bc5b05858f83a5a49d17d2d8d7ebd3910201ed854cb80e3f0a60181e0"
+  }
+}
