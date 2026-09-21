@@ -16,7 +16,12 @@ from prepare_resource_manager import syntax
 OUT = ROOT / 'scratch/soh-resources-xdk'
 OWN = ROOT / 'platform/shipyard/soh-resources'
 NAMES = ('Background', 'PlayerAnimation', 'Text', 'Array', 'Cutscene',
-         'Animation', 'AudioSequence', 'AudioSoundFont', 'CollisionHeader', 'Path', 'SkeletonLimb')
+         'Animation', 'AudioSequence', 'AudioSoundFont', 'CollisionHeader', 'Path', 'SkeletonLimb', 'Scene')
+SCENE_COMMANDS = ('EndMarker', 'SetActorList', 'SetAlternateHeaders', 'SetCameraSettings', 'SetCollisionHeader',
+                  'SetCsCamera', 'SetCutscenes', 'SetEchoSettings', 'SetEntranceList', 'SetExitList',
+                  'SetLightingSettings', 'SetLightList', 'SetMesh', 'SetObjectList', 'SetPathways',
+                  'SetRoomBehavior', 'SetRoomList', 'SetSkyboxModifier', 'SetSkyboxSettings', 'SetSoundSettings',
+                  'SetSpecialObjects', 'SetStartPositionList', 'SetTimeSettings', 'SetTransitionActorList', 'SetWindSettings')
 
 
 def transform(name, text):
@@ -26,7 +31,7 @@ def transform(name, text):
                    'Array': 'void', 'Cutscene': 'uint32_t', 'Animation': 'AnimationData',
                    'AudioSequence': 'Sequence', 'AudioSoundFont': 'SoundFont',
                    'CollisionHeader': 'CollisionHeaderData', 'Path': 'PathData',
-                   'SkeletonLimb': 'SkeletonLimbData'}[typename]
+                   'SkeletonLimb': 'SkeletonLimbData', 'Scene': 'void'}[typename]
         text = once(text, 'using Resource::Resource;', typename + '(std::shared_ptr<Ship::ResourceInitData> initData) : Ship::Resource<' + element + '>(initData) {}')
     if name.endswith('/Array.h'):
         # XDK instantiates vector's destructor at the explicit forwarding constructor.
@@ -47,6 +52,47 @@ def transform(name, text):
         text = once(text, 'static_cast<int32_t>(skeletonLimb->skinSegmentType)', 'skeletonLimb->skinSegmentType.GetValue()')
     if name.endswith('/PathLogger.h'):
         text = once(text, '#include "soh/OTRGlobals.h"', '#include <libultraship/bridge/consolevariablebridge.h>')
+    if name.endswith('/SceneCommandLoggers.h'):
+        text = once(text, '#include "soh/OTRGlobals.h"', '#include <libultraship/bridge/consolevariablebridge.h>')
+    if name.endswith('/SceneCommand.h'):
+        text = '#include "soh-resources/enum.h"\n' + text
+        text = re.sub(r'enum class SceneCommandID : uint8_t \{(.*?)\n\};',
+                      lambda m: strong_enum('SceneCommandID', m[1]).replace('Shipyard::Binary::ScopedEnum', 'Shipyard::SohResources::ByteEnum'),
+                      text, flags=re.S)
+        text = once(text, 'using IResource::IResource;',
+                    'ISceneCommand(std::shared_ptr<Ship::ResourceInitData> initData) : Ship::IResource(initData) {}')
+        text = once(text, 'using ISceneCommand::ISceneCommand;',
+                    'SceneCommand(std::shared_ptr<Ship::ResourceInitData> initData) : ISceneCommand(initData) {}\n'
+                    '    SceneCommand() : ISceneCommand() {}')
+        text += '\nnamespace std { template<> struct hash<SOH::SceneCommandID> {\n'
+        text += 'size_t operator()(const SOH::SceneCommandID& value) const { return value.GetValue(); }\n}; }\n'
+    if '/type/scenecommand/' in name and Path(name).stem in SCENE_COMMANDS and name.endswith('.h'):
+        typename, element = re.search(r'class (\w+)(?: final)? : public SceneCommand<([^>]+)>', text).groups()
+        body = re.search(r'class ' + typename + r'(?: final)? : public SceneCommand<[^>]+> \{(.*?)\n\};', text, re.S)[1]
+        members = re.findall(r'^    [^\n;{}]+ (\w+);$', body, re.M)
+        # The inherited original default is implicit: make_shared<T>() first
+        # zero-initializes its payload. Preserve that value-initialized state.
+        defaults = ''.join(', ' + member + '()' for member in members)
+        text = once(text, 'using SceneCommand::SceneCommand;',
+                    typename + '(std::shared_ptr<Ship::ResourceInitData> initData) : SceneCommand<' + element + '>(initData) {}\n'
+                    '    ' + typename + '() : SceneCommand<' + element + '>()' + defaults + ' {}')
+    if '/importer/scenecommand/' in name and name.endswith('.cpp'):
+        # These factories use Context/ResourceManager, or no umbrella symbols at all.
+        text = re.sub(r'#include [<"]libultraship/libultraship.h[>"]',
+                      '#include <ship/Context.h>\n#include <ship/resource/ResourceManager.h>' if 'Ship::Context::' in text
+                      else '// No symbols from the umbrella header are used.', text)
+    if name.endswith('/SceneFactory.h'):
+        text = text.replace('static inline std::unordered_map', 'static std::unordered_map')
+    if name.endswith('/SceneFactory.cpp'):
+        text = once(text, 'namespace SOH {', 'namespace SOH {\n'
+                    'std::unordered_map<SceneCommandID, std::shared_ptr<SceneCommandFactoryBinaryV0>> ResourceFactoryBinarySceneV0::sceneCommandFactories;\n'
+                    'std::unordered_map<SceneCommandID, std::shared_ptr<SceneCommandFactoryXMLV0>> ResourceFactoryXMLSceneV0::sceneCommandFactories;')
+        text = text.replace('std::to_string(index)', 'Shipyard::SohResources::UIntToString(index)')
+        text = text.replace('(uint32_t)cmdID', 'static_cast<uint32_t>(cmdID.GetValue())')
+        match = re.search(r'std::vector<std::string> commandNames = \{(.*?)\n\};', text, re.S)
+        if not match: raise ValueError('Scene command name table drift')
+        text = once(text, match[0], 'static const char* const commandNameValues[] = {' + match[1] + '\n};\n'
+                    'std::vector<std::string> commandNames(commandNameValues, commandNameValues + sizeof(commandNameValues) / sizeof(commandNameValues[0]));')
     if name.endswith('/AudioSample.h'):
         text = once(text, 'using Resource::Resource;', 'AudioSample(std::shared_ptr<Ship::ResourceInitData> initData) : Ship::Resource<Sample>(initData), tuning(-1.0f) {}')
         text = once(text, 'AudioSample() : Resource(std::shared_ptr<Ship::ResourceInitData>())', 'AudioSample() : Resource(std::shared_ptr<Ship::ResourceInitData>()), tuning(-1.0f)')
@@ -117,10 +163,17 @@ def includes(projected):
 def units(base):
     return [Path(base) / 'soh/soh/resource' / folder / (n + suffix + '.cpp')
             for n in NAMES for folder, suffix in (('type', ''), ('importer', 'Factory'))] + [
-                Path(base) / 'soh/soh/resource/logging/PathLogger.cpp']
+                Path(base) / 'soh/soh/resource/logging/PathLogger.cpp'] + scene_units(base)
 
 
-def build():
+def scene_units(base):
+    return [Path(base) / 'soh/soh/resource' / folder / (n + suffix + '.cpp')
+            for n in SCENE_COMMANDS for folder, suffix in (('type/scenecommand', ''), ('importer/scenecommand', 'Factory'))] + [
+                Path(base) / 'soh/soh/resource/importer/scenecommand/SceneCommandFactory.cpp',
+                Path(base) / 'soh/soh/resource/logging/SceneCommandLoggers.cpp']
+
+
+def build(scene_only=False):
     prepare()
     folder = OUT / 'xdk'; folder.mkdir(parents=True, exist_ok=True)
     sdk = Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
@@ -129,7 +182,9 @@ def build():
     flags += ['/FI' + str(ROOT / 'scratch/configuration-xdk/generated/include/compile_definitions.h')]
     flags += ['/I' + str(p) for p in includes(True)]
     records = []
-    for source in units(OUT / 'generated') + [OWN / 'xdk_abi.cpp']:
+    sources = units(OUT / 'generated') if not scene_only else scene_units(OUT / 'generated') + [
+        OUT / 'generated/soh/soh/resource/type/Scene.cpp', OUT / 'generated/soh/soh/resource/importer/SceneFactory.cpp']
+    for source in sources + [OWN / 'xdk_abi.cpp']:
         obj = folder / (source.stem + '.obj')
         command = [str(sdk / 'bin/win32/cl.exe')] + flags + [str(source), '/Fo' + str(obj)]
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
@@ -139,7 +194,7 @@ def build():
                             object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest() if not result.returncode else None))
         if not result.returncode and struct.unpack_from('<H', obj.read_bytes())[0] != 0x1f2:
             raise ValueError('Not a Xenon object')
-    stable(folder / 'build.json', json.dumps(records, indent=2) + '\n')
+    stable(folder / ('scene-build.json' if scene_only else 'build.json'), json.dumps(records, indent=2) + '\n')
     for row in records: print(str(row['exit']) + ' ' + row['source'])
     if any(r['exit'] for r in records): raise SystemExit(1)
 
@@ -147,5 +202,7 @@ def build():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', action='store_true')
-    if parser.parse_args().build: build()
+    parser.add_argument('--build-scene', action='store_true')
+    args = parser.parse_args()
+    if args.build or args.build_scene: build(args.build_scene)
     else: prepare()

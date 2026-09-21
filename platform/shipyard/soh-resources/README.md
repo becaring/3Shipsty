@@ -2,11 +2,12 @@
 
 This bounded projection preserves the full Shipwright9.2.3 translation units for
 Background, PlayerAnimation, Text, Array, Cutscene, Animation, AudioSequence,
-AudioSoundFont, CollisionHeader, Path and SkeletonLimb. Each type and its factory
-compile as a separate production TU, plus the complete PathLogger: 23 actual
-application objects. All binary/XML factory implementations in those files are
+AudioSoundFont, CollisionHeader, Path, SkeletonLimb and Scene, plus all 25 current
+scene-command type/factory pairs. Each type and its factory compile as a separate
+production TU, together with SceneCommandFactory, PathLogger and
+SceneCommandLoggers: 77 actual application objects. All binary/XML factory implementations in those files are
 retained. Nothing in the production objects is function-excluded or replaced by
-a test harness. Forty-nine current source/header inputs are normalized and
+a test harness. One hundred fifty-nine current source/header inputs are normalized and
 SHA-256 pinned in `sources.lock.json` before any generated output is written.
 The source commit metadata is the actual release tag commit
 `cb71e22a79bc5d1f688fa881795bbd93094895fc`; every locked input was checked against it.
@@ -20,8 +21,18 @@ adapter preserving required-length and terminated-truncation behavior. RTTI is
 explicitly enabled because SoundFont XML patch loading uses dynamic_pointer_cast.
 The native ABI TU rejects a build without RTTI.
 
-Unused umbrella includes are removed from SkeletonLimbFactory. PathLogger.h uses
-the real CVar bridge header instead of OTRGlobals. SoundFontFactory uses the three
+Scene command IDs retain their fixed one-byte representation, strongly typed
+comparisons, wrapping casts and hash lookup. Both Scene factory maps retain all
+25 registrations; their C++17 inline static storage is emitted once in the Scene
+factory TU. The complete 26-name lookup table remains a mutable vector with the
+same entries. Decimal command-path suffixes use an owned exact unsigned-decimal
+conversion. Scene-command inherited constructors are forwarded through the real
+ISceneCommand/SceneCommand hierarchy. Their generated defaults retain the
+zeroed payload state of original make_shared<T>() value-initialization.
+
+Unused umbrella includes are removed from SkeletonLimbFactory and SetMeshFactory.
+Scene commands that acquire resources include the real Context/ResourceManager
+headers. Both logger headers use the real CVar bridge header instead of OTRGlobals. SoundFontFactory uses the three
 actual audio enum declarations extracted verbatim from locked z64audio.h instead
 of unrelated game-wide structs. No service declarations or implementations are
 invented. The full ResourceManager and Context interfaces come from their
@@ -83,17 +94,20 @@ python tools/shipyard/test_soh_resources_projection.py
 python tools/shipyard/prepare_soh_resources.py --build
 python tools/shipyard/test_soh_resources.py
 python tools/shipyard/test_soh_resources_methods.py
+python tools/shipyard/test_soh_resources_scene.py
 ```
 
 Verified on 2026-09-20:
 
-- Five Python checks pass: deterministic output/no unnecessary rewrites, atomic
+- Six Python checks pass: deterministic output/no unnecessary rewrites, atomic
   source-drift rejection, retained production function signatures, verbatim
-  cutscene helpers, and source/audio endian invariants.
-- All 23 production TUs compile with native XDK, plus the ABI TU. Every object is
+  cutscene helpers, source/audio endian invariants, and all Scene registrations,
+  resource acquisitions, binary ID reads and CVar logging calls.
+- All 77 production TUs compile with native XDK, plus the ABI TU. Every object is
   PPC BE COFF `0x1f2`. The ABI checks include 32-bit pointers, collision, limb,
-  path, animation and audio sizes/offsets, resource tags, BE markers and RTTI.
-  Three existing AudioSettings qualified-enum extension warnings and one ABI
+  path, animation, audio, actor/transition, light, room and mesh sizes/offsets,
+  one-byte scene IDs, resource tags, BE markers and RTTI.
+  Seven existing AudioSettings qualified-enum extension warnings and one ABI
   include-order GIMMCMD macro redefinition warning remain. There are no
   dynamic-cast-without-RTTI warnings in the final build.
 - The independent serialization contract compiles and runs seven complete type
@@ -112,6 +126,19 @@ Verified on 2026-09-20:
   XML path pointers/counts, enum error text, and bounded-format behavior.
   `methods.json` records the limited scope; no Context/archive/CVar substitutes
   are linked into either host contract.
+- A Scene audit executes 21 complete extracted XML command methods, every full
+  scene-command type TU, the full Scene type TU, and the complete
+  SceneCommandLoggers TU (25 loggers and their signature helper) against original and projected inputs. Binary/XML
+  production factories are still compiled in full by XDK; the host audit does
+  not replace their service calls. It checks 2,048 LE/BE command-ID reads,
+  one-byte wrapping/hash lookup, all 26 command-name mappings, signed actor/light/
+  settings fields, vector pointers and counts, ignored XML tags, mesh types
+  0/1-multi/2, tagged display-list/background names, nullable collision/cutscene
+  references, and every logger's actual formatted XML output. Both outputs match
+  byte for byte. Complete extracted Scene XML parser methods also execute with
+  those 21 real factories registered in the fixture, checking child ordering,
+  unknown/unsupported commands, and inherited ID/type/path/version metadata.
+  `scene-verification.json` records this bounded scope.
 
 `scratch/soh-resources-xdk/xdk/build.json` records exact native commands, source
 hashes and object hashes. Per-TU compiler logs and host build/run evidence are
@@ -135,11 +162,18 @@ randomizer/game headers, inline static string, starts_with and actual global
 runtime dependencies still need their complete projections. Nothing from those
 patcher methods was removed or replaced here.
 
-Scene, all 25 scene-command type/factory pairs, SceneCommandFactory, remaining
-scene-command loggers, OTRGlobals registration and ResourceManagerHelpers remain
-open. Runtime factory execution for Animation (including Link acquisition),
+Scene and every current scene-command type/factory/logger now compile in full.
+OTRGlobals registration and ResourceManagerHelpers consumers remain open. The
+four service-dependent command factories (alternate headers, collision headers,
+cutscenes and pathways) retain actual Context resource acquisition and still need
+runtime integration. All 25 binary command factories retain their actual CVar
+logging conditions and real logger calls. Full Scene binary dispatch and
+service-backed XML dispatch remain native compiler and exact-registration
+evidence, not claimed host service execution. Runtime factory execution for
+Animation (including Link acquisition),
 AudioSequence archive/XML loading, SoundFont sample resolution/patching, and
 Path binary CVar/logging needs real Context/archive/CVar integration. Only the
-explicit seven-pair runtime and pure-method audits above are execution evidence.
+explicit seven-pair runtime, pure-method and Scene XML/logger audits above are
+execution evidence.
 None of these checks establishes Xbox execution, registration, a linked
 application, boot or playback.

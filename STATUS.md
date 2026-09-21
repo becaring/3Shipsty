@@ -2,8 +2,8 @@
 
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 62% complete (50–65%
-uncertainty range). Application source coverage is 696/696 C and 23/398 C++ TUs,
+Translation/first genuine bring-up estimate: roughly 64% complete (50–70%
+uncertainty range). Application source coverage is 696/696 C and 78/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update

@@ -10,6 +10,12 @@
 #include "soh/resource/type/Path.h"
 #include "soh/resource/type/AudioSequence.h"
 #include "soh/resource/type/AudioSoundFont.h"
+#include "soh/resource/type/scenecommand/SetMesh.h"
+#include "soh/resource/type/scenecommand/SetActorList.h"
+#include "soh/resource/type/scenecommand/SetTransitionActorList.h"
+#include "soh/resource/type/scenecommand/SetLightList.h"
+#include "soh/resource/type/scenecommand/SetLightingSettings.h"
+#include "soh/resource/type/scenecommand/RomFile.h"
 #include <cstddef>
 #ifndef _XBOX
 #error This ABI contract must use the actual Xenon compiler.
@@ -33,3 +39,8 @@ typedef char limb_layout[(sizeof(SOH::LodLimb)==16 && sizeof(SOH::SkinVertex)==1
 typedef char path_layout[(sizeof(SOH::PathData)==8 && offsetof(SOH::PathData,points)==4) ? 1 : -1];
 typedef char audio_layout[(sizeof(SOH::Sequence)==32 && sizeof(SOH::Sample)==24 && sizeof(SOH::SoundFont)==24) ? 1 : -1];
 typedef char envelope_layout[(sizeof(SOH::AdsrEnvelope)==4 && BE16SWAP(0x1234)==0x1234) ? 1 : -1];
+typedef char scene_command_id[(sizeof(SOH::SceneCommandID)==1 && SOH::SceneCommandID::Error==255) ? 1 : -1];
+typedef char actor_layout[(sizeof(SOH::ActorEntry)==16 && sizeof(SOH::TransitionActorEntry)==16) ? 1 : -1];
+typedef char light_layout[(sizeof(SOH::LightInfo)==14 && sizeof(SOH::EnvLightSettings)==22) ? 1 : -1];
+typedef char mesh_layout[(sizeof(SOH::BgImage)==28 && sizeof(SOH::MeshHeader)==32 && sizeof(SOH::PolygonDlist2)==16) ? 1 : -1];
+typedef char room_file_layout[(sizeof(SOH::RomFile)==12 && offsetof(SOH::RomFile,fileName)==8) ? 1 : -1];

@@ -3,11 +3,27 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import re
 from prepare_soh_resources import ROOT, OUT, OWN, prepare, transform
 from cpp_ast import PARSER, walk
 
 
 class Projection(unittest.TestCase):
+    def test_scene_registration_and_resource_calls_retained(self):
+        name = 'soh/soh/resource/importer/SceneFactory.cpp'
+        original = (ROOT / name).read_text(encoding='utf-8-sig')
+        projected = transform(name, original)
+        registrations = lambda s: re.findall(r'sceneCommandFactories\[SceneCommandID::(\w+)\]\s*=\s*std::make_shared<([^>]+)>\(\)', s)
+        self.assertEqual(len(registrations(original)), 50)
+        self.assertEqual(registrations(original), registrations(projected))
+        for source in (ROOT / 'soh/soh/resource/importer/scenecommand').glob('*.cpp'):
+            name = source.relative_to(ROOT).as_posix()
+            original = source.read_text(encoding='utf-8-sig')
+            projected = transform(name, original)
+            self.assertEqual(original.count('LoadResourceProcess('), projected.count('LoadResourceProcess('), name)
+            self.assertEqual(original.count('CVarGetInteger('), projected.count('CVarGetInteger('), name)
+            self.assertEqual(original.count('ReadCommandId('), projected.count('ReadCommandId('), name)
+
     def test_all_production_functions_retained(self):
         lock = json.loads((OWN / 'sources.lock.json').read_text())
         for name in lock['sources']:

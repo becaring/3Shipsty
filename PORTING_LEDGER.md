@@ -472,3 +472,20 @@ tests were observed failing before implementation, then passing.
   producer/registration evidence; its host raw-byte check is narrowly reported.
 - Generic Shipyard A/B/I changes; all nine Xenon objects pass with /GR. No native
   archive/resource execution or render/gameplay claim. See fast-resources/README.md.
+
+### 2026-09-20: All scene commands and current interpolation
+
+- Completed scene handoff reviewed: 54 additional full TUs, bringing application
+  resource coverage to 77. All 25 command pairs, Scene/dispatcher/loggers retain
+  their registrations, acquisitions and CVar calls. Six projection checks and
+  original/projected 21-factory XML/type/logger/mesh/ID audits pass. Full binary
+  Scene dispatch and the four service-dependent XML factories still need runtime
+  integration. Native type/ID/ABI receipts remain explicit.
+- Complete current frame interpolation now compiles, preserving the 72-byte
+  native recording union. Exact existing FPS bridge, POD label, scoped enum and
+  generated aggregate/iteration spellings resolve XDK limitations. The bounded
+  host math/recorder audit matches 589,824 integer-angle cases and lifecycle,
+  matrix/inverse/float-angle checks. No whole-frame native execution claim.
+- Translation/first-bring-up estimate is now approximately 64% (50–70% range),
+  with 696 C and 78 C++ application TUs compiled. Full modern application C++,
+  release-definition integration, linking and genuine Xenia execution remain.
