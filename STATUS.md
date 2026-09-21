@@ -19,8 +19,9 @@
   No upstream source has been changed.
 - All five exact current ImGui core TUs compile for XDK; eight-frame host draw
   data/atlas differential passes. Native UI/backend integration remains open.
-- Nine actual current resource leaf TUs compile, with factory/variant parity
-  tests. Full Archive/Loader/Manager/Context integration is still required.
+- Nine current resource leaf TUs and eleven complete archive/loader/manager
+  and utility TUs compile. Focused loader endian/registration and string-view/
+  glob checks pass. Context and actual resource-manager execution remain open.
 - Actual spdlog core and typed modern formatting corpus pass host/native checks.
   JSON ordered/custom/container/stream APIs and fmt default float precision
   remain explicit compatibility gaps; no features have been removed.
@@ -33,9 +34,10 @@
 - Exact stable Opus 1.6.1, opusfile 0.12 and Ogg 1.3.6 dependencies fetched;
   143 native codec objects compile; host real Ogg/Opus encode, memory/file
   decode, sample seek, EOF and invalid-input contracts pass. Xbox audio remains
-  unvalidated.
-- Next: finish complete C and current resource boundaries, mount archives through real
-  resource consumers, then integrate the complete current application.
+  unvalidated. Exact LUS-patched StormLib also builds all 231 native objects;
+  host encrypted MPQ and five lossless compression/seek/listfile checks pass.
+- Next: integrate real Context/platform initialization and resource consumers,
+  then the complete modern C++ application, renderer, input, audio and storage.
 
 Authority: upstream owns game/application/features/resources/save semantics;
 Shipyard owns Xbox platform mechanisms. Work and outputs remain in this tree.

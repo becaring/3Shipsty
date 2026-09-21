@@ -38,5 +38,15 @@
     "commit": "be05b13e98b048f0b5a0f5fa8ce514d56db5f822",
     "url": "https://github.com/xiph/ogg.git",
     "receipt_sha256": "bd613081baddec218b62c6abf6b94afa84b881d9002c8bfdb6b7f538d4ec7b18"
+  },
+  "stormlib": {
+    "commit": "28c9b4be3f23c6b3a5ff55cacac7dbe5b9cdc4fc",
+    "url": "https://github.com/ladislav-zezula/StormLib.git",
+    "receipt_sha256": "6a2165ba0fc0914504e46b4497caf7f09fa5cbf0bc5df7935aa0d3db99229464"
+  },
+  "string-view-lite": {
+    "commit": "a47222b9855dd6e6d1eac38acaa495822e2caa69",
+    "url": "https://github.com/martinmoene/string-view-lite.git",
+    "receipt_sha256": "0205e6eea86eb702a0b76ac95f4018c0022705aad3e79079a00a6fea17a27be3"
   }
 }

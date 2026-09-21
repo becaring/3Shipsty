@@ -1,0 +1,38 @@
+{
+  "sources": {
+    "include/ship/Context.h": "02aecf1e0e743626f5fde4539d002a1604dba730c0728faaa36b300f1f086540",
+    "include/ship/resource/ResourceLoader.h": "bf0014c6b1fd329e9e4cc519df0f6d542a5119ea9f3b54ee70fb887602128aa5",
+    "include/ship/resource/ResourceManager.h": "537d92cb6ab71848d39f3461e3a1145eb00cd2e03abddb5034c2c4bcb9a10445",
+    "include/ship/resource/archive/Archive.h": "8048533af9b7356ae76ead6376ad50fef9ee380567bbae499135d033c7d43bd6",
+    "src/ship/resource/archive/Archive.cpp": "c5f15be08da2b645ac0a4a0a1ee1dbc9f84bddb360c3ffe19132f7c61f815f16",
+    "include/ship/resource/archive/ArchiveManager.h": "92a1187f7990db1ed2db105b55fb800b84a7ddb430ff9e76385f098b11a4b7f8",
+    "src/ship/resource/archive/ArchiveManager.cpp": "eaf3a01161057c8bc07901ed551e87c9f397dfe871b21fa0d2dc9860ab3562cb",
+    "include/ship/resource/archive/O2rArchive.h": "dc8cee076623d8ae3cd78a9ff81adea7c3afc84b516f9b0ec317c7360230f2a4",
+    "src/ship/resource/archive/O2rArchive.cpp": "c44b92cbbba69d755172d611fb7e06960035ac72dabf3afd0fe5b7ae01ee7ab7",
+    "include/ship/resource/archive/OtrArchive.h": "41cd32158f0b7738c3d5cf0f207999b7abcb39a0805734f155d478b3b3d03ce2",
+    "src/ship/resource/archive/OtrArchive.cpp": "0406e32bd46348097b5888fe2915097681b4e1d2aaabbd10084f14fc59225b6c",
+    "include/ship/resource/archive/FolderArchive.h": "3acc6fe75d2426f1695f0f8bbbf2c5f1fde40fe06e665b1d211526d083ba7532",
+    "src/ship/resource/archive/FolderArchive.cpp": "4f7639027c2a3beb0c607c87cda89b96afdb619136875deb8bb74abee937447d",
+    "src/ship/resource/ResourceLoader.cpp": "11cd169ac50c114498da47eca18ecc002b12fd7c81cccc3e3ae16852c4db42e2",
+    "src/ship/resource/ResourceManager.cpp": "0d272f11cda8fa5040c3e35dcb4f23f30274a86dc801db9a88710a49d90ee2eb",
+    "include/ship/utils/StringHelper.h": "a004d01bd22f0376ce33fa9432c2bf70972b87a188f5fe4ee9b23657c2002033",
+    "include/ship/utils/Utils.h": "a5cfe7f8e4ca86a9b5bac191d9cfe46b1f029bc3dc8a85f6dc1620a5bbcec0cd",
+    "include/ship/utils/glob.h": "0587c4bebc1edec594a4bda1285f5510c31d051047656882ba6bf27c76ec2721",
+    "include/ship/utils/StrHash64.h": "c9cecec178592c571d86cfd8d717061cdafc65d331de5b391235e1335af01627",
+    "include/ship/utils/filesystemtools/Directory.h": "45ad0b3d2e9368c5e1260fab8acf69a7445820aff39b6b40f15fe91144f29836",
+    "include/ship/utils/filesystemtools/FileHelper.h": "55ad059e316f6b0007de092bd685589f12e4046dd8026af289a4ad0668f3f943",
+    "include/ship/utils/filesystemtools/PathHelper.h": "fcf52698eaec1ce6cd6188c40ffffc584942c603e726514eda21d50bc3f3de21",
+    "src/ship/utils/StringHelper.cpp": "923dec3a89df192850c616f19e36bb369f3a6cc0008040870c89d47f5c97ff13",
+    "src/ship/utils/Utils.cpp": "c72287278dc37454ff411aa2602590411290ea740e0fb9a71d15332740d01865",
+    "src/ship/utils/glob.c": "f2f3979af60d84c368d0436e2ddbe5251af6ed9397d55e7116ce00ac031a7ef8",
+    "src/ship/utils/StrHash64.cpp": "6322829e4f2576f5aff156e86bf6ebacb6fc423a55ec34fad07ca082c188b03f"
+  },
+  "audio_player_sha256": "2dcc8e416afbdb08959d6db9eb05e147880d16e078428351d23eb8b69dc1d276",
+  "stormlib_patch_sha256": "b0ddaae15cae92a87f7606b4bdf160039e56f48f593ad94f2341e11ef155b31f",
+  "audio_channels_sha256": "787cf6c565236c44c450acf942a04250869b4a8c1ac60a3a625808e382255659",
+  "helpers": {
+    "platform/shipyard/resources/runtime_support.h": "6e6028e50fc54aac43851c7166d24fdb97799350656697387dc2392c5d4e7791",
+    "platform/shipyard/imgui/projection.py": "0cf09feddb10e0c765088a21d8fb88ac5a86a6803047f1c59efb5aa68947d368",
+    "tools/shipyard/cpp_ast.py": "5a37cf10f237ec425d816149dd7b8895822771b2df422641f66aa002b4d9e260"
+  }
+}

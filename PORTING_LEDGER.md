@@ -193,3 +193,30 @@ tests were observed failing before implementation, then passing.
 - Ownership: C language transforms are generic Shipyard mechanisms with
   3Shipsty-specific audited source patterns. Codecs are generic platform work;
   no Smash game behavior or Xenos64 source was imported.
+
+
+### 2026-09-20: Complete current resource TUs and exact MPQ dependency
+
+- Eleven complete current archive/loader/manager/utility TUs compile, with
+  MPQ and trace logging enabled. Existing async job bodies, cache identities,
+  archive dispatch and resource initialization remain in current LUS code.
+- A/B/D/E: isolated typed constructors, scoped enum, container/string methods,
+  original reference-preserving ranges, official nonstd string-view-lite and
+  native filesystem/future/variant types resolve the reached incompatibilities.
+  Context's real declaration is retained with a generated AudioSettings header;
+  AudioPlayer must later consume the same definition. No Context substitute.
+- Focused host loader/header/factory and view/glob checks pass. These are
+  selected-method unit audits, not full resource manager or archive-mount tests.
+  The complete TUs are compiled separately. An inherited negated glob class
+  can consume NUL; documented without an unrelated platform behavior change.
+- B/C/I/endian: exact required StormLib v9.25 plus the exact LUS optimization
+  patch builds 231 PPC objects. Explicit big-endian MPQ conversions and portable
+  cryptographic byte paths replace invalid desktop platform detection. Only
+  unavailable mapped-view/WinInet providers take upstream unsupported branches;
+  actual OtrArchive uses the retained native plain-file provider.
+- Host encrypted format-V2 MPQ creation, five lossless codecs, random access,
+  listfile and missing-member checks pass. LZMA requires format V2 in upstream;
+  the fixture was corrected after the library properly rejected format V1.
+- Details: platform/shipyard/resources/RUNTIME.md and STORMLIB.md. No XEX,
+  Context execution, Xenia gameplay or hardware claim. All changes remain
+  generated/platform-owned; upstream source and all references stay untouched.
