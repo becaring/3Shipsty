@@ -1,0 +1,20 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/item.h": "6979f23049a28c428e4f5ba1aca3fff47dd671f4fb98ce5968390b1cf9f89067",
+    "soh/soh/Enhancements/randomizer/item.cpp": "006493672bab60c50e20bf1785a5723bba6b4044ec37fa2d50e84ef4051df6b1",
+    "soh/soh/Enhancements/randomizer/logic.h": "d04a36c1eb12ac00d90d62c4d75c436c7d9980d6143549717ad014b033ee9494",
+    "soh/soh/Enhancements/randomizer/logic.cpp": "a17323ed7210025067f39a55d6c0bd6be9fee48b9910f5e5da47071332dcdaf1",
+    "soh/soh/Enhancements/randomizer/static_data.h": "8dd848e46cb400f7161470f3e49ed1d11c4e6abda8ea903c6289dc32f1bf51f4",
+    "soh/soh/Enhancements/randomizer/randomizer.h": "a5d25f412a27a90d117d90915ff52fc8d22288727c2747efdd3513d78478e733",
+    "soh/soh/Enhancements/randomizer/3drando/hints.hpp": "5ba144e487f2f913b366ee0198eb09e6faa31e328f49e0db484c9f9cad72c5c5",
+    "soh/soh/Enhancements/randomizer/location.h": "170d6b820b5dce667bd8a9cceca0efd3f4bdb8eccb5c96fcadaed30204acff13",
+    "soh/soh/Enhancements/randomizer/3drando/spoiler_log.hpp": "91c7c55b656f54b3acab3309aaa20e82880d3e68755422d760331602eebeb0b0"
+  },
+  "dependencies": {
+    "soh/soh/Enhancements/randomizer/3drando/text.hpp": "8ad3526bc5b05858f83a5a49d17d2d8d7ebd3910201ed854cb80e3f0a60181e0",
+    "soh/soh/Enhancements/item-tables/ItemTableTypes.h": "423e9bd976fd3647f848d4ce02615472b9fce6562a06f560e0933b29e05db8d0",
+    "soh/soh/util.h": "20cb7df7fe7482f2edd5a3777cc03170fd04f35c86f8e6965cf33421854155fc"
+  }
+}

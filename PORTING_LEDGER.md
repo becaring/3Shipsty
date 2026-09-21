@@ -21,6 +21,53 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-21, A/B/C/D/E/F: complete OTRGlobals.cpp now compiles with its original
+  function inventory, application initializer order and all resource factory
+  registrations. Canonical full application/window/Item/AudioCollection headers
+  resolve the actual ownership dependencies. Container, scoped-enum, Unicode,
+  designated-audio-settings and JSON iterator adaptations preserve upstream
+  contracts. Original/projected values match all 65,536 item IDs, 15 ROM hashes,
+  ten controller masks, audio defaults and 63,487 BMP printing cases.
+  Evidence: scratch/application-xdk/{xdk/build.json,values-verification.json}.
+- Startup now establishes XNet and selected XContent storage before Context
+  chooses its writable directory. Packaged archives still resolve under game:.
+  Normal teardown stops actual producers, joins audio/timers/save work, releases
+  GUI ownership, drains the actual resource pool and detached codec captures
+  while Context is strong, releases Context, then storage/XNet. Partial-init
+  cleanup and early native device-selection behavior remain execution work.
+- ResourceManager's explicit drain unpauses/waits its real BS pool and destroys
+  it before its mutex. Detached work tracking includes capture destruction and
+  creation-failure rollback. Host real-primitive tests cover simultaneous waiters,
+  paused jobs, child work and ownership failures; full native TUs compile.
+  See platform/shipyard/resource-shutdown/README.md for boundaries and receipts.
+- The original static audio instance in OTRAudio.h gives savestates.cpp a mutex
+  separate from OTRGlobals.cpp. The projection now uses one named extern state
+  defined only in the genuine application TU; all fields/zero initialization
+  remain. A two-TU test reproduces the upstream defect and verifies identity and
+  mutual exclusion after correction. No game/snapshot serialization is replaced.
+- Full SohGui.cpp retains all 12 function bodies and 28 window registrations;
+  all 2,485 debugger/tracker rows match. Complete AudioCollection preserves all
+  258 source rows / 257 keys and original pool/notification behavior. Complete
+  randomizer Item retains all 31 definitions and 16 fields. Native/host receipts
+  accompany their platform/shipyard documentation; live UI/randomizer remain open.
+- Full randomizer Logic (132 definitions) and save states now compile separately.
+  Logic host contracts cover upgrades, inventory, randomizer/event flags, dungeon
+  completion and all five maps. Save-state request/FIFO, slots, snapshot defaults
+  and pointer relocation agree; live Save/Load remains unexecuted. The combined
+  1,536-unit main project passes; every selected source/PPC object hash is recorded
+  in scratch/project-xdk/startup-state-verification.json. The old Logic constructor
+  fragment is excluded and an inventory test guards against reintroducing it.
+- I: ENABLE_REMOTE_CONTROL is enabled across all application C++ recipes, as in
+  the official release CI. The C preprocessing closure audit found no uses in
+  any game C/header input; the only conditional header is Network.h, absent
+  from all 696 actual preprocessor outputs. The C definition policy therefore
+  retains its already-applied flags without demanding an irrelevant regeneration.
+  This decision must be rechecked if a future C unit includes a remote API header.
+- User confirmed the desktop permissions dialog was resolved. Retail baserom.z64
+  has already produced the CRC-verified 9.2.3 NTSC 1.0 archive. No ROM or archive
+  is tracked. First-bring-up estimate remains roughly 70%, with substantial
+  50–75% uncertainty; no XEX, Xenia startup or hardware claim.
+
 - 2026-09-20: complete modern controller editor retains 41 functions, all 50
   CVar expressions and seven search widgets. Actual state/value contracts and
   native UTF-8 bytes pass. Full 1,526-item integration compilation includes its
@@ -670,7 +717,8 @@ tests were observed failing before implementation, then passing.
   acceptance contract, with extraction owned by the PC. Real audio handshake
   uses native primitives; its unlocked running read is removed in favor of the
   existing locked exit check. Timer teardown precedes Context destruction.
-  Full startup remains pending; eight method probes are not production coverage.
+  Initial evidence used eight method probes, excluded from production coverage.
+  Full startup compilation now supersedes that earlier boundary milestone.
 - B/D/E/F: 38 actual SaveManager members and 11 C bridges compile with the real
   modern BS worker. Native XContent selection/mount/flush/close and atomic file
   publication retain prior saves on pre-replacement failures. Host comparison

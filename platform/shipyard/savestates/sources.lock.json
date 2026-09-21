@@ -1,0 +1,9 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/savestates.cpp": "7e9ae0e40215c065739f5af27dd66667c4e9fff0e2299cbf5f29ae30ea173f9a",
+    "soh/soh/Enhancements/savestates.h": "7ee720616f7e21497a44e119022987a67a75ed0df981c76bfe36f8e897dc98eb",
+    "soh/soh/Enhancements/savestates_extern.inc": "c6d59d7657a5db995f9d85f59abbf2805f5037442ab67cf207d1501eadf10a34",
+    "soh/soh/OTRAudio.h": "c68a87d5f5be078386d7bb22df3f8503db9d5d5049291c231539b2fac4b9029a"
+  }
+}

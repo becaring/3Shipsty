@@ -1,83 +1,78 @@
-# Genuine application startup boundary
+# Genuine application startup
 
-`prepare_application.py` retains the complete locked 9.2.3 `OTRGlobals.cpp` and
-the complete `OTRGlobals` class. `--build` attempts the whole translation unit
-and records its real result; it currently **fails in unresolved modern header
-dependencies**. Neither the application nor its startup has run in Xenia.
+The complete pinned 9.2.3 `OTRGlobals.cpp` now compiles with XDK. Its actual
+constructor, initialization, resource registration, audio worker, graphics and
+game bridges remain in the production translation unit. There is no alternate
+application or replacement service. Compilation is not startup execution;
+linking, partial-initialization cleanup and Xenia validation remain open.
 
-`test_application.py` passes five checks. The complete class still compiles to
-an 80-byte Xenon layout. Eight exact startup/audio methods compile against the
-real current O2rArchive, BinaryReader, Context, game declarations and the owned
-native services. This is explicitly a **compile probe**, not a production source
-fragment or completed OTRGlobals coverage. No replacement providers link.
+## Narrow adaptations
 
-## Adaptations
+- A/B: retain all fields and move eight font defaults into the actual constructor.
+  Container initializer lists become typed arrays/range constructors or builders;
+  both item maps preserve every row and first-insert duplicate behavior. Explicit
+  casts replace unsupported template ADL; scoped enums use the canonical wrappers.
+  Designated AudioSettings initialization retains all defaults, including Stereo.
+  UTF-16 character literals become numeric codepoints. JSON iteration still uses
+  the real flattened DOM, with iterator key/value references replacing bindings.
+- C/E/F: Xbox RunExtract invokes the original archive/version readers with the
+  same acceptance policy. Extraction and permission probes stay on the PC.
+  Native errors use the Xbox dialog and actual StringToU16 conversion. Runtime
+  files use the existing native filesystem; timestamp uses the existing chrono
+  boundary. No archive layout, byte-order convention or resource registration is
+  replaced. Accepted archives are mounted by the actual Initialize method.
+- C/D/E: InitOTR starts XNet before RNG/resource consumers and mounts the selected
+  XContent container before Context chooses writable paths. Configuration, saves
+  and mod paths resolve under that container; packaged archives remain under
+  `game:`. Early device-selector behavior still needs native execution.
+- D: real audio processing uses native joining threads, mutexes and condition
+  variables. The worker's running predicate is read only under its existing
+  lock, fixing the upstream unlocked outer read. Normal teardown disables actual
+  active remote workers, joins audio, stops libultra timers, drains/deletes the
+  real SaveManager, destroys GUI ownership, drains resource and detached codec
+  work while Context remains strong, releases Context, closes storage, then XNet.
+  ResourceManager and detached drain contracts are documented separately.
+  OTRAudio.h now declares one externally shared state, defined by OTRGlobals.cpp.
+  Its original header-local static gave save states a different mutex from the
+  audio worker. All members and static zero initialization remain; a two-source
+  native-primitive host check reproduces the original defect and verifies shared
+  identity and exclusion after projection.
+- A/I: canonical complete Item, options, SaveManager, AudioCollection, network,
+  input editor and application-window headers replace the corresponding original
+  headers in include search order. No feature class or state is elided. The full
+  SaveStateMgr declaration is retained; implementation has its own provider.
 
-- Eight font pointer defaults move to the original constructor initializer
-  list. Unused application-header includes become genuine forward declarations;
-  implementation includes retain the full service dependencies (A).
-- Xbox `RunExtract` validates the actual `soh.o2r`, `oot.o2r` and `oot-mq.o2r`
-  through the original DetectOTRVersion/ReadPortVersionFromOTR/VerifyArchiveVersion
-  functions. The port archive must match major/minor/patch; present game archives
-  must match the application major and at least one must exist. The original
-  archive version-marker byte selects BinaryReader endianness unchanged (F).
-  Failure uses the existing native error dialog and exits. Archive generation
-  stays on the PC; Xbox does not delete old archives or require extractor assets.
-  Successful preflight retains creation of the modern mod folder. The original
-  Initialize method still owns mounting archives and registering every resource
-  factory. Host extraction source stays behind the explicit platform guard (I).
-- Runtime filesystem spelling selects the existing native boundary. IsSubpath
-  and temporary extraction permission checks are PC-only (E).
-- The full OTRAudio state uses the existing native mutex, condition variable
-  and joining thread classes. The real audio worker, buffer generation, sample
-  counts, resource precache, signals and join remain. The unlocked outer read of
-  `audio.running` becomes an unconditional loop: its existing check while holding
-  the mutex remains the sole exit decision. This removes an upstream data race
-  without changing buffer processing (D). Native audio execution remains untested.
-- Shutdown joins the existing save worker, then audio, then stops the real
-  libultra timers before Context/game queue storage can be destroyed (D).
-- The complete SaveStateMgr declaration preserves every member/method. Scoped
-  enums use the existing typed compatibility representation, deleted copies
-  become private declarations, and its mutex selects native storage (A/B/D).
-  SaveStateMgr implementation and SaveManager are separate work.
+Generic platform primitives belong to Shipyard. Application acceptance policy,
+source lowering and startup ordering belong to 3Shipsty. No data byteswap is
+introduced here; the original archive marker selects BinaryReader endianness.
 
-All platform primitives are generic Shipyard work; the archive acceptance policy,
-source projection and application call ordering are 3Shipsty-specific. There is
-no alternate startup loop, renderer, UI, resource manager or save implementation.
-
-## Evidence and remaining integration
+## Verification
 
 Run from the owned root:
 
 ```
 C:/Python313/python.exe -B tools/shipyard/test_application.py
+C:/Python313/python.exe -B tools/shipyard/test_application_values.py
+C:/Python313/python.exe -B tools/shipyard/test_application_audio_owner.py
 C:/Python313/python.exe -B tools/shipyard/prepare_application.py --build
 ```
 
-The second command is intentionally honest about the current failure. Its recipe
-and diagnostics are `scratch/application-xdk/xdk/build.json` and `OTRGlobals.log`.
-Do not add either declaration/boundary probe to the production manifest.
+The five structural/boundary checks retain the complete function inventory,
+actual resource factory expressions and application initializer order. Original
+version checking covers all 65,536 major values and 32 archive combinations.
+Declaration and eight-method probes are excluded from production coverage.
 
-The host contract executes the original VerifyArchiveVersion body for all 65,536
-major values and all 32 preflight availability/version conditions. Native probe
-objects are PPC COFF and retain real O2rArchive references with no Extractor
-references. The test also verifies the complete function inventory, unchanged
-InitOTR/resource-registration bodies (apart from filesystem spelling), unchanged
-version-reader body, deterministic generation and teardown order.
+Value comparisons execute original/projected controller masks, all 15 accepted
+ROM hashes, audio defaults, all 65,536 item IDs, 63,487 non-surrogate BMP characters
+through normal/hiragana printing, and supplementary UTF-16 conversions. The same
+projected contract compiles as native PPC. Full source/object hashes and exact
+commands are recorded in `scratch/application-xdk/xdk/build.json`.
 
-Full-TU compilation currently reaches unprojected settings.h and its relative
-randomizer header closure, first failing on __VA_OPT__ in randomizerEnums. The
-canonical randomizer value projection already solves that enum syntax, but
-settings.h/Option/OptionGroup still need their complete paired declarations and
-constructor defaults; merely routing one include does not finish those classes.
-The full SohInputEditorWindow, SohGui/menu/trackers, SaveManager and network class
-headers must likewise be consumed from their canonical projections, with every
-real member preserved. Subsequent OTRGlobals source work includes aggregate/map
-initializers, native error-box forwarding, timing/chrono, platform speech choice,
-and actual file-drop JSON/import behavior. No broad feature includes were removed
-to conceal those dependencies.
+## Remaining execution work
 
-Start XNet before archive/RNG consumers and end it only after their workers have
-joined. The primary donor's platform.cpp lines 38-46/436-439 establish that
-XNetRandom depends on XNetStartup/XNetCleanup. The application entrypoint and
-save/storage lifetime still need to establish that final platform ownership.
+Remaining application implementations must resolve real link dependencies.
+Partial-initialization failures must drain admitted work while Context is still
+strong. The current `_WIN32` speech selection references desktop SAPI and still
+requires a genuine Xbox platform decision/implementation before linking; no
+spoken accessibility support is claimed. Storage selection, UI rendering,
+controller routing, audio and real resource mounting have not executed in Xenia.

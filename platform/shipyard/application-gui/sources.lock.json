@@ -1,0 +1,29 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/audio/AudioEditor.h": "8c8a2dad678ac1b33ea46519389299e233c3fe5991f459e5b2cf9e84af64f81e",
+    "soh/soh/Enhancements/controls/InputViewer.h": "c435a5fac766bee092703352cd56b7c27b530e8efcbcd0f01ad8b0e81e12973a",
+    "soh/soh/Enhancements/cosmetics/CosmeticsEditor.h": "55ca58ff173f5c7463b0caa093e16f1475546c8560eac7c3b958840596ab5c35",
+    "soh/soh/Enhancements/debugger/actorViewer.h": "e51ce3d5e9e7caa91d5e04b50c592b5c482316fef1932928977a68fa9b77d99a",
+    "soh/soh/Enhancements/debugger/colViewer.h": "6c4a1e05fd826e3244991191ecaf66137e4d825f9bb50ebdf3aea3d71ce07379",
+    "soh/soh/Enhancements/debugger/debugSaveEditor.h": "e9b53300e0491997d9f2a0ee341d5d6b13c2d0bc3c68cf83860744d08a5a8a42",
+    "soh/soh/Enhancements/debugger/hookDebugger.h": "98d824832338e8c79578ec3c8a98ac1567c46435a0275c152578d0def7c6b463",
+    "soh/soh/Enhancements/debugger/dlViewer.h": "35d7eb12dff7aa73adfc1a02a8d3729aad051402b995a65a0ad476f703c46c09",
+    "soh/soh/Enhancements/debugger/SohConsoleWindow.h": "9f29ffe0e7ed529c51b1c26e4b336e4bb323a298bc9caee7ca754e6d9531a3ec",
+    "soh/soh/Enhancements/debugger/SohGfxDebuggerWindow.h": "47c372a90633d37502bf382024b47fa926990f04faff17c6b5464eedc081394b",
+    "soh/soh/Enhancements/debugger/SohStatsWindow.h": "7aeae5f8cf9bb6d5c4a89812bd6c0529f3beac3913603c7fdfe1455f771ca6f8",
+    "soh/soh/Enhancements/debugger/valueViewer.h": "8b74a05b3ae0503280e8572868cf8887a942c960feea85d6268a1a13d5eceab9",
+    "soh/soh/Enhancements/gameplaystatswindow.h": "a25deb9b921a50948fb3013b150dc28ad90beb2a1185b1b96b1e2c0355d64416",
+    "soh/soh/Enhancements/randomizer/randomizer_check_tracker.h": "9b5412764ab2b00e3d332630bfbb8a401d25067d4ee1634884b38d22633bdaa8",
+    "soh/soh/Enhancements/randomizer/randomizer_entrance_tracker.h": "4be2184f13a9d929b90072811b094e724574af4010199a938d2f6dfa113581b2",
+    "soh/soh/Enhancements/randomizer/randomizer_item_tracker.h": "42f29f6202c0de6f527e8c2d3ed2f1471bdee8a916303c2e6fcc888e917fbb71",
+    "soh/soh/Enhancements/timesplits/TimeSplits.h": "29fa40ff2b0157f018d046572a4ede090a14177b253249c0db15c50c35353ebc",
+    "soh/soh/Enhancements/randomizer/Plandomizer.h": "5d0221bef92ea63f838588548e0b8daada839d08071d0a8368f8586671f626dc",
+    "soh/soh/Enhancements/debugger/MessageViewer.h": "64b8234d68679558c899553932ac302ef94ffc6b6303f8c5bdc89f863607c0a4",
+    "soh/soh/Enhancements/mod_menu.h": "84ea437d0815dd76e7b8ffe8fbd1b3ed89d5aff1afcb197592807aa207a14636",
+    "soh/soh/SohGui/SohGui.hpp": "4081bc8e1ab45281a59bc4ccbcc380fa79826b433728350f3b173ed51e191bd7",
+    "soh/soh/SohGui/SohGui.cpp": "4be783d6a25722b8cb62fca5d1d298feda0bc84a3aceb6c3ccaaf18a4dee52f3",
+    "soh/soh/Enhancements/randomizer/randomizer_check_objects.h": "863ea9fa4dfa50abf2bf73bb83f1657ab9e8cafdfe798ac6b5ef0fa7eb65fe69"
+  },
+  "audio_collection_sha256": "5365a2119653602e0af07b3844c55be7870ad7901791f8ee09184d09d4614119"
+}

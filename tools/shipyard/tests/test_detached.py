@@ -11,7 +11,7 @@ def main():
         folder=out/('original' if original else 'projected');folder.mkdir(parents=True,exist_ok=True)
         command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/I'+str(ROOT/'platform/shipyard'),str(ROOT/'platform/shipyard/async/detached_contract.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
         if original:command+=['/DTEST_UPSTREAM']
-        else:command+=[str(ROOT/'platform/shipyard/async/detached.cpp')]
+        else:command+=[str(ROOT/'platform/shipyard/async/detached.cpp'),str(ROOT/'platform/shipyard/async/native.cpp')]
         build=subprocess.run(command,cwd=folder,env=env,capture_output=True,text=True)
         (folder/'build.log').write_text(build.stdout+build.stderr)
         assert build.returncode==0,folder/'build.log'

@@ -40,9 +40,24 @@
         "libultraship/src/CMakeLists.txt:133-208"
       ]
     },
+    "soh-c": {
+      "subsystems": ["game"],
+      "definitions": [
+        "CONTROLLERBUTTONS_T=uint32_t",
+        "F3DEX_GBI_2",
+        "INCLUDE_MPQ_SUPPORT",
+        "NDEBUG",
+        "SPDLOG_ACTIVE_LEVEL=0",
+        "LOG_LEVEL_GAME_PRINTS=6"
+      ],
+      "evidence": [
+        "CMakeLists.txt:168-175",
+        "soh/CMakeLists.txt:333-409",
+        "PORTING_LEDGER.md: C preprocessing closure audit for ENABLE_REMOTE_CONTROL"
+      ]
+    },
     "soh": {
       "subsystems": [
-        "game",
         "soh-resources",
         "interpolation",
         "game-interactor",
@@ -57,7 +72,14 @@
         "save-storage",
         "randomizer-options",
         "soh-input-editor",
-        "legacy-save"
+        "legacy-save",
+        "network",
+        "application",
+        "application-gui",
+        "audio-collection",
+        "randomizer-item",
+        "randomizer-logic",
+        "savestates"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -65,11 +87,13 @@
         "INCLUDE_MPQ_SUPPORT",
         "NDEBUG",
         "SPDLOG_ACTIVE_LEVEL=0",
-        "LOG_LEVEL_GAME_PRINTS=6"
+        "LOG_LEVEL_GAME_PRINTS=6",
+        "ENABLE_REMOTE_CONTROL"
       ],
       "evidence": [
         "CMakeLists.txt:168-175",
-        "soh/CMakeLists.txt:333-409"
+        "soh/CMakeLists.txt:333-409",
+        ".github/workflows/generate-builds.yml:133,244,311"
       ]
     }
   },
@@ -205,6 +229,27 @@
     ],
     "legacy-save": [
       "scratch/legacy-save-xdk/xdk/build.json"
+    ],
+    "network": [
+      "scratch/network-xdk/xdk/build.json"
+    ],
+    "application": [
+      "scratch/application-xdk/xdk/build.json"
+    ],
+    "application-gui": [
+      "scratch/application-gui-xdk/xdk/build.json"
+    ],
+    "audio-collection": [
+      "scratch/audio-collection-xdk/xdk/build.json"
+    ],
+    "randomizer-item": [
+      "scratch/randomizer-item-xdk/xdk/build.json"
+    ],
+    "randomizer-logic": [
+      "scratch/randomizer-logic-xdk/xdk/build.json"
+    ],
+    "savestates": [
+      "scratch/savestates-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
@@ -216,7 +261,12 @@
     "scratch/ship-utils-xdk/xdk/c_abi.i": "Preprocessed C ABI probe, not production",
     "scratch/custom-message-xdk/generated/literal_probe.cpp": "Native UTF-8 literal byte verification probe, not production",
     "scratch/randomizer-options-xdk/xdk/declarations.cpp": "Complete randomizer option/settings declarations probe, not production",
-    "scratch/randomizer-options-xdk/xdk/abi.cpp": "Target field layout probe, not production"
+    "scratch/randomizer-options-xdk/xdk/abi.cpp": "Target field layout probe, not production",
+    "scratch/network-xdk/xdk/declarations.cpp": "Complete network declarations probe; not production",
+    "platform/shipyard/network/loopback.cpp": "Host transport/real Network validation only; not production",
+    "scratch/application-gui-xdk/xdk/declarations.cpp": "Complete application window declarations probe; not production",
+    "scratch/audio-collection-xdk/xdk/declarations.cpp": "Complete AudioCollection declarations and ABI probe; not production",
+    "scratch/randomizer-item-xdk/generated/LogicConstructor.cpp": "Superseded by full canonical randomizer-logic provider; exclude to avoid duplicate constructor"
   },
   "supplemental_sources": [
     {
@@ -259,6 +309,14 @@
     "scratch/legacy-save-xdk/generated/LegacyDecode.cpp": {
       "source": "soh/soh/SaveManager.cpp",
       "scope": "Unchanged CopyV0Save with explicit bounded producer-order decoding; not full application source coverage."
+    },
+    "scratch/network-xdk/generated/soh/soh/Network/Anchor/AnchorConstants.cpp": {
+      "source": "soh/soh/Network/Anchor/Anchor.h",
+      "scope": "All 23 inline Anchor constants moved to one definition; no Anchor application methods supplied here."
+    },
+    "scratch/application-gui-xdk/generated/WindowStatics.cpp": {
+      "source": "soh/soh/Enhancements/debugger/MessageViewer.h",
+      "scope": "One definition of the original TABLE_ID inline static member; no MessageViewer implementation supplied here."
     }
   },
   "integration_gates": [

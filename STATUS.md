@@ -1,13 +1,42 @@
 # 3Shipsty status
 
-2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
+2026-09-21. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 65–70% complete (50–75%
-uncertainty range). Selected application source coverage is 696/696 C and 128/398 C++ TUs,
+Translation/first genuine bring-up estimate: roughly 70% complete (50–75%
+uncertainty range). Selected application source coverage is 696/696 C and 135/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
 this first-bring-up estimate in meaningful milestone reports as requested.
+
+Latest integration work (earlier milestones below retain their historical scope):
+
+- Complete OTRGlobals.cpp now compiles with XDK. Actual initialization order,
+  resource registrations, archive version readers and all application functions
+  remain. Original/projected value checks match all 65,536 item IDs, accepted ROM
+  versions, controller masks, audio defaults and 63,487 BMP printing cases.
+- Complete SohGui.cpp retains all 28 real window registrations; full window
+  declarations and 2,485 debugger/tracker table rows pass native/host checks.
+  Complete AudioCollection.cpp and randomizer item.cpp compile with their actual
+  canonical types, metadata, ownership and constructor defaults preserved.
+- Startup owns early XNet/storage initialization; writable application paths use
+  the selected container. Normal shutdown drains resource/codec work while
+  Context remains strongly owned, then closes storage and XNet. Actual XContent
+  selection, partial-init errors and application teardown remain unexecuted.
+- The upstream header-local audio state gave save states a different mutex from
+  the audio worker. One externally shared state now preserves all fields and
+  static initialization. A two-source test reproduces the original separation
+  and verifies shared identity and mutual exclusion in the projection.
+- Desktop permissions dialog is resolved; the user confirmed this. Supplied
+  baserom.z64 has already produced a verified retail NTSC 1.0 modern archive.
+- Expanded main integration build passes: 1,536 selected PPC objects and all
+  source hashes verified in scratch/project-xdk/startup-state-verification.json.
+  Full Logic and save states are included; the obsolete standalone Logic
+  constructor is excluded. No modern XEX or native execution yet.
+- One agent is translating complete randomizer settings; root owns further
+  application/save integration. Other agents remain idle. The 263 remaining
+  application C++ implementations, speech backend, final linking and native
+  execution remain open; no placeholder link providers are supplied.
 
 - Exact release and all three submodules fetched and verified; pristine baseline
   recorded in UPSTREAM_BASELINE.md.
@@ -58,9 +87,8 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   232 options, 268 tricks and 85 groups. The real Settings constructor compiles
   in place. These two additional recipes pass the generated project separately;
   full settings.cpp remains pending and no constructor is duplicated.
-- Startup's real archive acceptance/version readers and audio lifecycle compile
-  as bounded method probes; full OTRGlobals.cpp remains pending its header and
-  application integration. No startup probe counts as complete application TU.
+- Initial startup archive/audio evidence used bounded method probes. This has
+  since advanced to the full OTRGlobals.cpp compilation described above.
 - Real SaveManager serialization (38/42 members, 11/12 C bridges) and native
   XContent/atomic publication compile. 161 original/projected serialized outputs,
   four base loaders, worker drain and failure preservation pass. The fragment is

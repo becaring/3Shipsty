@@ -62,6 +62,12 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('Link',guard.attrib['BeforeTargets'])
         self.assertIsNotNone(guard.find('{'+gen.NS+'}Error'))
 
+    def test_complete_logic_replaces_constructor_fragment(self):
+        selected={r['source'] for r in self.manifest['sources']}
+        self.assertIn('scratch/randomizer-logic-xdk/generated/soh/soh/Enhancements/randomizer/logic.cpp',selected)
+        self.assertFalse(any(r.endswith('/LogicConstructor.cpp') for r in selected))
+        self.assertEqual(sum(r['upstream_source']=='soh/soh/Enhancements/randomizer/logic.cpp' for r in self.manifest['sources']),1)
+
     def test_preprocessed_probe_excluded_and_full_message_origin(self):
         source,language,options=gen.parse_command(dict(command=[str(gen.SDK/'bin/win32/cl.exe'),
             '/c','/TC',str(gen.ROOT/'scratch/ship-utils-xdk/xdk/c_abi.i'),'/Foignored.obj']))

@@ -4,12 +4,14 @@
 #include <windows.h>
 #endif
 #include "context/platform.h"
+#include "save-storage/storage.h"
 
 namespace Shipyard { namespace Platform {
-// The executable/content root matches the primary SoH360 native window.
-// XContent device selection and the writable configuration root are not yet
-// integrated; startup must supply that before claiming save support.
-std::string ApplicationDirectory() { return "game:"; }
+// Config, CVars, saves and user mods share the selected writable namespace.
+// The release archives remain discoverable in the executable bundle directory.
+std::string ApplicationDirectory() {
+    return xbox_compat::filesystem::path(Storage::SaveDirectory()).parent_path().string();
+}
 std::string BundleDirectory() { return "game:"; }
 
 void ShowError(const wchar_t* title, const wchar_t* message) {

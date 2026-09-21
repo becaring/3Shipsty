@@ -1,7 +1,7 @@
-"""Project the real OTRGlobals declaration and coupled constructor defaults.
+"""Project and compile the complete pinned OTRGlobals application translation unit.
 
-The complete application source is retained but not yet claimed compiled. Its
-build integration stays blocked until the real service/header closure is ready.
+Generation records source identity; --build separately records native compilation.
+Neither operation demonstrates application execution.
 """
 import argparse
 import hashlib
@@ -17,8 +17,41 @@ from prepare_enhancements import includes as enhancement_includes
 from prepare_resource_manager import syntax
 from prepare_binary import strong_enum
 from cpp_ast import PARSER, walk
+from prepare_network import value_expressions as network_values
+from prepare_soh_ui import common,maps
+from prepare_soh_menus import contains
 
 OWN=ROOT/'platform/shipyard/application';OUT=ROOT/'scratch/application-xdk'
+
+def application_syntax(source):
+    source=once(source,'ItemIDtoGetItemIDMap{','ItemIDtoGetItemIDMap = {')
+    source=once(source,'ItemIDtoRandomizerGetMap{','ItemIDtoRandomizerGetMap = {')
+    pattern=r'std::vector<CONTROLLERBUTTONS_T>\((\{[\s\S]*?\})\)'
+    match=re.search(pattern,source);assert match
+    source=source.replace('    auto controlDeck =','    const CONTROLLERBUTTONS_T buttonMasks[]='+match[1]+';\n    auto controlDeck =',1)
+    source=re.sub(pattern,'std::vector<CONTROLLERBUTTONS_T>(buttonMasks, buttonMasks+sizeof(buttonMasks)/sizeof(buttonMasks[0]))',source,count=1)
+    source=once(source,'context->InitResourceManager({ portArchivePath }, {}, 3, true);','context->InitResourceManager(std::vector<std::string>(1,portArchivePath), std::unordered_set<uint32_t>(), 3, true);')
+    source=once(source,'std::vector<std::shared_ptr<Ship::GuiWindow>>({ sohInputEditorWindow })','std::vector<std::shared_ptr<Ship::GuiWindow>>(1,sohInputEditorWindow)')
+    source=once(source,'context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });','Ship::AudioSettings audioSettings; audioSettings.SampleRate=32000; audioSettings.SampleLength=1024; audioSettings.DesiredBuffered=1680;\n    context->InitAudio(audioSettings);')
+    source,count=re.subn(r'std::unordered_set<uint32_t> ValidHashes = (\{[\s\S]*?\});',r'const uint32_t validHashValues[]=\1;\n    std::unordered_set<uint32_t> ValidHashes(validHashValues,validHashValues+sizeof(validHashValues)/sizeof(validHashValues[0]));',source)
+    assert count==1
+    source,count=re.subn(r'const std::vector<uint32_t> (hira1|hira2|kata1|kata2) = (\{[\s\S]*?\});',lambda m:'const uint32_t '+m[1]+'Values[]='+m[2]+';\n    const std::vector<uint32_t> '+m[1]+'('+m[1]+'Values,'+m[1]+'Values+sizeof('+m[1]+'Values)/sizeof('+m[1]+'Values[0]));',source)
+    assert count==4
+    source=re.sub(r"u'(.)'",lambda m:hex(ord(m[1])),source)
+    source=once(source,'for (auto& [key, value] : cvars.items()) {','for (nlohmann::json::iterator it=cvars.begin(); it!=cvars.end(); ++it) {\n            const std::string key=it.key(); nlohmann::json& value=it.value();')
+    source=source.replace('[[unlikely]]','')
+    source=re.sub(r'(?<![\w:])(static_pointer_cast|dynamic_pointer_cast)<',r'std::\1<',source)
+    source=once(source,'ExtensionCache[nPath] = { rPath, ext };','ExtensionEntry extensionEntry; extensionEntry.path=rPath; extensionEntry.ext=ext; ExtensionCache[nPath]=extensionEntry;')
+    for kind in ['SAVE','LOAD']:
+        source=once(source,'AddRequest({ slot, RequestType::'+kind+' })','AddRequest(SaveStateRequest(slot, RequestType::'+kind+'))')
+    source=source.replace('switch (stateReturn)', 'switch (stateReturn.GetValue())')
+    source=source.replace('mtx_replacements.emplace_back();','mtx_replacements.push_back(std::unordered_map<Mtx*, MtxF>());')
+    source=once(source,'return GET_ITEM_MYSTERY;','const GetItemEntry entry = GET_ITEM_MYSTERY; return entry;')
+    source=once(source,'CVarGetColor24(CVAR_SETTING("LEDPort1Color"), { 255, 255, 255 })','CVarGetColor24(CVAR_SETTING("LEDPort1Color"), Shipyard::GuiCompat::Rgb(255,255,255))')
+    source=re.sub(r'color = \{([^{};]+)\};',r'color = Shipyard::GuiCompat::Rgb(\1);',source)
+    source=once(source,'            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Invalid OTR File",\n                                     "Attempted to load an invalid OTR file. Try regenerating.", nullptr);',
+                '            Shipyard::Platform::ShowError(L"Invalid OTR File", L"Attempted to load an invalid OTR file. Try regenerating.");')
+    return common(contains(maps(source)))
 
 def function(text, name):
     matches=[n for n in walk(PARSER.parse(text.encode()).root_node) if n.type=='function_definition' and n.child_by_field_name('declarator') is not None and n.child_by_field_name('declarator').text.decode().split('(')[0].strip()==name]
@@ -34,6 +67,21 @@ def platform_source(source):
     for include in ('atomic','optional'):
         source=once(source,'#include <'+include+'>','#ifndef _XBOX\n#include <'+include+'>\n#endif')
     source=once(source,'#include <filesystem>','#include "filesystem/filesystem.h"')
+    source=once(source,'#include <chrono>','#include "logging/chrono/chrono.h"')
+    source=once(source,'#include <Windows.h>','#include <xtl.h>')
+    source=once(source,'#include <libultraship/libultraship.h>','''#include "soh/SohGui/UIWidgets.hpp"
+#include <ship/resource/archive/O2rArchive.h>
+#include <ship/utils/binarytools/MemoryStream.h>
+#include <ship/utils/binarytools/BinaryReader.h>
+#include <ship/resource/ResourceManager.h>
+#include <ship/resource/ResourceLoader.h>
+#include <ship/window/gui/GameOverlay.h>
+#include <ship/window/gui/IconsFontAwesome4.h>
+#include "gui/compat.h"''')
+    source=once(source,'#ifdef __APPLE__\n#include <SDL_scancode.h>\n#else\n#include <SDL2/SDL_scancode.h>\n#endif',
+                '#include <ship/controller/controldevice/controller/mapping/keyboard/KeyboardScancodes.h>')
+    clock=function(source,'GetUnixTimestamp');raw=source.encode()
+    source=(raw[:clock.start_byte]+clock.text.replace(b'std::chrono::',b'Shipyard::Logging::chrono::')+raw[clock.end_byte:]).decode()
     source=source.replace('std::filesystem::','xbox_compat::filesystem::')
     # IsSubpath and the temporary permission test belong solely to PC extraction.
     for name in ('IsSubpath','PathTestCleanup'):
@@ -44,7 +92,31 @@ def platform_source(source):
     source=once(source,'return { INT16_MAX, INT16_MAX, INT16_MAX };','OTRVersion absent = { INT16_MAX, INT16_MAX, INT16_MAX }; return absent;')
     # Stop libultra timer callbacks before Context/game queues can be torn down.
     source=once(source,'    OTRAudio_Exit();','    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();')
-    return '#include "application/archive_preflight.h"\n#include "context/platform.h"\n#include "libultra/platform.h"\n'+source
+    source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
+    source=once(source,'extern "C" void InitOTR(int argc, char* argv[]) {','''extern "C" void InitOTR(int argc, char* argv[]) {
+    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
+    try { Shipyard::Storage::Mount(); }
+    catch (...) { SDLNet_Quit(); throw; }
+'''.rstrip())
+    source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
+    for remote,cvar in [('CrowdControl','CROWD_CONTROL'),('Sail','SAIL'),('Anchor','ANCHOR')]:
+        # The shutdown condition follows the real worker state. A changed CVar
+        # cannot strand an enabled worker while its dependencies are destroyed.
+        source=once(source,'if (CVarGetInteger(CVAR_REMOTE_'+cvar+'("Enabled"), 0)) {\n        '+remote+'::Instance->Disable();',
+                    'if ('+remote+'::Instance && '+remote+'::Instance->isEnabled) {\n        '+remote+'::Instance->Disable();')
+    source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Quit();\n#endif','    SaveManager_ThreadPoolWait();\n    delete SaveManager::Instance;\n    SaveManager::Instance = nullptr;')
+    source=once(source,'    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();\n','')
+    source=once(source,'    SaveManager_ThreadPoolWait();\n    delete SaveManager::Instance;',
+                '    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();\n    SaveManager_ThreadPoolWait();\n    delete SaveManager::Instance;')
+    source=once(source,'    OTRGlobals::Instance->context = nullptr;', '''    OTRGlobals::Instance->context->GetResourceManager()->WaitForPendingTasks();
+    Shipyard::Async::wait_for_detached();
+    OTRGlobals::Instance->context = nullptr;
+    Shipyard::Storage::Shutdown();
+    SDLNet_Quit();''')
+    source=network_values(source)
+    source=once(source,'    Extractor::ShowErrorBox(title, body);','    Shipyard::Platform::ShowError(StringToU16(title).c_str(), StringToU16(body).c_str());')
+    source=once(source,'extern "C" void Messagebox_ShowErrorBox','std::wstring StringToU16(const std::string& s);\nextern "C" void Messagebox_ShowErrorBox')
+    return '#include "application/archive_preflight.h"\n#include "context/platform.h"\n#include "libultra/platform.h"\n#include "network/transport.h"\n#include "save-storage/storage.h"\n#include "async/detached.h"\n'+source
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());texts={}
     for name,expected in lock['sources'].items():
@@ -62,19 +134,25 @@ def prepare():
     source=once(source,'OTRGlobals::OTRGlobals() {','OTRGlobals::OTRGlobals() : '+', '.join(member+'(nullptr)' for member in defaults)+' {')
     audio=syntax(texts['soh/soh/OTRAudio.h']).replace('#include <condition_variable>','#include "async/native.h"')
     audio=audio.replace('std::thread thread','Shipyard::Async::joining_thread thread').replace('std::condition_variable','Shipyard::Async::condition_variable')
+    # SaveStateMgr locks this same state from another translation unit. The
+    # upstream header's internal-linkage instance silently gives it another lock.
+    audio=once(audio,'static struct {','struct OTRAudioState {')
+    audio=once(audio,'} audio;','};\nextern OTRAudioState audio;')
+    source=once(source,'OTRGlobals* OTRGlobals::Instance;','OTRAudioState audio;\nOTRGlobals* OTRGlobals::Instance;')
     stable(OUT/'generated/soh/soh/OTRAudio.h',audio)
     states=syntax(texts['soh/soh/Enhancements/savestates.h'])
     states=re.sub(r'enum class (SaveStateReturn|RequestType) \{(.*?)\};',lambda m:strong_enum(m[1],m[2]),states,flags=re.S)
+    states=once(states,'typedef struct SaveStateRequest {','typedef struct SaveStateRequest {\n    SaveStateRequest() {}\n    SaveStateRequest(unsigned int slot_, RequestType type_) : slot(slot_), type(type_) {}')
     states=once(states,'    SaveStateMgr& operator=(const SaveStateMgr& rhs) = delete;\n    SaveStateMgr(const SaveStateMgr& rhs) = delete;','  private:\n    SaveStateMgr& operator=(const SaveStateMgr& rhs);\n    SaveStateMgr(const SaveStateMgr& rhs);\n  public:')
     states='#include "binary/compat.h"\n'+states
     stable(OUT/'generated/soh/soh/Enhancements/savestates.h',states)
     stable(OUT/'generated/soh/soh/OTRGlobals.h',header)
-    source=platform_source(source)
+    source=application_syntax(platform_source(source))
     stable(OUT/'generated/soh/soh/OTRGlobals.cpp',source)
     generated={p.relative_to(OUT/'generated').as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in (OUT/'generated').rglob('*') if p.is_file()}
     stable(OUT/'manifest.json',json.dumps(dict(upstream_commit=lock['upstream_commit'],sources=lock['sources'],constructor_default_members=defaults,generated_sha256=generated,
         helpers={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in OWN.iterdir() if p.suffix in ('.h','.inc')},
-        full_application_compiled=False,boundary_probes_are_production_units=False),indent=2)+'\n')
+        compilation_evidence='xdk/build.json',boundary_probes_are_production_units=False),indent=2)+'\n')
 def includes():return [OUT/'generated/soh']+enhancement_includes()
 def probe():
     prepare();folder=OUT/'xdk';folder.mkdir(exist_ok=True)
@@ -85,7 +163,7 @@ def probe():
     stable(folder/'declaration.json',json.dumps(dict(command=command,exit=result.returncode,production_application_compiled=False),indent=2)+'\n')
     if result.returncode:print(result.stdout);raise SystemExit(1)
     assert struct.unpack_from('<H',obj.read_bytes())[0]==0x1f2
-    print('Complete OTRGlobals class declaration: 80-byte Xenon layout; coupled full constructor projection retained, not yet compiled')
+    print('Complete OTRGlobals class declaration: 80-byte Xenon layout; declaration probe only')
 
 def boundary_probe():
     prepare();folder=OUT/'xdk';folder.mkdir(exist_ok=True)
@@ -131,12 +209,26 @@ extern bool sohArchiveVersionMatch;
 
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(exist_ok=True)
-    flags=json.loads((ROOT/'scratch/soh-ui-xdk/xdk/build.json').read_text())[0]['command'][:-2]
-    roots=[OUT/'generated/soh']+[Path(f[2:])/'soh' for f in flags if f.startswith('/I') and f.endswith('generated\\soh')]+[ROOT/'soh/soh']
+    flags=json.loads((ROOT/'scratch/application-gui-xdk/xdk/build.json').read_text())[0]['command'][:-2]
+    from prepare_soh_input_editor import includes as editor_includes
+    roots=[OUT/'generated/soh']+[ROOT/('scratch/'+name+'-xdk/generated/soh') for name in
+        ['application-gui','network','randomizer-item','randomizer-options','save-storage','audio-collection','soh-input-editor','soh-resources']]+editor_includes()
+    roots+=[Path(f[2:]) for f in flags if f.startswith('/I')]
+    roots+=[ROOT/'scratch/libzip-xdk/generated']
+    # Application-local relative includes must resolve to the same canonical
+    # generated headers as their soh/... spelling.
+    roots=[p/'soh' for p in roots if p.name=='soh']+roots+[ROOT/'soh/soh']
+    roots=list(dict.fromkeys(roots))
+    # Original and C-staged headers are fallback paths, never allowed to shadow
+    # a complete canonical C++ projection from another subsystem.
+    roots.sort(key=lambda p: 2 if p.is_relative_to(ROOT/'soh') else 1 if p.is_relative_to(ROOT/'scratch/game-xdk') else 0)
+    flags=[f for f in flags if not f.startswith('/I')]
     flags[1:1]=['/I'+str(p) for p in roots]
     source=OUT/'generated/soh/soh/OTRGlobals.cpp';obj=folder/'OTRGlobals.obj';command=flags+[str(source),'/Fo'+str(obj)]
     result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-    stable(folder/'build.json',json.dumps([dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode)],indent=2)+'\n')
+    stable(folder/'build.json',json.dumps([dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode,
+        source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest() if result.returncode==0 else None)],indent=2)+'\n')
     print('Complete OTRGlobals.cpp:',result.returncode)
     if result.returncode:print('\n'.join(s for s in result.stdout.splitlines() if 'error ' in s)[:6000]);raise SystemExit(1)
     assert struct.unpack_from('<H',obj.read_bytes())[0]==0x1f2

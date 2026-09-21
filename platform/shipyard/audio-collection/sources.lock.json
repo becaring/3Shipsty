@@ -1,0 +1,13 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/audio/AudioCollection.h": "5365a2119653602e0af07b3844c55be7870ad7901791f8ee09184d09d4614119",
+    "soh/soh/Enhancements/audio/AudioCollection.cpp": "1f9930b6e5f6aa8732a3a73509a610b05ccf146bfb5b74d33cd8d81a2d2a455f",
+    "soh/include/sequence.h": "287f520097dbb9ec09de342da2e00474c1ee6d7c381f131dd28689a375087bca",
+    "soh/include/sfx.h": "ad724e1d4a049d2b8e3efe7519a67db064126cb660ff6bfb74540b7d543c0ffb",
+    "soh/soh/Notification/Notification.h": "06928b3fe517cd4a40ffa1e5a942beb5248d5f40b8248ce1e1e631be341a4660",
+    "libultraship/src/ship/utils/StringHelper.cpp": "923dec3a89df192850c616f19e36bb369f3a6cc0008040870c89d47f5c97ff13",
+    "libultraship/src/ship/config/ConsoleVariable.cpp": "9bac8130e1339c7d3b4a193386ae9f5dad1586db70148ade132dced443694c54",
+    "libultraship/include/ship/config/ConsoleVariable.h": "f3debcb58e8a15f1edb28b2bb018ef0fc113bebfbda0071d03a5e0e44e45ed8c"
+  }
+}

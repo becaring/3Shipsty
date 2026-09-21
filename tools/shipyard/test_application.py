@@ -21,12 +21,23 @@ class ApplicationContracts(unittest.TestCase):
                     if n.type=='function_definition' and n.child_by_field_name('declarator') is not None]
         original=(ROOT/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
-        self.assertEqual(names(original),names(projected))
-        # Resource registrations and all modern application initializers stay
-        # byte-for-byte; only the coupled font defaults change the constructor.
-        self.assertEqual(function(original,'OTRGlobals::Initialize').text,
-                         function(projected,'OTRGlobals::Initialize').text.replace(b'xbox_compat::filesystem::',b'std::filesystem::'))
-        self.assertEqual(function(original,'InitOTR').text,function(projected,'InitOTR').text)
+        generated_helpers=['MakeItemIDtoGetItemIDMap','MakeItemIDtoRandomizerGetMap']
+        self.assertEqual(names(original),[n for n in names(projected) if n not in generated_helpers])
+        # Compare actual resource-registration expressions independently of
+        # surrounding platform lifetime and container-construction lowering.
+        def registrations(text):
+            body=function(text,'OTRGlobals::Initialize')
+            return [n.text for n in walk(body) if n.type=='call_expression' and
+                    n.child_by_field_name('function').text.endswith(b'RegisterResourceFactory')]
+        self.assertGreater(len(registrations(original)),20)
+        self.assertEqual(registrations(original),registrations(projected))
+        # All application initializers retain their order; platform lifetime
+        # surrounds them and value construction keeps Anchor's upstream zeros.
+        init=function(projected,'InitOTR').text.decode()
+        init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
+        init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
+        expected=function(original,'InitOTR').text.decode().replace('#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
+        self.assertEqual(expected,init)
         self.assertEqual(function(original,'ReadPortVersionFromOTR').text,
                          function(projected,'ReadPortVersionFromOTR').text)
 
@@ -84,8 +95,16 @@ int main() {
         self.assertIn('AudioMgr_CreateNextAudioBuffer(',audio)
         self.assertIn('AudioPlayer_Play(',audio)
         stop=function(source,'DeinitOTR').text.decode()
-        self.assertLess(stop.index('SaveManager_ThreadPoolWait();'),stop.index('OTRAudio_Exit();'))
+        start=function(source,'InitOTR').text.decode()
+        self.assertLess(start.index('SDLNet_Init()'),start.index('new OTRGlobals()'))
+        self.assertLess(start.index('Storage::Mount()'),start.index('new OTRGlobals()'))
+        for remote in ('CrowdControl','Sail','Anchor'):
+            self.assertLess(stop.index(remote+'::Instance->Disable();'),stop.index('OTRAudio_Exit();'))
         self.assertLess(stop.index('OTRAudio_Exit();'),stop.index('Shipyard::Libultra::StopTimers();'))
-        self.assertLess(stop.index('Shipyard::Libultra::StopTimers();'),stop.index('context = nullptr'))
+        order=['Shipyard::Libultra::StopTimers();','SaveManager_ThreadPoolWait();','delete SaveManager::Instance;',
+               'SohGui::Destroy();','WaitForPendingTasks();','wait_for_detached();','context = nullptr',
+               'Storage::Shutdown();','SDLNet_Quit();']
+        positions=[stop.index(s) for s in order]
+        self.assertEqual(sorted(positions),positions)
 
 if __name__=='__main__':unittest.main()

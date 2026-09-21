@@ -48,6 +48,11 @@ def transform(name, original):
         text = text.replace('validHashes = {}', 'validHashes = std::unordered_set<uint32_t>()')
         text = text.replace('audioSettings = {}', 'audioSettings = AudioSettings()').replace('Context() = default;', 'Context() {}')
     if name.endswith('/ResourceManager.h'):
+        text=once(text, '    ~ResourceManager();',
+                  '    ~ResourceManager();\n'
+                  '    // Stop external producers and retain Context strongly while draining.\n'
+                  '    // Application thread only; never call from this pool.\n'
+                  '    void WaitForPendingTasks();')
         for old,new in [('Owner = 0', 'Owner'), ('Parent = nullptr','Parent'), ('Path = ""','Path'),
                         ('mAltAssetsEnabled = false','mAltAssetsEnabled'), ('mDefaultCacheOwner = 0','mDefaultCacheOwner'),
                         ('mDefaultCacheArchive = nullptr','mDefaultCacheArchive')]: text=text.replace(old,new)
@@ -56,6 +61,20 @@ def transform(name, original):
                   'enum Value { None, NotCached, NotFound };\nResourceLoadError() {}\n'
                   'ResourceLoadError(Value value) : Shipyard::Binary::ScopedEnum<ResourceLoadError>(value) {}\n};')
     if name.endswith('/ResourceManager.cpp'):
+        text=once(text, 'ResourceManager::~ResourceManager() {',
+                  'void ResourceManager::WaitForPendingTasks() {\n'
+                  '    if (mThreadPool != nullptr) {\n'
+                  '        // BS wait treats a paused queue as complete. Accepted jobs\n'
+                  '        // must run and release their captures while Context is alive.\n'
+                  '        mThreadPool->unpause();\n'
+                  '        mThreadPool->wait();\n'
+                  '    }\n'
+                  '}\n\n'
+                  'ResourceManager::~ResourceManager() {\n'
+                  '    WaitForPendingTasks();\n'
+                  '    // mMutex follows the pool in declaration order. Join the actual\n'
+                  '    // pool before automatic member destruction reaches that mutex.\n'
+                  '    mThreadPool.reset();')
         text=once(text, '#include "ship/config/ConsoleVariable.h"', '// No ConsoleVariable symbols are used by this TU.')
         text=once(text, 'ResourceManager::ResourceManager() {', 'ResourceManager::ResourceManager() : mAltAssetsEnabled(false), mDefaultCacheOwner(0), mDefaultCacheArchive(nullptr) {')
         text=text.replace('std::hash<std::string>{}', 'std::hash<std::string>()').replace('std::hash<std::uintptr_t>{}', 'std::hash<uintptr_t>()')
@@ -106,6 +125,24 @@ def transform(name, original):
     lower_ranges=runpy.run_path(str(ROOT / 'platform/shipyard/imgui/projection.py'))['lower_ranges']
     text=lower_ranges(text.encode(), 'Shipyard::Resources::begin', 'Shipyard::Resources::end').decode()
     return '#include "resources/runtime_support.h"\n'+text
+
+
+def prepare_lifecycle():
+    """Update only the two canonical ResourceManager lifecycle projections."""
+    lock=json.loads((OWN/'runtime-sources.lock.json').read_text())
+    for name,expected in lock['helpers'].items():
+        if hashlib.sha256((ROOT/name).read_text(encoding='utf-8-sig').encode()).hexdigest()!=expected:
+            raise ValueError('Resource projection helper drift: '+name)
+    manifest_path=OUT/'manifest.json'
+    manifest=json.loads(manifest_path.read_text())
+    for name in ['include/ship/resource/ResourceManager.h','src/ship/resource/ResourceManager.cpp']:
+        original=(ROOT/'libultraship'/name).read_text(encoding='utf-8-sig')
+        if hashlib.sha256(original.encode()).hexdigest()!=lock['sources'][name]:
+            raise ValueError('Resource source drift: '+name)
+        projected=transform(name,original)
+        stable(OUT/'generated'/name,projected)
+        manifest[name]=hashlib.sha256(projected.encode()).hexdigest()
+    stable(manifest_path,json.dumps(manifest,indent=2)+'\n')
 
 
 def prepare():
@@ -173,6 +210,8 @@ def build():
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--build',action='store_true');args=parser.parse_args()
-    if args.build:build()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--build',action='store_true');parser.add_argument('--lifecycle-only',action='store_true');args=parser.parse_args()
+    if args.build and args.lifecycle_only:parser.error('Choose --build or --lifecycle-only')
+    if args.lifecycle_only:prepare_lifecycle()
+    elif args.build:build()
     else:prepare()
