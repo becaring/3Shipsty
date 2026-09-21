@@ -1,0 +1,13 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/ResourceManagerHelpers.cpp": "905ef7f3c7034aa84bd606485d1dbfb000a61802885dbfc4e22cd7d91444f4ea",
+    "soh/soh/z_message_OTR.cpp": "57eacbfdd724bd3cb45215ff1ce534fe2a8e17a74a832e4773e833be13f9fa12",
+    "soh/soh/z_play_otr.cpp": "f5ec59a1d6ab82816b82f702f35e9a668c6654a2f480f13ba0e8f9f35ae21df3",
+    "soh/soh/z_scene_otr.cpp": "e1569f261b66f55172d4e0c0a7653efb8e6e69400bf1442fe783d942bd311d84",
+    "soh/soh/GbiWrap.cpp": "50157e81a97bf1e49e6af83ca4eab25b95218af2e37d918531943dd879d9fbce",
+    "soh/soh/util.cpp": "5f54356c374368021a334c9a4209cca2036cb85391b23e81788462e4941e866e",
+    "soh/soh/CrashHandlerExt.cpp": "75c8f86b951aeb05124ebc865da4873a1ce95d9f5fb8a8fe82fbeb564536f6f9",
+    "soh/soh/Notification/Notification.cpp": "4918eb9c1753c3bb65190a455d07201cf9510e8b45219f5b24983a63b7a50dd0"
+  }
+}

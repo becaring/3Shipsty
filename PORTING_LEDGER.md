@@ -817,3 +817,21 @@ values, 34 Location factories and 446 static-data entries. These are meaningful
 translation checks, not target gameplay evidence. First bring-up remains about
 60–65%; no modern XEX has linked or run. Work continues by complete functional
 batches, with two independent agents and root integration.
+
+
+## 2026-09-21 — genuine scene/message/resource bridge integration
+
+All eight complete core application bridge TUs pass the integrated XDK build.
+The 1,570 source hashes and PPC objects are recorded in
+scratch/project-xdk/application-core-verification.json. Application coverage is
+696 C plus 171/398 C++ TUs (227 C++ pending). All original function definitions,
+UTF-8 literals, GfxPatch data, and the explicit high-byte/low-byte RGBA16 JPEG
+conversion remain. A/B changes lower syntax and use existing native formatting
+and enum wrappers. Detailed boundary evidence is in application-core/README.md.
+Actual original/projected utility and message-field checks match 5,297 lines,
+including 65,536 message IDs and bounded buffer/string byte tests.
+
+An upstream custom-message override size mismatch (allocation messages.size(),
+lookup messages.size()+1) is recorded for runtime review; it is not masked by
+syntax changes. Complete scene execution and loaded archives still await Xenia.
+First bring-up remains roughly 60–65%, with no linked/running modern XEX.

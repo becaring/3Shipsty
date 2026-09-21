@@ -4,7 +4,7 @@
 
 First genuine bring-up estimate: roughly 60–65% complete, with considerable
 uncertainty. The earlier 70% estimate weighted compilation too heavily before
-linking or native execution. Selected application source coverage is 696/696 C and 163/398 C++ TUs,
+linking or native execution. Selected application source coverage is 696/696 C and 171/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -13,6 +13,13 @@ Remaining work is being grouped by complete application subsystems; individual
 compile units remain internal evidence rather than user-facing milestones.
 
 Latest integration work (earlier milestones below retain their historical scope):
+
+- Full scene/message/resource bridges, GBI wrappers, notifications, utilities
+  and crash context pass the main XDK build: 1,570 production objects verified
+  in application-core-verification.json. Actual utility/message conversions
+  agree with upstream. Remaining application C++ count is 227.
+- A third independent batch now covers the complete randomizer region graph;
+  root proceeds with full network application/packet implementations.
 
 - Complete debugger/resolution/icon windows, audio/cosmetic editors and location/
   static-data providers pass the main build. All 1,562 production source hashes

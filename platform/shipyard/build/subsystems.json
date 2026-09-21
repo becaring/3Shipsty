@@ -89,7 +89,8 @@
         "randomizer-hints",
         "application-windows",
         "application-editors",
-        "randomizer-data"
+        "randomizer-data",
+        "application-core"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -284,6 +285,9 @@
     ],
     "randomizer-data": [
       "scratch/randomizer-data-xdk/xdk/build.json"
+    ],
+    "application-core": [
+      "scratch/application-core-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
