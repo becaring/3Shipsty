@@ -168,3 +168,28 @@ tests were observed failing before implementation, then passing.
   actual restrict spelling, C textual include closure, exact Opus headers, and
   canonical bool OR/store and framebuffer completion-pointer boundaries.
   The entire set is being rebuilt; do not combine differing configurations.
+
+
+### 2026-09-20: Complete current C compiler pass and actual codecs
+
+- One corrected full run now compiles all 696 selected application C TUs with
+  XDK `/TC`; manifest SHA-256 is in the game provider README. No GBI_FLOATS,
+  excluded failures, C-as-C++ frontend or alternate game path.
+- A/H: typed rvalue aggregate factories, verified ordered designators, exact
+  restrict/inline spellings and an isolated SDK math-macro boundary resolve
+  the remaining failures. Scalar boolean `|=` preserves canonical conversion
+  and unconditional RHS evaluation. Nine generator tests and the executable
+  native/projected C corpus pass; all three compound-OR functions are included
+  in the actual differential call list.
+- D/G/endian: the pause capture flag was traced through FB_CopyToFramebuffer,
+  gDPCopyFB and the actual interpreter bool-pointer writer. Only that specific
+  boundary is permitted; target ABI/GPU completion still require runtime proof.
+- B/C/I: exact official Opus 1.6.1, opusfile 0.12 and Ogg 1.3.6 supply the genuine
+  current mixer APIs. All 143 PPC objects compile. Host encode/Ogg mux, full
+  memory/file decode, accurate PCM seeking, EOF and malformed-input checks pass.
+  Default dither intentionally differs after seek; exact seek alignment is
+  tested with the public dither switch disabled, while full memory/file
+  comparison retains default dithering. No runtime audio claim.
+- Ownership: C language transforms are generic Shipyard mechanisms with
+  3Shipsty-specific audited source patterns. Codecs are generic platform work;
+  no Smash game behavior or Xenos64 source was imported.

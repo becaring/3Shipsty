@@ -11,8 +11,8 @@
 - Current graphics interfaces, extracted current combiner decoder and generic
   shader lowerer compile with XDK. Four generator tests and 2,097,152 host
   decoder/layout cases pass. Full graphics backend/interpreter remain unbuilt.
-- Corrected full C diagnostic pass: 656/696 files compile; all 40 failures have
-  since passed targeted correction. A final complete pass is underway.
+- All 696/696 selected current application C TUs compile in one corrected
+  XDK C run; no failed files are excluded.
   Async/futures/pool and filesystem platform
   foundations pass host differential and native object checks.
   Broad C-as-C++ compilation was rejected after actual actor/graph failures.
@@ -31,7 +31,9 @@
   Asset provenance is in porting/ASSET_BASELINE.md. Owned copied ROM SHA1:
   cee6bc3c2a634b41728f2af8da54d9bf8cc14099. Extraction is not Xbox validation.
 - Exact stable Opus 1.6.1, opusfile 0.12 and Ogg 1.3.6 dependencies fetched;
-  143 native codec objects compile. Codec runtime/audio remains unvalidated.
+  143 native codec objects compile; host real Ogg/Opus encode, memory/file
+  decode, sample seek, EOF and invalid-input contracts pass. Xbox audio remains
+  unvalidated.
 - Next: finish complete C and current resource boundaries, mount archives through real
   resource consumers, then integrate the complete current application.
 

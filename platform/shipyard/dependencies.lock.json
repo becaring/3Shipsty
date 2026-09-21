@@ -23,5 +23,20 @@
     "commit": "4806a1924ff6181180bf5e4b8b79ab4394118875",
     "url": "https://github.com/ocornut/imgui.git",
     "receipt_sha256": "cd57d2e911cede76d2635367c8b60ca8dc3dbd5e5c4390041b225fa04acdd937"
+  },
+  "opus": {
+    "commit": "22244de5a79bd1d6d623c32e72bf1954b56235be",
+    "url": "https://github.com/xiph/opus.git",
+    "receipt_sha256": "682b88ff34f37bff287edaf6f6cc82fae9e2a2f403cc9e0c57ace8a81f46adde"
+  },
+  "opusfile": {
+    "commit": "a55c164e9891a9326188b7d4d216ec9a88373739",
+    "url": "https://github.com/xiph/opusfile.git",
+    "receipt_sha256": "4e4d25659e09efa00a86304da23b2788d0adf59cabd9f914d1de94ec62f0ea20"
+  },
+  "ogg": {
+    "commit": "be05b13e98b048f0b5a0f5fa8ce514d56db5f822",
+    "url": "https://github.com/xiph/ogg.git",
+    "receipt_sha256": "bd613081baddec218b62c6abf6b94afa84b881d9002c8bfdb6b7f538d4ec7b18"
   }
 }
