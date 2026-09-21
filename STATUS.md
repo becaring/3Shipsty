@@ -36,6 +36,12 @@
   decode, sample seek, EOF and invalid-input contracts pass. Xbox audio remains
   unvalidated. Exact LUS-patched StormLib also builds all 231 native objects;
   host encrypted MPQ and five lossless compression/seek/listfile checks pass.
+- Current Audio factory/player/matrix decoder and native XAudio2/pool/logging
+  compile (seven TUs). Host matrix PCM matches upstream at three rates;
+  routing and buffer-ownership tests pass. XAudio2 has not executed in Xenia.
+- Complete current Config compiles. Original/projected configuration method
+  audits agree on save/reload, typed/nested values and migrations. Native
+  backend registration is present; Context/window execution remains open.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

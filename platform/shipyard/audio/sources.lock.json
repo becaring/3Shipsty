@@ -1,0 +1,12 @@
+{
+  "sources": {
+    "include/ship/audio/SoundMatrixDecoder.h": "6514d76e437c204f85318b2852b1a8a11c04c8f86484b8ad9098bf4fe2b455dd",
+    "include/ship/audio/AudioPlayer.h": "2dcc8e416afbdb08959d6db9eb05e147880d16e078428351d23eb8b69dc1d276",
+    "include/ship/audio/NullAudioPlayer.h": "f56b048a9b10d09cf2aad2fbd2159b9059374d6f7e208363222d7c24a3d14d71",
+    "src/ship/audio/SoundMatrixDecoder.cpp": "643775b47a217adfc5a0c4c02e4b245b8ee736ece1785e52b248ff9bef4e0be1",
+    "src/ship/audio/AudioPlayer.cpp": "169592f588830e9e88ebd3085780d71fc592899a26cf72f6f4c0d99f1336d7cc",
+    "src/ship/audio/NullAudioPlayer.cpp": "03289e246bd904aa2198e77ea16dcf3b73be16387499ef12c87ef09ee44c00c1",
+    "include/ship/audio/Audio.h": "19aecde5be89e51951afdb1f9ef5ee939f5d7ee39f2f93ae52dd75e8eee7902d",
+    "src/ship/audio/Audio.cpp": "c905b45b80055da955fa60916b6658a087faedd82c0d1f40bf344e77fa47dd4c"
+  }
+}

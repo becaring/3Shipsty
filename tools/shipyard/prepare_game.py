@@ -36,6 +36,18 @@ def validate_inputs():
             raise ValueError('Pinned C projection source drift: ' + name)
     return lock
 
+
+def release_cvars():
+    """Evaluate the pinned release's CMake set/cache defaults in original order."""
+    validate_inputs()
+    values = {}
+    for relative in ('CMake/soh-cvars.cmake', 'CMake/lus-cvars.cmake', 'libultraship/cmake/cvars.cmake'):
+        cmake = (ROOT / relative).read_text()
+        for name, value, cache in re.findall(r'set\((CVAR_\w+) "([^"]*)"( CACHE STRING "")?\)', cmake):
+            value = re.sub(r'\$\{(CVAR_\w+)\}', lambda match: values[match[1]], value)
+            if not cache or name not in values: values[name] = value
+    return values
+
 def summarize_batch(directory):
     report = json.loads((directory / 'compile-report.json').read_text())
     selected = json.loads((directory / 'selected-sources.json').read_text())
@@ -312,13 +324,7 @@ def main():
     includes = [INCLUDE, ROOT / 'scratch/codec-xdk/include', ROOT / 'scratch/deps/opus/include'] + [TREE / p for p in ('libultraship/include', 'soh', 'soh/include', 'soh/src', 'soh/assets', 'ZAPDTR/ZAPD/resource/type')] + [xdk / 'include/xbox']
     definitions = ['_XBOX', 'XBOX', 'NDEBUG', 'F3DEX_GBI_2', 'CONTROLLERBUTTONS_T=uint32_t', 'SAL_NO_ATTRIBUTE_DECLARATIONS']
     # Execute the narrow, pinned CVar set/cache-default pattern in release order.
-    cvars = {}
-    for cmake_path in ('CMake/soh-cvars.cmake', 'CMake/lus-cvars.cmake', 'libultraship/cmake/cvars.cmake'):
-        cmake = (ROOT / cmake_path).read_text()
-        for name, value, cache in re.findall(r'set\((CVAR_\w+) "([^"]*)"( CACHE STRING "")?\)', cmake):
-            value = re.sub(r'\$\{(CVAR_\w+)\}', lambda m: cvars[m[1]], value)
-            if not cache or name not in cvars:
-                cvars[name] = value
+    cvars = release_cvars()
     cvar_header = OUT / 'include/compile_definitions.h'
     stable(cvar_header, ('#pragma once\n' + ''.join('#define ' + name + ' "' + value + '"\n' for name, value in cvars.items())).encode())
     root_cmake = (ROOT / 'CMakeLists.txt').read_text()

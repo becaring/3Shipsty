@@ -1,0 +1,8 @@
+{
+  "sources": {
+    "include/ship/config/Config.h": "5551104fc723d16fe27f895456b824ec51342dcacfea71a8b8dc8b11706fb463",
+    "src/ship/config/Config.cpp": "e82129ad2853f2d89e2582f486ea67db25cdff53699e193b195351e8651b27b5",
+    "include/ship/window/Window.h": "52d8b775ab150d3008830b17f98b4f153edaf18769bd86f792117e36bdf8c361",
+    "include/ship/controller/controldevice/controller/mapping/keyboard/KeyboardScancodes.h": "d038a70529a9fab0069ea8d1141a468fc12f414d58f95b7088f71fd06d8638dd"
+  }
+}

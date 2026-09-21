@@ -220,3 +220,29 @@ tests were observed failing before implementation, then passing.
 - Details: platform/shipyard/resources/RUNTIME.md and STORMLIB.md. No XEX,
   Context execution, Xenia gameplay or hardware claim. All changes remain
   generated/platform-owned; upstream source and all references stay untouched.
+
+
+### 2026-09-20: Current matrix/audio factory and configuration
+
+- Seven actual current/native audio TUs compile. Modern matrix filters, delays,
+  phase and saturation are retained; XDK syntax is generated. Host matrix PCM
+  matches the original at 32/44.1/48 kHz across resets and variable block sizes.
+- Generic donor XAudio2 ownership is carried through the real AudioPlayer API.
+  Smash's application-specific raw51 rejection is not imported. The actual SoH
+  32000/1024/1680 settings and 528/560 worker cadence remain upstream-owned;
+  no old mixer or worker replaces OTRGlobals. Pool/routing host tests pass.
+- Audio's real factory registers XAudio2; upstream null fallback remains explicit.
+  Complete Config compiles, preserving modern nested/flat JSON, save/reload and
+  version migration behavior. Host original/projected method audits agree.
+- Native configuration maps unsupported desktop audio choices to XAudio2 and
+  registers Xenos metadata. Existing enum numbers remain intact. Config uses
+  the exact release CVar names via the shared evaluator, verified byte-identical
+  to the successful full C build (no invented gSettings.AudioChannelsSetting).
+- Pointer-only header dependencies are narrowed; real class declarations remain.
+  Window's -1 scancode initialization must accompany its upcoming constructor
+  projection. No Window implementation or Context startup claim yet.
+- Config's local parse-only stream is read into a string for the real parser;
+  full general JSON stream/ordered/custom APIs remain unresolved. Existing
+  missing-component traversal behavior was observed and retained in tests.
+- Source/ownership/validation details are in audio/README.md and
+  configuration/README.md. No audio playback, XEX, Xenia or hardware claim.

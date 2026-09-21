@@ -1,0 +1,11 @@
+{
+  "donors": {
+    "D:\\Projects\\Smash360\\platform\\xbox360\\audio\\PcmBufferPool.h": "f6103e6e09c9e88a7f85b0ea7b3a32f2ca219edbd11b42bf6eb7719a9474bf07",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\audio\\PcmBufferPool.cpp": "63afa2b2e87812cea3026d05979b8e2dc572be80dade57f6d635c9a07de437be",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\audio\\PcmLayout.h": "44691118cdeb0e786efc17888802347efdd66c4d64229717888a903cdf6e171e",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\audio\\XAudio2AudioPlayer.h": "2da5eb22eb5e3a3ad088c1a152b0fd1f08d9f9bc70f2604a8dec700562d1400b",
+    "D:\\Projects\\Smash360\\platform\\xbox360\\audio\\XAudio2AudioPlayer.cpp": "7696ec8b1f3303192c3811dc43679a418a30562846fc23865bc2dc85b6334218",
+    "D:\\Projects\\SoH360\\platform\\xbox360\\audio_xaudio2.cpp": "eb94c94c4656d41e8ad8f0f1fe56cbc54c901af16fbab278ba22ac5486e4bd48"
+  },
+  "classification": "Generic native XAudio2 ownership, PCM layout and callbacks; Smash raw51 rejection explicitly not imported; old game workers/mixer/resampling not imported"
+}
