@@ -4,9 +4,22 @@ from pathlib import Path
 import tempfile
 import unittest
 from prepare_soh_resources import ROOT, OUT, OWN, prepare, transform
+from cpp_ast import PARSER, walk
 
 
 class Projection(unittest.TestCase):
+    def test_all_production_functions_retained(self):
+        lock = json.loads((OWN / 'sources.lock.json').read_text())
+        for name in lock['sources']:
+            if not name.endswith('.cpp'):
+                continue
+            original = (ROOT / name).read_text(encoding='utf-8-sig')
+            def signatures(text):
+                return [n.text.decode().split('{', 1)[0].strip()
+                        for n in walk(PARSER.parse(text.encode()).root_node)
+                        if n.type == 'function_definition']
+            self.assertEqual(signatures(original), signatures(transform(name, original)), name)
+
     def test_deterministic(self):
         one = prepare()
         paths = [OUT / 'generated' / n for n in one['generated_sha256']]
@@ -33,6 +46,20 @@ class Projection(unittest.TestCase):
         helpers = text[text.index('static inline'):text.index('namespace SOH')]
         self.assertIn(helpers, transform(name, text))
         self.assertEqual(helpers.count('GetEndianness() != Ship::Endianness::Native'), 3)
+
+    def test_source_provenance_and_audio_endian(self):
+        lock = json.loads((OWN / 'sources.lock.json').read_text())
+        self.assertEqual(lock['source_commit'], 'cb71e22a79bc5d1f688fa881795bbd93094895fc')
+        name = 'soh/soh/resource/importer/AudioSoundFontFactory.cpp'
+        source = (ROOT / name).read_text(encoding='utf-8-sig')
+        projected = transform(name, source)
+        self.assertEqual(projected.count('BE16SWAP('), 6)
+        self.assertNotIn('BSWAP16(', projected)
+        name = 'soh/soh/resource/importer/AudioSequenceFactory.cpp'
+        source = (ROOT / name).read_text(encoding='utf-8-sig')
+        projected = transform(name, source)
+        self.assertIn('writer.SetEndianness(Ship::Endianness::Big);', projected)
+        self.assertEqual(source.count('ReadResource('), projected.count('ReadResource('))
 
 
 if __name__ == '__main__': unittest.main()

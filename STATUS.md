@@ -2,8 +2,8 @@
 
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
-Translation/first genuine bring-up estimate: roughly 60% complete (50–65%
-uncertainty range). Application source coverage is 696/696 C and 10/398 C++ TUs,
+Translation/first genuine bring-up estimate: roughly 62% complete (50–65%
+uncertainty range). Application source coverage is 696/696 C and 23/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -83,6 +83,11 @@ this first-bring-up estimate in meaningful milestone reports as requested.
 - Full current Fast3dWindow/FastMouseStateManager and native presentation compile
   (three TUs). The real GUI/interpreter draw sequence remains byte-identical;
   2,024,400 pacing checks pass. Native GUI wiring and execution remain open.
+- Application resource coverage expanded to Animation, AudioSequence,
+  AudioSoundFont, CollisionHeader, Path and SkeletonLimb, including PathLogger.
+  All 23 complete application TUs plus ABI checks compile. Seven full factory
+  pairs and 2,068 sequence/method cases match original host behavior. Actual
+  sample resolution, archive/CVar integration, AudioSample/Skeleton/Scene remain.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

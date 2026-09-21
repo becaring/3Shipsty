@@ -407,3 +407,17 @@ tests were observed failing before implementation, then passing.
   keyboard/pointer events or extra application loop. Native GUI integration,
   physical input execution and all Xenia validation remain open. First-bring-up
   estimate stays approximately 60%; see presentation/README.md.
+
+### 2026-09-20: Modern application resource factories expanded
+
+- Reviewed the independent resource-factory handoff: 49 pinned source inputs,
+  23 complete production TUs and one native ABI object. Added animation,
+  sequence/sound-font, collision, path and limb resources without removing
+  service-dependent methods. SkeletonPatcher and AudioSample's codec closure
+  remain explicit work, rather than compiling truncated classes.
+- Original/projected tests match seven complete resource pairs, plus 2,068
+  bytecode cases and XML path/envelope/error/format methods. Five projection
+  checks pass. XML sound-font envelopes preserve BE byte storage on Xenon;
+  RTTI is enabled for actual sample patch casts. See soh-resources/README.md.
+- The three relevant sound-font audio enums are emitted from the pinned header;
+  all production resource registrations and real service execution remain open.

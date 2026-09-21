@@ -1,5 +1,5 @@
 {
-  "source_commit": "b8925e48a02a77f6cd33c6e357dbc1cc9775a8b3",
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
   "normalization": "UTF-8 BOM removed, CRLF to LF",
   "sources": {
     "soh/soh/resource/type/Background.h": "96ae50772b7fe7a4c2b6c18dc578e62c34ab7d6300c1923d532b29923d33d2f2",
@@ -22,6 +22,34 @@
     "soh/soh/resource/type/Cutscene.cpp": "a49a640ebcf535f43190c0bb05ddaf2da35357d0384061f13c42fe43d2702149",
     "soh/soh/resource/importer/CutsceneFactory.h": "409b1571b608f0776702be3418e285d4c84a9cf8d786761a0af51f42f7e142ce",
     "soh/soh/resource/importer/CutsceneFactory.cpp": "16f4de0786514013188d1e131d890549d2c1e5563ddff1d381c572e8e7c866f8",
-    "soh/soh/resource/type/SohResourceType.h": "3626c9f9de631d52345dd2a249b2cf430c8f26578933b63bad01c851589a2cca"
+    "soh/soh/resource/type/SohResourceType.h": "3626c9f9de631d52345dd2a249b2cf430c8f26578933b63bad01c851589a2cca",
+    "soh/soh/resource/type/Animation.h": "0c7a2ddfed6dd98b6e07334e2cede1aa148dee36d60beae7b7c94939719326de",
+    "soh/soh/resource/type/Animation.cpp": "7745428ed53af9e89b9d775cdafa9e53b9178996b0e3eba37a7e6ce062c253b2",
+    "soh/soh/resource/importer/AnimationFactory.h": "a5289309774b1f90c9fe506173c674a48d87f822e980e03a5afab16331e54e52",
+    "soh/soh/resource/importer/AnimationFactory.cpp": "d9a078cc05e62aacda2f8fe26be68019e2ef6c3f0e8eed578c96c93b38412fa9",
+    "soh/soh/resource/type/AudioSequence.h": "f3042c9d0bd1b78c20a937911982383e18b474ead2ba78d41f7f01e96a419380",
+    "soh/soh/resource/type/AudioSequence.cpp": "818612d2af5602479279607a15f19f3a5224cf44554edc50b59ebde4474977f8",
+    "soh/soh/resource/importer/AudioSequenceFactory.h": "cc1d3ca0ff2868d1ff2543123a57088cc78dda5c72925227cdb0f59a99e03d98",
+    "soh/soh/resource/importer/AudioSequenceFactory.cpp": "68e0933b49416f2b1dfdca64119cb14381a911008d90d8a8c4d1f786de540a18",
+    "soh/soh/resource/type/AudioSoundFont.h": "7e409fa6489f34327274e660388191c0efaa4b3cbe26fae76a0039870f735248",
+    "soh/soh/resource/type/AudioSoundFont.cpp": "ead23ecb031fc86f2bd4a81e584c67cc4eaac948bd5bc61398353fe3d5951cf0",
+    "soh/soh/resource/importer/AudioSoundFontFactory.h": "cd683d130d6257a41832c723261d08afc4df356808104276d5a2cffa661381c2",
+    "soh/soh/resource/importer/AudioSoundFontFactory.cpp": "836515f6dedb5648d5cb9b363e4dfa28091c52e5522050558cc6c286069da033",
+    "soh/soh/resource/type/CollisionHeader.h": "402eb2568682f148e0f5c385df34e55c5a9fc3d3e808469e0e4ba7f1b6e12dd7",
+    "soh/soh/resource/type/CollisionHeader.cpp": "7b68599bb81bf353a4f045662352d174abf9ce219ed8476e8c377a76cbba4c68",
+    "soh/soh/resource/importer/CollisionHeaderFactory.h": "565469a62d733a8cf0b2148b94862e0a2c7948d723c59405fb92118c69ec3067",
+    "soh/soh/resource/importer/CollisionHeaderFactory.cpp": "24260e615b3e3e68956694aae3c10e81d4ee6e9a1adcc1ef31aa2b34edc54f9d",
+    "soh/soh/resource/type/Path.h": "294144bb75f0ede0da3529599002d46440c7b8eb09eff95783cc410cf829352a",
+    "soh/soh/resource/type/Path.cpp": "1810a6aa3e77dcb7ba37975d2de7018f621949c79df8da8f0c9865c440face35",
+    "soh/soh/resource/importer/PathFactory.h": "8f8598a0f43639cc12279b21d30a4561dadff7c70979695a5d429bdc06fa309d",
+    "soh/soh/resource/importer/PathFactory.cpp": "ba2fbb21891d5ad91e5ef69fcdee26fd02184dafdde91a1de7068b2aeb99ec51",
+    "soh/soh/resource/type/SkeletonLimb.h": "6502e253919ff6565da7b97da48d6f80920ffaf20ce98ecc80793e78efe65b44",
+    "soh/soh/resource/type/SkeletonLimb.cpp": "06b8119db1ea141bc0b4bb2fa48cc6c19902a958edd259299d29d0dc2b6b4db3",
+    "soh/soh/resource/importer/SkeletonLimbFactory.h": "5d1e3b6aff0921932968f186dd57a9e956c64b38f5ac89b989877b5131ad7a08",
+    "soh/soh/resource/importer/SkeletonLimbFactory.cpp": "941a3023e8c75dbdd6ad115c89f1e6c3c45116017aa5eab7c3eb945e3c0bc7fb",
+    "soh/soh/resource/type/AudioSample.h": "5e5aafaa7b76f32473f293cd41d87361150eb321e4290f3d030c04923e31a563",
+    "soh/soh/resource/logging/PathLogger.h": "87bae44e278d05168d12804137ae9165a91bc5847f1717ca98335e71b74c6c7a",
+    "soh/soh/resource/logging/PathLogger.cpp": "5d97041bf3ee8e709add5c694e38dcf0e12bd19295ea6f21f2070b09a8fb0a04",
+    "soh/include/z64audio.h": "1483033ecfa71edd9429c9872c2edc84e44c5161dfab5652062b66a0eee45717"
   }
 }

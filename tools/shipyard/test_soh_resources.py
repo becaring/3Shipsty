@@ -19,7 +19,18 @@ def main():
         base = OUT / 'generated' if projected else ROOT
         resources = ROOT / 'scratch/resources-xdk/generated' if projected else ROOT / 'libultraship'
         binary = ROOT / 'scratch/binary-xdk/generated' if projected else ROOT / 'libultraship'
-        sources = units(base) + [OWN / 'contract.cpp', verified('tinyxml2') / 'tinyxml2.cpp']
+        # Execute the complete self-contained TUs. Context/archive/CVar-dependent
+        # factories have separate pure-method audits; no fake service APIs link here.
+        executable_names = ('Background', 'PlayerAnimation', 'Text', 'Array', 'Cutscene', 'CollisionHeader', 'SkeletonLimb')
+        sources = [p for p in units(base) if p.stem.removesuffix('Factory') in executable_names]
+        if not projected:
+            # This unused umbrella include drags in SDL/native GUI declarations.
+            # Keep every original method and header definition verbatim.
+            limb = base / 'soh/soh/resource/importer/SkeletonLimbFactory.cpp'
+            source = limb.read_text().replace('#include "libultraship/libultraship.h"', '// Unused umbrella include omitted for host contract.')
+            destination = folder / limb.name; stable(destination, source)
+            sources[sources.index(limb)] = destination
+        sources += [OWN / 'contract.cpp', verified('tinyxml2') / 'tinyxml2.cpp']
         sources += [resources / 'src/ship/resource' / (n + '.cpp') for n in ('Resource', 'ResourceFactoryBinary', 'ResourceFactoryXML')]
         sources += [binary / 'src/ship/utils/binarytools' / (n + '.cpp') for n in ('BinaryReader', 'MemoryStream', 'Stream')]
         if projected:
@@ -36,7 +47,8 @@ def main():
         if result.returncode: raise RuntimeError('Contract failed: ' + str(record))
         outputs.append(result.stdout); records.append(record)
     if outputs[0] != outputs[1]: raise AssertionError('Original/projected factory behavior differs')
-    stable(OUT / 'verification.json', json.dumps(dict(cases=records, target_runtime_executed=False,
+    stable(OUT / 'verification.json', json.dumps(dict(cases=records, executed_resource_pairs=list(executable_names),
+           original_header_normalization='SkeletonLimbFactory.cpp unused libultraship umbrella include only', target_runtime_executed=False,
            native_objects={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (OUT / 'xdk').glob('*.obj')}), indent=2) + '\n')
     print(outputs[0])
 

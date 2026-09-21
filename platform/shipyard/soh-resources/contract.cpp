@@ -9,12 +9,21 @@
 #include "soh/resource/importer/TextFactory.h"
 #include "soh/resource/importer/ArrayFactory.h"
 #include "soh/resource/importer/CutsceneFactory.h"
+#include "soh/resource/type/CollisionHeader.h"
+#include "soh/resource/type/SkeletonLimb.h"
+#include "soh/resource/importer/CollisionHeaderFactory.h"
+#include "soh/resource/importer/SkeletonLimbFactory.h"
 #include "ship/utils/binarytools/MemoryStream.h"
 #include <tinyxml2.h>
 #include <spdlog/spdlog.h>
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+
+// The original libultra umbrella exposes scalar shorthand macros after Array's
+// definition; the serialization assertions address the actual union members.
+#undef s16
+#undef u16
 
 // Independent serialization oracle. Do not use the reader's paired BinaryWriter.
 struct Bytes {
@@ -59,7 +68,56 @@ int main() {
     SOH::ResourceFactoryXMLTextV0 xmltexts;
     SOH::ResourceFactoryBinaryArrayV0 arrays;
     SOH::ResourceFactoryBinaryCutsceneV0 cutscenes;
+    SOH::ResourceFactoryBinaryCollisionHeaderV0 collisions;
+    SOH::ResourceFactoryXMLCollisionHeaderV0 xmlcollisions;
+    SOH::ResourceFactoryBinarySkeletonLimbV0 limbs;
+    SOH::ResourceFactoryXMLSkeletonLimbV0 xmllimbs;
     for (int big=0;big<2;++big) {
+        Bytes co(big!=0);
+        for (int j=0;j<6;++j) co.half(0xff00+j);
+        co.word(1); co.half(0xffff); co.half(0x1234); co.half(0x8000);
+        co.word(1); for(int j=0;j<8;++j) co.half(0x8000+j);
+        co.word(1); co.word(0x12345678); co.word(0x90abcdef);
+        co.word(1); co.half(0x8123); co.half(1); co.word(0);
+        co.word(1); co.half(0xfffe); co.half(0x3456); co.half(0x8001);
+        co.word(1); for(int j=0;j<5;++j) co.half(0xffff-j); co.word(0x12345678);
+        std::shared_ptr<SOH::CollisionHeader> collision=read<SOH::CollisionHeader>(collisions,co,init);
+        const SOH::CollisionHeaderData& cd=*collision->GetPointer();
+        assert(cd.minBounds.x==-256 && cd.maxBounds.z==-251 && cd.vtxList==collision->vertices.data());
+        assert(cd.vtxList[0].x==-1 && cd.vtxList[0].y==0x1234 && cd.vtxList[0].z==-32768);
+        assert(cd.polyList[0].vtxData[1]==0x8002 && cd.polyList[0].normal.x==-32764 && cd.polyList[0].dist==-32761);
+        assert(cd.surfaceTypeList[0].data[0]==0x90abcdef && cd.surfaceTypeList[0].data[1]==0x12345678);
+        assert(cd.cameraDataListLen==1 && cd.cameraDataList[0].cameraSType==0x8123);
+        assert(cd.cameraDataList[0].camPosData==collision->camPosData.data() && cd.cameraDataList[0].camPosData[0].x==-2);
+        assert(cd.waterBoxes[0].zLength==-5 && cd.waterBoxes[0].properties==0x12345678);
+        assert(collision->GetPointerSize()==sizeof(SOH::CollisionHeaderData));
+        Bytes cz(big!=0); for(int j=0;j<6;++j) cz.half(0); cz.word(0);cz.word(0);cz.word(0);
+        cz.word(1);cz.half(0);cz.half(0);cz.word(0);cz.word(0);cz.word(0);
+        std::shared_ptr<SOH::CollisionHeader> zeroCam=read<SOH::CollisionHeader>(collisions,cz,init);
+        assert(zeroCam->camData[0].camPosData==&zeroCam->camPosDataZero && zeroCam->camData[0].camPosData->z==0);
+        for (int kind=1;kind<=4;++kind) {
+            Bytes li(big!=0);li.byte(kind);li.byte(4);li.string("skin");li.half(1);li.word(1);
+            li.half(0x4321);li.word(1);li.half(0x1234);li.half(0xffff);li.half(0x8000);
+            li.byte(0x80);li.byte(0xff);li.byte(0x7f);li.byte(0xef);
+            li.word(1);li.byte(3);li.half(0xffff);li.half(0x1234);li.half(0x8000);li.byte(0xfe);
+            li.string("skin2");li.word(0x3fc00000);li.word(0xc0000000);li.word(0);
+            li.half(0xffff);li.half(0x1234);li.half(0x8000);
+            li.string("");li.string("");li.string("near");li.string("far");
+            li.half(0xffff);li.half(0x1234);li.half(0x8000);li.byte(0x81);li.byte(0xfe);
+            std::shared_ptr<SOH::SkeletonLimb> limb=read<SOH::SkeletonLimb>(limbs,li,init);
+            assert(limb->legTransX==1.5f && limb->legTransY==-2 && limb->rotX==0xffff);
+            assert(limb->transX==-1 && limb->transZ==-32768 && limb->childIndex==0x81);
+            if(kind==1) assert(std::string((char*)limb->limbData.standardLimb.dList)=="__OTR__near");
+            if(kind==2) assert(std::string((char*)limb->limbData.lodLimb.dLists[1])=="__OTR__far");
+            if(kind==4) assert(std::string((char*)limb->limbData.skelCurveLimb.dList[0])=="__OTR__near");
+            if(kind==3) {
+                assert(limb->limbData.skinLimb.segment==&limb->skinAnimLimbData);
+                const SOH::SkinLimbModif& sm=limb->skinAnimLimbData.limbModifications[0];
+                assert(sm.unk_4==0x4321 && sm.vtxCount==1 && sm.transformCount==1);
+                assert(sm.skinVertices[0].s==-1 && sm.skinVertices[0].normX==-128 && sm.skinVertices[0].alpha==0xef);
+                assert(sm.limbTransformations[0].scale==0xfe && sm.limbTransformations[0].z==-32768);
+            }
+        }
         Bytes b(big!=0); b.word(4); b.byte(0); b.byte(0x12); b.byte(0x80); b.byte(0xff);
         std::shared_ptr<SOH::Background> bg=read<SOH::Background>(backgrounds,b,init);
         assert(bg->GetPointerSize()==4 && bg->GetPointer()[2]==0x80 && bg->GetPointer()[3]==0xff);
@@ -129,9 +187,18 @@ int main() {
     assert(text && text->messages.size()==2 && text->messages[0].id==4660);
     assert(text->messages[0].textboxType==2 && text->messages[0].textboxYPos==3);
     assert(text->messages[0].msg=="a & b\x02" && text->messages[1].msg=="\x02");
+    doc->Parse("<Collision MinBoundsX='-1'><Vertex X='-2' Y='4660' Z='-32768'/><Polygon NormalX='-5' Dist='-9'/><PolygonType Data1='305419896' Data2='2427178479'/><CameraData SType='7' CameraPosDataSeg='0'/><CameraPositionData PosX='-4' RotY='6' FOV='90'/><WaterBox XMin='-7' Properties='123'/></Collision>");
+    std::shared_ptr<SOH::CollisionHeader> xc=std::dynamic_pointer_cast<SOH::CollisionHeader>(xmlcollisions.ReadResource(xml,init));
+    assert(xc->GetPointer()->minBounds.x==-1 && xc->vertices[0].z==-32768 && xc->polygons[0].dist==-9);
+    assert(xc->surfaceTypes[0].data[0]==0x12345678 && xc->camPosData.size()==3);
+    assert(xc->camData[0].camPosData[0].x==-4 && xc->camData[0].camPosData[1].y==6 && xc->waterBoxes[0].xMin==-7);
+    doc->Parse("<Limb Type='Standard' LegTransX='-1.5' LegTransY='2.5' LegTransZ='-3' RotX='65535' ChildIndex='129' SiblingIndex='254' DisplayList1='gEmptyDL'/>");
+    std::shared_ptr<SOH::SkeletonLimb> xl=std::dynamic_pointer_cast<SOH::SkeletonLimb>(xmllimbs.ReadResource(xml,init));
+    assert(xl->limbType==SOH::LimbType::LOD && xl->transX==-1 && xl->transY==2 && xl->rotX==0xffff);
+    assert(xl->limbData.lodLimb.dLists[0]==nullptr && xl->limbData.lodLimb.dLists[1]==nullptr);
     Bytes empty(false); empty.word(0);
     assert(!xmltexts.ReadResource(empty.file(),init));
     assert(!backgrounds.ReadResource(empty.file(),init)); assert(!animations.ReadResource(empty.file(),init));
     assert(!texts.ReadResource(empty.file(),init)); assert(!arrays.ReadResource(empty.file(),init)); assert(!cutscenes.ReadResource(empty.file(),init));
-    std::puts("Five current SoH resources: binary LE/BE, XML text, scalar/vector/vertex arrays, mixed-width cutscene layout, empty/truncated/invalid inputs agree");
+    std::puts("Seven current SoH resources: LE/BE, XML, collision relocation/zero-camera, skin/LOD/curve limbs, arrays and cutscene contracts agree");
 }
