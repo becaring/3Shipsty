@@ -83,6 +83,35 @@ int main() {
         result=ENV['invoke']([folder/'archive_contract.exe'],folder,'run',env)
         self.assertIn('65536',result['stdout'])
 
+    def test_writable_app_path_is_crt_safe(self):
+        """The Context string join must not emit ``shipyard:\\/...``."""
+        folder=OUT/'host-app-path';folder.mkdir(exist_ok=True)
+        source=r'''#include "context/platform.h"
+#include "save-storage/storage.h"
+#include <cassert>
+#include <string>
+namespace Shipyard { namespace Storage {
+std::string SaveDirectory() { return "shipyard:\\Save"; }
+}}
+int main() {
+    const std::string root=Shipyard::Platform::ApplicationDirectory();
+    const std::string config=root+"/shipofharkinian.json";
+    assert(root=="shipyard:");
+    assert(config=="shipyard:/shipofharkinian.json");
+    assert(config.find("\\/")==std::string::npos);
+}
+'''
+        path=folder/'app_path_contract.cpp';path.write_text(source)
+        compiler,env=ENV['host_environment']()
+        command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/DNOMINMAX',
+                 '/I'+str(ROOT/'platform/shipyard'),path,
+                 ROOT/'platform/shipyard/context/platform.cpp',
+                 ROOT/'platform/shipyard/filesystem/filesystem.cpp',
+                 ROOT/'platform/shipyard/async/native.cpp','user32.lib',
+                 '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'app_path_contract.exe')]
+        ENV['invoke'](command,folder,'compile',env)
+        ENV['invoke']([folder/'app_path_contract.exe'],folder,'run',env)
+
     def test_native_real_boundary_methods(self):
         probe();boundary_probe()
         obj=OUT/'xdk/startup_boundaries.obj'

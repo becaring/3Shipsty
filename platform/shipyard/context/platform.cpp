@@ -10,7 +10,7 @@ namespace Shipyard { namespace Platform {
 // Config, CVars, saves and user mods share the selected writable namespace.
 // The release archives remain discoverable in the executable bundle directory.
 std::string ApplicationDirectory() {
-    return xbox_compat::filesystem::path(Storage::SaveDirectory()).parent_path().string();
+    return xbox_compat::filesystem::path(Storage::SaveDirectory()).root_name().string();
 }
 std::string BundleDirectory() { return "game:"; }
 
