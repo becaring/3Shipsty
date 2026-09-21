@@ -66,6 +66,9 @@
   PlayerAnimation, Text, Array and Cutscene. Original/projected LE/BE and XML
   payload contracts agree; mixed-width cutscene helpers remain verbatim.
   Other application resource/scene/audio consumers and registration remain open.
+- Exact Prism and current shader builder compile (six TUs), retaining real
+  resource acquisition. All 936 host generation cases match; 264 unique Xbox
+  vertex/pixel shader compilations pass. GPU execution remains unvalidated.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

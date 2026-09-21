@@ -363,3 +363,17 @@ tests were observed failing before implementation, then passing.
   swap or archive format replacement. Nine other resource pairs and all scene
   command factories/registration remain open; soh-resources/README.md records
   the next audio envelope endian boundary and exact validation evidence.
+
+### 2026-09-20: Exact Prism and genuine modern shader generation
+
+- Five complete Prism dependency TUs and the full current DX shader builder
+  region compile with XDK. The real default/include Shader resource loads,
+  native byte order and missing-default abort are retained in production.
+- Generic Smash fixed-arity variant/optional and Prism syntax techniques are
+  provenance-locked in owned files; no BattleShip builder, shader-ID packing,
+  resource facade or default template is imported. Debug logging remains active.
+- Original/projected full Prism and current builder audits agree over 936
+  cases, vertex float counts and parser/errors/owned values. All 264 unique
+  representative Xbox VS/PS compilations pass. Test-only template acquisition
+  is isolated from the production resource path. GPU execution and native
+  callback/stack behavior remain unproven; see prism/README.md.
