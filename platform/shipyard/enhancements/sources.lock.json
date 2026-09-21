@@ -1,0 +1,29 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/Enhancements/Cheats/DekuStick.cpp": "80004bee31ba053d3c54dcf2064e01f56bdc253ef32ffee9543b172ce61a9c23",
+    "soh/soh/Enhancements/Cheats/EasyFrameAdvance.cpp": "e20987c537b23cc6957c40a103f20193d60c914d451773f24841a9579d14e6ae",
+    "soh/soh/Enhancements/Cheats/EasyISG.cpp": "e8fceaf126930b1a33c5f087a19359c8a6a11b33862e09c2ee0e9760d3dc3dd6",
+    "soh/soh/Enhancements/Cheats/EasyQPA.cpp": "4ee5766a5dbaeb99fd2b5de979470889f212076a7dc3ed181b4e8ebc454c9d44",
+    "soh/soh/Enhancements/Cheats/FreezeTime.cpp": "ca65b3453a1a11de78147205fc32b2be6c1735f6711849beef4cff98800c6458",
+    "soh/soh/Enhancements/Cheats/GSTargetable.cpp": "79ee91e213b009f8c61b6a68a5fbeff7f593451264e270e78bfadb54f47823c6",
+    "soh/soh/Enhancements/Cheats/Infinite/Ammo.cpp": "fee3e4271552c8e8420ad6a20cedafbf88b79d0bb1dbc986b605593c796f0fd8",
+    "soh/soh/Enhancements/Cheats/Infinite/Health.cpp": "f362fbc347332315b24612275e758b8658edf0c21db9dde8318f70cf7b163972",
+    "soh/soh/Enhancements/Cheats/Infinite/Magic.cpp": "0f585fd06fc5235aa17973621d74ff53eb5d14cde0939edf676ae8080dc9586f",
+    "soh/soh/Enhancements/Cheats/Infinite/Money.cpp": "0f3309faf16d08d113546bd51b1e5f8b279d6b2597be8d9c377e6ea478f33258",
+    "soh/soh/Enhancements/Cheats/Infinite/NayrusLove.cpp": "1a9cc7dd0fd0df8c6003ba957fd226b4e1d53761a2fabb1ed097b3e4ad30989a",
+    "soh/soh/Enhancements/Cheats/MoonJump.cpp": "46f64879eaa4be31518382953ffb0350407c37da02f6a44bd795bc3a2b92e13a",
+    "soh/soh/Enhancements/Cheats/NoKeeseGuayTarget.cpp": "f0fc851ee262b285490337d18fbb2d1eb6f5e94fd8d9def3dd135eacea50b950",
+    "soh/soh/Enhancements/Cheats/NoRedeadFreeze.cpp": "366b9685dcfa4ea3fb6ef6c916b20e5a320ba30b022caf49d395e0bdcf2517ca",
+    "soh/soh/Enhancements/Cheats/UnrestrictedItems.cpp": "c6ba12593b744e9c0b0ddce37e059f11cacfd7ae91168cd408652d434879f46d",
+    "soh/soh/ShipInit.hpp": "dac4b792d3ba1023f0525770def05e0946ae7ca725b5f94abb23ad26b154e3f3",
+    "soh/soh/Enhancements/Fixes/BrokenGiantsKnife.cpp": "de17b7233a78c26707e6ebe3e681f0c7e8e3f09cabb00a670e123a896fc8dba0",
+    "soh/soh/Enhancements/Fixes/DekuNutUpgradeFix.cpp": "2e16848aae735b103e37ffdca1adadee70075ad6cecbc3039b0ccaf212309b3e",
+    "soh/soh/Enhancements/Fixes/DirtPathFix.cpp": "667a4bc017675221af0af2847fb854ff1db1044dfb9b7b6ae2a4c6b1bce45d18",
+    "soh/soh/Enhancements/Fixes/FixKokiriForestQuestState.cpp": "70a4c97e9f46722fb6ad581962551fef121303354cd53410e493b651027f21c5",
+    "soh/soh/Enhancements/Fixes/FixTwoHandedIdleAnim.cpp": "28a3527918c5f443273ab93bcab589a1aa0ecc2c5ba245334e6de6f1ec6f8e45",
+    "soh/soh/Enhancements/Fixes/FloorSwitches.cpp": "2dac6effa45a7e47ff72226a1bdfbe9ea152a0953225435a9cfb9d5f7cd036c5",
+    "soh/soh/Enhancements/Fixes/GoronCityDoorFix.cpp": "f775d4b7e4c1030b147b9d1f54495193b26b52cb06acfbc2199d7ba52a97ef53",
+    "soh/soh/Enhancements/Fixes/HammerHandFix.cpp": "c8c40b17a31294a5d50806ad2846d235eb3dd57674d2dc9a46ceca58c56fd18f"
+  }
+}

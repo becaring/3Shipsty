@@ -1,0 +1,39 @@
+{
+  "source_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "normalization": "UTF-8 BOM removed, CRLF to LF",
+  "sources": {
+    "soh/soh/Enhancements/randomizer/SeedContext.h": "34437218cb3a2ff8f3b28047260193a84a02c2bd2dc40e24b02418573a84f1ee",
+    "soh/soh/Enhancements/randomizer/SeedContext.cpp": "3abca6e85ca219119a300fa268bfefd228e8adac558e61229b042605b6760409",
+    "soh/soh/Enhancements/randomizer/item_location.h": "66a8f8a3f266b850a7d13e7d3f204feb89fe2197081a0489ee136c904e2c8049",
+    "soh/soh/Enhancements/randomizer/item_location.cpp": "61f0873dd30781ef4a49b8b357ce41ab681c968475bbf9df4283036211ea91b4",
+    "soh/soh/Enhancements/randomizer/item_override.h": "57dc854b2db4b1bbb5b44013adcfd484cf2acf33cac6d4943bcdc640c094a6c0",
+    "soh/soh/Enhancements/randomizer/item_override.cpp": "0e9a777a34fd3e22b9edbd9a6735807676980cac94c2cc2c71c52f038d2537fe",
+    "soh/soh/Enhancements/randomizer/hint.h": "4b89d1bc1146c78289fa8fc23f3994b0bc3f2130513817d71028f9665b3ff9d2",
+    "soh/soh/Enhancements/randomizer/hint.cpp": "5f8fa147ebd8a6faf89690381695887ab0dfc9e7db738f939c80a8a483bb3d1c",
+    "soh/soh/Enhancements/randomizer/trial.h": "1c5f6b5012838e4a47f99e473958ca967efaa682b1e17892b7e61eb8addcf0e2",
+    "soh/soh/Enhancements/randomizer/trial.cpp": "292c6824cb261bda9cd451e3b68ffa162282856e0e51a451a308864f687d0e7f",
+    "soh/soh/Enhancements/randomizer/option.h": "cada67d2abff7b5fc3846684050ef694ef53ebbbc71539def67f1330f21b645a",
+    "soh/soh/Enhancements/randomizer/option.cpp": "22b9faaf970495335ae7912f404cdfa0381edf902217cf5069699258a14fdc6c",
+    "soh/soh/Enhancements/randomizer/3drando/text.hpp": "8ad3526bc5b05858f83a5a49d17d2d8d7ebd3910201ed854cb80e3f0a60181e0",
+    "soh/soh/Enhancements/randomizer/randomizerTypes.h": "dc86b56177c188419a7b00f600f3f91e45f491dce16989f677cd6dbc609bd2aa",
+    "soh/soh/Enhancements/randomizer/randomizerEnums.h": "4bfb12b2cc3b9310ae49161841ac47d82410a38c217fe151590e46ec466fe794",
+    "soh/soh/Enhancements/custom-message/CustomMessageManager.h": "696d993f6220fc637bf3cf36dc4d5dd90319584dbf664dfb5276a1d6e07b63ab",
+    "soh/soh/Enhancements/custom-message/CustomMessageManager.cpp": "b4d07d6804b6c69225a1a2758ea86b05df3f59cc5fc9c924c252a334cc56c7f1",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/LogicVal.h": "27d5ed334786fdfe034f0d1d5afa6b0cbf4a25f857fe932288a4a7547979e958",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerCheck.h": "62848bec19a511dd274b69f272144514ebef2534b1012478dca51ca15a44bb44",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerGet.h": "fc0bbf9c169533b4c3cccd261fb51db9c03cf6b30ed74068977453b4e7999178",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerHintTextKey.h": "dc79c9034a8bf47f1d2e0c40ce9cda9c242d7df2b73278722f84bda26ac767ef",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerInf.h": "c021496767b420620ed4146a8e7d51cda9c0a4d7c90bfb0a97d4a7eb38339d54",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerMiscEnums.h": "e4b51b082e19fb953b0a4cd69cf96e874ef7eee1fe28bbc4426b78d053232e93",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerOptions.h": "52cfdc8db132f94eba371c2bf5c3303a5ad63b48ad27eef131a0801ad017882a",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerRegion.h": "420f74044275ab4e2b9250cd00cd6ab733ea4b01716d872ff00e399ed01fa1d3",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerSettingKey.h": "27851bf3262b5a4ce1dddeb1da20f2c8eb9fe5d370bf9d92bdc20c40db9487ea",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerTrick.h": "6a6a0d101428785c4e8bad660680a056eadf9823dd47b448ef78bd6e798fc1de"
+  },
+  "dependencies": {
+    "soh/include/z64.h": "dee96f966c0fc2c9ed9ac49c4b2c22c431f1dab9754d135405b682112906ffaf",
+    "soh/include/z64item.h": "eddcf178de28552acbed3eb0456fc6e2aa7c52d24c358208345108e00d433389",
+    "soh/include/message_data_textbox_types.h": "283bb42057c92d0c9a321563a178bd4510b61d8e1cae9603448e3b6935d81dba",
+    "soh/soh/Enhancements/item-tables/ItemTableTypes.h": "423e9bd976fd3647f848d4ce02615472b9fce6562a06f560e0933b29e05db8d0"
+  }
+}

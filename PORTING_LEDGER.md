@@ -567,3 +567,43 @@ tests were observed failing before implementation, then passing.
   scratch/project-xdk/complete-selection-verification.json. Application coverage
   is 696 C plus 85 C++; 313 C++ TUs remain pending. First-bring-up estimate is
   now approximately 65%, with a 50–75% uncertainty range pending linking/runtime.
+
+### 2026-09-20: Real cheat, actor and randomizer value integration
+
+- Fifteen complete modern cheat units compile through real ShipInit/GameInteractor,
+  including Infinite Ammo's actual randomizer Context/OptionValue branch. Generic
+  A/B projections preserve set ordering/lifetimes, hook metadata and native variadic
+  cursors; host dispatch and variadic contracts pass. No cheat execution is claimed.
+- All three ObjectExtension/actor payload units compile. The reached std::any
+  boundary is a copyable owning RTTI implementation with pointer casts, strong
+  failed-copy behavior and actual registry lifetime/isolation tests. No small
+  object optimization yet; profile its allocation cost after real gameplay.
+- Full ActorDB and all six configuration updater implementations compile. Actor
+  init globals and EnPartner remain genuine references. Description table/defaults
+  and all five unchanged Entry ownership methods match upstream on the host.
+  ConfigUpdaters.cpp is unchanged, including migration ordering and duplicates.
+- ActorDB exposed the generated endianness helper through a C-linkage include.
+  A narrow extern-C++ region fixes the generated C++ declarations without changing
+  any swap decision. First-include native regression failed before and passed
+  after; original/projected binary contracts and six generation tests pass.
+- Reviewed the isolated randomizer foundation: complete current Context/value
+  declarations, 73 inventoried defaults with 58 native-path initializers and
+  canonical OptionValue ownership. Eleven tests pass, including full host field
+  offsets and three real value-method comparisons. Context is 196044 bytes on
+  Xenon. Full ItemOverride and four canonical OptionValue methods compile;
+  partial method probes do not count as completed feature TUs.
+- The real OTRGlobals declaration retains its fields and services and compiles to
+  80 bytes on Xenon. Eight font pointer defaults move into the same retained real
+  constructor; full application compilation and startup remain open.
+- Assembled coverage is 696 C plus 106 complete application C++ TUs, with 292 C++
+  units still pending. The 1,497-item integration compile passed; all object
+  formats/source identities are verified in
+  scratch/project-xdk/application-services-verification.json. Estimate
+  stays 65% (50–75% range), with no modern XEX or target execution claim.
+- Eight additional complete Fixes units compile outside that saved selection.
+  The real stateless ShipInit callback is hoisted into a named generated function
+  because XDK rejects __FUNCSIG__ in static-initializer lambdas. Deferred execution,
+  path/callback order and metadata availability are tested. Hammer Hand retains
+  its original gs macros through typed Gfx locals, resolving braced-call syntax.
+  The complete GameInteractionEffect TU also compiles with a canonical action
+  declaration split from the real cosmetics header; the real service is retained.

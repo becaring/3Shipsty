@@ -45,7 +45,11 @@
         "game",
         "soh-resources",
         "interpolation",
-        "game-interactor"
+        "game-interactor",
+        "enhancements",
+        "object-extension",
+        "app-services",
+        "randomizer"
       ],
       "definitions": [
         "CONTROLLERBUTTONS_T=uint32_t",
@@ -157,12 +161,25 @@
     ],
     "game-interactor": [
       "scratch/game-interactor-xdk/xdk/build.json"
+    ],
+    "enhancements": [
+      "scratch/enhancements-xdk/xdk/build.json"
+    ],
+    "object-extension": [
+      "scratch/object-extension-xdk/xdk/build.json"
+    ],
+    "app-services": [
+      "scratch/app-services-xdk/xdk/build.json"
+    ],
+    "randomizer": [
+      "scratch/randomizer-xdk/xdk/build.json"
     ]
   },
   "production_exclusions": {
     "scratch/graphics-xdk/cc_features.cpp": "Early isolated decoder projection; the complete selected current interpreter.cpp already defines gfx_cc_get_features. Do not link both.",
     "platform/shipyard/graphics/interface_contract.cpp": "ABI compile probe; never part of production",
-    "platform/shipyard/soh-resources/xdk_abi.cpp": "ABI compile probe; never part of production"
+    "platform/shipyard/soh-resources/xdk_abi.cpp": "ABI compile probe; never part of production",
+    "platform/shipyard/randomizer/xdk_abi.cpp": "Complete class layout/include probe, not production application code"
   },
   "supplemental_sources": [
     {
@@ -185,6 +202,10 @@
     "scratch/prism-xdk/generated/shader_builder.cpp": {
       "source": "libultraship/src/fast/backends/gfx_direct3d11.cpp",
       "scope": "Current shader builder functions only; does not claim the desktop backend translation unit is ported"
+    },
+    "scratch/randomizer-xdk/generated/soh/soh/Enhancements/randomizer/OptionValue.cpp": {
+      "source": "soh/soh/Enhancements/randomizer/option.cpp",
+      "scope": "Canonical four OptionValue methods split from full option.cpp; full Option/UI TU remains pending and must not redefine these methods"
     }
   },
   "integration_gates": [

@@ -85,7 +85,10 @@ def transform(relative, raw, path):
                     '    Native = Big,\n#else\n    Native = Little,\n#endif\n};\n')
         body = '\n    Little = 0,\n    Big = 1,\n\n' + XDK_NATIVE_CONDITION + '    Native = Big,\n#else\n    Native = Little,\n#endif'
         edits.exact(original, strong_enum('Endianness', body))
-        edits.exact('#ifdef __cplusplus\n', '#ifdef __cplusplus\n#include "binary/compat.h"\n')
+        # This C-compatible header is also included through functions.h's
+        # extern-C region. Its scoped-enum helper must retain C++ linkage.
+        edits.exact('#ifdef __cplusplus\n', '#ifdef __cplusplus\nextern "C++" {\n#include "binary/compat.h"\n')
+        edits.exact('} // namespace Ship\n#endif\n', '} // namespace Ship\n} // extern C++\n#endif\n')
         # The second endian condition controls BE/LE swap macros, outside the enum.
         before = NATIVE_CONDITION + '#ifndef IS_BIGENDIAN\n'
         edits.exact(before, XDK_NATIVE_CONDITION + '#ifndef IS_BIGENDIAN\n')

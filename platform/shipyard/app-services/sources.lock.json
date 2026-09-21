@@ -1,0 +1,10 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/ActorDB.h": "85e9c1f946ce059b6fa2437510c329bc7573e7900550024b55f4ea84fdfc8985",
+    "soh/soh/ActorDB.cpp": "9672baf2c4c3c6ebbba904e9f18217841b85bd63ab0e574d0a7e24313f806046",
+    "soh/soh/config/ConfigUpdaters.h": "4c93c08cf5dbd4e11168362fd6955a6922622108191e2558be6e113dc894a8af",
+    "soh/soh/config/ConfigUpdaters.cpp": "7bf7ee268ec1008bebe1e59e26b50a5254e1964d8cbe7e88241d01c42920a113",
+    "soh/include/tables/actor_table.h": "512f8753f8e8f0eb9d60b315ced84950bd232d94efe6c9574d72daef720fc7a3"
+  }
+}

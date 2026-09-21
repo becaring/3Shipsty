@@ -89,14 +89,31 @@ def prepare():
     for name,text in texts.items():
         if name.endswith('/GameInteractor.h'):text=header(text,arity)
         elif name.endswith('.cpp'):text=call_sites(text,name)
+        if name.endswith('/GameInteractionEffect.cpp'):
+            text=once(text,'#include "soh/Enhancements/cosmetics/CosmeticsEditor.h"','#include "soh/Enhancements/cosmetics/CosmeticsEditorActions.h"')
+        if name.endswith('/GameInteractor_RawAction.cpp'):
+            text=once(text,'#include "soh/Enhancements/debugger/colViewer.h"','#include "soh/Enhancements/debugger/colViewerTypes.h"')
         text=syntax(text)
         stable(OUT/'generated'/name,text)
+    # The game-effect caller needs the real action declaration and collision
+    # enum, not the editor classes. Extract their single canonical declarations
+    # and include them from the retained complete editor headers as well.
+    cosmetic='soh/soh/Enhancements/cosmetics/CosmeticsEditor.h'
+    declaration='void CosmeticsEditor_RandomizeAll();'
+    actions=cosmetic.replace('CosmeticsEditor.h','CosmeticsEditorActions.h')
+    stable(OUT/'generated'/actions,'#pragma once\n'+declaration+'\n')
+    stable(OUT/'generated'/cosmetic,once(texts[cosmetic],declaration,'#include "CosmeticsEditorActions.h"'))
+    collision='soh/soh/Enhancements/debugger/colViewer.h'
+    enum='typedef enum { COLVIEW_DISABLED, COLVIEW_SOLID, COLVIEW_TRANSPARENT } ColViewerRenderSetting;'
+    types=collision.replace('colViewer.h','colViewerTypes.h')
+    stable(OUT/'generated'/types,'#pragma once\n'+enum+'\n')
+    stable(OUT/'generated'/collision,once(texts[collision],enum,'#include "colViewerTypes.h"'))
     stable(OUT/'manifest.json',json.dumps(dict(upstream_commit=lock['upstream_commit'],sources=lock['sources'],hook_types=len(args),maximum_arity=arity),indent=2)+'\n')
 
 def includes():
     from prepare_soh_resources import includes as resource_includes
     from prepare_fast_resources import includes as fast_includes
-    return [OUT/'generated/soh',ROOT/'scratch/game-xdk/full/source/soh',ROOT/'scratch/game-xdk/full/source/soh/include',ROOT/'scratch/game-xdk/full/source/soh/src']+fast_includes()+resource_includes(True)
+    return [OUT/'generated/soh',ROOT/'scratch/ship-utils-xdk/generated/soh',ROOT/'scratch/game-xdk/full/source/soh',ROOT/'scratch/game-xdk/full/source/soh/include',ROOT/'scratch/game-xdk/full/source/soh/src']+fast_includes()+resource_includes(True)
 
 def build():
     prepare();sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK');folder=OUT/'xdk';folder.mkdir(exist_ok=True);rows=[]

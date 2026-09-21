@@ -10,6 +10,8 @@
     "soh/soh/Enhancements/game-interactor/GameInteractor_HookTable.h": "8cdb989d9567237fb5879ec85b03c5f8a07ebcce8954620f2682539ab5069d8f",
     "soh/soh/Enhancements/game-interactor/GameInteractor_RawAction.cpp": "2e962bd19eac6bd0dee121f21f0497bebe8c14f98ff0fae98e09a6c4c9ad5a04",
     "soh/soh/Enhancements/game-interactor/GameInteractor_State.cpp": "ffcea54eeda01d6222b768fd44d620b4f2e08e3a6b38fb9df84411372632877d",
-    "soh/soh/Enhancements/game-interactor/vanilla-behavior/GIVanillaBehavior.h": "4851b08e8557afa47e4bbac6080578625aeaa538018bfbd9a03986e7a0c2c2d9"
+    "soh/soh/Enhancements/game-interactor/vanilla-behavior/GIVanillaBehavior.h": "4851b08e8557afa47e4bbac6080578625aeaa538018bfbd9a03986e7a0c2c2d9",
+    "soh/soh/Enhancements/cosmetics/CosmeticsEditor.h": "55ca58ff173f5c7463b0caa093e16f1475546c8560eac7c3b958840596ab5c35",
+    "soh/soh/Enhancements/debugger/colViewer.h": "6c4a1e05fd826e3244991191ecaf66137e4d825f9bb50ebdf3aea3d71ce07379"
   }
 }

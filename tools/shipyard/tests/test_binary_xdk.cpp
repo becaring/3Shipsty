@@ -1,8 +1,10 @@
+extern "C" {
+#include "ship/utils/binarytools/endianness.h"
+}
 #include "ship/utils/binarytools/BinaryReader.h"
 #include "ship/utils/binarytools/BinaryWriter.h"
 #include "ship/utils/binarytools/MemoryStream.h"
 #include "ship/utils/binarytools/Stream.h"
-#include "ship/utils/binarytools/endianness.h"
 #if !defined(_XBOX) || !defined(_M_PPC)
 #error Native Xbox compiler required
 #endif

@@ -3,7 +3,7 @@
 2026-09-20. Active forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 
 Translation/first genuine bring-up estimate: roughly 65% complete (50–75%
-uncertainty range). Application source coverage is 696/696 C and 85/398 C++ TUs,
+uncertainty range). Assembled application source coverage is 696/696 C and 106/398 C++ TUs,
 with substantial LUS/dependency/native backend compilation established. This
 estimate includes required integration and first execution; it does not measure
 the complete polished-port effort or imply that a modern XEX has run. Update
@@ -35,6 +35,21 @@ this first-bring-up estimate in meaningful milestone reports as requested.
   distinct DOM with tested insertion order. Generic initializer-list syntax,
   custom ADL/macros, sorted/ordered conversion and binary DOM remain open.
 - No modern XEX has been produced or run. No gameplay or hardware claim.
+- All fifteen modern cheat units compile, including the real randomizer bombchu
+  capacity path. Three object-extension units and both ActorDB/config-migration
+  units compile. ShipInit, variadic cursors, owning any/registry and ActorDB
+  entry/table host differentials pass. All six migration bodies are unchanged.
+- The complete randomizer Context/value header foundation preserves current
+  fields and constructors. Eleven checks pass, including full member offsets,
+  actual value methods and 256 OptionValue values. Complete ItemOverride and
+  canonical OptionValue compile; full randomizer implementations remain pending.
+- The complete OTRGlobals declaration compiles at 80 bytes on Xenon. Its eight
+  font defaults are coupled to the retained real constructor projection; the
+  full application implementation has not yet compiled.
+- The 1,497-item assembled compile selection passes after these integrations
+  and the endian header's C/C++ linkage correction; every object is verified
+  PPC BE and every source matches its saved manifest hash. Eight further modern
+  Fixes units and the complete game-effects unit compile outside that selection.
 - The assembled XDK project compiles all 737 previously selected runtime and
   dependency units; every resulting object is verified PowerPC BE. All 696
   game C units also pass regeneration/recompilation with the exact release

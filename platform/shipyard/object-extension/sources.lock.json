@@ -1,0 +1,11 @@
+{
+  "upstream_commit": "cb71e22a79bc5d1f688fa881795bbd93094895fc",
+  "sources": {
+    "soh/soh/ObjectExtension/ActorListIndex.cpp": "1fab3f15404074c557238afbdaa7f1f4342a5f33e12d503600055c146700561e",
+    "soh/soh/ObjectExtension/ActorListIndex.h": "f56dd6ba363bad57e10857990d81d6eb28da34be489a4701ca9577c80cbe5985",
+    "soh/soh/ObjectExtension/ActorMaximumHealth.cpp": "16138e9a6de67619a32fa71ed6e26463f6c0358429ecc1d43f99011a49a6b089",
+    "soh/soh/ObjectExtension/ActorMaximumHealth.h": "a0a419349da89dd8b6b8d21be5c65a4669a0096aa386e85be99d83510bdbb9ac",
+    "soh/soh/ObjectExtension/ObjectExtension.cpp": "20ff3308c825571a4e058b1148e25b9117ea5abe58b4723273339f16eb3c95f1",
+    "soh/soh/ObjectExtension/ObjectExtension.h": "752a5078b879230cdbc9d86ef57ebb6008eca574e2866760db3070968daaf131"
+  }
+}
