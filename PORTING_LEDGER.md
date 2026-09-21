@@ -291,3 +291,17 @@ tests were observed failing before implementation, then passing.
   Shipyard B compatibility correction; no game/resource behavior is replaced.
 - The regression also checks global/source-location/extended-argument paths
   and preserves backtrace collection of messages filtered from normal output.
+
+### 2026-09-20: Current GUI resource factories and overlay
+
+- Seven complete current/dependency TUs compile: font, GUI texture and their
+  factories, GameOverlay, Fast Texture, and exact CMake-pinned stb_image.
+- Original/projected full factory tests agree on raw font bytes, PNG RGBA with
+  alpha, invalid data, format rejection, size and valid metadata ownership.
+  Both BinaryReader endian modes leave opaque font/encoded-image bytes intact;
+  encoded formats parse their own byte order. No GPU upload or PPC runtime claim.
+- GameOverlay's actual constructor restores Default/false state. Its current
+  notification/settings/draw code remains; known unsafe inherited TEXT/format
+  paths are noted for execution review, not silently rewritten or removed.
+- Generic source ownership, header precedence and commands are in
+  platform/shipyard/gui-resources/README.md. No application/runtime milestone.

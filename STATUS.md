@@ -47,6 +47,10 @@
   GUI element lifecycle, console registration/usage and debugger state audits
   match upstream. Full Context/CVar execution and native presentation remain
   unvalidated; modern application C++ and full graphics remain major work.
+- Current font/GUI/Fast texture resources, GameOverlay and exact pinned stb
+  compile (seven TUs). Full host factory tests match upstream for binary font
+  bytes, RGBA image decode/alpha, failure and size contracts. A logging argument
+  conversion-order defect found during this integration was fixed and tested.
 - Next: integrate real Context/platform initialization and resource consumers,
   then the complete modern C++ application, renderer, input, audio and storage.
 

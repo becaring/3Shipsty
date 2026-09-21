@@ -1,0 +1,16 @@
+{
+  "sources": {
+    "include/ship/window/gui/resource/Font.h": "f1adccf5c2f5ee3047928f3cd67cba796612f78bb4dfd5e9003c375ac82674b0",
+    "src/ship/window/gui/resource/Font.cpp": "d17e7d810d7ac5790bf8f1eecf6bc4d174eba2cb797311ce16b04f90985a259e",
+    "include/ship/window/gui/resource/FontFactory.h": "3588047a522ee8e337ecca8432cd3cd4d65dc65858990fdc9cf0be73ee52105f",
+    "src/ship/window/gui/resource/FontFactory.cpp": "d2e10b52b504a92d83db72dd2226602e1da33ed3b612e05392b8dac370eb9f5e",
+    "include/ship/window/gui/resource/GuiTexture.h": "5109f310579f69efb285288b01bfbd7d97c6557f7d5c3255a01979d096f09985",
+    "src/ship/window/gui/resource/GuiTexture.cpp": "92c40ba378beea1a459442ae2bbf579e601ee636405ffa0306d98867ea1036b7",
+    "include/ship/window/gui/resource/GuiTextureFactory.h": "9490e68dcbfe85da100fb40edff50a0a41299e06aebdb7b2fe83863c25a92fca",
+    "src/ship/window/gui/resource/GuiTextureFactory.cpp": "15dbf3c3bf7d161cc75ce0ab007b2c62a9bd1db24f64aef70a2fb8dfddd109e9",
+    "include/ship/window/gui/GameOverlay.h": "01eb532d96046d5a9016461f107d9cf813132ff09f5746abf3c7972e2d3050aa",
+    "src/ship/window/gui/GameOverlay.cpp": "191c3a4771d43af644938c9a4eeed897d9ac06e76dcd2c58194a95b755976c27",
+    "include/fast/resource/type/Texture.h": "f37273cca0829e216541a2181ac50e37606ccc60050afffaef43d600be68d408",
+    "src/fast/resource/type/Texture.cpp": "6185adcae01923345263059182d17f31c07d592c69ebcf8466327bdf55759c83"
+  }
+}
