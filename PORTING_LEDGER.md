@@ -459,3 +459,16 @@ tests were observed failing before implementation, then passing.
 - All nine complete resource leaf TUs now rebuild with explicit /GR and their
   original/projected factory differential passes against the updated JSON.
   Final uniform application build composition and runtime remain open.
+
+### 2026-09-20: Complete current Fast3D resource readers
+
+- Nine complete native TUs preserve binary/XML factories, all expanded display
+  commands, owned XML strings and both texture versions. The 57 old-compiler
+  brace assignments use deterministic typed temporaries; original GBI macros
+  remain intact. Upstream F3DEX_GBI_2 is explicit, including XML ucode selection.
+- Full original/generated factory executions match 19,167 official archive
+  records and independent LE/BE/XML/failure fixtures. No texture-byte swap was
+  introduced. Light raw-union point-coordinate format still requires actual
+  producer/registration evidence; its host raw-byte check is narrowly reported.
+- Generic Shipyard A/B/I changes; all nine Xenon objects pass with /GR. No native
+  archive/resource execution or render/gameplay claim. See fast-resources/README.md.

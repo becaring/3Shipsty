@@ -1,0 +1,24 @@
+{
+  "source_commit": "fdcaf6336776d24a6408d016b0a52243f108f250",
+  "sources": {
+    "include/fast/resource/ResourceType.h": "d86efba9b3003251b07dce89e398d6ebb9f7d9f74bb9605548831559b4569be6",
+    "include/fast/resource/type/DisplayList.h": "5f412d8e904dad14aca4a78bffbc53b58351c5f47a30a35cf09989def43286f7",
+    "src/fast/resource/type/DisplayList.cpp": "e122878c15ced293da7391e3e6f7e940e42665f32ef1989d82ff215771715d03",
+    "include/fast/resource/factory/DisplayListFactory.h": "a80c2c46b859692b898447c433dd0dbba2695eaaa58546c4418625da466cd79d",
+    "src/fast/resource/factory/DisplayListFactory.cpp": "898e0d219f36bc2b34431fa9bf711718d09303eb28ae2f1da752418d23567b7b",
+    "include/fast/resource/type/Matrix.h": "4319160fa50947015f784a62795f706451a1e773ec4ee7573e7250cab151d4f3",
+    "src/fast/resource/type/Matrix.cpp": "10b4e20908f44a671ca420ec1037b895454efe66e6b0c593b29c39d4fde8195e",
+    "include/fast/resource/factory/MatrixFactory.h": "7de7d8dfc440a7849469b89eba3f8b3fdfe9dbb558c06f914af42db73d1422fc",
+    "src/fast/resource/factory/MatrixFactory.cpp": "3c430272d2b22f665a62cd0ff0f85903c488a91e837832a641a73f2033960bac",
+    "include/fast/resource/type/Vertex.h": "49d15636ae02e0c2af3f7a25530c289a8f210396db106abacb92b3d20877c3af",
+    "src/fast/resource/type/Vertex.cpp": "e82ced184bdd8f0d2a7687ecaa055ffbe82cc05be782d0bcc2143ef372ab51a6",
+    "include/fast/resource/factory/VertexFactory.h": "dd156030564550c8548f0c08328ec5d6bc461db49c70401c0b3e93cdd30e4973",
+    "src/fast/resource/factory/VertexFactory.cpp": "a51d6b213127b4d935838673bab4544b17ca7cc73c841a81c0f190b8643a4079",
+    "include/fast/resource/type/Light.h": "0b7ef2e18f2f47105d70bdd1204cd02d5b55421a853dc1af247fe378e4cea6b6",
+    "src/fast/resource/type/Light.cpp": "577e2a7471953ff0c36de779d47f4d885f0e8c02466dbbba2958b2fa323ac0d2",
+    "include/fast/resource/factory/LightFactory.h": "d19fa4a83cda1ec984cdc6a8283a24513545ce659b783d0c5ee035f6a3f9ef61",
+    "src/fast/resource/factory/LightFactory.cpp": "a3c0bcc798c7b69e2e9991fa6496636a1c4b14c667fcce403007346eafcc1937",
+    "include/fast/resource/factory/TextureFactory.h": "b86363b002e280e3feed2ee1948e35a58bf65d4472e3af07549cc23de148c9f4",
+    "src/fast/resource/factory/TextureFactory.cpp": "373e2c06bed339fef516d390a4b87c3e8f9f954627f17e4b3499d91ce7dfe4f9"
+  }
+}
