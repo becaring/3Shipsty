@@ -182,6 +182,18 @@ def verify_semantics():
 def project_header(name, raw):
     text = raw.decode('utf-8-sig').replace('\r\n', '\n')
     changes = []
+    def replace_projected_once(old, new, description):
+        nonlocal text
+        if text.count(old) != 1:
+            raise ValueError(description + ' anchor drift')
+        text = text.replace(old, new)
+    if name == 'libultraship/include/ship/utils/binarytools/endianness.h':
+        native_condition = '#if (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(__BIG_ENDIAN__)'
+        xbox_condition = '#if (defined(_XBOX) && defined(_M_PPC)) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(__BIG_ENDIAN__)'
+        if text.count(native_condition) != 2:
+            raise ValueError('Game C native-endian condition anchor drift')
+        text = text.replace(native_condition, xbox_condition)
+        changes.append('Select Xenon big-endian native layout for game C packed colors and audio commands')
     if name == 'soh/soh/mixer.c':
         if text.count('static inline ') != 2: raise ValueError('Mixer static inline helper drift')
         text = text.replace('static inline ', 'static __inline ')

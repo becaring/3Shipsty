@@ -78,5 +78,15 @@ class GameProjectionTests(unittest.TestCase):
         output, _=self.module().project_header(name,(ROOT/name).read_bytes())
         self.assertIn(b'#define IS_ZERO(value) (fabsf(value) < 0.008f)',output)
 
+    def test_game_c_uses_xenon_native_endian_for_packed_runtime_fields(self):
+        module = self.module()
+        name = 'libultraship/include/ship/utils/binarytools/endianness.h'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertEqual(output.count(b'defined(_XBOX) && defined(_M_PPC)'), 2)
+        self.assertIn(b'#define IS_BIGENDIAN', output)
+        self.assertIn(b'#define BE32SWAP(x) (x)', output)
+        self.assertIn(b'#define LE32SWAP(x) BOMSWAP32(x)', output)
+        self.assertTrue(any('packed colors and audio commands' in change for change in changes))
+
 if __name__ == '__main__':
     unittest.main()
