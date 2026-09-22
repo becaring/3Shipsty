@@ -6,7 +6,9 @@ The current owned Xenia run uses a freshly linked genuine XEX, SHA256
 `1dffc060f65bb04dff8eb87b8a89d1b35090812e6f50fdbd9a1cf943b0f2b680`,
 built with identity HEAD `5dd926bf0922126f843b5ff8e1290054f9bf7d51` plus
 runtime projections. The proven endian fix was subsequently checkpointed as
-`8f55f53cfa771d99fb26867b04f92fe40406dfb8`; other runtime projections
+`8f55f53cfa771d99fb26867b04f92fe40406dfb8`; the exercised game-C
+startup/JPEG projections were checkpointed as
+`867a586d05e7817a517d33b804b8701639373bd4`. Other platform projections
 remain uncommitted. Re-query process state; the
 launch returned PID 31588. The user confirms audible audio and correct
 off-white/white Deku Tree exit transitions. The previous fresh XEX fixed the

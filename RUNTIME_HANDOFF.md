@@ -6,6 +6,8 @@ This supersedes all older claims below that audio is silent, the shop
 background is broken, or game-C native byte order is unresolved. Current
 branch `shipyard/xbox360-9.2.3`, proven endian-fix checkpoint
 `8f55f53cfa771d99fb26867b04f92fe40406dfb8`.
+The exercised game-C startup/JPEG projections were checkpointed as
+`867a586d05e7817a517d33b804b8701639373bd4`.
 The XEX was built just before that checkpoint with embedded identity
 `5dd926bf0922126f843b5ff8e1290054f9bf7d51` plus the same endian code and
 other uncommitted narrow runtime changes. Current freshly linked/staged genuine XEX SHA256:

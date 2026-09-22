@@ -34,7 +34,9 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
   `1dffc060f65bb04dff8eb87b8a89d1b35090812e6f50fdbd9a1cf943b0f2b680`;
   embedded build identity HEAD `5dd926bf0922126f843b5ff8e1290054f9bf7d51`
   plus runtime projections; verified endian code subsequently checkpointed at
-  `8f55f53cfa771d99fb26867b04f92fe40406dfb8`. Other projections remain
+  `8f55f53cfa771d99fb26867b04f92fe40406dfb8`, and exercised game-C
+  startup/JPEG projections at `867a586d05e7817a517d33b804b8701639373bd4`.
+  Other platform projections remain
   uncommitted. Xenia mixer: gate 0, BGM/SFX
   enabled, 8 active notes and 309,748 nonzero PCM samples by block 600.
   User confirms audible audio and correct Deku Tree exit color. Evidence
