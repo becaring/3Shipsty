@@ -214,6 +214,350 @@ def project_header(name, raw):
             raise ValueError('File-select restrict declaration changed')
         text = text.replace('const SaveFileMetaInfo* restrict meta', 'const SaveFileMetaInfo* __restrict meta')
         changes.append('Use XDK pointer-qualifier spelling only on actual current C parameter')
+        replace_projected_once(
+            '#include "soh/Enhancements/FileSelectEnhancements.h"',
+            '#include "soh/Enhancements/FileSelectEnhancements.h"\n\n'
+            'extern void Shipyard_RuntimeTrace(const char* format, ...);\n'
+            'void Skybox_InitWithEnvironment(GameState* state, EnvironmentContext* envCtx, '
+            'SkyboxContext* skyboxCtx, s16 skyboxId);',
+            'File-select runtime trace declaration')
+        replace_projected_once(
+            '    Skybox_Init(&this->state, &this->skyboxCtx, SKYBOX_NORMAL_SKY);',
+            '    Skybox_InitWithEnvironment(&this->state, &this->envCtx, &this->skyboxCtx, SKYBOX_NORMAL_SKY);',
+            'Use file-select environment without casting it to a gameplay state')
+        replace_projected_once(
+            '''    gDPFillRectangle(POLY_OPA_DISP++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
+
+    CLOSE_DISPS(this->state.gfxCtx);''',
+            '''    gDPFillRectangle(POLY_OPA_DISP++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
+
+    if (this->state.frames < 12 || this->state.frames == 30 || this->state.frames == 60 ||
+        this->state.frames == 120 || this->state.frames == 300) {
+        Shipyard_RuntimeTrace("FILESELECT frame=%u menu=%d config=%d fill=%d window=%d controls=%d",
+                              this->state.frames, this->menuMode, this->configMode, sScreenFillAlpha,
+                              this->windowAlpha, this->controlsAlpha);
+    }
+
+    CLOSE_DISPS(this->state.gfxCtx);''',
+            'File-select fade trace')
+        changes.append('Add bounded file-select fade trace after real update/draw commands')
+        changes.append('Use owner-aware skybox initialization for FileChooseContext')
+    if name == 'soh/src/code/graph.c':
+        replace_projected_once(
+            'extern void ProcessSaveStateRequests(void);',
+            '''extern void ProcessSaveStateRequests(void);
+extern void Shipyard_RuntimeTrace(const char* format, ...);
+
+static const char* sShipyardGameStateNames[] = {
+    "TitleSetup", "Select", "Title", "Gameplay", "Opening", "FileChoose"
+};''',
+            'Gamestate runtime trace declaration')
+        replace_projected_once(
+            '        GameState_Init(gGameState, runFrameContext.ovl->init, &runFrameContext.gfxCtx);',
+            '''        Shipyard_RuntimeTrace("GAMESTATE init begin name=%s index=%d size=%u",
+                              sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable],
+                              (int)(runFrameContext.ovl - gGameStateOverlayTable), size);
+        GameState_Init(gGameState, runFrameContext.ovl->init, &runFrameContext.gfxCtx);
+        Shipyard_RuntimeTrace("GAMESTATE init end name=%s main=%p destroy=%p",
+                              sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable],
+                              gGameState->main, gGameState->destroy);''',
+            'Gamestate init trace')
+        replace_projected_once(
+            '''            Graph_ProcessGfxCommands(runFrameContext.gfxCtx.workBuffer);
+
+            // uint64_t diff''',
+            '''            Graph_ProcessGfxCommands(runFrameContext.gfxCtx.workBuffer);
+            if (gGameState->frames == 1) {
+                Shipyard_RuntimeTrace("GAMESTATE first frame name=%s running=%d",
+                                      sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable],
+                                      gGameState->running);
+            }
+
+            // uint64_t diff''',
+            'Gamestate first-frame trace')
+        replace_projected_once(
+            '''        runFrameContext.nextOvl = Graph_GetNextGameState(gGameState);
+        GameState_Destroy(gGameState);''',
+            '''        runFrameContext.nextOvl = Graph_GetNextGameState(gGameState);
+        Shipyard_RuntimeTrace("GAMESTATE transition from=%s frames=%u next=%d",
+                              sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable],
+                              gGameState->frames,
+                              runFrameContext.nextOvl ? (int)(runFrameContext.nextOvl - gGameStateOverlayTable) : -1);
+        GameState_Destroy(gGameState);
+        Shipyard_RuntimeTrace("GAMESTATE destroy end name=%s",
+                              sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable]);''',
+            'Gamestate transition trace')
+        replace_projected_once(
+            '''        if (!hasSetupSkybox) {
+            PlayState* play = (PlayState*)gGameState;
+            Skybox_Setup(play, &play->skyboxCtx, SKYBOX_NORMAL_SKY);
+            hasSetupSkybox = true;
+        }''',
+            '''#ifndef _XBOX
+        if (!hasSetupSkybox) {
+            PlayState* play = (PlayState*)gGameState;
+            Skybox_Setup(play, &play->skyboxCtx, SKYBOX_NORMAL_SKY);
+            hasSetupSkybox = true;
+        }
+#endif''',
+            'Do not cast the tiny TitleSetup allocation to PlayState on Xbox')
+        changes.append('Add bounded central gamestate boundary trace adapted from the proven 4.0.5 Xbox loop')
+        changes.append('Move Xbox skybox priming out of the TitleSetup allocation')
+    if name == 'soh/src/code/z_play.c':
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void Shipyard_RuntimeTrace(const char* format, ...);\n'
+            'void Skybox_Setup(PlayState* play, SkyboxContext* skyboxCtx, s16 skyboxId);\n\n'
+            'void Play_Init(GameState* thisx) {',
+            'Gameplay initialization trace declaration')
+        replace_projected_once(
+            '    GameState_Realloc(&play->state, 0x1D4790 * 2);',
+            '''    Shipyard_RuntimeTrace("PLAY_INIT realloc begin entrance=%d mode=%d", gSaveContext.entranceIndex,
+                                  gSaveContext.gameMode);
+    GameState_Realloc(&play->state, 0x1D4790 * 2);
+    Shipyard_RuntimeTrace("PLAY_INIT realloc end");''',
+            'Gameplay allocation trace')
+        replace_projected_once(
+            '    KaleidoManager_Init(play);',
+            '    KaleidoManager_Init(play);\n    Shipyard_RuntimeTrace("PLAY_INIT kaleido end");',
+            'Gameplay overlay-arena initialization trace')
+        replace_projected_once(
+            '    func_8005AC48(&play->mainCamera, 0xFF);',
+            '    func_8005AC48(&play->mainCamera, 0xFF);\n    Shipyard_RuntimeTrace("PLAY_INIT cameras end");',
+            'Gameplay camera initialization trace')
+        for call, marker in (
+            ('Regs_InitData(play);', 'regs'),
+            ('Message_Init(play);', 'message'),
+            ('GameOver_Init(play);', 'gameover'),
+            ('SoundSource_InitAll(play);', 'sound'),
+            ('Effect_InitContext(play);', 'effects'),
+            ('EffectSs_InitInfo(play, 0x55);', 'soft effects'),
+            ('CollisionCheck_InitContext(play, &play->colChkCtx);', 'collision'),
+        ):
+            replace_projected_once(
+                '    ' + call,
+                '    ' + call + '\n    Shipyard_RuntimeTrace("PLAY_INIT ' + marker + ' end");',
+                'Gameplay ' + marker + ' initialization trace')
+        replace_projected_once(
+            '    AnimationContext_Reset(&play->animationCtx);\n    func_8006450C(play, &play->csCtx);',
+            '    AnimationContext_Reset(&play->animationCtx);\n'
+            '    Shipyard_RuntimeTrace("PLAY_INIT animation end");\n'
+            '    func_8006450C(play, &play->csCtx);',
+            'Gameplay animation initialization trace')
+        replace_projected_once(
+            '    func_8006450C(play, &play->csCtx);',
+            '    func_8006450C(play, &play->csCtx);\n    Shipyard_RuntimeTrace("PLAY_INIT systems end");',
+            'Gameplay subsystem initialization trace')
+        replace_projected_once(
+            '    Cutscene_HandleConditionalTriggers(play);',
+            '    Cutscene_HandleConditionalTriggers(play);\n    Shipyard_RuntimeTrace("PLAY_INIT cutscene triggers end");',
+            'Gameplay entrance-condition trace')
+        replace_projected_once(
+            '    Play_SpawnScene(\n',
+            '''    // Prime the fallback in each real gameplay allocation before scene loading.
+    Shipyard_RuntimeTrace("PLAY_INIT skybox begin");
+    memset(play->skyboxCtx.textures, 0, sizeof(play->skyboxCtx.textures));
+    memset(play->skyboxCtx.palettes, 0, sizeof(play->skyboxCtx.palettes));
+    Skybox_Setup(play, &play->skyboxCtx, SKYBOX_NORMAL_SKY);
+    Shipyard_RuntimeTrace("PLAY_INIT scene begin entrance=%d layer=%d", gSaveContext.entranceIndex,
+'''
+            '                                  gSaveContext.sceneSetupIndex);\n    Play_SpawnScene(\n',
+            'Prime the real gameplay skybox before scene loading')
+        replace_projected_once(
+            '    Cutscene_HandleEntranceTriggers(play);',
+            '    Shipyard_RuntimeTrace("PLAY_INIT scene end scene=%d", play->sceneNum);\n'
+            '    Cutscene_HandleEntranceTriggers(play);',
+            'Gameplay scene-load completion trace')
+        replace_projected_once(
+            '    func_800304DC(play, &play->actorCtx, play->linkActorEntry);',
+            '''    Shipyard_RuntimeTrace("PLAY_INIT actors begin");
+    func_800304DC(play, &play->actorCtx, play->linkActorEntry);
+    Shipyard_RuntimeTrace("PLAY_INIT actors end");''',
+            'Gameplay actor-load trace')
+        replace_projected_once(
+            '    player = GET_PLAYER(play);',
+            '    Shipyard_RuntimeTrace("PLAY_INIT room end");\n    player = GET_PLAYER(play);',
+            'Gameplay room-load completion trace')
+        changes.append('Prime each Xbox PlayState skybox as in the working 4.0.5 port')
+        changes.append('Add bounded Play_Init allocation, scene, actor, and room boundary trace')
+    if name == 'soh/src/code/z_construct.c':
+        replace_projected_once(
+            'void Message_Init(PlayState* play) {',
+            'extern void Shipyard_RuntimeTrace(const char* format, ...);\n\nvoid Message_Init(PlayState* play) {',
+            'Message initialization trace declaration')
+        replace_projected_once(
+            '    Message_SetTables();',
+            '    Shipyard_RuntimeTrace("MESSAGE tables begin");\n'
+            '    Message_SetTables();\n'
+            '    Shipyard_RuntimeTrace("MESSAGE tables end");',
+            'Message-table initialization trace')
+        replace_projected_once(
+            '    if (ResourceMgr_GetGameRegion(0) == GAME_REGION_PAL && gSaveContext.language != LANGUAGE_JPN) {',
+            '    Shipyard_RuntimeTrace("MESSAGE font begin region=%d language=%d", '
+            'ResourceMgr_GetGameRegion(0), gSaveContext.language);\n'
+            '    if (ResourceMgr_GetGameRegion(0) == GAME_REGION_PAL && gSaveContext.language != LANGUAGE_JPN) {',
+            'Message-font initialization trace')
+        replace_projected_once(
+            '    YREG(31) = 0;\n}',
+            '    Shipyard_RuntimeTrace("MESSAGE font end");\n    YREG(31) = 0;\n}',
+            'Message-font completion trace')
+        changes.append('Add bounded real message-table and ordered-font startup trace')
+    if name == 'soh/src/code/z_kanfont.c':
+        replace_projected_once(
+            'void Font_LoadOrderedFontNTSC(Font* font) {',
+            '''// Japanese O2R text stores 16-bit Shift-JIS codes in little-endian byte order.
+// Convert only when copying into the native-endian Font buffer on Xenon.
+void Shipyard_CopyJpnMessage(u16* destination, const char* source, s32 byteCount) {
+    const u8* bytes = (const u8*)source;
+    s32 index;
+
+    for (index = 0; index < byteCount / 2; index++) {
+        destination[index] = (u16)bytes[index * 2] | ((u16)bytes[index * 2 + 1] << 8);
+    }
+}
+
+void Font_LoadOrderedFontNTSC(Font* font) {''',
+            'Japanese ordered-font serialized byte order')
+        replace_projected_once(
+            '    memcpy(font->msgBuf, msgEntry->segment, size);',
+            '    Shipyard_CopyJpnMessage(font->msgBufWide, msgEntry->segment, size);',
+            'Convert ordered-font Japanese text on native-buffer copy')
+        changes.append('Convert serialized Japanese ordered-font text to native u16 without changing the O2R data')
+    if name == 'soh/src/code/code_800E4FE0.c':
+        replace_projected_once(
+            'void AudioMgr_CreateNextAudioBuffer(s16* samples, u32 num_samples) {',
+            'extern void Shipyard_RuntimeTrace(const char* format, ...);\n\n'
+            'void AudioMgr_CreateNextAudioBuffer(s16* samples, u32 num_samples) {',
+            'Audio synthesis state trace declaration')
+        replace_projected_once(
+            '    AudioSynth_Update(gAudioContext.curAbiCmdBuf, &writtenCmds, samples, num_samples);',
+            '''    AudioSynth_Update(gAudioContext.curAbiCmdBuf, &writtenCmds, samples, num_samples);
+    if (gAudioContext.totalTaskCnt == 1 || gAudioContext.totalTaskCnt == 120 ||
+        gAudioContext.totalTaskCnt == 600 || gAudioContext.totalTaskCnt == 1200) {
+        s32 activeNotes = 0;
+        s32 noteIndex;
+        for (noteIndex = 0; noteIndex < gAudioContext.numNotes; noteIndex++) {
+            activeNotes += gAudioContext.notes[noteIndex].noteSubEu.bitField0.enabled != 0;
+        }
+        Shipyard_RuntimeTrace("AUDIO synth task=%u reset=%d notes=%d active=%d bgm=%d sfx=%d updates=%d cmds=%d",
+                              gAudioContext.totalTaskCnt, gAudioContext.resetStatus,
+                              gAudioContext.numNotes, activeNotes,
+                              gAudioContext.seqPlayers[SEQ_PLAYER_BGM_MAIN].enabled,
+                              gAudioContext.seqPlayers[SEQ_PLAYER_SFX].enabled,
+                              gAudioContext.audioBufferParameters.updatesPerFrame, writtenCmds);
+    }''',
+            'Bounded audio synthesis state trace after real mixer call')
+        changes.append('Log four bounded native synthesis states without altering PCM or sequencing')
+    if name == 'soh/src/code/code_800F9280.c':
+        text = 'extern void Shipyard_RuntimeTrace(const char* format, ...);\n' + text
+        replace_projected_once(
+            'void Audio_QueueSeqCmd(u32 cmd) {',
+            'void Audio_QueueSeqCmd(u32 cmd) {\n'
+            '    static u32 shipyardQueuedSeqCmds = 0;\n'
+            '    if (++shipyardQueuedSeqCmds <= 20)\n'
+            '        Shipyard_RuntimeTrace("AUDIO seq queued index=%u cmd=%08X", shipyardQueuedSeqCmds, cmd);',
+            'Bounded sequence enqueue trace')
+        replace_projected_once(
+            'void Audio_ProcessSeqCmd(u32 cmd) {',
+            'void Audio_ProcessSeqCmd(u32 cmd) {\n'
+            '    static u32 shipyardProcessedSeqCmds = 0;\n'
+            '    if (++shipyardProcessedSeqCmds <= 20)\n'
+            '        Shipyard_RuntimeTrace("AUDIO seq processed index=%u cmd=%08X", shipyardProcessedSeqCmds, cmd);',
+            'Bounded sequence processing trace')
+        changes.append('Trace first twenty actual sequence commands at enqueue and processing boundaries')
+    if name == 'soh/src/code/code_800EC960.c':
+        replace_projected_once(
+            'void func_800F3054(void) {',
+            'extern void Shipyard_RuntimeTrace(const char* format, ...);\n\n'
+            'void func_800F3054(void) {\n'
+            '    static u32 shipyardAudioUpdateCalls = 0;\n'
+            '    ++shipyardAudioUpdateCalls;\n'
+            '    if (shipyardAudioUpdateCalls == 1 || shipyardAudioUpdateCalls == 120 ||\n'
+            '        shipyardAudioUpdateCalls == 600 || shipyardAudioUpdateCalls == 1200 ||\n'
+            '        shipyardAudioUpdateCalls == 2400)\n'
+            '        Shipyard_RuntimeTrace("AUDIO logic update=%u gate=%u task=%u bgm=%d sfx=%d",\n'
+            '                              shipyardAudioUpdateCalls, D_80133418,\n'
+            '                              gAudioContext.totalTaskCnt,\n'
+            '                              gAudioContext.seqPlayers[SEQ_PLAYER_BGM_MAIN].enabled,\n'
+            '                              gAudioContext.seqPlayers[SEQ_PLAYER_SFX].enabled);',
+            'Bounded real game audio update trace')
+        changes.append('Trace bounded native audio logic gate and sequence-player state')
+    if name == 'soh/src/code/z_room.c':
+        replace_projected_once(
+            '    if (BE32SWAP(*(u32*)data) == JPEG_MARKER) {',
+            '    const u8* jpegBytes = (const u8*)data;\n'
+            '    if (jpegBytes[0] == 0xFF && jpegBytes[1] == 0xD8 &&\n'
+            '        jpegBytes[2] == 0xFF && jpegBytes[3] == 0xE0) {',
+            'Detect serialized JPEG marker as bytes independent of native Xbox endianness')
+        changes.append('Preserve upstream JPEG background decode while avoiding a false little-endian BE32SWAP on Xenon')
+    if name == 'soh/src/code/z_message_PAL.c':
+        replace_projected_once(
+            '#include "soh/Enhancements/game-interactor/GameInteractor.h"',
+            '#include "soh/Enhancements/game-interactor/GameInteractor.h"\n'
+            'extern void Shipyard_CopyJpnMessage(u16* destination, const char* source, s32 byteCount);',
+            'Declare Japanese message native-buffer conversion')
+        replace_projected_once(
+            '''        char* src = (uintptr_t)font->msgOffset;
+        memcpy(font->msgBuf, src, font->msgLength);
+    }
+
+    msgCtx->textBoxProperties''',
+            '''        char* src = (uintptr_t)font->msgOffset;
+        if (gSaveContext.language == LANGUAGE_JPN && !sDisplayNextMessageAsEnglish) {
+            Shipyard_CopyJpnMessage(font->msgBufWide, src, font->msgLength);
+        } else {
+            memcpy(font->msgBuf, src, font->msgLength);
+        }
+    }
+
+    msgCtx->textBoxProperties''',
+            'Convert only Japanese ordinary message text on native-buffer copy')
+        changes.append('Convert serialized Japanese dialog text to native u16 while retaining all byte-text paths')
+    if name == 'soh/src/code/z_vr_box.c':
+        replace_projected_once(
+            '#include <stdlib.h>',
+            '#include <stdlib.h>\n#include <string.h>',
+            'Declare C memory initialization used by the owner-aware skybox path')
+        replace_projected_once(
+            'void Skybox_Setup(PlayState* play, SkyboxContext* skyboxCtx, s16 skyboxId) {',
+            'static void Skybox_SetupEnvironment(EnvironmentContext* envCtx, SkyboxContext* skyboxCtx, s16 skyboxId) {',
+            'Separate skybox environment access from gameplay-state ownership')
+        if text.count('play->envCtx.') != 4:
+            raise ValueError('Skybox gameplay-environment access changed')
+        text = text.replace('play->envCtx.', 'envCtx->')
+        replace_projected_once(
+            'void Skybox_Init(GameState* state, SkyboxContext* skyboxCtx, s16 skyboxId) {\n    PlayState* play = (PlayState*)state;',
+            '''void Skybox_Setup(PlayState* play, SkyboxContext* skyboxCtx, s16 skyboxId) {
+    Skybox_SetupEnvironment(&play->envCtx, skyboxCtx, skyboxId);
+}
+
+static void Skybox_InitContext(GameState* state, EnvironmentContext* envCtx,
+                               SkyboxContext* skyboxCtx, s16 skyboxId) {''',
+            'Keep gameplay setup API and parameterize skybox owner environment')
+        replace_projected_once(
+            '    Skybox_Setup(play, skyboxCtx, skyboxId);',
+            '    Skybox_SetupEnvironment(envCtx, skyboxCtx, skyboxId);',
+            'Initialize the supplied owner environment')
+        replace_projected_once(
+            '\nvoid Skybox_Update(SkyboxContext* skyboxCtx) {',
+            '''
+void Skybox_InitWithEnvironment(GameState* state, EnvironmentContext* envCtx,
+                                SkyboxContext* skyboxCtx, s16 skyboxId) {
+    EnvironmentContext fallbackEnvironment;
+    memset(skyboxCtx->textures, 0, sizeof(skyboxCtx->textures));
+    memset(skyboxCtx->palettes, 0, sizeof(skyboxCtx->palettes));
+    memset(&fallbackEnvironment, 0, sizeof(fallbackEnvironment));
+    Skybox_SetupEnvironment(&fallbackEnvironment, skyboxCtx, SKYBOX_NORMAL_SKY);
+    Skybox_InitContext(state, envCtx, skyboxCtx, skyboxId);
+}
+
+void Skybox_Init(GameState* state, SkyboxContext* skyboxCtx, s16 skyboxId) {
+    Skybox_InitContext(state, &((PlayState*)state)->envCtx, skyboxCtx, skyboxId);
+}
+
+void Skybox_Update(SkyboxContext* skyboxCtx) {''',
+            'Separate FileChoose and gameplay skybox environment owners')
+        changes.append('Restore owner-aware skybox initialization from the working 4.0.5 Xbox port')
     if name == 'libultraship/include/ship/utils/color.h':
         for typ, fields in [('Color_RGB8', ('r', 'g', 'b')), ('Color_RGBA8', ('r', 'g', 'b', 'a'))]:
             anchor = '} ' + typ + ';'

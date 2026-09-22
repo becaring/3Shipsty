@@ -78,6 +78,83 @@ class GameProjectionTests(unittest.TestCase):
         output, _=self.module().project_header(name,(ROOT/name).read_bytes())
         self.assertIn(b'#define IS_ZERO(value) (fabsf(value) < 0.008f)',output)
 
+    def test_xbox_runtime_state_trace_is_projected_at_real_state_boundaries(self):
+        module = self.module()
+        name = 'soh/src/code/graph.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertIn(b'Shipyard_RuntimeTrace("GAMESTATE init begin', output)
+        self.assertIn(b'Shipyard_RuntimeTrace("GAMESTATE first frame', output)
+        self.assertIn(b'Shipyard_RuntimeTrace("GAMESTATE transition', output)
+        self.assertIn(b'#ifndef _XBOX\n        if (!hasSetupSkybox)', output)
+        self.assertTrue(any('gamestate boundary trace' in change for change in changes))
+
+    def test_file_select_trace_is_bounded_and_reports_fade_state(self):
+        module = self.module()
+        name = 'soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertIn(b'FILESELECT frame=%u menu=%d config=%d fill=%d', output)
+        self.assertIn(b'this->state.frames < 12', output)
+        self.assertIn(b'Skybox_InitWithEnvironment(&this->state, &this->envCtx, &this->skyboxCtx', output)
+        self.assertTrue(any('file-select fade trace' in change for change in changes))
+
+    def test_skybox_owner_environment_is_explicit(self):
+        module = self.module()
+        name = 'soh/src/code/z_vr_box.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertIn(b'Skybox_SetupEnvironment(EnvironmentContext* envCtx', output)
+        self.assertIn(b'Skybox_InitContext(state, envCtx, skyboxCtx, skyboxId)', output)
+        self.assertIn(b'Skybox_InitContext(state, &((PlayState*)state)->envCtx', output)
+        self.assertNotIn(b'play->envCtx.skybox', output)
+        self.assertTrue(any('owner-aware skybox' in change for change in changes))
+
+    def test_message_trace_brackets_tables_and_font_without_skipping_them(self):
+        module = self.module()
+        name = 'soh/src/code/z_construct.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        for marker in (b'MESSAGE tables begin', b'MESSAGE tables end',
+                       b'MESSAGE font begin', b'MESSAGE font end'):
+            self.assertEqual(output.count(marker), 1)
+        self.assertIn(b'    Message_SetTables();', output)
+        self.assertIn(b'        Font_LoadOrderedFontNTSC(&play->msgCtx.font);', output)
+        self.assertTrue(any('message-table' in change for change in changes))
+
+    def test_japanese_o2r_codes_are_converted_only_on_native_font_copies(self):
+        module = self.module()
+        font_name = 'soh/src/code/z_kanfont.c'
+        font, font_changes = module.project_header(font_name, (ROOT / font_name).read_bytes())
+        self.assertIn(b'destination[index] = (u16)bytes[index * 2] | ((u16)bytes[index * 2 + 1] << 8);', font)
+        self.assertIn(b'Shipyard_CopyJpnMessage(font->msgBufWide, msgEntry->segment, size);', font)
+        self.assertNotIn(b'memcpy(font->msgBuf, msgEntry->segment, size);', font)
+        self.assertTrue(any('serialized Japanese ordered-font' in change for change in font_changes))
+
+        message_name = 'soh/src/code/z_message_PAL.c'
+        message, message_changes = module.project_header(message_name, (ROOT / message_name).read_bytes())
+        self.assertIn(b'if (gSaveContext.language == LANGUAGE_JPN && !sDisplayNextMessageAsEnglish)', message)
+        self.assertIn(b'Shipyard_CopyJpnMessage(font->msgBufWide, src, font->msgLength);', message)
+        self.assertIn(b'memcpy(font->msgBuf, src, font->msgLength);', message)
+        self.assertTrue(any('serialized Japanese dialog' in change for change in message_changes))
+
+        # Representative ordered-font code units, including the real terminator.
+        serialized = bytes.fromhex('4f 82 50 82 a0 82 70 81')
+        self.assertEqual([int.from_bytes(serialized[i:i + 2], 'little')
+                          for i in range(0, len(serialized), 2)],
+                         [0x824f, 0x8250, 0x82a0, 0x8170])
+        self.assertEqual(int.from_bytes(serialized[4:6], 'big'), 0xa082)
+
+    def test_jpeg_magic_is_checked_as_serialized_bytes_on_xenon(self):
+        module = self.module()
+        name = 'soh/src/code/z_room.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        function = output.split(b's32 swapAndConvertJPEG(void* data) {', 1)[1].split(b'void Room_DrawBackground2D(', 1)[0]
+        self.assertIn(b'jpegBytes[0] == 0xFF && jpegBytes[1] == 0xD8', function)
+        self.assertIn(b'jpegBytes[2] == 0xFF && jpegBytes[3] == 0xE0', function)
+        self.assertNotIn(b'BE32SWAP(*(u32*)data)', function)
+        self.assertIn(b'ResourceMgr_LoadJPEG(data, size)', function)
+        magic = bytes.fromhex('ffd8ffe0')
+        self.assertEqual(int.from_bytes(magic, 'big'), 0xFFD8FFE0)
+        self.assertNotEqual(int.from_bytes(magic, 'little'), 0xFFD8FFE0)
+        self.assertTrue(any('JPEG background decode' in change for change in changes))
+
     def test_game_c_uses_xenon_native_endian_for_packed_runtime_fields(self):
         module = self.module()
         name = 'libultraship/include/ship/utils/binarytools/endianness.h'
@@ -87,6 +164,37 @@ class GameProjectionTests(unittest.TestCase):
         self.assertIn(b'#define BE32SWAP(x) (x)', output)
         self.assertIn(b'#define LE32SWAP(x) BOMSWAP32(x)', output)
         self.assertTrue(any('packed colors and audio commands' in change for change in changes))
+
+    def test_audio_state_probe_is_bounded_after_real_synthesis(self):
+        module = self.module()
+        name = 'soh/src/code/code_800E4FE0.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertEqual(output.count(b'AUDIO synth task='), 1)
+        self.assertLess(output.index(b'AudioSynth_Update(gAudioContext.curAbiCmdBuf'),
+                        output.index(b'AUDIO synth task='))
+        self.assertIn(b'gAudioContext.totalTaskCnt == 1200', output)
+        self.assertTrue(any('native synthesis states' in change for change in changes))
+
+    def test_gameplay_init_trace_brackets_real_startup_calls(self):
+        module = self.module()
+        name = 'soh/src/code/z_play.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        for marker in (b'PLAY_INIT realloc begin', b'PLAY_INIT realloc end',
+                       b'PLAY_INIT kaleido end', b'PLAY_INIT cameras end',
+                       b'PLAY_INIT regs end', b'PLAY_INIT message end',
+                       b'PLAY_INIT gameover end', b'PLAY_INIT sound end',
+                       b'PLAY_INIT effects end', b'PLAY_INIT soft effects end',
+                       b'PLAY_INIT collision end', b'PLAY_INIT animation end',
+                       b'PLAY_INIT systems end', b'PLAY_INIT cutscene triggers end',
+                       b'PLAY_INIT skybox begin',
+                       b'PLAY_INIT scene begin', b'PLAY_INIT scene end',
+                       b'PLAY_INIT actors begin', b'PLAY_INIT actors end',
+                       b'PLAY_INIT room end'):
+            self.assertEqual(output.count(marker), 1)
+        self.assertIn(b'Skybox_Setup(play, &play->skyboxCtx, SKYBOX_NORMAL_SKY);', output)
+        self.assertLess(output.index(b'Skybox_Setup(play, &play->skyboxCtx, SKYBOX_NORMAL_SKY);'),
+                        output.index(b'    Play_SpawnScene('))
+        self.assertTrue(any('Play_Init allocation' in change for change in changes))
 
 if __name__ == '__main__':
     unittest.main()
