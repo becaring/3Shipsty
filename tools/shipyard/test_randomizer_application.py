@@ -30,6 +30,18 @@ def inventory():
         rows[p]=dict(functions=sum(original.values()),hooks=sum(hooks(a).values()),literals=sum(literals(a).values()))
     return rows
 
+def trick_name_contract():
+    source=BASE+'Traps.cpp'
+    def assigned_keys(text):
+        return [n.child_by_field_name('left').text.decode() for n in walk(PARSER.parse(text.encode()).root_node)
+                if n.type=='assignment_expression' and n.child_by_field_name('left').text.startswith(b'trickNameTable[')]
+    original=assigned_keys((ROOT/source).read_text(encoding='utf-8-sig'))
+    projected=(OUT/'generated'/source).read_text()
+    assert len(original)>100
+    assert assigned_keys(projected)==original
+    assert projected.count('static __declspec(noinline) void ShipyardTrickNamesChunk')>=20
+    return dict(rows=len(original),chunks=projected.count('static __declspec(noinline) void ShipyardTrickNamesChunk'))
+
 def host(projected):
     root=OUT/'generated' if projected else ROOT
     folder=OUT/('host-projected' if projected else 'host-original');folder.mkdir(exist_ok=True)
@@ -95,7 +107,7 @@ number(sizeof(entranceData)/sizeof(entranceData[0]));for(const auto& row:entranc
 
 def main():
     prepare();before=(OUT/'manifest.json').read_bytes();prepare();assert before==(OUT/'manifest.json').read_bytes()
-    data=inventory();runs=[host(False),host(True)];assert runs[0]['stdout']==runs[1]['stdout'],runs
+    data=inventory();trick_names=trick_name_contract();runs=[host(False),host(True)];assert runs[0]['stdout']==runs[1]['stdout'],runs
     native=json.loads((OUT/'xdk/build.json').read_text());assert len(native)==35
     for row in native:
         assert row['exit']==0,row['path']
@@ -103,7 +115,7 @@ def main():
         raw=(ROOT/row['object']).read_bytes();assert struct.unpack_from('<H',raw)[0]==0x1f2
         assert row['object_sha256']==hashlib.sha256(raw).hexdigest(),row['path']
     worker=worker_contract()
-    stable(OUT/'verification.json',json.dumps(dict(inventory=data,host=runs,native=native,worker=worker,runtime_executed=False),indent=2)+'\n')
+    stable(OUT/'verification.json',json.dumps(dict(inventory=data,trick_names=trick_names,host=runs,native=native,worker=worker,runtime_executed=False),indent=2)+'\n')
     print('35 full randomizer application units verified; '+runs[0]['stdout'])
 def worker_contract():
     folder=OUT/'worker-contract';folder.mkdir(exist_ok=True)

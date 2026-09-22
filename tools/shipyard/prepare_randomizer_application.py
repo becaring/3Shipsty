@@ -228,6 +228,30 @@ def project(name,text):
     text=re.sub(r'#include "([^\"]+)"',include,text)
     text=tracker_tables(name,text)
     text=initializers(name,text)
+    if name.endswith('/Traps.cpp'):
+        # The first lookup stalled before even entering this unusually large
+        # modern initializer in Xenia. Keep every assignment and its order,
+        # but give the guest JIT bounded, non-inlined functions to translate.
+        raw=text.encode()
+        functions=[n for n in walk(PARSER.parse(raw).root_node)
+                   if n.type=='function_definition' and
+                   n.child_by_field_name('declarator').text==b'InitTrickNames()']
+        assert len(functions)==1
+        fn=functions[0]
+        statements=[n for n in fn.child_by_field_name('body').named_children
+                    if n.type=='expression_statement']
+        assert len(statements)>100 and all(n.text.startswith(b'trickNameTable[') for n in statements)
+        helpers=[];calls=[]
+        for chunk_index in range(0,len(statements),8):
+            index=chunk_index//8
+            chunk='\n'.join('    '+n.text.decode() for n in statements[chunk_index:chunk_index+8])
+            helpers.append('static __declspec(noinline) void ShipyardTrickNamesChunk'+str(index)+'() {\n'+chunk+'\n}\n')
+            calls.append('    SPDLOG_INFO("RANDO trick names chunk={} begin", '+str(index)+');\n'
+                         '    ShipyardTrickNamesChunk'+str(index)+'();\n'
+                         '    SPDLOG_INFO("RANDO trick names chunk={} end", '+str(index)+');')
+        replacement='\n'.join(helpers)+'\nstatic void InitTrickNames() {\n    SPDLOG_INFO("RANDO trick names begin");\n'+'\n'.join(calls)+'\n}\n'
+        text=edits_apply(raw,[(fn.start_byte,fn.end_byte,replacement)])
+        text='#include <spdlog/spdlog.h>\n'+text
     text,_=content_expressions(text)
     if name.endswith('/savefile.cpp'):
         raw=text.encode();edits=[]
