@@ -1,5 +1,126 @@
 # 3Shipsty status
 
+## 2026-09-22 — Genuine 9.2.3 gameplay with audio, save, and backgrounds
+
+The current owned Xenia run uses a freshly linked genuine XEX, SHA256
+`1dffc060f65bb04dff8eb87b8a89d1b35090812e6f50fdbd9a1cf943b0f2b680`,
+built with identity HEAD `5dd926bf0922126f843b5ff8e1290054f9bf7d51` plus
+runtime projections. The proven endian fix was subsequently checkpointed as
+`8f55f53cfa771d99fb26867b04f92fe40406dfb8`; other runtime projections
+remain uncommitted. Re-query process state; the
+launch returned PID 31588. The user confirms audible audio and correct
+off-white/white Deku Tree exit transitions. The previous fresh XEX fixed the
+Kokiri shop background, which the user visually confirmed; its explicit JPEG
+byte-marker check is retained in this XEX. Default modern randomizer settings
+complete, gameplay/controller movement and save/reload were previously
+confirmed, and the newly rebuilt XEX loaded that real save into gameplay.
+
+The second runtime failure was a game-C staging mismatch, not a 9.x gameplay
+change: the binary-tools build already selected Xenon big-endian layout, but
+`prepare_game.py` staged the raw upstream `endianness.h` for C translation
+units. Thus packed `Color_RGBA8_u32` fields and `AudioCmd` byte fields were
+compiled in little-endian order. The working 4.0.5 Xbox port selects its
+big-endian ABI centrally. The modern game-C projection now does the same
+for `_XBOX && _M_PPC`; targeted XDK compiles confirmed `r,g,b,a` and
+`op,arg0,arg1,arg2` layouts. The earlier separate 4.0.5 color symptom was
+in an intro cutscene, not this doorway; the shared ABI cause applies here.
+The shop failure was the same wrong byte-order selection affecting the JPEG
+marker; a direct serialized-byte check preserves the real decoder.
+
+Full validation after the endian correction: 18 projection tests, 696/696
+game C, 1,836 verified PPC objects, genuine link/ImageXex exit zero. In the
+owned runtime, the audio reset gate returned to 0, BGM and SFX players were
+both enabled, 8 notes were active at synth task 600, and native PCM had
+309,748 nonzero samples by block 600 (peak 7,892). User hearing and fade
+color independently confirm the on-screen/output behavior. Evidence snapshot:
+`scratch/runtime/post-endian-audio-gameplay-app-20260922.log`, SHA256
+`d37b21ded873d86e0191ecf72dec521dd25b54c07f3835224ef311b4180f92e6`.
+Normal physical Xbox 360 validation is still unproven. Startup still spends
+about 9.25 seconds inside modern application initialization; no speculative
+optimization has been applied.
+
+## 2026-09-22 — Genuine 9.2.3 randomizer gameplay; audio still silent
+
+The current owned Xenia run reached real file select, completed a modern
+randomizer seed, wrote its spoiler JSON, entered gameplay, and created a save.
+The user confirmed controller movement, saving, and a successful save reload.
+The staged genuine XEX SHA256 is
+`b7f83f704cd77b24711619c12e469d1213b9c8b005f9bb69c47b30e7ebc46c64`;
+HEAD is `0cad9e225f77b3ff40530f56a5676913118f9d1d` with uncommitted narrow
+runtime fixes. The live owned Xenia PID was 40196; re-query before acting.
+Snapshot `scratch/runtime/post-rando-gameplay-app-20260922.log` SHA256
+`d52d6b9ff6fc2ca880209e33aeac8bb7105e55d30f2a3957d635874868612fb3`
+records all 24 trick-name chunks, completed item/entrance overrides and hints,
+`Writing Spoiler Log Done`, then actual FileChoose-to-Gameplay transitions.
+Owned storage contains a parseable 124,047-byte spoiler JSON and 210,159-byte
+`Save/file1.sav` JSON.
+
+The generation freeze was not a filesystem stall. The first ice-trap lookup
+never reached the first statement of modern `InitTrickNames` while Xenia CPU
+rose; the generated function contained 192 ordered table assignments. Splitting
+it into 24 no-inline eight-row helpers preserves all names/assignment order
+and makes every chunk complete in milliseconds in Xenia. Native compile and
+the randomizer application contract pass, including ordered-key coverage.
+
+Audio is still genuinely broken. The user hears nothing, XAudio2 is active,
+but the native mixer receives zero active notes and no enabled BGM/SFX sequence
+players through task 1,200. New bounded sequence-queue/update diagnostics are
+compiled in two C units but are **not in the staged XEX**. The user also reports
+no chest/NPC interaction in this randomizer run; whether this is A-button
+mapping or seed settings is not yet classified. Startup still spends roughly
+9.25 seconds in modern application initialization after factory registration.
+Threading is being checked against the working 4.0.5 worker placement; the
+modern app already has dedicated audio, randomizer, resource, and save workers,
+but the generic native worker currently does not set Xbox processor affinity.
+
+## 2026-09-22 — Post-logo fault fixed; real file select reached
+
+The current genuine 9.2.3 application now runs through the Nintendo logo,
+Opening, full Gameplay/title-scene initialization, and the real FileChoose
+state in the owned Xenia runtime. The user sees the UI and is testing a
+randomizer start. The same run logs `MESSAGE font end`, `PLAY_INIT scene end
+scene=81`, `GAMESTATE init end name=Gameplay`, and `GAMESTATE init end
+name=FileChoose`; file-select fade reaches full control opacity. Evidence:
+`scratch/runtime/post-font-filechoose-app-20260922.log`.
+
+The post-logo exception was a 9.x-specific serialized-data boundary: the
+ordered NTSC font reads Japanese Shift-JIS `u16` codes from little-endian O2R
+bytes into a big-endian Xenon `Font` buffer. The first invalid native reading
+was `0xA082` where the archive encodes `0x82A0`. The Xbox projection now
+converts only the ordered-font and ordinary Japanese dialog copies; English,
+PAL, credits, and serialized archive bytes are unchanged. Both changed C
+units, 696/696 game C, 1,836 PPC objects, genuine link and ImageXex pass.
+Staged/running XEX SHA256:
+`2299f84cb404c2ec2729e7b66029fc88bc2d50055390ac6e5bd89c09891f6d14`.
+HEAD remains `0cad9e225f77b3ff40530f56a5676913118f9d1d`; working tree
+contains this and earlier narrow runtime changes, not yet committed.
+
+Controller traversal is evidenced by the user's file-select/randomizer UI
+interaction, but save creation/load and normal gameplay are not yet proven.
+Audio remains a real failure: XAudio2 queues buffers, but the mixer reported
+zero nonzero samples through 600 blocks, and the user hears no sound. The
+randomizer generation did not complete after nine minutes. Its final log was
+`Calculating Playthrough Done`; CPU kept rising while sampled process I/O
+advanced only one 24-byte read and no writes. The owned process was stopped
+after preserving the trace. Bounded override/hint-phase and audio probes are
+being built; no filesystem change was made without evidence. The renderer
+readback's `nonblack=0` remains an
+invalid visual oracle because visible graphics were independently observed.
+
+## 2026-09-22 — Nintendo logo renders; post-logo black trace ready
+
+The genuine modern runtime now presents the spinning Nintendo N, then becomes
+black. After the logo it continues through real save-slot checks and Xbox input
+polling without a guest exception. This narrows the remaining failure to the
+Title/Opening/Gameplay-title/FileChoose transition or file-select rendering.
+
+A complete fresh rebuild passes 696/696 generated game C units, 1,836 PPC
+objects, all 1,094 application TUs, genuine link and ImageXex. The new unrun XEX
+is `scratch/link-integration/3Shipsty.xex`, SHA256
+`146e9e6f44b3a09a286c1ce7f8e8c870419419add34682ebf51d26e36894d5ea`.
+It contains bounded gamestate/file-select fade tracing. The staged XEX is older;
+see `RUNTIME_HANDOFF.md`. Xenia is stopped at the user's request.
+
 2026-09-21. **Runtime bring-up pending full rebuild; approval service unavailable.**
 Forward port of Shipwright **9.2.3 / Ackbar Delta** to Xbox 360.
 Current resume point: [RUNTIME_HANDOFF.md](RUNTIME_HANDOFF.md).
@@ -299,3 +420,25 @@ by the current summary above.
 Authority: upstream owns game/application/features/resources/save semantics;
 Shipyard owns Xbox platform mechanisms. Work and outputs remain in this tree.
 All six supplied reference roots remain read-only.
+
+## 2026-09-21 - signed-profile runtime reaches first ImGui frame, then stalls
+
+Checkpoint `0cad9e225f77b3ff40530f56a5676913118f9d1d` contains the proven
+working-directory and CRT-safe writable-root fixes. With Xenia local profile
+`E0300000052D89D9` signed in, the genuine 9.2.3 runtime mounts the save
+container, opens both required O2R archives, accepts missing optional MQ,
+persists/reopens current configuration, constructs Context, starts XAudio2,
+connects controller slot 0, and creates framebuffers 3-7.
+
+Fresh diagnostic build/link/ImageXex all return zero: 1,836 verified PPC objects,
+1,094 real application TUs, XEX SHA256
+`9ba8b77a6ea3d083f6d261553cd8d8b7a318f431de6871ecbc6a71f28f42fe86`.
+The visible result remains black.
+
+One-shot checkpoints prove `IsFrameReady`, mouse capture, renderer-backend frame
+setup, and Xbox ImGui platform/gamepad setup all return. `ImGui::NewFrame()` does
+not return. Therefore no renderer StartFrame, Fast3D draw, EndFrame, or Present
+occurs, leaving the initialized presentation surface black. The internal ImGui
+substage is still unknown; do not attribute it to navigation or XDK codegen yet.
+Xenia is stopped at user request. Full hashes, dirty diagnostic files, exact
+evidence and reproduction are in `RUNTIME_HANDOFF.md`.
