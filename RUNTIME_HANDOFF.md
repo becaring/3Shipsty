@@ -1,5 +1,75 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## Current: fixed mod MPQ boundary; final identity XEX and hardware pending
+
+The black screen introduced when `game:/mods` became discoverable is fixed
+in owned Xenia. `1ffe0eb74` selected the populated game mods directory;
+`313004a10` draws a high-contrast controller cursor using the real ImGui draw
+data. The first Portuguese OTR previously opened but its `(listfile)` read
+failed with 1392; `OtrArchive::Open` then dereferenced the null result. A
+host debugger showed a guest null read at this call site. Guest breakpoints
+showed the aligned sector inflate succeeding and an unaligned sector failing
+with zlib -3 (`"invalid code lengths set"`). The pinned StormLib unaligned
+MPQ cipher helper byte-assembled its return DWORD as little-endian, which
+poisoned the rolling key on big-endian Xenon after the first word. Commit
+`8018f9714` replaces that unaligned word handling with native-order `memcpy`
+for both encrypt and decrypt. The upstream submodule remains unmodified.
+
+Tests: all 231 Xenon and 231 host StormLib objects, native-word endian
+regression, and full pinned-host reads of both supplied OTR listfiles pass.
+The full 1,836-object real application compiles, links and ImageXex succeeds.
+Initial fixed test XEX staged in `scratch/runtime/3Shipsty/3Shipsty.xex` has
+SHA256 `d3c068aed340a443d480caa9d0c83cd37063e8536f4e3d6621c90dd3243ca7b9`;
+its embedded commit identity remains `313004a`, because the source checkpoint
+followed the test build. Do not send that image to hardware. The owned Xenia
+app log at `scratch/runtime/xenia/content/E0300000052D89D9/534F4809/00000001/3Shipsty/logs/Ship of Harkinian.log`
+for this image shows 40 real `game:/mods` archives added (including both
+Portuguese OTRs), zero listfile errors, `gui-ready` and `init-complete` in
+`scratch/runtime/xenia/xenia.log`, and gameplay scene initialization. Xenia
+temporary breakpoint and context-promotion settings were restored. Current
+work: commit docs, regenerate build identity, rebuild/link/stage final XEX,
+then verify it in Xenia. Physical boot, visible cursor, Back menu and mod
+appearance on hardware remain unproven; do not ask for repeated console copies.
+The user visually confirmed Brazilian-translated gameplay. The first run was
+reported at ~15 FPS; relaunching the same XEX and mods reached 60 FPS, with no
+source or mod change. Do not attribute the initial slowdown to port code
+without a reproducible comparison.
+
+## 2026-09-22 modern menu and cursor candidate; retail validation pending
+
+The user reports that the earlier diagnostic XEX `27f931b5...` booted on the
+physical console into file select and gameplay, with audio, controller
+movement, save reload, and a completed randomizer seed. Back did not open the
+Enhancements menu, and the first-run preset popup could not be controlled.
+Watson showed a first-chance `0xE06D7363` C++ exception after
+`gui-windows-ready`; the user continued past it and the application booted.
+The two supplied minidumps have zeroed stream-directory entries, so they do
+not provide a reliable throw-site call stack. Do not conflate this nonfatal
+exception with the independently explained menu-input failure.
+
+The Xbox GUI registered `CVAR_IMGUI_CONTROLLER_NAV=1` before InitOTR's config
+migrations. Version 2 invokes `CVarClearBlock`, which calls `Load()` and clears
+all unsaved CVar defaults. On a fresh HDD profile, `Gui::DrawMenu` then sees
+0 and ignores Back. Commit `27815b3ce` restores the default after migrations
+without overriding an explicit saved value. Commit `fd8386fd5` allows the
+modern standalone modal to receive controller navigation and blocks its A
+press from leaking into gameplay. It also restores Smash360/SoH360 donor-style
+right-stick pointer mode for the real ImGui UI: A/B clicks, triggers scroll,
+R3 toggles pointer/navigation. No alternate menu is introduced.
+
+Tests: application contracts, modern menu contracts, native ImGui host input
+fixture, targeted PPC GUI/modal/input/startup TUs, fresh complete 1,836 PPC
+objects, genuine link and ImageXex all pass. Staged *only* the fresh XEX at
+`scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`7f3311a96ce40888a62b136178baf52604dffae90e57a1d6d29a3d266e203890`.
+The existing `soh.o2r` and `oot.o2r` were not changed. Owned Xenia log for
+this exact commit shows archive mounts and `gui-ready`/`init-complete`.
+The log also shows one caught `0xE06D7363` first-chance exception between
+`gui-windows-ready` and `gui-ready`; it proceeds through init. Visible GUI
+interaction in Xenia and this candidate's console input are not yet proven.
+One physical run should use this exact XEX only after the user is ready; test
+Back, popup buttons/cursor, gameplay input, and save without recopying O2Rs.
+
 ## 2026-09-22 retail boot log localizes post-SaveManager gap
 
 The user confirmed XEX SHA256 `ddbdf8dd59bc6d6c895bca9909e73d14b0c0d169f8706b500b2f7b40f0697859`

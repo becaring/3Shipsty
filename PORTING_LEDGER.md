@@ -21,6 +21,40 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, `game:/mods` archive discovery (`1ffe0eb74`) exposed a real
+  Xenon MPQ failure: first Portuguese OTR opened, but its encrypted/compressed
+  `(listfile)` read returned 1392; upstream `OtrArchive::Open` then dereferenced
+  null. Xenia debugger mapped the guest fault to that dereference. MPQ file
+  flags are `0x80030200`; host StormLib reads both supplied listfiles fully.
+  Guest sector 0 zlib returns 1, the next unaligned sector returns -3 and
+  `"invalid code lengths set"`. Pinned StormLib's unaligned cipher path
+  constructed its rolling-key return word as little-endian on big-endian PPC.
+  Commit `8018f9714` projects native-word `memcpy` for both unaligned cipher
+  helpers. Both 231-object Xenon/host StormLib builds and endian/real-mod
+  regression checks pass. Full 1,836 PPC build/link/XEX passes; first fixed
+  test XEX SHA256 is
+  `d3c068aed340a443d480caa9d0c83cd37063e8536f4e3d6621c90dd3243ca7b9`.
+  Owned Xenia logs 40 mod archives added, no listfile errors, GUI completion
+  and gameplay scene initialization. The user visually confirmed translated
+  gameplay. An initial ~15 FPS report became 60 FPS after relaunching the
+  identical XEX and mods; no performance source change was made. This does
+  not establish hardware behavior.
+
+- 2026-09-22, physical console booted the previous `27f931b5...` XEX into
+  real 9.2.3 gameplay with working audio, input, saves and randomizer generation,
+  but Back and the preset modal were uncontrollable. The `gControlNav` Xbox
+  default was registered before config version 2 calls `CVarClearBlock`, whose
+  `Load()` discards unsaved CVars. On a fresh HDD config, the later modern GUI
+  sees 0. Commits `27815b3ce`/`fd8386fd5` register the default after version
+  updates, retain saved preferences, enable navigation and gamepad blocking
+  for queued modals, and restore the donor right-stick cursor path. Input and
+  menu tests plus targeted PPC compile pass. Full 1,836-object build/link/XEX
+  pass at `fd8386fd5`, staged SHA256
+  `7f3311a96ce40888a62b136178baf52604dffae90e57a1d6d29a3d266e203890`.
+  Owned Xenia log reaches `gui-ready`/`init-complete`; no physical test of this
+  build yet. One `0xE06D7363` first-chance C++ exception continues to occur
+  between those stages and is not shown to cause the input problem.
+
 - 2026-09-22, real-hardware XEX `ddbdf8dd...` again powered off after HDD
   selection. Supplied `3Shipsty.bootlog` is 655 bytes, SHA256
   `edb6a51cb33d78a0aab2f5a7486697ff11e7b1e844810b95c70eea495b0b0609`.

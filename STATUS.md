@@ -1,5 +1,60 @@
 # 3Shipsty status
 
+## 2026-09-22 — OTR mod black screen fixed in owned Xenia
+
+Commits `1ffe0eb74` and `313004a10` select `game:/mods` when populated and
+draw the right-stick pointer through ordinary ImGui geometry. User reports
+right-stick hover/A click and R3 mode switch work in Xenia; pointer visibility
+on the physical console remains unproven.
+
+The first newly discovered `.otr` mod previously stopped boot. Xenia's main
+guest thread faulted reading null in `OtrArchive::Open()` after
+`SFileReadFile("(listfile)")` returned `ERROR_FILE_CORRUPT` (1392). The mod is
+valid in the pinned host StormLib build. Guest breakpoints showed sector 0
+inflate returning `Z_STREAM_END`, then an unaligned sector returning
+`Z_DATA_ERROR` with `"invalid code lengths set"`. On big-endian Xenon,
+StormLib's unaligned MPQ decrypt helper reconstructed the decrypted DWORD in
+little-endian order for the rolling key; its first four output bytes could
+look correct while corrupting all subsequent words. Commit `8018f9714`
+projects alignment-safe native-word `memcpy` helpers for encryption and
+decryption. No archive format or application behavior was substituted.
+
+All 231 Xenon and 231 host StormLib objects compile. Endian regression and
+read-only tests pass for both supplied Portuguese OTRs. Full 1,836-object
+application compile, genuine link, and ImageXex pass. The initial fixed XEX
+SHA256 `d3c068aed340a443d480caa9d0c83cd37063e8536f4e3d6621c90dd3243ca7b9`
+was built before the source checkpoint (its embedded identity is `313004a`),
+so it is a test image, not the final hardware handoff. Owned Xenia with the
+user's mods reports 40 `game:/mods` archives added, zero `(listfile)` errors,
+`gui-ready`, `init-complete`, and gameplay scene initialization. Fresh
+post-checkpoint identity build and physical-console validation remain.
+The user visually confirmed gameplay with the Brazilian translation assets.
+An initial ~15 FPS report cleared on relaunch of the exact same XEX and mods:
+the user then reported 60 FPS. No performance code or mod files changed.
+
+## 2026-09-22 — Hardware menu input and controller cursor candidate
+
+The user's physical-console run of the prior `27f931b5...` diagnostic XEX
+reached the genuine 9.2.3 file select and gameplay with audio, controller
+movement, save reload, and randomizer seed generation. The first-run preset
+popup could not be controlled and Back did not open the modern menu. Watson
+reported a first-chance `0xE06D7363` C++ exception after `gui-windows-ready`,
+but continuing it allowed boot; this is not evidence of a fatal GUI fault.
+
+Code review found a deterministic fresh-profile navigation failure:
+`ConfigVersion2Updater` clears a CVar block and reloads all CVars after the
+Xbox default `gControlNav=1` was registered. With no saved value, Back/menu
+navigation is then disabled. Commits `27815b3ce` and `fd8386fd5` restore the
+default *after* migration, allow gamepad input to the modal popup, and bring
+over the working donor's right-stick cursor (A/B click, trigger scroll, R3
+mode toggle). Targeted PPC and host tests pass. Fresh 1,836-object XDK build,
+genuine link and ImageXex pass. Staged XEX SHA256:
+`7f3311a96ce40888a62b136178baf52604dffae90e57a1d6d29a3d266e203890`.
+The owned Xenia log shows this exact commit mounting both archives and reaching
+`gui-ready` and `init-complete`; visible menu/cursor interaction and hardware
+behavior of this candidate remain unverified. The same nonfatal first-chance
+exception occurs in Xenia and is not yet localized to a throw site.
+
 ## 2026-09-22 — Retail reaches SaveManager; migration/GUI trace ready
 
 Hardware XEX `ddbdf8dd...` produced a flushed 655-byte `game:` boot log,
