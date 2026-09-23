@@ -1,5 +1,23 @@
 # 3Shipsty status
 
+## 2026-09-22 — Processor parity did not stop retail shutdown
+
+The user tested XEX SHA256 `562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`:
+same HDD selector, same 5–6-second pause, power-off, no startup error dialog.
+The newly supplied 40,960-byte CON is byte-identical to the previous empty
+package. The pin was a real donor-parity fix but not a demonstrated crash fix;
+the empty, unflushed STFS package does not reveal the current fault boundary.
+
+An on-failure-only native exception/terminate receipt is checkpointed at
+`358435e6398b03cc6da1e3ddc4f50c70c770931f`. It records a fault code and
+address to `game:\3Shipsty.startup-fault` without changing storage, save, or
+gameplay behavior. Ten application tests, 19 game projection tests, targeted
+XDK compiles, fresh 1,836-object build, link and ImageXex pass. New staged XEX
+SHA256 `b4e9ebd4fd2ef843645ab9243fd54f145e10011239efd5d76321a1b1da898c03`.
+Its physical behavior is untested; only the XEX should be copied for the next
+run. If it still shuts down, retrieve the sidecar from the game directory if
+present. No more claim of a fixed retail boot is warranted.
+
 ## 2026-09-22 — Donor startup parity restored; new XEX awaits retail test
 
 Code-grounded audits of both working Xbox ports found the 9.2.3 title thread

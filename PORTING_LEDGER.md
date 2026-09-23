@@ -21,6 +21,23 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, retail rerun of main-thread parity candidate: XEX SHA256
+  `562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`
+  showed the same selector and 5–6-second post-HDD pause, then silent
+  power-off. Supplied CON SHA256
+  `7de209c096e75d776a9a2e58f6daf4a0912a51cf8c7d7b19c99dadcafefc8d98`
+  is identical to the prior blank package, so no crash stage can be inferred
+  from STFS. The processor pin is correct parity, but not the demonstrated
+  cause. Commit `358435e6398b03cc6da1e3ddc4f50c70c770931f` installs a
+  lightweight, on-failure-only native SEH/C++ terminate/handled-error receipt
+  to `game:\3Shipsty.startup-fault`, outside the unflushed save container.
+  It neither fakes a mount nor changes real application/worker paths. Fresh
+  1,836 PPC objects, genuine link/ImageXex, targeted native compiles and
+  startup tests pass. Staged diagnostic XEX SHA256
+  `b4e9ebd4fd2ef843645ab9243fd54f145e10011239efd5d76321a1b1da898c03`;
+  physical behavior remains untested. Absence of the sidecar on a shutdown
+  would not exclude a hardware-level failure or unwritable game directory.
+
 - 2026-09-22, three isolated donor-parity audits: both working ports pin the
   title/render thread to hardware thread 0 before startup; 9.2.3 had omitted
   that. `dd7ad363329e99de777efc3297ad6c065e7e8f76` restores the early

@@ -1,5 +1,45 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 same retail shutdown; bounded hard-fault receipt ready
+
+The user confirmed the physical console ran staged XEX SHA256
+`562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`.
+It showed the HDD selector, paused the same 5–6 seconds, then powered off
+without the new startup-error dialog. The supplied HDD `3Shipsty` package at
+`scratch/runtime/3Shipsty/3Shipsty` is 40,960 bytes with the **same SHA256**
+`7de209c096e75d776a9a2e58f6daf4a0912a51cf8c7d7b19c99dadcafefc8d98`
+as the earlier empty package. This proves the processor-0 pin did not resolve
+the shutdown. The empty CON cannot locate the fault because the clean app
+does not flush startup writes. Absence of a dialog does not by itself prove
+where the fault occurred; it may be a hard exception, a worker terminate, or
+a failure to present the error UI. Do not claim storage or speech as root cause.
+
+Commit `358435e6398b03cc6da1e3ddc4f50c70c770931f` adds one best-effort,
+on-failure-only native fault receipt. It installs the XDK unhandled-exception
+filter and C++ terminate handler before the real `InitOTR`; the existing Xbox
+projection of libultraship CrashHandler does not replace that filter. It also
+records a handled startup error *before* requesting the XAM dialog. A fault
+writes `game:\3Shipsty.startup-fault` beside the XEX with build commit,
+failure kind (`seh`, `terminate`, or `handled`), exception code, fault address,
+thread ID, and any handled error text. No file is opened on a successful
+startup, and no XContent flush or save path is changed. This is a diagnostic
+boundary, **not a claimed boot fix**. If the game directory is unwritable or
+the console powers down below the process exception layer, no receipt may
+survive; do not infer success from its absence.
+
+The native game, Context, and OTRGlobals targeted compiles, ten application
+tests, 19 game projection tests, fresh complete 1,836-object XDK build, genuine
+link and ImageXex passed. The linked map contains
+`Shipyard_InstallStartupFaultHandler`, and no temporary boot-stage calls are
+in generated startup. Staged `scratch/runtime/3Shipsty/3Shipsty.xex` is
+45,703,168 bytes, SHA256
+`b4e9ebd4fd2ef843645ab9243fd54f145e10011239efd5d76321a1b1da898c03`.
+Physical boot of this image remains untested. For one bounded console run,
+copy **only** this XEX (retain O2Rs/speech data and do not copy the separate
+CON evidence file). If it shuts down, copy `3Shipsty.startup-fault` from the
+game directory if present; its address can be resolved against
+`scratch/link-integration/3Shipsty.map`. If absent, report that explicitly.
+
 ## 2026-09-22 donor-parity audit and one consolidated hardware candidate
 
 Read-only audits against both working ports found one definite missing native
