@@ -1,5 +1,31 @@
 # 3Shipsty status
 
+## 2026-09-22 — Retail STFS bounds crash to failed logger initialization
+
+The user's second HDD `3Shipsty` CON package is 77,824 bytes, SHA256
+`0612bdc119285fee6f07e5d5c6edaa711bae21064e8f1f5ea5efc5c7d35cca1c`.
+Read-only file-table inspection found `mods`, `boot-1-mounted` through
+`boot-5-logging`, but no `boot-6-context` and no `logs` directory. This proves
+storage mount, preflight, archive discovery, and configuration completed on
+retail. `Context::InitLogging` catches its spdlog file-open exception and
+returns false, while the 9.2.3 caller ignored that return and dereferenced
+`GetLogger()`. The missing logs directory and exact stage boundary make this
+the next real fault; the error code inside spdlog was not captured.
+
+Code commit `7f174a11eec3248562af811daf5fcbf6adeba336` creates the logs
+directory through the existing Xbox-native filesystem and passes a preferred
+backslash path to the genuine spdlog sink. The application checks the logger
+return before use; if it still fails, `boot-7-logging-failed` is persisted
+instead of silently dereferencing a null logger. Targeted Context and
+OTRGlobals PPC compiles, source-order contracts, a fresh full 1,836-object
+build, link and ImageXex pass. The newly staged XEX SHA256 is
+`286c487203439042c0054f36fb1bd217b3ebbdc3953b42fecd3ef7506eb6241b`.
+Owned Xenia on this exact image opens the app log, records commit `7f174a1`,
+passes boot stages 1–6, initializes save metadata and scene startup. Retail
+success remains unproven; retest this image, then inspect a new HDD container
+if there is another fault. The diagnostic markers remain temporary until a
+clean hardware boot is established.
+
 ## 2026-09-22 — Retail crash is after storage mount; bounded diagnostic XEX
 
 The user copied the 57,344-byte HDD save package `3Shipsty` after the retail

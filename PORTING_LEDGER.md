@@ -21,6 +21,19 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, retail logger boundary: second HDD CON SHA256
+  `0612bdc119285fee6f07e5d5c6edaa711bae21064e8f1f5ea5efc5c7d35cca1c`
+  has boot stages 1–5 and `mods`, but no stage 6 or `logs`. The current
+  `Context::InitLogging` returned false on a file-sink exception, and SoH
+  immediately dereferenced the absent logger. `7f174a11eec3248562af811daf5fcbf6adeba336`
+  normalizes only the Xbox file-sink path, creates its directory through the
+  native filesystem, and checks the result before use; real spdlog and
+  modern application ownership remain intact. Full 1,836-object XDK build,
+  link/ImageXex, targeted compiles and order tests pass. New staged XEX SHA256
+  `286c487203439042c0054f36fb1bd217b3ebbdc3953b42fecd3ef7506eb6241b`.
+  Xenia logs real 9.2.3 startup, stages 1–6, save metadata and scene path.
+  Hardware outcome is pending; stage 7 now explicitly records a failed logger.
+
 - 2026-09-22, copied retail STFS package: 57,344 bytes, SHA256
   `23ce7ba95803282cd905946f626bc7d6a8a7e8ccac603732e666e3d36d909106`,
   valid CON/title `534F4809`, file table containing `mods` only. Selector and

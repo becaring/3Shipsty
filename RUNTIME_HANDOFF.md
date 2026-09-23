@@ -1,5 +1,36 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 logger boundary fixed in source; retail retest required
+
+The second user-supplied HDD STFS package (read only) is a valid 77,824-byte
+CON file, SHA256
+`0612bdc119285fee6f07e5d5c6edaa711bae21064e8f1f5ea5efc5c7d35cca1c`.
+File table: `mods`, `boot-1-mounted`, `boot-2-preflight`,
+`boot-3-archives`, `boot-4-config`, `boot-5-logging`; no
+`boot-6-context`, `boot-7-logging-failed`, or `logs` entry. Stage 5 was
+originally written immediately after `Context::InitLogging` regardless of its
+boolean result. The real method catches `spdlog_ex` and returns false on
+file-sink failure; the 9.2.3 caller then unconditionally dereferenced the
+logger. The absent logs directory is consistent with that exact fault.
+
+Code commit `7f174a11eec3248562af811daf5fcbf6adeba336` projects the real
+Context logger onto a native preferred path and creates its directory through
+`xbox_compat::filesystem` before constructing the unchanged spdlog sink.
+`OTRGlobals::Initialize` now checks the return before dereference and writes
+`boot-7-logging-failed` on failure. Targeted XDK compiles and source-order
+tests pass; fresh full 1,836-object build/link/ImageXex produced staged XEX
+`scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`286c487203439042c0054f36fb1bd217b3ebbdc3953b42fecd3ef7506eb6241b`.
+Owned Xenia log at `[03:00:30.058]` identifies genuine 9.2.3 and commit
+`7f174a1`; stages 1–6, real log, save metadata and scene startup followed.
+Xenia had an existing logs directory, so retail verification is still
+required. The user-supplied STFS file currently sits beside the staged XEX
+for evidence only; never copy that file back as part of the runtime package.
+Keep the O2Rs and speech data unchanged. If hardware fails again, copy the
+fresh HDD package and compare marker file timestamps with this attempt;
+stage 7 specifically indicates logger failure. Remove all temporary boot
+markers from source after hardware boot is confirmed.
+
 ## 2026-09-22 retail post-mount crash: diagnostic retest next
 
 The retail `3Shipsty` HDD save package supplied by the user was a valid
