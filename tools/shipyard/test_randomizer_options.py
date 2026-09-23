@@ -72,7 +72,12 @@ class OptionsContracts(unittest.TestCase):
         original=(ROOT/BASE/'option.cpp').read_text();projected=(OUT/'generated'/BASE/'option.cpp').read_text()
         def names(text):return [n.child_by_field_name('declarator').text.decode() for n in walk(PARSER.parse(text.encode()).root_node) if n.type=='function_definition']
         expected=[n for n in names(original) if not n.startswith('OptionValue::')]
-        self.assertEqual(expected,names(projected))
+        copy_methods=['Option::RebindCopiedPointers(const Option& source)',
+                      'Option::Option(const Option& other)',
+                      '& Option::operator=(const Option& other)']
+        actual=names(projected)
+        self.assertEqual(expected,[n for n in actual if n not in copy_methods])
+        self.assertEqual(copy_methods,[n for n in actual if n in copy_methods])
         self.assertNotIn('class OptionValue',(OUT/'generated'/BASE/'option.h').read_text())
         for name in ['option.h','settings.h']:
             self.assertEqual(fields((ROOT/BASE/name).read_text()),fields((OUT/'generated'/BASE/name).read_text()))

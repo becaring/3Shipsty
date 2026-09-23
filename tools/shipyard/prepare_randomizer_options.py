@@ -13,6 +13,98 @@ OWN=ROOT/'platform/shipyard/randomizer-options';OUT=ROOT/'scratch/randomizer-opt
 BASE='soh/soh/Enhancements/randomizer/'
 NAMES=['Option','LocationOption','TrickSetting','OptionGroup']
 
+# The canonical 9.2.3 Option copies raw pointers into its own strings. A Settings
+# assignment from an Option::U8 temporary then destroys the strings they name.
+# Keep the source hash-locked and repair ownership in the projected class only.
+COPY_DECLARATIONS='''    Option(const Option& other);
+    Option& operator=(const Option& other);
+'''
+COPY_REBIND='''void Option::RebindCopiedPointers(const Option& source) {
+    optionsMap.clear();
+    for (size_t i = 0; i < options.size(); ++i) {
+        optionsMap.insert(std::make_pair(static_cast<int32_t>(i), options[i].c_str()));
+    }
+    if (source.widgetOptions) {
+        switch (widgetType) {
+            case WIDGET_CVAR_CHECKBOX:
+                widgetOptions = std::make_shared<UIWidgets::CheckboxOptions>(
+                    *static_cast<UIWidgets::CheckboxOptions*>(source.widgetOptions.get()));
+                break;
+            case WIDGET_CVAR_COMBOBOX: {
+                std::shared_ptr<UIWidgets::ComboboxOptions> combo =
+                    std::make_shared<UIWidgets::ComboboxOptions>(
+                        *static_cast<UIWidgets::ComboboxOptions*>(source.widgetOptions.get()));
+                combo->comboMap = optionsMap;
+                widgetOptions = combo;
+                break;
+            }
+            case WIDGET_CVAR_SLIDER_INT: {
+                std::shared_ptr<UIWidgets::IntSliderOptions> slider =
+                    std::make_shared<UIWidgets::IntSliderOptions>(
+                        *static_cast<UIWidgets::IntSliderOptions*>(source.widgetOptions.get()));
+                for (size_t i = 0; i < source.options.size() && i < options.size(); ++i) {
+                    if (slider->format == source.options[i].c_str()) {
+                        slider->format = options[i].c_str();
+                        break;
+                    }
+                }
+                widgetOptions = slider;
+                break;
+            }
+            default:
+                widgetOptions = source.widgetOptions;
+                break;
+        }
+        if (widgetOptions != source.widgetOptions) {
+            widgetOptions->tooltip = description.c_str();
+            if (widgetOptions->disabledTooltip == source.disabledText.c_str()) {
+                widgetOptions->disabledTooltip = disabledText.c_str();
+            }
+        }
+    }
+    if (source.widgetInfo.options == source.widgetOptions && source.widgetInfo.options) {
+        widgetInfo.options = widgetOptions;
+    }
+    if (source.widgetInfo.options) widgetInfo.cVar = cvarName.c_str();
+}
+
+Option::Option(const Option& other) {
+    *this = other;
+}
+
+Option& Option::operator=(const Option& other) {
+    if (this == &other) return *this;
+    key = other.key;
+    name = other.name;
+    options = other.options;
+    contextSelection = other.contextSelection;
+    delayedSelection = other.delayedSelection;
+    hidden = other.hidden;
+    category = other.category;
+    cvarName = other.cvarName;
+    description = other.description;
+    widgetType = other.widgetType;
+    defaultOption = other.defaultOption;
+    defaultHidden = other.defaultHidden;
+    imFlags = other.imFlags;
+    disabled = other.disabled;
+    disabledText = other.disabledText;
+    optionsTextToVar = other.optionsTextToVar;
+    widgetOptions = other.widgetOptions;
+    // The upstream constructor leaves WidgetInfo's primitive fields uninitialized
+    // until AddWidget runs. Do not read them when copying an unregistered option.
+    if (other.widgetInfo.options) {
+        widgetInfo = other.widgetInfo;
+    } else {
+        widgetInfo = WidgetInfo(Shipyard::SohUI::ValueInit());
+    }
+    callback = other.callback;
+    RebindCopiedPointers(other);
+    return *this;
+}
+
+'''
+
 def enums(text):
     return re.sub(r'enum class (OptionCategory|OptionGroupType|WidgetContainerType|Tag) \{(.*?)\};',lambda m:strong_enum(m[1],m[2]),text,flags=re.S)
 
@@ -86,6 +178,7 @@ def project_option_source(text,defaults,gui_header):
     text=text.replace('optionsTextToVar.contains(text)','(optionsTextToVar.find(text) != optionsTextToVar.end())')
     text=text.replace('mTags.contains(tag)','(mTags.find(tag) != mTags.end())')
     text=once(text,'optionsMap.emplace(i, options[i].c_str());','optionsMap.insert(std::make_pair(i, options[i].c_str()));')
+    text=once(text,'Option::Option(size_t key_,',COPY_REBIND+'Option::Option(size_t key_,')
     return '#include <cassert>\n'+common(value_expressions(text))
 
 def prepare():
@@ -103,6 +196,8 @@ def prepare():
     option=edits_apply(option.encode(),[(cls.start_byte,cls.end_byte+1,'// Complete class comes from the single canonical OptionValue.h.')])
     option=once(option,'#include "randomizerTypes.h"','#include "soh/Enhancements/randomizer/randomizerTypes.h"\n#include "soh/Enhancements/randomizer/OptionValue.h"\n#include "randomizer-options/support.h"')
     option=once(option,'options_ = { "Off", "On" }','options_ = Shipyard::RandomizerOptions::StringOptions("Off", "On")')
+    option=once(option,'    Option() = default;',COPY_DECLARATIONS+'    Option() = default;')
+    option=once(option,'    bool RenderCheckbox();','    void RebindCopiedPointers(const Option& source);\n    bool RenderCheckbox();')
     option,audit=default_constructors(option);option=enums(option)
     tricks=enums(texts[BASE+'tricks.h']).replace('#include "randomizerTypes.h"','#include "soh/Enhancements/randomizer/randomizerTypes.h"\n#include "binary/compat.h"')
     settings=texts[BASE+'settings.h']

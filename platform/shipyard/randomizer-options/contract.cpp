@@ -60,11 +60,68 @@ struct Contract {
         assert(option.optionsTextToVar.size()==17 && option.optionsTextToVar[choices[16]]==16);
         UIWidgets::ComboboxOptions* combo=static_cast<UIWidgets::ComboboxOptions*>(option.widgetOptions.get());
         assert(combo->defaultIndex==3 && combo->comboMap.size()==17);
+#ifdef SHIPYARD_OPTIONS_PROJECTED
+        option.widgetInfo.options=option.widgetOptions;
+        option.widgetInfo.cVar=option.cvarName.c_str();
+        option.widgetInfo.type=WIDGET_CVAR_COMBOBOX;
+        option.Disable(std::string(120,'x'));
+        option.widgetOptions->disabledTooltip=option.disabledText.c_str();
+#endif
         Option copied=option;
+#ifdef SHIPYARD_OPTIONS_PROJECTED
+        assert(copied.widgetOptions && copied.widgetOptions!=option.widgetOptions);
+        assert(copied.widgetInfo.options==copied.widgetOptions);
+        assert(copied.widgetInfo.cVar==copied.cvarName.c_str());
+        UIWidgets::ComboboxOptions* copiedCombo=static_cast<UIWidgets::ComboboxOptions*>(copied.widgetOptions.get());
+        assert(copiedCombo->defaultIndex==3 && copiedCombo->comboMap.size()==17);
+        assert(copied.widgetOptions->tooltip==copied.description.c_str());
+        assert(copied.widgetOptions->disabledTooltip==copied.disabledText.c_str());
+        for(unsigned i=0;i<17;++i) {
+            assert(copied.optionsMap[i]==copied.options[i].c_str());
+            assert(copiedCombo->comboMap[i]==copied.options[i].c_str());
+            assert(strcmp(copiedCombo->comboMap[i],choices[i].c_str())==0);
+        }
+        Option assigned;
+        assigned=option;
+        assert(assigned.widgetOptions && assigned.widgetOptions!=option.widgetOptions);
+        assert(assigned.widgetInfo.options==assigned.widgetOptions);
+        assert(assigned.widgetInfo.cVar==assigned.cvarName.c_str());
+        UIWidgets::ComboboxOptions* assignedCombo=static_cast<UIWidgets::ComboboxOptions*>(assigned.widgetOptions.get());
+        assert(assigned.widgetOptions->tooltip==assigned.description.c_str());
+        assert(assigned.widgetOptions->disabledTooltip==assigned.disabledText.c_str());
+        for(unsigned i=0;i<17;++i) {
+            assert(assigned.optionsMap[i]==assigned.options[i].c_str());
+            assert(assignedCombo->comboMap[i]==assigned.options[i].c_str());
+        }
+        assigned=assigned;
+        assert(assignedCombo->comboMap[16]==assigned.options[16].c_str());
+        Option fromTemporary;
+        fromTemporary=Option::U8(static_cast<RandomizerSettingKey>(3),"Temporary",choices,
+            OptionCategory::Setting,"temporary",std::string(150,'t'));
+        UIWidgets::ComboboxOptions* temporaryCombo=static_cast<UIWidgets::ComboboxOptions*>(fromTemporary.widgetOptions.get());
+        for(unsigned i=0;i<17;++i) {
+            assert(fromTemporary.optionsMap[i]==fromTemporary.options[i].c_str());
+            assert(temporaryCombo->comboMap[i]==fromTemporary.options[i].c_str());
+            assert(strcmp(temporaryCombo->comboMap[i],choices[i].c_str())==0);
+        }
+        assert(fromTemporary.widgetOptions->tooltip==fromTemporary.description.c_str());
+        boolean.widgetInfo.cVar=nullptr;
+        Option copiedBoolean=boolean;
+        assert(copiedBoolean.widgetOptions!=boolean.widgetOptions);
+        assert(copiedBoolean.widgetOptions->tooltip==copiedBoolean.description.c_str());
+        assert(copiedBoolean.optionsMap[1]==copiedBoolean.options[1].c_str());
+        std::vector<std::string> sliderChoices;
+        sliderChoices.push_back("Zero");sliderChoices.push_back("One");sliderChoices.push_back("Two");
+        Option slider;
+        slider=Option::U8(static_cast<RandomizerSettingKey>(4),"Slider",sliderChoices,
+            OptionCategory::Setting,"slider",std::string(150,'s'),WIDGET_CVAR_SLIDER_INT,1);
+        UIWidgets::IntSliderOptions* sliderWidget=static_cast<UIWidgets::IntSliderOptions*>(slider.widgetOptions.get());
+        assert(sliderWidget->format==slider.options[1].c_str());
+        assert(sliderWidget->tooltip==slider.description.c_str());
+        assert(slider.optionsMap[1]==slider.options[1].c_str());
+#else
         assert(copied.widgetOptions==option.widgetOptions);
-        // Preserve upstream's shared widget options and pointer map on copies.
-        assert(copied.optionsMap[0]==option.optionsMap[0]);
-        assert(copied.optionsMap[0]!=copied.options[0].c_str());
+#endif
         for(unsigned i=0;i<256;++i) {
             option.SetContextIndex(static_cast<uint8_t>(i));
             assert(option.contextSelection==(i<17?i:16));
