@@ -1,11 +1,11 @@
 {
   "gfx_xenos.cpp": {
-    "source": "D:\\Projects\\SoH360\\platform\\xbox360\\gfx_xenos.cpp",
-    "sha256": "7b9aa91c8233b753d7b278e1f65c0367a58de88cd7a5e6016da99f1833c09a82",
+    "source": "../LibUltraShip+Fast3D360/sources/xenos/gfx_xenos.cpp",
+    "sha256": "2d2e719ae10c5f730f07c9f48a752d1a1a0e1ec6e13e08f26da5ad9f9e295167",
     "classification": "generic Xbox rendering; only reviewed current-interface regions selected"
   },
   "native_extensions.inc": {
-    "source": "D:\\Projects\\Smash360\\platform\\xbox360\\graphics\\native_extensions.inc",
+    "source": "../LibUltraShip+Fast3D360/sources/xenos/native_extensions.inc",
     "sha256": "6212ae8795aa742874fb84def55b071d9d26444b1b760c56549d22f63c88022f",
     "classification": "generic Xbox rendering; only reviewed current-interface regions selected"
   },

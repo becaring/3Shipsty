@@ -8,12 +8,17 @@ from collections import Counter
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 import re
 import subprocess
 import xml.etree.ElementTree as ET
 
 from source_inventory import ROOT, BASE, inventory
+PLATFORM_BASE = ROOT.parent/'LibUltraShip+Fast3D360'
+sys.path.insert(0,str(PLATFORM_BASE/'python'))
+from xbox360_platform.build_policy import CXX_MSBUILD
+from xbox360_platform.contract import verify as verify_platform_base
 
 CONFIG = ROOT / 'platform/shipyard/build/subsystems.json'
 OUT = ROOT / 'scratch/project-xdk'
@@ -230,6 +235,7 @@ def node(parent, name, value=None, **attributes):
 
 
 def project(manifest, subsystem=None):
+    verify_platform_base(PLATFORM_BASE,ROOT/'platform-base.lock.json')
     p = ET.Element('{'+NS+'}Project', {'DefaultTargets':'Build', 'ToolsVersion':'4.0'})
     group = node(p, 'ItemGroup', Label='ProjectConfigurations')
     c = node(group, 'ProjectConfiguration', Include='Release|Xbox 360')
@@ -249,7 +255,7 @@ def project(manifest, subsystem=None):
     node(g, 'TargetName', 'ShipyardCompileOnly')
     d = node(node(p, 'ItemDefinitionGroup'), 'ClCompile')
     for name, value in [('PrecompiledHeader','NotUsing'),('RuntimeLibrary','MultiThreaded'),
-                        ('DebugInformationFormat',''),('WarningLevel','Level3')]:
+                        ('DebugInformationFormat',''),('WarningLevel','Level3'),*CXX_MSBUILD]:
         node(d, name, value)
     items = node(p, 'ItemGroup')
     for source in manifest['sources']:

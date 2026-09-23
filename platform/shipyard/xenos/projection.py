@@ -48,7 +48,13 @@ def native_core(original):
     text = replace_once(text,"    native_state.constants_valid=false;native_state.alpha_valid=false;",
         "    native_state.constants_valid=false;native_state.alpha_valid=false;\n    native_state.binding_constants_valid=false;")
     text = replace_once(text,"template<int tile> void ApplySamplerSlot",
-        'void SetNativeBindingConstants(const float* values) { Shipyard_Check(xenos_device->SetPixelShaderConstantF(8,values,6),"binding constants"); }\n\ntemplate<int tile> void ApplySamplerSlot')
+        'void SetNativeBindingConstants(const float* values) {\n'
+        '    if(native_state.binding_constants_valid &&\n'
+        '       memcmp(native_state.binding_constants,values,sizeof(native_state.binding_constants))==0)return;\n'
+        '    Shipyard_Check(xenos_device->SetPixelShaderConstantF(8,values,6),"binding constants");\n'
+        '    memcpy(native_state.binding_constants,values,sizeof(native_state.binding_constants));\n'
+        '    native_state.binding_constants_valid=true;\n'
+        '}\n\ntemplate<int tile> void ApplySamplerSlot')
     text = replace_once(text,"    if(tile==0)return smash_device->SetTexture(0,texture);\n    return smash_device->SetTexture(1,texture);", "    return smash_device->SetTexture(tile,texture);")
     text = replace_once(text,"    if(tile==0)ApplySamplerSlot<0>(sampler);else ApplySamplerSlot<1>(sampler);", """    switch(tile) {
     case 0:ApplySamplerSlot<0>(sampler);break;case 1:ApplySamplerSlot<1>(sampler);break;

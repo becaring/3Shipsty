@@ -13,6 +13,7 @@ from prepare_configuration import once
 
 OWN=ROOT/'platform/shipyard/xenos'
 OUT=ROOT/'scratch/xenos-xdk'
+PLATFORM_BASE=ROOT.parent/'LibUltraShip+Fast3D360'
 
 
 def prepare():
@@ -21,7 +22,7 @@ def prepare():
     sources={}
     for name,row in json.loads((OWN/'donor.lock.json').read_text()).items():
         if 'sha256' not in row:continue
-        raw=(OWN/'donor'/name).read_bytes()
+        raw=(PLATFORM_BASE/'sources/xenos'/name).read_bytes()
         if hashlib.sha256(raw).hexdigest()!=row['sha256']:raise ValueError('Xenos donor drift '+name)
         sources[name]=raw.decode('utf-8-sig').replace('\r\n','\n')
     text=runpy.run_path(str(OWN/'projection.py'))['native_core'](sources['gfx_xenos.cpp'])
@@ -39,8 +40,6 @@ def prepare():
               'bool framebuffer_clear_reuse_disabled=false;\nunsigned framebuffer_clear_count,framebuffer_restore_avoided,framebuffer_depth_restore_avoided;')
     text=once(text,'static_assert(__alignof(NativeStateCache)>=16 && offsetof(NativeStateCache,constants)%16==0,\n              "native pixel constants must be 16-byte aligned");',
               'typedef char NativeConstantsAligned[(__alignof(NativeStateCache)>=16 && offsetof(NativeStateCache,constants)%16==0)?1:-1];')
-    text=once(text,'    __declspec(align(16)) float binding_constants[24];\n    bool binding_constants_valid;','')
-    text=once(text,'    native_state.binding_constants_valid=false;','')
     extension=sources['native_extensions.inc']
     begin=extension.index('void CopyRegion(');end=extension.index('\n}\n\nvoid InitializeNativeDisplay()',begin)
     extension='namespace {\n'+extension[begin:end]+'\n}\n'

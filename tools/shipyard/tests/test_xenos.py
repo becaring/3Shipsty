@@ -41,6 +41,50 @@ int main(){
     flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [OWN,OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'scratch/graphics-xdk/include']]
     env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
     result=env['invoke']([folder/'contract.exe'],folder,'run')
-    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],target_runtime_executed=False),indent=2)+'\n')
+    generated=(OUT/'generated/native.cpp').read_text()
+    begin=generated.index('void SetNativeBindingConstants(')
+    end=generated.index('\n}',begin)+2
+    assert 'native_state.binding_constants_valid=false;' in generated
+    binding='''#include <cstring>
+#include <cstdio>
+#include <stdexcept>
+struct NativeState { float binding_constants[24]; bool binding_constants_valid; } native_state = {};
+struct Device {
+    int writes = 0;
+    float values[24] = {};
+    int SetPixelShaderConstantF(int start, const float* values, int count) {
+        if (start != 8 || count != 6) return -1;
+        std::memcpy(this->values, values, sizeof(this->values));
+        ++writes;
+        return 0;
+    }
+} device, *xenos_device = &device;
+void Shipyard_Check(int result, const char*) { if (result) throw std::runtime_error("SDK write"); }
+''' + generated[begin:end] + '''
+int main() {
+    float values[24] = {};
+    SetNativeBindingConstants(values);
+    SetNativeBindingConstants(values);
+    if (device.writes != 1) return 1;
+    values[23] = 640.0f;
+    SetNativeBindingConstants(values);
+    SetNativeBindingConstants(values);
+    if (device.writes != 2 || device.values[23] != 640.0f) return 2;
+    native_state.binding_constants_valid = false;
+    SetNativeBindingConstants(values);
+    if (device.writes != 3) return 3;
+    values[0] = -0.0f;
+    SetNativeBindingConstants(values);
+    if (device.writes != 4) return 4;
+    std::puts("binding constants: reuse, change, invalidation, exact bits pass");
+}
+'''
+    stable(folder/'binding_contract.cpp',binding)
+    env['invoke']([compiler,'/nologo','/std:c++20','/EHsc','/MD',folder/'binding_contract.cpp',
+                   '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'binding_contract.exe')],folder,'build-binding',environment)
+    binding_result=env['invoke']([folder/'binding_contract.exe'],folder,'run-binding')
+    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout']+binding_result['stdout'],
+                                                  target_runtime_executed=False),indent=2)+'\n')
     print(result['stdout'])
+    print(binding_result['stdout'])
 if __name__=='__main__':main()

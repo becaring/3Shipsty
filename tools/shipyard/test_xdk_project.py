@@ -23,6 +23,12 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(len(items), len(self.manifest['sources']))
         self.assertEqual(len({r['object'] for r in self.manifest['sources']}), len(items))
 
+    def test_shared_xbox_compiler_policy(self):
+        xml = ET.fromstring(gen.project(self.manifest))
+        definition = xml.find('.//{'+gen.NS+'}ItemDefinitionGroup/{'+gen.NS+'}ClCompile')
+        self.assertEqual(definition.findtext('{'+gen.NS+'}FunctionLevelLinking'), 'true')
+        self.assertEqual(definition.findtext('{'+gen.NS+'}FloatingPointModel'), 'Precise')
+
     def test_complete_application_inventory(self):
         app = [r for r in self.manifest['coverage'] if r['role']=='application']
         self.assertEqual(len(app), 1094)

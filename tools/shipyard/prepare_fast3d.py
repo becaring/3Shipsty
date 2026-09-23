@@ -234,7 +234,10 @@ def prepare():
     text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
     text=text.replace('constexpr size_t','const size_t')
     text=re.sub(r'using (\w+) = ([^;]+?)\(\*\)(\([^;]*\));',r'typedef \2 (*\1)\3;',text)
+    vertex_packing=runpy.run_path(str(OWN/'vertex_packing.py'))
+    text=vertex_packing['transform'](text)
     pending['src/fast/interpreter.cpp']=text
+    pending['include/fast3d/unit_color.h']=vertex_packing['color_header']()
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
     for name,text in pending.items():stable(OUT/'generated'/name,text)
     stable(OUT/'manifest.json',json.dumps(dict(outputs={n:hashlib.sha256(t.encode()).hexdigest() for n,t in pending.items()},
