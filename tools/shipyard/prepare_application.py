@@ -99,6 +99,18 @@ def platform_source(source):
     try { Shipyard::Storage::Mount(); }
     catch (...) { SDLNet_Quit(); throw; }
 '''.rstrip())
+    source=once(source,'    OTRGlobals::Instance = new OTRGlobals();',
+                '    Shipyard::Storage::RecordBootStage(1);\n    OTRGlobals::Instance = new OTRGlobals();')
+    source=once(source,'    OTRGlobals::Instance->RunExtract(argc, argv);',
+                '    OTRGlobals::Instance->RunExtract(argc, argv);\n    Shipyard::Storage::RecordBootStage(2);')
+    source=once(source,'    OTRGlobals::Instance->Initialize();',
+                '    OTRGlobals::Instance->Initialize();\n    Shipyard::Storage::RecordBootStage(6);')
+    source=once(source,'    std::unordered_set<uint32_t> ValidHashes = {',
+                '    Shipyard::Storage::RecordBootStage(3);\n    std::unordered_set<uint32_t> ValidHashes = {')
+    source=once(source,'    context->InitConsoleVariables();\n    auto logLevel =',
+                '    context->InitConsoleVariables();\n    Shipyard::Storage::RecordBootStage(4);\n    auto logLevel =')
+    source=once(source,'    context->InitLogging(logLevel, logLevel);',
+                '    context->InitLogging(logLevel, logLevel);\n    Shipyard::Storage::RecordBootStage(5);')
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'#ifdef __APPLE__\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();',
                 '#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();')
