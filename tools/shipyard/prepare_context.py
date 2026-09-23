@@ -34,6 +34,18 @@ def transform(name,text):
         text=once(text,'#include <spdlog/sinks/stdout_color_sinks.h>', '#ifndef _XBOX\n#include <spdlog/sinks/stdout_color_sinks.h>\n#endif')
         text=text.replace('#ifdef _WIN32','#if defined(_WIN32) && !defined(_XBOX)')
         text=once(text,'#if (!defined(_WIN32)) || defined(_DEBUG)','#if !defined(_XBOX) && ((!defined(_WIN32)) || defined(_DEBUG))')
+        text=once(text,'        auto logPath = GetPathRelativeToAppDirectory(("logs/" + GetName() + ".log"));',
+                  '''        auto logPath = GetPathRelativeToAppDirectory(("logs/" + GetName() + ".log"));
+#ifdef _XBOX
+        // XDK CRT/spdlog do not normalize a mounted multi-character root.
+        // Create the directory through Shipyard's native filesystem boundary,
+        // then give the unchanged spdlog sink a preferred native path.
+        xbox_compat::filesystem::path nativeLogPath(logPath);
+        std::error_code logDirectoryError;
+        xbox_compat::filesystem::create_directories(nativeLogPath.parent_path(), logDirectoryError);
+        if (logDirectoryError) return false;
+        logPath = nativeLogPath.make_preferred().string();
+#endif''')
         # Actual startup can fail before publishing these owners. Preserve
         # cleanup order while allowing that existing failure path to unwind.
         text=once(text,'    GetWindow()->SaveWindowToConfig();','    if (GetWindow()) GetWindow()->SaveWindowToConfig();')

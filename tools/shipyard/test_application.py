@@ -58,6 +58,10 @@ class ApplicationContracts(unittest.TestCase):
         body=function(projected,'OTRGlobals::Initialize').text.decode()
         stages=[body.index('RecordBootStage('+str(stage)+')') for stage in (3,4,5)]
         self.assertEqual(stages,sorted(stages))
+        self.assertLess(body.index('if (!context->InitLogging('),
+                        body.index('GetLogger()->set_pattern('))
+        self.assertLess(body.index('RecordBootStage(7)'),
+                        body.index('GetLogger()->set_pattern('))
         landmarks=[
             'gSaveStateMgr = std::make_shared<SaveStateMgr>();',
             'gRandoContext->InitStaticData();',

@@ -132,7 +132,8 @@ void RecordBootStage(unsigned stage) {
         "shipyard:\\boot-3-archives",
         "shipyard:\\boot-4-config",
         "shipyard:\\boot-5-logging",
-        "shipyard:\\boot-6-context"
+        "shipyard:\\boot-6-context",
+        "shipyard:\\boot-7-logging-failed"
     };
     if(stage==0 || stage>=sizeof(paths)/sizeof(paths[0]))return;
     Async::lock_guard<Async::mutex> lock(mutex);
