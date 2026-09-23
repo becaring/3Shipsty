@@ -1,6 +1,7 @@
 """Startup boundary evidence; deliberately does not claim full application coverage."""
 import hashlib
 import json
+import re
 import runpy
 import struct
 import subprocess
@@ -35,6 +36,8 @@ class ApplicationContracts(unittest.TestCase):
         # All application initializers retain their order; platform lifetime
         # surrounds them and value construction keeps Anchor's upstream zeros.
         init=function(projected,'InitOTR').text.decode()
+        init=re.sub(r'^    Shipyard::Platform::RecordBootStage\("[a-z-]+", (?:true|false)\);\n',
+                    '',init,flags=re.MULTILINE)
         init=init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n','')
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
@@ -55,7 +58,10 @@ class ApplicationContracts(unittest.TestCase):
         body=function(projected,'OTRGlobals::Initialize').text.decode()
         self.assertLess(body.index('if (!context->InitLogging('),
                         body.index('GetLogger()->set_pattern('))
-        self.assertNotIn('RecordBootStage(',body)
+        initialize_stages=['logging-ready','audio-ready','factories-ready','randomizer-ready']
+        stage_positions=[body.index('RecordBootStage("'+stage+'"') for stage in initialize_stages]
+        self.assertEqual(stage_positions,sorted(stage_positions))
+        self.assertEqual(body.count('RecordBootStage('),len(initialize_stages))
         landmarks=[
             'gSaveStateMgr = std::make_shared<SaveStateMgr>();',
             'gRandoContext->InitStaticData();',
@@ -176,17 +182,32 @@ int main() {
         self.assertLess(source.index('extern "C" void InitOTR('),
                         source.index('extern "C" int Shipyard_TryInitOTR('))
 
-    def test_hardware_fault_receipt_has_no_success_path_io(self):
+    def test_hardware_fault_receipt_has_dual_sink_and_bounded_boot_checkpoints(self):
         platform=(ROOT/'platform/shipyard/context/platform.cpp').read_text()
         recorder=platform[platform.index('void RecordNativeFault('):platform.index('LONG WINAPI ShipyardUnhandledFault(')]
         installer=platform[platform.index('extern "C" void Shipyard_InstallStartupFaultHandler()'):
                            platform.index('namespace Shipyard { namespace Platform')]
         self.assertIn('game:\\\\3Shipsty.startup-fault',recorder)
-        self.assertIn('FlushFileBuffers(file)',recorder)
-        self.assertNotIn('XContentFlush',recorder)
+        self.assertIn('shipyard:\\\\startup-fault.txt',recorder)
+        self.assertIn('XContentFlush("shipyard", NULL)',recorder)
+        self.assertIn('FlushFileBuffers(file)',platform)
         self.assertIn('SetUnhandledExceptionFilter(ShipyardUnhandledFault)',installer)
         self.assertIn('std::set_terminate(ShipyardTerminated)',installer)
+        self.assertIn('signal(SIGABRT, ShipyardAborted)',installer)
         self.assertNotIn('RecordNativeFault(',installer)
+        source=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        start=function(source,'InitOTR').text.decode()
+        stages=['entry','mounted','constructor-ready','pre-context','context-ready',
+                'save-worker-ready','gui-ready','speech-ready','init-complete']
+        positions=[start.index('RecordBootStage("'+stage+'"') for stage in stages]
+        self.assertEqual(positions,sorted(positions))
+        self.assertEqual(start.count('RecordBootStage('),len(stages))
+        self.assertIn('RecordBootStage("mounted", true)',start)
+        self.assertIn('RecordBootStage("pre-context", true)',start)
+        self.assertEqual(start.count(', true)'),2)
+        for path in ('platform/shipyard/xenos/services.cpp','platform/shipyard/audio/audio_log.cpp'):
+            fatal=(ROOT/path).read_text()
+            self.assertLess(fatal.index('RecordStartupFatal('),fatal.index('std::abort()'))
 
     def test_native_startup_failure_returns_and_reports_code(self):
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')

@@ -94,15 +94,38 @@ def platform_source(source):
     source=once(source,'    OTRAudio_Exit();','    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();')
     source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
     source=once(source,'extern "C" void InitOTR(int argc, char* argv[]) {','''extern "C" void InitOTR(int argc, char* argv[]) {
+    Shipyard::Platform::RecordBootStage("entry", false);
     xbox_compat::filesystem::InitWorkingDirectory("game:/");
     if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
     try { Shipyard::Storage::Mount(); }
     catch (...) { SDLNet_Quit(); throw; }
+    Shipyard::Platform::RecordBootStage("mounted", true);
 '''.rstrip())
+    source=once(source,'    OTRGlobals::Instance = new OTRGlobals();',
+                '    OTRGlobals::Instance = new OTRGlobals();\n    Shipyard::Platform::RecordBootStage("constructor-ready", false);')
+    source=once(source,'    OTRGlobals::Instance->RunExtract(argc, argv);',
+                '    OTRGlobals::Instance->RunExtract(argc, argv);\n    Shipyard::Platform::RecordBootStage("pre-context", true);')
+    source=once(source,'    OTRGlobals::Instance->Initialize();',
+                '    OTRGlobals::Instance->Initialize();\n    Shipyard::Platform::RecordBootStage("context-ready", false);')
+    source=once(source,'    SaveManager::Instance = new SaveManager();',
+                '    SaveManager::Instance = new SaveManager();\n    Shipyard::Platform::RecordBootStage("save-worker-ready", false);')
+    source=once(source,'    SohGui::SetupMenuElements();',
+                '    SohGui::SetupMenuElements();\n    Shipyard::Platform::RecordBootStage("gui-ready", false);')
+    source=once(source,'    SpeechSynthesizer::Instance->Init();',
+                '    SpeechSynthesizer::Instance->Init();\n    Shipyard::Platform::RecordBootStage("speech-ready", false);')
+    source=once(source,'    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();',
+                '    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();\n    Shipyard::Platform::RecordBootStage("init-complete", false);')
     source=once(source,'    context->InitLogging(logLevel, logLevel);',
                 '''    if (!context->InitLogging(logLevel, logLevel)) {
         throw std::runtime_error("Xbox save-container log initialization failed");
-    }''')
+    }
+    Shipyard::Platform::RecordBootStage("logging-ready", false);''')
+    source=once(source,'    context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });',
+                '    context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });\n    Shipyard::Platform::RecordBootStage("audio-ready", false);')
+    source=once(source,'    gSaveStateMgr = std::make_shared<SaveStateMgr>();',
+                '    Shipyard::Platform::RecordBootStage("factories-ready", false);\n    gSaveStateMgr = std::make_shared<SaveStateMgr>();')
+    source=once(source,'    gRandomizer = std::make_shared<Randomizer>();',
+                '    gRandomizer = std::make_shared<Randomizer>();\n    Shipyard::Platform::RecordBootStage("randomizer-ready", false);')
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
 // failure escape through the C game entry before its crash handler exists.

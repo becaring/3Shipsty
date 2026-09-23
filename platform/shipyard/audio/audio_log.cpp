@@ -1,4 +1,5 @@
 #include "audio_log.h"
+#include "context/platform.h"
 #include <spdlog/spdlog.h>
 #include <cstdarg>
 #include <cstdio>
@@ -13,6 +14,7 @@ void ShipyardAudioLog(const char* format, ...) {
     spdlog::info("{}", buffer);
 }
 __declspec(noreturn) void ShipyardAudioFatal(const char* operation, HRESULT result) {
+    Shipyard::Platform::RecordStartupFatal(operation, static_cast<unsigned long>(result));
     try {
         spdlog::critical("XAudio2 failure: {} ({:08x})", operation, static_cast<unsigned>(result));
         spdlog::default_logger()->flush();

@@ -1,5 +1,6 @@
 #include "services.h"
 #include "metrics.h"
+#include "context/platform.h"
 #include <spdlog/spdlog.h>
 #include <cstdarg>
 #include <cstdio>
@@ -16,6 +17,7 @@ void Shipyard_Log(const char* format,...) {
 // not format or emit their high-volume diagnostic events.
 extern "C" void Shipyard_RuntimeTrace(const char*,...) {}
 void Shipyard_Fatal(const char* operation,HRESULT result){
+    Shipyard::Platform::RecordStartupFatal(operation,static_cast<unsigned long>(result));
     try{spdlog::critical("Xenos failure: {} ({:08x})",operation,static_cast<unsigned>(result));spdlog::default_logger()->flush();}
     catch(...){OutputDebugStringA("Shipyard fatal graphics failure while logging\n");}
     std::abort();
