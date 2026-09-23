@@ -110,7 +110,7 @@ def platform_source(source):
     source=once(source,'    SaveManager::Instance = new SaveManager();',
                 '    SaveManager::Instance = new SaveManager();\n    Shipyard::Platform::RecordBootStage("save-worker-ready", false);')
     source=once(source,'    conf->RunVersionUpdates();',
-                '    Shipyard::Platform::RecordBootStage("config-updaters-ready", false);\n    conf->RunVersionUpdates();\n    Shipyard::Platform::RecordBootStage("config-ready", false);')
+                '    Shipyard::Platform::RecordBootStage("config-updaters-ready", false);\n    conf->RunVersionUpdates();\n    Shipyard::Platform::RecordBootStage("config-ready", false);\n    // Migration v2 reloads CVars and drops defaults registered before it.\n    CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);')
     source=once(source,'    SohGui::SetupGuiElements();',
                 '    SohGui::SetupGuiElements();\n    Shipyard::Platform::RecordBootStage("gui-windows-ready", false);')
     source=once(source,'    SohGui::SetupMenuElements();',

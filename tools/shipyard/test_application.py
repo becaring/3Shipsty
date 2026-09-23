@@ -39,6 +39,7 @@ class ApplicationContracts(unittest.TestCase):
         init=re.sub(r'^    Shipyard::Platform::RecordBootStage\("[a-z-]+", (?:true|false)\);\n',
                     '',init,flags=re.MULTILINE)
         init=init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n','')
+        init=init.replace('    // Migration v2 reloads CVars and drops defaults registered before it.\n    CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);\n','')
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
         xbox_selection='#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)'
@@ -159,6 +160,17 @@ int main() {
         self.assertLess(start.index('Storage::Mount()'),start.index('new OTRGlobals()'))
         self.assertIn('xbox_compat::filesystem::InitWorkingDirectory("game:/");',start)
         self.assertLess(start.index('InitWorkingDirectory('),start.index('Storage::Mount()'))
+        self.assertLess(start.index('conf->RunVersionUpdates();'),
+                        start.index('CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);'))
+        self.assertLess(start.index('CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);'),
+                        start.index('SohGui::SetupGuiElements();'))
+        # Version 2's ClearBlock reloads CVars, erasing the pre-migration
+        # Xbox default on a fresh profile; the post-migration register restores it.
+        updater=(ROOT/'soh/soh/config/ConfigUpdaters.cpp').read_text()
+        console=(ROOT/'libultraship/src/ship/config/ConsoleVariable.cpp').read_text()
+        self.assertIn('CVarClearBlock("gAudioEditor.ReplacedSequences")',updater)
+        self.assertIn('void ConsoleVariable::ClearBlock(const char* name)',console)
+        self.assertIn('    Load();\n}',console[console.index('void ConsoleVariable::ClearBlock('):])
         for remote in ('CrowdControl','Sail','Anchor'):
             self.assertLess(stop.index(remote+'::Instance->Disable();'),stop.index('OTRAudio_Exit();'))
         self.assertLess(stop.index('OTRAudio_Exit();'),stop.index('Shipyard::Libultra::StopTimers();'))
