@@ -20,6 +20,14 @@ def main():
         original=(ROOT/(BASE+name+'.cpp')).read_text(encoding='utf-8-sig');projected=(OUT/'generated'/(BASE+name+'.cpp')).read_text()
         names=lambda text:[n.child_by_field_name('declarator').text.decode().split('(')[0].strip() for n in functions(text)]
         assert set(names(original))<=set(names(projected)),name
+        if name=='SohMenu':
+            body=select(projected,'SohMenu::AddMenuElements')
+            stages=['menu-settings-begin','menu-settings-done','menu-enhancements-done',
+                    'menu-randomizer-done','menu-network-done','menu-devtools-done',
+                    'menu-init-hooks-begin','menu-init-hooks-done']
+            positions=[body.index('RecordBootStage("'+stage+'"') for stage in stages]
+            assert positions==sorted(positions)
+            assert body.count('RecordBootStage(')==len(stages)
     for projected in [False,True]:
         folder=OUT/('host-projected' if projected else 'host-original');folder.mkdir(exist_ok=True)
         source='#include "MenuTypes.h"\n'

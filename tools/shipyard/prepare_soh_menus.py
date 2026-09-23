@@ -56,6 +56,23 @@ def project(name,text):
     if name=='SohModals.cpp':
         text=once(text,'modals.push_back({ title, message, button1, button2, button1callback, button2callback });','SohModal value;value.title_=title;value.message_=message;value.button1_=button1;value.button2_=button2;value.button1callback_=button1callback;value.button2callback_=button2callback;modals.push_back(value);')
     if name=='SohMenu.cpp':
+        text='#include "context/platform.h"\n'+text
+        text=once(text,'    AddMenuSettings();\n    AddMenuEnhancements();\n    AddMenuRandomizer();\n    AddMenuNetwork();\n    AddMenuDevTools();',
+                  '''    Shipyard::Platform::RecordBootStage("menu-settings-begin", false);
+    AddMenuSettings();
+    Shipyard::Platform::RecordBootStage("menu-settings-done", false);
+    AddMenuEnhancements();
+    Shipyard::Platform::RecordBootStage("menu-enhancements-done", false);
+    AddMenuRandomizer();
+    Shipyard::Platform::RecordBootStage("menu-randomizer-done", false);
+    AddMenuNetwork();
+    Shipyard::Platform::RecordBootStage("menu-network-done", false);
+    AddMenuDevTools();
+    Shipyard::Platform::RecordBootStage("menu-devtools-done", false);''')
+        text=once(text,'    for (auto& initFunc : MenuInit::GetInitFuncs()) {',
+                  '    Shipyard::Platform::RecordBootStage("menu-init-hooks-begin", false);\n    for (auto& initFunc : MenuInit::GetInitFuncs()) {')
+        text=once(text,'    mMenuElementsInitialized = true;',
+                  '    Shipyard::Platform::RecordBootStage("menu-init-hooks-done", false);\n    mMenuElementsInitialized = true;')
         text=once(text,': Menu(consoleVariable, name, 0, UIWidgets::Colors::LightBlue) {',': Menu(consoleVariable, name, 0, UIWidgets::Colors::LightBlue), mMenuElementsInitialized(false) {')
         text=once(text,'SidebarEntry{ .columnCount = columnCount }','MakeSidebarEntry(columnCount)')
         text=once(text,'push_back({});','push_back(std::vector<WidgetInfo>());')
