@@ -57,8 +57,36 @@ def prepare():
     if text.count(old)!=1:raise ValueError('StormLib WinInet link pragma changed')
     text=text.replace(old,'#ifndef _XBOX\n'+old+'\n#endif')
     stable(path,text)
+    path=OUT/'generated/src/SBaseCommon.cpp';text=path.read_text()
+    # The MPQ ciphertext is converted to native DWORDs before these helpers
+    # run. The pinned unaligned path reconstructs its return value as
+    # little-endian bytes, corrupting the rolling key on big-endian Xenon.
+    # memcpy preserves native word order without unaligned PPC accesses.
+    for name, body in (
+        ('EncryptUInt32Unaligned', '''    DWORD plain;
+    DWORD encrypted;
+    memcpy(&plain, pbDataPointer, sizeof(plain));
+    encrypted = plain ^ dwXorKey;
+    memcpy(pbDataPointer, &encrypted, sizeof(encrypted));
+    return plain;'''),
+        ('DecryptUInt32Unaligned', '''    DWORD decrypted;
+    memcpy(&decrypted, pbDataPointer, sizeof(decrypted));
+    decrypted ^= dwXorKey;
+    memcpy(pbDataPointer, &decrypted, sizeof(decrypted));
+    return decrypted;'''),
+    ):
+        pattern=(r'static DWORD '+name+
+                 r'\(LPDWORD DataPointer, DWORD i, DWORD dwXorKey\)\n\{.*?\n\}')
+        matches=list(re.finditer(pattern,text,re.S))
+        if len(matches)!=1:raise ValueError('StormLib unaligned '+name+' changed')
+        replacement=('static DWORD '+name+
+                     '(LPDWORD DataPointer, DWORD i, DWORD dwXorKey)\n{\n'+
+                     '    LPBYTE pbDataPointer = (LPBYTE)DataPointer + i * sizeof(DWORD);\n'+
+                     body+'\n}')
+        text=text[:matches[0].start()]+replacement+text[matches[0].end():]
+    stable(path,text)
     stable(OUT/'manifest.json',json.dumps(dict(commit=receipt['commit'],lus_patch_sha256=digest,
-        scope='Exact upstream patch and native header boundary; complete library build still required'),indent=2)+'\n')
+        scope='Pinned upstream patch, Xenon headers, and endian-safe unaligned MPQ cipher words'),indent=2)+'\n')
     return source
 
 
