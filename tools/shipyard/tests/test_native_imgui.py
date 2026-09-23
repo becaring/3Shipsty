@@ -52,7 +52,7 @@ static void RebuildFonts(){
     ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
     CHECK(pixels!=NULL && width>0 && height>0);
 }
-static void frame(){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720);ImGui::NewFrame();ImGui::EndFrame();}
+static void frame(bool visible=false){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720,visible);ImGui::NewFrame();ImGui::EndFrame();}
 int main(){
     ImGui::CreateContext();ImGuiIO& io=ImGui::GetIO();io.IniFilename=NULL;
     io.ConfigFlags|=ImGuiConfigFlags_NavEnableGamepad;
@@ -86,10 +86,27 @@ int main(){
     CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadL2));CHECK(io.BackendFlags&ImGuiBackendFlags_HasGamepad);
     physicalSlot=4;frame();CHECK(!(io.BackendFlags&ImGuiBackendFlags_HasGamepad));
     CHECK(!ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft));CHECK(!ImGui::IsKeyDown(ImGuiKey_GamepadL2));
-    const int policy=io.ConfigFlags;Shipyard_ImGuiPlatformNewFrame(640,480);
+    physicalSlot=0;physicalPad={0};frame(true);CHECK(io.MouseDrawCursor);
+    CHECK(io.MousePos.x==640 && io.MousePos.y==360);
+    physicalPad.rightX=32767;frame(true);CHECK(io.MousePos.x>640);
+    physicalPad.rightX=0;physicalPad.buttons=XINPUT_GAMEPAD_A;frame(true);
+    CHECK(ImGui::IsMouseDown(0));CHECK(!ImGui::IsKeyDown(ImGuiKey_GamepadFaceDown));
+    physicalPad.buttons=XINPUT_GAMEPAD_BACK;frame(true);
+    CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadBack));CHECK(!ImGui::IsMouseDown(0));
+    physicalPad.buttons=XINPUT_GAMEPAD_RIGHT_THUMB;frame(true);
+    CHECK(!io.MouseDrawCursor);CHECK(ImGui::IsKeyDown(ImGuiKey_GamepadR3));
+    physicalPad.buttons=0;frame(true);
+    physicalPad.buttons=XINPUT_GAMEPAD_RIGHT_THUMB;frame(true);CHECK(io.MouseDrawCursor);
+    physicalPad.buttons=XINPUT_GAMEPAD_A;frame(false);
+    CHECK(!io.MouseDrawCursor && !ImGui::IsMouseDown(0));
+    frame(true);CHECK(io.MouseDrawCursor && !ImGui::IsMouseDown(0));
+    physicalPad.buttons=0;frame(true);
+    physicalPad.buttons=XINPUT_GAMEPAD_A;frame(true);CHECK(ImGui::IsMouseDown(0));
+    physicalPad.buttons=0;frame(false);
+    const int policy=io.ConfigFlags;Shipyard_ImGuiPlatformNewFrame(640,480,false);
     CHECK(io.DeltaTime==0.000001f);CHECK(io.DisplaySize.x==640 && io.DisplaySize.y==480);
     CHECK(io.ConfigFlags==policy);Shipyard_ImGuiPlatformShutdown();CHECK(io.BackendPlatformName==NULL);
-    ImGui::DestroyContext();std::printf("56 real ImGui button bindings, analog/disconnect, timing and navigation ownership pass (%u refreshes)\\n",refreshes);
+    ImGui::DestroyContext();std::printf("56 real ImGui button bindings, donor cursor mode, click suppression, analog/disconnect and navigation ownership pass (%u refreshes)\\n",refreshes);
 }
 '''
     stable(folder/'contract.cpp',text)

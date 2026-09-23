@@ -52,6 +52,10 @@ def transform(relative,text):
         text=once(text,'mControllerBits = nullptr;','mControllerBits;')
     elif relative=='src/ship/controller/controldeck/ControlDeck.cpp':
         text=once(text,'std::unordered_map<CONTROLLERBUTTONS_T, std::string> buttonNames) {','std::unordered_map<CONTROLLERBUTTONS_T, std::string> buttonNames) : mControllerBits(nullptr) {')
+        # The existing keyboard path blocks input behind a modal. Do the same
+        # for the gamepad so A activates only the selected ImGui popup button.
+        text=once(text,'return AllGameInputBlocked() ||\n           Context::GetInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible() &&',
+                  'return AllGameInputBlocked() || ImGui::GetTopMostPopupModal() != NULL ||\n           Context::GetInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible() &&')
     if relative.endswith('.cpp') and '->GetGui()->' in text:
         text='#include "ship/window/gui/Gui.h"\n'+text
     for name,member in [('Button','mButtonMappings'),('LED','mLEDMappings'),('Rumble','mRumbleMappings')]:

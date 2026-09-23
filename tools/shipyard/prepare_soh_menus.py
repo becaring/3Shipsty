@@ -55,6 +55,21 @@ def project(name,text):
         if name=='Notification.h':text,_=constructors(text,['Options'])
     if name=='SohModals.cpp':
         text=once(text,'modals.push_back({ title, message, button1, button2, button1callback, button2callback });','SohModal value;value.title_=title;value.message_=message;value.button1_=button1;value.button2_=button2;value.button1callback_=button1callback;value.button2callback_=button2callback;modals.push_back(value);')
+        nav='''static void RefreshModalGamepadNavigation() {
+    auto& io = ImGui::GetIO();
+    auto gui = Ship::Context::GetInstance()->GetWindow()->GetGui();
+    if (CVarGetInteger(CVAR_IMGUI_CONTROLLER_NAV, 0) &&
+        (!modals.empty() || gui->GetMenuOrMenubarVisible())) {
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    } else {
+        io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
+    }
+}
+'''
+        text=once(text,'bool closePopup = false;','bool closePopup = false;\n'+nav)
+        text=once(text,'    DrawElement();\n    // Sync up the IsVisible flag if it was changed by ImGui','    RefreshModalGamepadNavigation();\n    DrawElement();\n    RefreshModalGamepadNavigation();\n    // Sync up the IsVisible flag if it was changed by ImGui')
+        text=once(text,'            if (ImGui::Button(curModal.button1_.c_str())) {',
+                  '            const bool primaryPressed = ImGui::Button(curModal.button1_.c_str());\n            ImGui::SetItemDefaultFocus();\n            if (primaryPressed) {')
     if name=='SohMenu.cpp':
         text=once(text,': Menu(consoleVariable, name, 0, UIWidgets::Colors::LightBlue) {',': Menu(consoleVariable, name, 0, UIWidgets::Colors::LightBlue), mMenuElementsInitialized(false) {')
         text=once(text,'SidebarEntry{ .columnCount = columnCount }','MakeSidebarEntry(columnCount)')

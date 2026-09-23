@@ -93,7 +93,7 @@ def transform(name,text):
         methods={'ImGuiWMInit':'Shipyard_ImGuiPlatformInit();','ImGuiBackendInit':'Shipyard_ImGuiRendererInit();',
                  'ImGuiBackendNewFrame':'Shipyard_ImGuiRendererNewFrame();',
                  'ShutDownImGui':'Shipyard_ImGuiPlatformShutdown(); Shipyard_ImGuiRendererShutdown();',
-                 'ImGuiWMNewFrame':'Shipyard_ImGuiPlatformNewFrame(Context::GetInstance()->GetWindow()->GetWidth(),Context::GetInstance()->GetWindow()->GetHeight());',
+                 'ImGuiWMNewFrame':'Shipyard_ImGuiPlatformNewFrame(Context::GetInstance()->GetWindow()->GetWidth(),Context::GetInstance()->GetWindow()->GetHeight(),GetMenuOrMenubarVisible() || ImGui::GetTopMostPopupModal()!=NULL);',
                  'ImGuiRenderDrawData':'Shipyard_ImGuiRender(data);'}
         for method,call in methods.items():
             begin=text.index('void Gui::'+method+'(');switch=text.index('switch (',begin);pos=text.index('{',switch)+1
