@@ -85,6 +85,16 @@ def transform(name, original):
                   '    mThreadPool.reset();')
         text=once(text, '#include "ship/config/ConsoleVariable.h"', '// No ConsoleVariable symbols are used by this TU.')
         text=once(text, 'ResourceManager::ResourceManager() {', 'ResourceManager::ResourceManager() : mAltAssetsEnabled(false), mDefaultCacheOwner(0), mDefaultCacheArchive(nullptr) {')
+        text=once(text,
+                  '    auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();',
+                  '    // Synchronous cached callers need no promise, future or worker handoff.\n'
+                  '    // GetCachedResource applies the same alt-asset and dirty checks as\n'
+                  '    // the first step of LoadResourceAsync; misses retain its path.\n'
+                  '    auto cachedResource = GetCachedResource(identifier, loadExact);\n'
+                  '    if (cachedResource != nullptr) {\n'
+                  '        return cachedResource;\n'
+                  '    }\n'
+                  '    auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();')
         text=text.replace('std::hash<std::string>{}', 'std::hash<std::string>()').replace('std::hash<std::uintptr_t>{}', 'std::hash<uintptr_t>()')
         text=re.sub(r'\{ (\w+), (identifier\.Owner|filter\.Owner|mDefaultCacheOwner), (identifier\.Parent|filter\.Parent|mDefaultCacheArchive) \}',r'ResourceIdentifier(\1, \2, \3)',text)
         text=text.replace('{ { searchMask }, {}, mDefaultCacheOwner, mDefaultCacheArchive }',
