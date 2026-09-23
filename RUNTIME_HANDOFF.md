@@ -1,5 +1,40 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## Current investigation: HD texture FPS loss and randomizer text
+
+The user clarified Xenia was ~15 FPS in the title and ~11 FPS in gameplay
+with the converted HD texture mod; removing it while retaining translation
+restored ~60 FPS. The removed 70,525,755-byte `.o2r` was listed before
+removal: 618 alt textures, 853,762,364 uncompressed bytes of potential payload
+(not proven simultaneous residency), 212 records >1 MiB, 93 >4 MiB. The
+separately supplied 654,820,398-byte root ZIP contains 37 nested archives
+and is not itself that converted `.o2r`.
+
+The current Xenos uploader is byte-identical to SoH360/Smash360. Its 16 KiB
+identical-upload snapshot does not cover HD textures; large cache misses
+create/fill new D3D textures. Fast3D has a 1,024-entry count-only LRU, and
+replacement-release pressure above 8 MiB can force a framebuffer finish and
+blocking collection. These are plausible contributors, but no per-frame
+upload, residency or CPU/GPU timings were captured; do not assert cache
+thrashing as proven. Owned Xenia also uses debug logging and 384/768 MiB
+soft/hard host texture limits. Archive indexing is startup work; audio and
+saves show no HD-specific repeated path. Per-draw cached player-limb loads
+construct futures, but that baseline behavior is also in Smash360.
+
+The active XDK endian projections correctly identify big-endian PPC. Audited
+archive, texture, Fast3D, scene/skeleton, GPU, audio, save and network paths
+show no new confirmed endian failure. Inactive raw LightEntry parsing and
+O2R short-read acceptance remain bounded separate risks. The screenshot's
+garbled randomizer combobox labels have a stronger source-level cause:
+Option caches pointers to its own option strings, then XDK copy-assigns
+temporary Options into Settings, preserving those now-dangling pointers.
+The existing randomizer-options contract explicitly observes this pointer
+mismatch. The tooltip refreshes its live pointer each frame, matching the
+user's readable tooltip. No code or XEX change was made in this diagnostic
+turn. Next narrow actions: repair Option pointer lifetime with a regression
+check; separately, capture bounded per-frame upload/memory timing in a
+controlled HD-vs-translation test before optimizing the renderer.
+
 ## Current: fixed mod MPQ boundary; final identity XEX and hardware pending
 
 The black screen introduced when `game:/mods` became discoverable is fixed
@@ -30,10 +65,12 @@ temporary breakpoint and context-promotion settings were restored. The final
 source-identity XEX and its validation are recorded below. Physical boot,
 visible cursor, Back menu and mod appearance on hardware remain unproven; do
 not ask for repeated console copies.
-The user visually confirmed Brazilian-translated gameplay. The first run was
-reported at ~15 FPS; relaunching the same XEX and mods reached 60 FPS, with no
-source or mod change. Do not attribute the initial slowdown to port code
-without a reproducible comparison.
+The user visually confirmed Brazilian-translated gameplay. The user clarified
+that the HD pack gave ~15 FPS at the title and ~11 FPS in gameplay in Xenia;
+translation-only runs around 60 FPS. The pack was removed between those
+observations, so the prior same-mod relaunch wording was incorrect. No
+performance source code changed. Investigate HD resource residency and upload
+churn before attributing the slowdown to a specific layer.
 
 The final source-identity build from code commit `55ce76c50` then verified
 all 1,836 PPC objects, genuine link and ImageXex. Staged only the new XEX:

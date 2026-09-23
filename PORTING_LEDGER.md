@@ -21,6 +21,32 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, codebase endian/redundant-work review after user reports an HD
+  mod delta (~15 FPS title, ~11 FPS gameplay in Xenia; translation-only ~60).
+  The removed converted 70,525,755-byte `.o2r` had 618 alt texture records
+  totaling 853,762,364 uncompressed bytes before removal; 212 exceeded
+  1 MiB and 93 exceeded 4 MiB. This is potential payload, not live residency.
+  Current Xenos uploader is byte-identical to SoH360 and Smash360; its
+  identical-upload snapshot is capped at 16 KiB, while a large miss creates
+  and fills a GPU texture. Fast3D LRU is 1,024 entries by count; releases
+  above 8 MiB pending budget can block. No per-frame miss count or GPU/CPU
+  timing was captured, so the exact 45+ FPS loss is not yet assigned to a
+  layer. Xenia's owned config has debug logging and 384/768 MiB soft/hard
+  host texture limits. Startup archive indexing, audio loading and save work
+  are not per-frame HD processing. Player-limb cached resource lookups do
+  allocate futures each draw, but that is upstream/donor-shared baseline work.
+  The user-supplied root ZIP is a different 654,820,398-byte outer package of
+  37 nested OTR/O2R archives, not the deployed converted `.o2r`.
+  Active XDK native-byte-order projection is correct across audited resource,
+  Fast3D, graphics, audio, save and network boundaries; no new confirmed
+  endian defect. Inactive raw LightEntry union parsing and O2R short-read
+  acceptance are bounded risks, not explanations for this FPS delta.
+  Separate screenshot: XDK copies Option temporaries into Settings but
+  Option's cached `c_str()` map is shallow-copied; existing contract confirms
+  destination pointers differ from destination strings. This strongly
+  explains garbled dropdown labels beside readable refreshed tooltip text.
+  Diagnosis only; no new XEX or code fix in this pass.
+
 - 2026-09-22, `game:/mods` archive discovery (`1ffe0eb74`) exposed a real
   Xenon MPQ failure: first Portuguese OTR opened, but its encrypted/compressed
   `(listfile)` read returned 1392; upstream `OtrArchive::Open` then dereferenced
@@ -36,9 +62,10 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
   `d3c068aed340a443d480caa9d0c83cd37063e8536f4e3d6621c90dd3243ca7b9`.
   Owned Xenia logs 40 mod archives added, no listfile errors, GUI completion
   and gameplay scene initialization. The user visually confirmed translated
-  gameplay. An initial ~15 FPS report became 60 FPS after relaunching the
-  identical XEX and mods; no performance source change was made. This does
-  not establish hardware behavior.
+  gameplay. The user later clarified that the HD pack gave ~15 FPS at the
+  title and ~11 FPS in gameplay in Xenia; translation-only runs around 60 FPS.
+  The pack was removed between these observations, so they are not a
+  same-mod relaunch comparison. This does not establish hardware behavior.
   The final source-identity XEX built from `55ce76c50` passed 1,836-object
   verification, genuine link and ImageXex; staged SHA256 is
   `262e2ffbcd4998a90574e7e2a3d42a218961b5553a66bec8c7641797e7314694`.

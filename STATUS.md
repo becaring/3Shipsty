@@ -1,5 +1,43 @@
 # 3Shipsty status
 
+## 2026-09-22 — read-only endian/redundant-work review; HD slowdown and menu text
+
+The user clarified that Xenia ran at ~15 FPS in the title and ~11 FPS in
+gameplay with the converted HD texture `.o2r`, versus ~60 FPS with only the
+Portuguese translation. The removed converted archive was 70,525,755 bytes;
+its pre-removal listing contained 618 alternate texture records totaling
+853,762,364 uncompressed bytes (potential payload, not measured residency),
+including 212 over 1 MiB and 93 over 4 MiB. The separately supplied root ZIP
+is a different 654,820,398-byte outer package containing 37 OTR/O2R archives.
+
+The current Xenos upload path matches both donors byte-for-byte. Its 16 KiB
+snapshot only skips identical small reuploads; a large cache miss creates,
+fills and locks a new GPU texture. The Fast3D cache is limited to 1,024
+entries by count, not bytes. Replaced textures can force a framebuffer finish
+and blocking release above an 8 MiB pending budget. This is a plausible
+HD-specific cost, not a demonstrated per-frame miss/VRAM-thrash diagnosis.
+Resource/archives are cached and audio/saves do not show an HD-specific
+repeated path. Cached player-limb resource lookups still construct futures on
+each draw, but Smash360 does the same and that cost exists without the pack.
+Xenia's owned config uses debug logging and 384/768 MiB soft/hard host texture
+cache limits; these are test-environment confounders, not port fixes.
+
+The active XDK endian projection identifies Xenon as big-endian, and the
+audited archive, texture, Fast3D, scene/skeleton, audio, save and network
+boundaries revealed no new confirmed endian defect. The unprojected upstream
+header remains wrong for XDK but is not compiled unprojected. A raw LightEntry
+union read is a conditional risk without an active SoH producer. The O2R
+reader's acceptance of a short zip_fread is a separate integrity risk.
+
+The garbled randomizer dropdown labels have a stronger source-level cause:
+Option caches `options[i].c_str()` pointers, then XDK copies temporary Option
+values into Settings' array, leaving the pointer map aimed at destroyed
+strings. Existing contract tests explicitly prove the pointer mismatch on
+copies; the live tooltip uses a refreshed pointer, matching the screenshot.
+No code/XEX change was made in this diagnostic pass. Next is a narrow Option
+pointer-lifetime repair and focused validation, then bounded HD upload/memory
+measurement if the pack is restored for a controlled test.
+
 ## 2026-09-22 — OTR mod black screen fixed in owned Xenia
 
 Commits `1ffe0eb74` and `313004a10` select `game:/mods` when populated and
@@ -29,8 +67,10 @@ user's mods reports 40 `game:/mods` archives added, zero `(listfile)` errors,
 `gui-ready`, `init-complete`, and gameplay scene initialization. Fresh
 post-checkpoint identity build and physical-console validation remain.
 The user visually confirmed gameplay with the Brazilian translation assets.
-An initial ~15 FPS report cleared on relaunch of the exact same XEX and mods:
-the user then reported 60 FPS. No performance code or mod files changed.
+The earlier ~15 FPS report was not a same-mod relaunch comparison: the user
+clarified that the HD texture pack gave ~15 FPS at the title and ~11 FPS in
+gameplay in Xenia, whereas translation-only runs around 60 FPS. No performance
+code changed; the HD pack was removed from the staged `mods` directory.
 Final source-identity build at `55ce76c50` verified all 1,836 PPC objects,
 genuine link, and ImageXex. Only the new XEX was staged; SHA256
 `262e2ffbcd4998a90574e7e2a3d42a218961b5553a66bec8c7641797e7314694`.
