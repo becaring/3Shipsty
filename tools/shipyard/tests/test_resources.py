@@ -98,6 +98,10 @@ def main():
     if args.integration_probe:integration_probe();return
     if args.baseline_only:
         xdk(False);print('All nine original resource leaf TUs fail on XDK; exact diagnostics recorded.');return
+    generated_file=(OUT/'generated/include/ship/resource/File.h').read_text(encoding='utf-8')
+    assert ('ResourceInitData() : Parent(), Path(), ByteOrder(Endianness::Native), Type(0), '
+            'ResourceVersion(0), Id(0), IsCustom(false), Format(RESOURCE_FORMAT_BINARY) {}'
+            in generated_file)
     original=host(False);projected=host(True);assert original==projected
     xdk(True)
     evidence={'host_original':original,'host_projected':projected,'target_runtime_executed':False,

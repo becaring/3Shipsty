@@ -23,6 +23,38 @@ def prepare():
     text=once(text,'#include "fast3d_float.h"\n','')
     text=text.replace('SoH_BeginNativeDraw','Fast::BeginNativeGuiDraw').replace('SoH_InvalidateNativeState','Fast::InvalidateNativeGuiState')
     text=text.replace('SoH_','Shipyard_').replace('soh_device','Fast::xenos_device').replace('SoH360_Xenos','Shipyard_Xenos')
+    text=once(text,'#include "imgui_xenos.h"\n','#include "imgui_xenos.h"\n#include "font_lifecycle.h"\n')
+    font_build='''    ImGuiIO& io=ImGui::GetIO();unsigned char* pixels;int width,height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
+    // The atlas stores native ImU32/IM_COL32 values. Image decoders supply
+    // RGBA bytes; those representations differ on big-endian PowerPC.
+    std::vector<unsigned char> rgba((size_t)width*height*4);
+    const ImU32* packed=(const ImU32*)pixels;
+    for(size_t i=0;i<(size_t)width*height;++i) {
+        rgba[i*4+0]=(unsigned char)(packed[i]>>IM_COL32_R_SHIFT);
+        rgba[i*4+1]=(unsigned char)(packed[i]>>IM_COL32_G_SHIFT);
+        rgba[i*4+2]=(unsigned char)(packed[i]>>IM_COL32_B_SHIFT);
+        rgba[i*4+3]=(unsigned char)(packed[i]>>IM_COL32_A_SHIFT);
+    }
+    font_texture=Shipyard_ImGuiUploadRGBA(&rgba[0],width,height);io.Fonts->SetTexID(font_texture);'''
+    text=once(text,font_build,'    Shipyard_ImGuiBuildFontTexture();\n    ImGuiIO& io=ImGui::GetIO();')
+    replacement_build=font_build.replace(
+        '    font_texture=Shipyard_ImGuiUploadRGBA(&rgba[0],width,height);io.Fonts->SetTexID(font_texture);',
+        '''    ImTextureID replacement=Shipyard_ImGuiUploadRGBA(&rgba[0],width,height);
+    io.Fonts->SetTexID(replacement);
+    Shipyard_ImGuiDestroyTexture(font_texture);
+    font_texture=replacement;''')
+    text=once(text,
+              'void Shipyard_ImGuiDestroyTexture(ImTextureID texture) { if (texture) ((IDirect3DTexture9*)texture)->Release(); }\nvoid Shipyard_ImGuiRendererInit() {',
+              'void Shipyard_ImGuiDestroyTexture(ImTextureID texture) { if (texture) ((IDirect3DTexture9*)texture)->Release(); }\nstatic void Shipyard_ImGuiBuildFontTexture() {\n'+replacement_build+'\n}\nvoid Shipyard_ImGuiRendererInit() {')
+    text=once(text,
+              '    io.BackendFlags|=ImGuiBackendFlags_RendererHasVtxOffset;\n}\nvoid Shipyard_ImGuiRender(ImDrawData* data) {',
+              '''    io.BackendFlags|=ImGuiBackendFlags_RendererHasVtxOffset;
+}
+void Shipyard_ImGuiRendererNewFrame() {
+    Shipyard_ImGuiEnsureFontAtlas(Shipyard_ImGuiBuildFontTexture);
+}
+void Shipyard_ImGuiRender(ImDrawData* data) {''')
     # Current backend capability is released along with its concrete objects.
     text=once(text,'ImGui::GetIO().BackendRendererName=NULL;',
               'ImGui::GetIO().BackendRendererName=NULL;ImGui::GetIO().BackendFlags&=~ImGuiBackendFlags_RendererHasVtxOffset;')

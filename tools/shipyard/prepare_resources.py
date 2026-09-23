@@ -44,6 +44,9 @@ def transform(relative, original):
                     '    ResourceType(Value v) : Shipyard::Binary::ScopedEnum<ResourceType>(v) {}\n'
                     '    explicit ResourceType(int v) : Shipyard::Binary::ScopedEnum<ResourceType>(v) {}\n};\n')
         if relative.endswith('/File.h'):
+            if line=='struct ResourceInitData {\n':
+                replacement += ('    ResourceInitData() : Parent(), Path(), ByteOrder(Endianness::Native), Type(0), '
+                                'ResourceVersion(0), Id(0), IsCustom(false), Format(RESOURCE_FORMAT_BINARY) {}\n')
             replacement=replacement.replace('    bool IsLoaded = false;','    File() : IsLoaded(false) {}\n    bool IsLoaded;')
         if relative.endswith('/Resource.h'):
             replacement=replacement.replace('inline static const std::string gAltAssetPrefix = "alt/";',

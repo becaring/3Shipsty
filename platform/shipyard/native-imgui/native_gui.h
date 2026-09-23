@@ -1,6 +1,7 @@
 #pragma once
 #include "imgui.h"
 void Shipyard_ImGuiRendererInit();
+void Shipyard_ImGuiRendererNewFrame();
 void Shipyard_ImGuiRendererShutdown();
 void Shipyard_ImGuiRender(ImDrawData*);
 void Shipyard_ImGuiPlatformInit();

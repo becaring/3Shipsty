@@ -91,14 +91,15 @@ def transform(name,text):
                   'void Gui::ShutDownImGui(Ship::Window* window) {\n    if (!ImGui::GetCurrentContext()) return;')
         text=text.replace('GetWindowBackend())','GetWindowBackend().GetValue())')
         methods={'ImGuiWMInit':'Shipyard_ImGuiPlatformInit();','ImGuiBackendInit':'Shipyard_ImGuiRendererInit();',
+                 'ImGuiBackendNewFrame':'Shipyard_ImGuiRendererNewFrame();',
                  'ShutDownImGui':'Shipyard_ImGuiPlatformShutdown(); Shipyard_ImGuiRendererShutdown();',
                  'ImGuiWMNewFrame':'Shipyard_ImGuiPlatformNewFrame(Context::GetInstance()->GetWindow()->GetWidth(),Context::GetInstance()->GetWindow()->GetHeight());',
                  'ImGuiRenderDrawData':'Shipyard_ImGuiRender(data);'}
         for method,call in methods.items():
             begin=text.index('void Gui::'+method+'(');switch=text.index('switch (',begin);pos=text.index('{',switch)+1
             text=text[:pos]+'\n        case WindowBackend::FAST3D_XENOS: '+call+' break;'+text[pos:]
-        # Renderer objects/atlas are created in Init; no per-frame native
-        # allocation is needed. WMNewFrame supplies time/display/device events.
+        # The renderer NewFrame hook rebuilds the atlas only when modern SoH
+        # adds fonts after backend initialization and invalidates it.
         text=text.replace('mGuiTextures.contains(name)','Shipyard::Resources::contains(mGuiTextures,name)')
         text=text.replace('mGuiWindows.contains(guiWindow->GetName())','Shipyard::Resources::contains(mGuiWindows,guiWindow->GetName())')
         text=text.replace('mGuiWindows.contains(name)','Shipyard::Resources::contains(mGuiWindows,name)')

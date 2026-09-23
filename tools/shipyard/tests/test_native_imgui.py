@@ -30,6 +30,7 @@ def main():
     platform=(OWN/'platform_frame.cpp').read_text().replace('#include "imgui_xenos.h"','')
     text='''#include "imgui.h"
 #include "input/physical.h"
+#include "native-imgui/font_lifecycle.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -45,11 +46,23 @@ bool ShipyardInput_ReadCachedGamepad(unsigned slot,ShipyardInputRawPad* out){
     if(slot==physicalSlot){*out=physicalPad;return true;}std::memset(out,0,sizeof(*out));return false;
 }
 '''+masks+'\n'+platform+'''
+static unsigned fontRebuilds=0;
+static void RebuildFonts(){
+    ++fontRebuilds;unsigned char* pixels;int width,height;
+    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
+    CHECK(pixels!=NULL && width>0 && height>0);
+}
 static void frame(){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720);ImGui::NewFrame();ImGui::EndFrame();}
 int main(){
     ImGui::CreateContext();ImGuiIO& io=ImGui::GetIO();io.IniFilename=NULL;
     io.ConfigFlags|=ImGuiConfigFlags_NavEnableGamepad;
     unsigned char* pixels;int w,h;io.Fonts->GetTexDataAsRGBA32(&pixels,&w,&h);
+    ImFontConfig lateConfig;lateConfig.SizePixels=20.0f;
+    ImFont* lateFont=io.Fonts->AddFontDefault(&lateConfig);
+    CHECK(!io.Fonts->IsBuilt() && !lateFont->IsLoaded());
+    Shipyard_ImGuiEnsureFontAtlas(RebuildFonts);
+    CHECK(fontRebuilds==1 && io.Fonts->IsBuilt() && lateFont->IsLoaded());
+    Shipyard_ImGuiEnsureFontAtlas(RebuildFonts);CHECK(fontRebuilds==1);
     Shipyard_ImGuiPlatformInit();
     struct Binding{unsigned mask;ImGuiKey key;};
     const Binding keys[]={

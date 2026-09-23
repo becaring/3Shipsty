@@ -35,6 +35,10 @@ static std::shared_ptr<Ship::File> fileOf(const char* bytes, size_t size, Ship::
 int main() {
     spdlog::set_level(spdlog::level::off);
     std::shared_ptr<Ship::ResourceInitData> init = std::make_shared<Ship::ResourceInitData>();
+    assert(init->Parent == nullptr && init->Path.empty());
+    assert(init->ByteOrder == Ship::Endianness::Native && init->Type == 0);
+    assert(init->ResourceVersion == 0 && init->Id == 0 && !init->IsCustom);
+    assert(init->Format == RESOURCE_FORMAT_BINARY);
     init->Path = "contract";
     init->Format = RESOURCE_FORMAT_BINARY;
     Ship::ResourceFactoryBinaryBlobV0 blobs;

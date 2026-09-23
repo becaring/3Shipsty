@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdint.h>
 void Shipyard_ImGuiRendererInit();
+void Shipyard_ImGuiRendererNewFrame();
 void Shipyard_ImGuiRendererShutdown();
 void Shipyard_ImGuiRender(ImDrawData*);
 ImTextureID Shipyard_ImGuiUploadRGBA(const unsigned char*,int,int);
