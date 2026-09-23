@@ -1,5 +1,36 @@
 # 3Shipsty status
 
+## 2026-09-22 — Retail logging/audio reached; clean no-marker XEX for retest
+
+The user's newest HDD `3Shipsty` CON package (read only) is 86,016 bytes,
+SHA256 `d2d0ef814f9a090371d1a34e865e98137bbae364422da75539a17f1b9d35808e`.
+Its committed file table has boot stages 1–5, `mods`, `logs`, and
+`Ship of Harkinian.log`. The log contains XAudio2 PCM initialization and the
+genuine 9.2.3 startup line for code commit `7f174a1`. Thus the retail logger
+path fix worked and audio startup was reached. The raw final STFS data block
+contains `shipyard:\boot-6-context`, but there is no stage-6 file-table entry;
+that is evidence of a stage-6 write attempt, not proof of a committed flush or
+of later application progress. The console powered off without a fatal screen.
+
+Code comparison found that temporary `RecordBootStage` issued a separate
+`XContentFlush` at every startup boundary, including while the async logger
+had a file open in the same container. Smash360's hardware-proven path flushes
+on actual save operations and shutdown, not for startup breadcrumbs. Whether
+the stage-6 flush itself failed on retail remains unproven. Commit
+`a7e92f2f7` removes only these diagnostic writes/flushes and their projection
+calls, retaining genuine XContent storage, the logger fix, and all 9.2.3
+startup behavior. Seven startup tests, fresh 1,836-object XDK build, genuine
+link, and ImageXex pass. Fresh staged XEX SHA256:
+`9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`.
+The hidden Xenia smoke process did not start the title, so this XEX still
+needs an ordinary Xenia or hardware run; no retail success is claimed. The
+user-supplied CON remains in the staging directory as evidence and must not
+be copied to the console. Replace only the XEX on hardware, retaining the
+verified archives and speech data. If it still powers off, inspect the new
+retail log; the next post-initialize boundary is current SaveManager worker
+creation, followed by GUI and speech initialization. No thread-affinity or
+speech change is justified by the current receipt alone.
+
 ## 2026-09-22 — Retail STFS bounds crash to failed logger initialization
 
 The user's second HDD `3Shipsty` CON package is 77,824 bytes, SHA256

@@ -21,6 +21,18 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, third retail STFS and no-marker retest candidate: read-only HDD
+  CON SHA256 `d2d0ef814f9a090371d1a34e865e98137bbae364422da75539a17f1b9d35808e`
+  contains committed `logs/Ship of Harkinian.log`, stages 1–5, and two real
+  startup log lines (XAudio2 PCM and 9.2.3). Stage-6 text exists in a raw
+  block without a directory entry; do not infer its flush completed. Temporary
+  startup breadcrumbs caused repeated `XContentFlush` calls unlike Smash360's
+  real-save-only flush path. `a7e92f2f7` removes the diagnostics, not storage
+  semantics. Startup tests and fresh full XDK build/link/ImageXex pass; clean
+  XEX SHA256 `9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`.
+  Hardware behavior without markers is pending. Main-thread/worker affinity
+  and modern speech startup are code-review candidates only, not root causes.
+
 - 2026-09-22, retail logger boundary: second HDD CON SHA256
   `0612bdc119285fee6f07e5d5c6edaa711bae21064e8f1f5ea5efc5c7d35cca1c`
   has boot stages 1–5 and `mods`, but no stage 6 or `logs`. The current

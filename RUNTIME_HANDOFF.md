@@ -1,5 +1,39 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 newest retail result and clean hardware retest
+
+The latest user-supplied retail HDD CON at
+`scratch/runtime/3Shipsty/3Shipsty` is 86,016 bytes, SHA256
+`d2d0ef814f9a090371d1a34e865e98137bbae364422da75539a17f1b9d35808e`.
+Read only: the committed STFS file table contains `mods`, stages 1–5,
+`logs`, and `Ship of Harkinian.log`. Its log records real XAudio2 PCM
+initialization and the 9.2.3 startup line for `7f174a1`. Stage-6 text is
+present in the last raw data block, but no stage-6 directory entry committed.
+The console powered off after selecting the HDD, with no fatal message. This
+proves the logger fix reached retail, not that `OTRGlobals::Initialize` fully
+returned. A stage-6 container flush failure or a later crash remains possible.
+
+Code review compared the native selector/display, storage and worker paths
+with the hardware-proven Smash360 and 4.0.5 ports. The selector and Fast3D
+reuse one D3D device. The concrete extra retail STFS workload was the
+temporary `RecordBootStage` call: it made six startup `XContentFlush` calls,
+including one after the async log sink opened in the same container. Smash360
+flushes for real saves and shutdown, not boot breadcrumbs. Commit
+`a7e92f2f7` removes only the temporary markers and their repeated flushes.
+The genuine logger, save mount, XAudio2, archives and 9.2.3 application remain.
+Seven startup tests, fresh 1,836-object XDK build, genuine link/ImageXex pass.
+The new staged XEX is `scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`.
+An owned hidden Xenia process did not load the title; that smoke attempt is
+inconclusive and was stopped. Next: copy **only this XEX** to hardware beside
+the already-verified O2Rs and speech data, not the user-supplied CON in the
+same staging folder. If it still powers off, copy the newly updated HDD CON
+and inspect its real log. Xenia trace shows the next operation after stage-6
+flush is a native worker creation from the modern SaveManager; speech and GUI
+follow later. Missing main/worker affinity relative to Smash360 is a review
+finding, not yet a proven crash cause. Do not stack those changes without the
+clean hardware result.
+
 ## 2026-09-22 logger boundary fixed in source; retail retest required
 
 The second user-supplied HDD STFS package (read only) is a valid 77,824-byte
