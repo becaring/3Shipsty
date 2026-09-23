@@ -1,5 +1,39 @@
 # 3Shipsty status
 
+## 2026-09-22 — Clean hardware candidate; physical Xbox 360 is next
+
+The genuine 9.2.3 XEX built from code commit
+`2e89e891489b9335044bc874830d20f95418fcd2` is staged at
+`scratch/runtime/3Shipsty/3Shipsty.xex` (SHA256
+`50f702fe34958ecc59bb07b2725a3a3ee4cd71d10e471e915ecb7c5bfa8958e1`).
+It was produced by fresh build-metadata generation, a complete 1,836-object
+XDK build, genuine link, and ImageXex. The staged folder also contains the
+verified `soh.o2r`, `oot.o2r`, and complete `espeak-ng-data` directory; copy
+these together, without emulator account/save state, for hardware testing.
+
+On the exact cleaned XEX, the user confirmed file select, gameplay, audio,
+and controls in owned Xenia. The final run starts at `[01:51:56.339]` in
+`scratch/runtime/hardware-candidate-app-20260922.log` (SHA256
+`d2d8aee895a9eb4dae0e29b29fb14034fde0df9cb12ff68912a20d9c0d05a872`):
+it identifies Ackbar Delta 9.2.3 and commit `2e89e89`, creates native
+framebuffers by `[01:51:59.790]`, initializes three save slots, and loads
+file 0 into a real scene at `[01:52:10.222]`. Save creation/reload and modern
+randomizer gameplay were confirmed in earlier Xenia runs, but a fresh save
+write was not separately repeated on this exact cleaned XEX. Physical console
+boot, save, speech, audio, and performance remain unproven.
+
+Startup profiling located roughly 7.8 seconds in first-use Xenia translation
+of large modern hint initializers, not filesystem reads. The Xbox-only
+ordered 16-assignment chunk projection retains all 1,370 assignments and
+passes upstream-order/parity tests. It reduced the measured hint interval
+from ~7.758s to ~0.299s on a fresh XEX; full boot time is not yet independently
+benchmarked on hardware. Heavy audio scans/queue sampling, framebuffer
+readback, shader hitch probes, and boot traces were removed or disabled before
+this full rebuild; the final-run log has no `BOOT_TIMING`, `FRAME_TRACE`,
+`AUDIO queue`, or `HITCH shader` entries. First-use shader compilation remains
+a plausible Xenia-only source of small Hyrule Field hitches; no disk cache was
+added without hardware evidence.
+
 ## 2026-09-22 — Genuine 9.2.3 gameplay with audio, save, and backgrounds
 
 The current owned Xenia run uses a freshly linked genuine XEX, SHA256

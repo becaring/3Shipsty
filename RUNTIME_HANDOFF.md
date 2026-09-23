@@ -1,4 +1,48 @@
-# 3Shipsty runtime resume point — 2026-09-21
+# 3Shipsty runtime resume point — 2026-09-22
+
+## 2026-09-22 clean hardware candidate — current authority
+
+This supersedes older live-status claims below. Branch
+`shipyard/xbox360-9.2.3`; code commit embedded in the XEX is
+`2e89e891489b9335044bc874830d20f95418fcd2`. The complete 1,836-object
+XDK build, link, and ImageXex succeeded after metadata regeneration and
+diagnostic cleanup. Staged XEX: `scratch/runtime/3Shipsty/3Shipsty.xex`,
+SHA256 `50f702fe34958ecc59bb07b2725a3a3ee4cd71d10e471e915ecb7c5bfa8958e1`.
+Stage it alongside `soh.o2r` (SHA256
+`7b375d854385a6cdb6843db89c18da981948e5b56986f479297cca33d2914a2f`),
+`oot.o2r` (SHA256
+`c2b5d5af24a52095a13e50479763ff4b9dcc1d8afe6a0788fbfc26a91b17c03c`),
+and the entire `espeak-ng-data` directory already in that staged folder.
+Do not transfer owned Xenia accounts or save state.
+
+The user confirmed on this exact clean XEX: file select, gameplay, audible
+audio, and controller input. Final-run log evidence begins at
+`[01:51:56.339]` in
+`scratch/runtime/hardware-candidate-app-20260922.log`, SHA256
+`d2d8aee895a9eb4dae0e29b29fb14034fde0df9cb12ff68912a20d9c0d05a872`.
+At `[01:51:56.340]` the app identifies genuine Ackbar Delta (9.2.3) and
+commit `2e89e89`; by `[01:51:59.790]` the real Xenos framebuffer path runs;
+save-slot metadata initializes at `[01:52:02.415]`; file 0 loads at
+`[01:52:09.875]`; real scene init follows at `[01:52:10.222]`.
+Earlier Xenia runs confirmed save creation/reload and default modern randomizer
+gameplay. Fresh save write was not separately repeated on this exact XEX.
+
+The old ~7.758s hint-table startup delay was Xenia first-use guest-function
+translation, established by entry/body timing, not an archive/filesystem
+stall. `6ee8eb7ba` splits the four modern hint initializers into ordered,
+non-inlined 16-assignment chunks. Tests preserve all 1,370 upstream
+assignments and order; the fresh-XEX hint interval fell to ~0.299s. Other
+startup costs and hardware boot time need physical measurement. `fc4e15590`
+stripped heavy framebuffer, audio queue, and boot diagnostics; no such trace
+families occur in the final-run segment. Potential first-use shader hitches
+were seen in Xenia, but no modern storage-owned disk shader cache exists yet.
+Do not port an old cache speculatively: measure on hardware first.
+
+Next step is physical Xbox 360 validation of this exact package: boot to file
+select, launch/load gameplay, test controller, audio and save/reload, measure
+startup and Hyrule Field hitches, and check speech if exercised. Re-query
+process state before any more Xenia use; no stale PID is authoritative. This
+is a hardware handoff, not a claim of physical-console success.
 
 ## 2026-09-22 verified gameplay/audio/background checkpoint
 

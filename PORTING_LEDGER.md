@@ -21,6 +21,24 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, hardware-candidate boundary: code HEAD
+  `2e89e891489b9335044bc874830d20f95418fcd2`; clean full XDK/ImageXex
+  result SHA256 `50f702fe34958ecc59bb07b2725a3a3ee4cd71d10e471e915ecb7c5bfa8958e1`.
+  Exact final run in owned Xenia confirmed by user through file select,
+  gameplay, audio, and controller input. Log
+  `scratch/runtime/hardware-candidate-app-20260922.log`, SHA256
+  `d2d8aee895a9eb4dae0e29b29fb14034fde0df9cb12ff68912a20d9c0d05a872`,
+  at 01:51:56–01:52:10 records 9.2.3 identity, native framebuffer creation,
+  save metadata, file load, and real scene initialization. The 7.758s hint
+  startup interval was first-use Xenia function translation; an Xbox-only
+  ordered chunk projection brings that interval to 0.299s while all 1,370
+  upstream assignment keys and ordering pass host parity. Heavy bring-up
+  diagnostics were removed/disabled in `fc4e15590` and absent from the final
+  run. Staged hardware package is the XEX plus `soh.o2r`, `oot.o2r`, and the
+  complete `espeak-ng-data` directory. No emulator profile or saves are part
+  of it. Physical hardware behavior remains the next required validation;
+  shader disk caching is deferred pending measured hardware hitches.
+
 - 2026-09-22, verified runtime: shop JPEG background now renders after
   checking its serialized FF D8 FF E0 marker as bytes in the real room
   draw path. A separate shared game-C staging defect had left the raw
