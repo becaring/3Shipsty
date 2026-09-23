@@ -1,5 +1,43 @@
 # 3Shipsty status
 
+## 2026-09-22 — Donor startup parity restored; new XEX awaits retail test
+
+Code-grounded audits of both working Xbox ports found the 9.2.3 title thread
+was not pinned to processor 0 before XAM/graphics/worker initialization.
+Commit `dd7ad363329e99de777efc3297ad6c065e7e8f76` restores that contract
+and adds a native startup exception boundary so recoverable storage or later
+`InitOTR` errors show their operation and Xbox code rather than escaping the
+unguarded C entry. It also removes the unused boot-trace diagnostic. The
+donors' generic worker and current Xenos/audio mechanisms otherwise match;
+the modern save/randomizer workers are genuine 9.x differences and were not
+replaced or globally pinned. The root cause of the retail shutdown remains
+unproven.
+
+Nine application tests, 19 game projection tests, selector contract, targeted
+XDK compiles, fresh 1,836-object full build, link, and ImageXex pass. The
+staged XEX SHA256 is
+`562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`.
+An owned Xenia launch failed to show a window or log title startup; it was
+stopped and gives no runtime result. The next physical-console run should
+replace only the XEX; the `3Shipsty` CON in staging is read-only evidence,
+not an application file to deploy.
+
+## 2026-09-22 — Clean hardware XEX still powers off after HDD selection
+
+The user confirmed the XEX with SHA256 `9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`
+reached the storage selector on the physical console and powered off shortly
+after HDD selection. Re-copying the original CON produced the identical old
+SHA256; it did not establish a new boot boundary. The user then backed up and
+removed that old HDD package and repeated the same XEX. It again powered off.
+The newly created, read-only HDD CON is 40,960 bytes, SHA256
+`7de209c096e75d776a9a2e58f6daf4a0912a51cf8c7d7b19c99dadcafefc8d98`,
+with an empty committed file table. This rules out the old package as the sole
+cause. **It does not prove a pre-`RunExtract` crash:** the clean XEX has no
+diagnostic `XContentFlush` calls, so startup writes may remain uncommitted
+through an abrupt power-off. Exact post-selector return/error state is still
+unknown. Do not attribute the crash to a specific worker, renderer, or archive
+without a new non-STFS boundary receipt.
+
 ## 2026-09-22 — Retail logging/audio reached; clean no-marker XEX for retest
 
 The user's newest HDD `3Shipsty` CON package (read only) is 86,016 bytes,

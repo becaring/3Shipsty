@@ -1,5 +1,59 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 donor-parity audit and one consolidated hardware candidate
+
+Read-only audits against both working ports found one definite missing native
+startup contract: SoH360 and Smash360 pin the title/render thread to Xbox
+hardware thread 0 before XAM, graphics, or worker startup; the 9.2.3 entry
+did not. Commit `dd7ad363329e99de777efc3297ad6c065e7e8f76` adds that pin
+at the real generated C entry. It also catches native/C++ initialization
+failures around the unchanged real `InitOTR`, reports the operation and Xbox
+error code in an XAM dialog, and returns cleanly instead of allowing an
+exception to escape before the game's crash handler exists. The XAM error
+dialog now presents on the already-created native D3D device while pending.
+The unused temporary game-directory boot trace is removed. These are parity
+and failure-handling fixes, **not proof of the retail power-off cause**.
+
+The same audits found no missing generic thread implementation: Shipyard's
+`joining_thread` matches Smash360's, which also uses it for a resource pool.
+Role-specific audio/save placement is a future performance/parity question,
+not justified as this crash fix. The selector/XContent mechanics and D3D
+device reuse match the working donors. Modern 9.x configuration/log/mod paths
+in the CON and extra SaveManager/randomizer work are application differences,
+not evidence of a dropped 4.0.5 implementation. An empty fresh CON does not
+locate the fault because clean startup does not flush STFS writes.
+
+The native startup-error host contract, nine application tests, 19 game
+projection tests, selector test, targeted Context and OTRGlobals PPC builds,
+fresh 1,836-object full XDK build, genuine link, and ImageXex pass. Staged
+`scratch/runtime/3Shipsty/3Shipsty.xex` is 45,703,168 bytes, SHA256
+`562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`.
+The generated build identity is `dd7ad36`; no `RecordNativeBootStage` or
+`3Shipsty.boottrace` call remains in generated startup. An attempted owned
+Xenia launch produced a process but no user-visible window or title log; it
+was stopped and is **not** a smoke-test pass. Physical-console behavior of
+this new XEX is untested. Copy only the XEX beside the existing O2Rs and
+speech data, never the unrelated `3Shipsty` CON evidence file. One retail
+attempt should now either boot farther or expose a native startup error code;
+a silent power-off would point away from a catchable native startup failure.
+
+## 2026-09-22 clean retail XEX result; fresh package also fails
+
+The user confirmed staged XEX SHA256
+`9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`
+reached the storage selector and powered off after HDD selection. Re-copying
+the old HDD CON yielded the identical `d2d0ef81...` bytes. The user backed
+up and removed that old container, then retried the same XEX: it powered off
+again. The newly created HDD CON, read only, is 40,960 bytes, SHA256
+`7de209c096e75d776a9a2e58f6daf4a0912a51cf8c7d7b19c99dadcafefc8d98`.
+Its committed file table is empty. This excludes old-container corruption as
+the sole cause, but **does not establish a pre-`RunExtract` boundary**: the
+clean XEX has no startup `XContentFlush`, so attempted writes may not survive
+an abrupt power-off. The physical `XContentCreate` return code and later fault
+site remain unknown. Do not infer SaveManager/speech or a mount failure from
+the empty CON. The user's backup of the old CON also exists separately in the
+owned workspace; preserve both copies.
+
 ## 2026-09-22 newest retail result and clean hardware retest
 
 The latest user-supplied retail HDD CON at

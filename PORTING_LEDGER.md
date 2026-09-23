@@ -21,6 +21,34 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, three isolated donor-parity audits: both working ports pin the
+  title/render thread to hardware thread 0 before startup; 9.2.3 had omitted
+  that. `dd7ad363329e99de777efc3297ad6c065e7e8f76` restores the early
+  pin and adds a handled native `InitOTR` failure boundary with visible Xbox
+  error code and active XAM presentation. This is a real foundation gap, but
+  its relation to the retail power-off is not yet proven. The unused game-dir
+  boot trace was removed. Generic `joining_thread` code matches Smash360;
+  no global worker affinity or parallel save/renderer replacement is justified.
+  Selector/XContent mechanics, D3D reuse, and XAudio2 setup also match the
+  donors. Modern Context storage roots and SaveManager/randomizer work are
+  version-specific application behavior, not missing 4.0.5 code. Nine startup
+  tests, 19 game projection tests, selector checks, targeted PPC builds,
+  complete 1,836-object build, link/ImageXex pass. Staged XEX SHA256
+  `562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`.
+  Owned Xenia process produced no visible window/title log and was stopped;
+  there is no new Xenia or retail execution proof for this image.
+
+- 2026-09-22, clean retail retest: XEX SHA256
+  `9d95425e535ba41a018e78c3e52bf982911790725336f7f1edd643f090c3e303`
+  still powers off after HDD selection. Backing up/removing the old CON and
+  retrying did not change the outcome. Fresh CON SHA256
+  `7de209c096e75d776a9a2e58f6daf4a0912a51cf8c7d7b19c99dadcafefc8d98`
+  is a valid 40,960-byte package with no committed entries. The missing
+  entries do not time-bound startup because the clean image has no diagnostic
+  `XContentFlush`; the package can remain blank if power is lost before a real
+  save commit. Existing-package corruption is excluded as the sole blocker.
+  The exact `XContentCreate` return and subsequent fault site remain unknown.
+
 - 2026-09-22, third retail STFS and no-marker retest candidate: read-only HDD
   CON SHA256 `d2d0ef814f9a090371d1a34e865e98137bbae364422da75539a17f1b9d35808e`
   contains committed `logs/Ship of Harkinian.log`, stages 1–5, and two real
