@@ -11,9 +11,7 @@ static_assert(ShipyardAudio::PcmMinimumRate == XAUDIO2_MIN_SAMPLE_RATE && Shipya
 XAudio2AudioPlayer::XAudio2AudioPlayer(AudioSettings settings)
     : AudioPlayer(settings), engine_(NULL), master_(NULL), voice_(NULL), voiceError_(0),
       submittedFrames_(0), openedRate_(0), openedChannels_(0), frameBytes_(0),
-      capacityFrames_(0), started_(false), diagnosticBlocks_(0), diagnosticNonzero_(0), diagnosticPeak_(0),
-      reportStart_(0), lastSubmit_(0), maxSubmitGap_(0), maxStorageWait_(0), reportSubmits_(0),
-      emptySubmits_(0), recoveries_(0), maxQueuedFrames_(0), previousGlitches_(0) {}
+      capacityFrames_(0), started_(false) {}
 XAudio2AudioPlayer::~XAudio2AudioPlayer() { DoClose(); }
 void XAudio2AudioPlayer::Check(HRESULT result, const char* operation) {
     if (FAILED(result)) ShipyardAudioFatal(operation, result);
@@ -94,10 +92,8 @@ void XAudio2AudioPlayer::DoPlay(const uint8_t* buffer, size_t length) {
         if (started_ && !queued) {
             Check(voice_->Stop(), "XAudio2 rebuffer stop");
             started_ = false;
-            ++recoveries_;
         }
         ShipyardAudio::PcmBufferPool::Block* block = storage_.TryAcquire();
-        double waitStart = block ? 0 : ShipyardAudioTime();
         while (!block) {
             CheckVoice();
             // Tiny submissions may occupy all slots before reaching the frame reserve.
@@ -106,57 +102,17 @@ void XAudio2AudioPlayer::DoPlay(const uint8_t* buffer, size_t length) {
             if (!storage_.WaitAvailable(2000)) ShipyardAudioFatal("XAudio2 device stalled", E_FAIL);
             block = storage_.TryAcquire();
         }
-        if (waitStart) maxStorageWait_ = (std::max)(maxStorageWait_, ShipyardAudioTime() - waitStart);
         CheckVoice();
         const unsigned bytes = static_cast<unsigned>((std::min)(length, static_cast<size_t>(storage_.CapacityBytes())));
         std::memcpy(block->samples, buffer, bytes);
-        if (diagnosticBlocks_ < 600) {
-            const int16_t* samples = reinterpret_cast<const int16_t*>(block->samples);
-            unsigned nonzero = 0, peak = 0;
-            for (unsigned i = 0; i < bytes / sizeof(int16_t); ++i) {
-                int sample = samples[i];
-                unsigned magnitude = static_cast<unsigned>(sample < 0 ? -sample : sample);
-                if (magnitude) ++nonzero;
-                if (magnitude > peak) peak = magnitude;
-            }
-            bool firstSound = nonzero && !diagnosticNonzero_;
-            diagnosticNonzero_ += nonzero;
-            if (peak > diagnosticPeak_) diagnosticPeak_ = peak;
-            ++diagnosticBlocks_;
-            if (diagnosticBlocks_ == 1 || diagnosticBlocks_ == 120 || diagnosticBlocks_ == 600 || firstSound)
-                ShipyardAudioLog("AUDIO native blocks=%u nonzero_samples=%u peak=%u rate=%u channels=%u",
-                    diagnosticBlocks_, diagnosticNonzero_, diagnosticPeak_, openedRate_, openedChannels_);
-        }
         XAUDIO2_BUFFER packet = {0};
         packet.AudioBytes = bytes;
         packet.pAudioData = block->samples;
         packet.pContext = block;
-        const double now = ShipyardAudioTime();
-        if (lastSubmit_) {
-            maxSubmitGap_ = (std::max)(maxSubmitGap_, now - lastSubmit_);
-            if (!queued) ++emptySubmits_;
-        }
-        lastSubmit_ = now;
-        if (!reportStart_) reportStart_ = now;
         HRESULT result = voice_->SubmitSourceBuffer(&packet);
         if (FAILED(result)) { storage_.Release(block); Check(result, "XAudio2 submit"); }
         submittedFrames_ += bytes / frameBytes_;
         if (!started_ && Buffered() >= GetDesiredBuffered()) StartVoice();
-        maxQueuedFrames_ = (std::max)(maxQueuedFrames_, static_cast<unsigned>(queued) + bytes / frameBytes_);
-        ++reportSubmits_;
-        // SoH360 queue diagnostics, expressed in this voice's actual sample rate.
-        if (now - reportStart_ >= 5) {
-            XAUDIO2_PERFORMANCE_DATA performance;
-            engine_->GetPerformanceData(&performance);
-            ShipyardAudioLog("AUDIO queue submits=%u elapsed=%.3f queued_ms=%.2f max_queued_ms=%.2f empty_submits=%u max_submit_gap_ms=%.3f max_storage_wait_ms=%.3f recoveries=%u new_glitches=%u",
-                reportSubmits_, now - reportStart_, queued * 1000.0 / openedRate_,
-                maxQueuedFrames_ * 1000.0 / openedRate_, emptySubmits_, maxSubmitGap_ * 1000,
-                maxStorageWait_ * 1000, recoveries_, performance.GlitchesSinceEngineStarted - previousGlitches_);
-            previousGlitches_ = performance.GlitchesSinceEngineStarted;
-            reportStart_ = now;
-            reportSubmits_ = emptySubmits_ = recoveries_ = maxQueuedFrames_ = 0;
-            maxSubmitGap_ = maxStorageWait_ = 0;
-        }
         buffer += bytes;
         length -= bytes;
     }
@@ -168,9 +124,6 @@ void XAudio2AudioPlayer::DoClose() {
     if (engine_) { engine_->Release(); engine_ = NULL; }
     storage_.Close();
     submittedFrames_ = 0; voiceError_ = 0; started_ = false;
-    diagnosticBlocks_ = diagnosticNonzero_ = diagnosticPeak_ = 0;
-    reportStart_ = lastSubmit_ = maxSubmitGap_ = maxStorageWait_ = 0;
-    reportSubmits_ = emptySubmits_ = recoveries_ = maxQueuedFrames_ = previousGlitches_ = 0;
     openedRate_ = openedChannels_ = frameBytes_ = capacityFrames_ = 0;
 }
 }

@@ -12,6 +12,9 @@ void Shipyard_Log(const char* format,...) {
     char buffer[2048];va_list args;va_start(args,format);_vsnprintf_s(buffer,sizeof(buffer),_TRUNCATE,format,args);va_end(args);
     spdlog::info("{}",buffer);
 }
+// Legacy bounded bring-up call sites remain linkable, but release builds do
+// not format or emit their high-volume diagnostic events.
+extern "C" void Shipyard_RuntimeTrace(const char*,...) {}
 void Shipyard_Fatal(const char* operation,HRESULT result){
     try{spdlog::critical("Xenos failure: {} ({:08x})",operation,static_cast<unsigned>(result));spdlog::default_logger()->flush();}
     catch(...){OutputDebugStringA("Shipyard fatal graphics failure while logging\n");}

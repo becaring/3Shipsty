@@ -37,9 +37,6 @@ private:
     UINT64 submittedFrames_;
     unsigned openedRate_, openedChannels_, frameBytes_, capacityFrames_;
     bool started_;
-    unsigned diagnosticBlocks_, diagnosticNonzero_, diagnosticPeak_;
-    double reportStart_, lastSubmit_, maxSubmitGap_, maxStorageWait_;
-    unsigned reportSubmits_, emptySubmits_, recoveries_, maxQueuedFrames_, previousGlitches_;
 };
 }
 #endif

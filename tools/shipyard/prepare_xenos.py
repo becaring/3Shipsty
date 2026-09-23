@@ -26,7 +26,6 @@ def prepare():
         sources[name]=raw.decode('utf-8-sig').replace('\r\n','\n')
     text=runpy.run_path(str(OWN/'projection.py'))['native_core'](sources['gfx_xenos.cpp'])
     text=text.replace('Smash360_','Shipyard_').replace('smash_device','xenos_device').replace('SoH','Shipyard').replace('SOH_','SHIPYARD_')
-    text=once(text,'shader=%016I64x/%016I64x compile_create_ms','shader=%016I64x/%08x compile_create_ms')
     # Shader persistence is an optional optimization deferred until modern
     # storage owns its path/worker. Runtime always invokes the real XDK compiler.
     text=once(text,'#include "shader_cache.h"','')

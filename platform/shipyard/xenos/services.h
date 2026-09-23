@@ -4,6 +4,13 @@
 #include <stdint.h>
 #include <string>
 void Shipyard_Log(const char*,...);
+#ifdef __cplusplus
+extern "C" {
+#endif
+void Shipyard_RuntimeTrace(const char*,...);
+#ifdef __cplusplus
+}
+#endif
 __declspec(noreturn) void Shipyard_Fatal(const char*,HRESULT);
 inline void Shipyard_Check(HRESULT result,const char* operation){if(FAILED(result))Shipyard_Fatal(operation,result);}
 double Shipyard_Time();

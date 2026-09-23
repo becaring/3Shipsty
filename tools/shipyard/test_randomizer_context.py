@@ -14,6 +14,11 @@ def main():
     original_hash=(ROOT/(BASE+'rando_hash.h')).read_text()
     generated_context=(OUT/'generated'/(BASE+'SeedContext.cpp')).read_text()
     assert re.search(r'gSeedTextures = [\s\S]*?\n\} \};',original_hash)[0] in generated_context
+    init=re.search(r'void Context::InitStaticData\(\) \{[\s\S]*?\n\}',generated_context)[0]
+    landmarks=['StaticData::HintTable_Init();','StaticData::InitLocationTable();']
+    positions=[init.index(mark) for mark in landmarks]
+    assert positions==sorted(positions)
+    assert all(init.count(mark)==1 for mark in landmarks)
     for name in UNITS:
         original=(ROOT/name).read_text(encoding='utf-8');projected=(OUT/'generated'/name).read_text()
         before={sig(n):n.text.decode() for n in methods(original)};after={sig(n):n.text.decode() for n in methods(projected)}

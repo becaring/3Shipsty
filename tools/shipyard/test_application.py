@@ -49,6 +49,22 @@ class ApplicationContracts(unittest.TestCase):
         def snapshot():return {p.relative_to(OUT).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in (OUT/'generated').rglob('*') if p.is_file()}
         first=snapshot();prepare();self.assertEqual(first,snapshot())
 
+    def test_initialize_keeps_real_randomizer_order(self):
+        projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        body=function(projected,'OTRGlobals::Initialize').text.decode()
+        landmarks=[
+            'gSaveStateMgr = std::make_shared<SaveStateMgr>();',
+            'gRandoContext->InitStaticData();',
+            'gRandoContext = Rando::Context::CreateInstance();',
+            'Rando::StaticData::InitItemTable();',
+            'gRandomizer = std::make_shared<Randomizer>();',
+            'GetGameVersions();',
+        ]
+        locations=[body.index(mark) for mark in landmarks]
+        self.assertEqual(locations,sorted(locations))
+        for mark in landmarks:
+            self.assertEqual(body.count(mark),1)
+
     def test_preflight_conditions_match_upstream(self):
         folder=OUT/'host';folder.mkdir(exist_ok=True)
         original=(ROOT/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')

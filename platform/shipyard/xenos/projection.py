@@ -30,7 +30,9 @@ def native_core(original):
         delete shader; return NULL;
     }""")
     text = text.replace("shaders[std::make_pair(id0,id1)]", "shaders[key]")
-    text = replace_once(text, '    if(elapsed>=.008) Smash360_Log("HITCH shader=%016I64x/%08x compile_create_ms=%.3f",id0,id1,elapsed*1000);', '    if(elapsed>=.008) Smash360_Log("HITCH shader=%016I64x/%016I64x compile_create_ms=%.3f",key.shaderId0,key.shaderId1,elapsed*1000);')
+    text = replace_once(text, '    const double compileStart=Smash360_Time();', '')
+    text = replace_once(text, '    const double elapsed=Smash360_Time()-compileStart;', '')
+    text = replace_once(text, '    if(elapsed>=.008) Smash360_Log("HITCH shader=%016I64x/%08x compile_create_ms=%.3f",id0,id1,elapsed*1000);', '')
     text = replace_once(text, "ShaderProgram* Lookup(uint64_t id0, uint32_t id1)", "ShaderProgram* Lookup(const ShaderProgramKey& key)")
     text = text.replace("shaders.find(std::make_pair(id0,id1))", "shaders.find(key)")
     # All six texture bindings own resources and sampler state. Position/UV and
