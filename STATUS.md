@@ -31,6 +31,14 @@ post-checkpoint identity build and physical-console validation remain.
 The user visually confirmed gameplay with the Brazilian translation assets.
 An initial ~15 FPS report cleared on relaunch of the exact same XEX and mods:
 the user then reported 60 FPS. No performance code or mod files changed.
+Final source-identity build at `55ce76c50` verified all 1,836 PPC objects,
+genuine link, and ImageXex. Only the new XEX was staged; SHA256
+`262e2ffbcd4998a90574e7e2a3d42a218961b5553a66bec8c7641797e7314694`.
+Its owned Xenia log embeds `commit=55ce76c`, reaches `gui-ready` and
+`init-complete`, opens the Portuguese OTRs, and enters a gameplay scene. The
+user confirmed visible translated gameplay, working audio/controls and about
+60 FPS on this exact XEX. One physical-console validation is now required;
+cursor visibility, Back menu and mods on hardware remain unproven.
 
 ## 2026-09-22 — Hardware menu input and controller cursor candidate
 

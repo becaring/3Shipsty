@@ -26,14 +26,27 @@ app log at `scratch/runtime/xenia/content/E0300000052D89D9/534F4809/00000001/3Sh
 for this image shows 40 real `game:/mods` archives added (including both
 Portuguese OTRs), zero listfile errors, `gui-ready` and `init-complete` in
 `scratch/runtime/xenia/xenia.log`, and gameplay scene initialization. Xenia
-temporary breakpoint and context-promotion settings were restored. Current
-work: commit docs, regenerate build identity, rebuild/link/stage final XEX,
-then verify it in Xenia. Physical boot, visible cursor, Back menu and mod
-appearance on hardware remain unproven; do not ask for repeated console copies.
+temporary breakpoint and context-promotion settings were restored. The final
+source-identity XEX and its validation are recorded below. Physical boot,
+visible cursor, Back menu and mod appearance on hardware remain unproven; do
+not ask for repeated console copies.
 The user visually confirmed Brazilian-translated gameplay. The first run was
 reported at ~15 FPS; relaunching the same XEX and mods reached 60 FPS, with no
 source or mod change. Do not attribute the initial slowdown to port code
 without a reproducible comparison.
+
+The final source-identity build from code commit `55ce76c50` then verified
+all 1,836 PPC objects, genuine link and ImageXex. Staged only the new XEX:
+`scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`262e2ffbcd4998a90574e7e2a3d42a218961b5553a66bec8c7641797e7314694`.
+Its owned Xenia log records `commit=55ce76c`, `gui-ready`, `init-complete`;
+the application log opens both Portuguese OTRs and initializes gameplay.
+The user confirmed on this exact XEX: translated gameplay, working audio and
+controls, roughly 60 FPS. The earlier first-chance C++ exception remains
+nonfatal. This XEX is ready for one physical-console test. Copy only this XEX
+over the previous XEX, preserving archives/mods/saves; test boot, Back menu,
+visible right-stick cursor, preset popup, translated assets, audio, gameplay
+and save. No physical result for this image yet.
 
 ## 2026-09-22 modern menu and cursor candidate; retail validation pending
 

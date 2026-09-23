@@ -39,6 +39,13 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
   gameplay. An initial ~15 FPS report became 60 FPS after relaunching the
   identical XEX and mods; no performance source change was made. This does
   not establish hardware behavior.
+  The final source-identity XEX built from `55ce76c50` passed 1,836-object
+  verification, genuine link and ImageXex; staged SHA256 is
+  `262e2ffbcd4998a90574e7e2a3d42a218961b5553a66bec8c7641797e7314694`.
+  Owned Xenia embeds `commit=55ce76c`, reaches `gui-ready`/`init-complete`,
+  opens the Portuguese OTRs and enters gameplay. The user confirms translated
+  gameplay, audio, controller input and ~60 FPS on this exact image. Physical
+  validation is the next boundary; no console result for this image exists.
 
 - 2026-09-22, physical console booted the previous `27f931b5...` XEX into
   real 9.2.3 gameplay with working audio, input, saves and randomizer generation,
