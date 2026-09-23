@@ -5,9 +5,6 @@ namespace Shipyard { namespace Storage {
 // Call on the application thread before SaveManager::Init; errors and user
 // cancellation propagate. The application owns retry/abort policy.
 void Mount(unsigned userIndex = 0);
-// Temporary hardware-only startup trace beside the XEX, independent of STFS.
-// Best effort: a read-only game directory must not change application behavior.
-void RecordNativeBootStage(unsigned stage);
 // Call only after SaveManager::ThreadPoolWait and all other writers joined.
 void Shutdown();
 std::string SaveDirectory();

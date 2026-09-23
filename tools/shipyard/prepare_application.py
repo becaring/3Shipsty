@@ -95,29 +95,53 @@ def platform_source(source):
     source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
     source=once(source,'extern "C" void InitOTR(int argc, char* argv[]) {','''extern "C" void InitOTR(int argc, char* argv[]) {
     xbox_compat::filesystem::InitWorkingDirectory("game:/");
-    Shipyard::Storage::RecordNativeBootStage(0);
     if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
     try { Shipyard::Storage::Mount(); }
     catch (...) { SDLNet_Quit(); throw; }
-    Shipyard::Storage::RecordNativeBootStage(1);
 '''.rstrip())
-    source=once(source,'    OTRGlobals::Instance = new OTRGlobals();',
-                '    OTRGlobals::Instance = new OTRGlobals();\n    Shipyard::Storage::RecordNativeBootStage(2);')
-    source=once(source,'    OTRGlobals::Instance->RunExtract(argc, argv);',
-                '    OTRGlobals::Instance->RunExtract(argc, argv);\n    Shipyard::Storage::RecordNativeBootStage(3);')
-    source=once(source,'    OTRGlobals::Instance->Initialize();',
-                '    OTRGlobals::Instance->Initialize();\n    Shipyard::Storage::RecordNativeBootStage(4);')
-    source=once(source,'    SaveManager::Instance = new SaveManager();',
-                '    SaveManager::Instance = new SaveManager();\n    Shipyard::Storage::RecordNativeBootStage(5);')
-    source=once(source,'    SohGui::SetupMenuElements();',
-                '    SohGui::SetupMenuElements();\n    Shipyard::Storage::RecordNativeBootStage(6);')
-    source=once(source,'    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();',
-                '    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();\n    Shipyard::Storage::RecordNativeBootStage(7);')
     source=once(source,'    context->InitLogging(logLevel, logLevel);',
                 '''    if (!context->InitLogging(logLevel, logLevel)) {
         throw std::runtime_error("Xbox save-container log initialization failed");
     }''')
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
+    source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
+// failure escape through the C game entry before its crash handler exists.
+static void Shipyard_ReportStartupFailure(const char* operation, DWORD code, bool hasCode) {
+    char message[256];
+    if (hasCode) {
+        _snprintf_s(message, sizeof(message), _TRUNCATE,
+                    "Startup failed: %s (Xbox error %lu)", operation, code);
+    } else {
+        _snprintf_s(message, sizeof(message), _TRUNCATE,
+                    "Startup failed: %s", operation);
+    }
+    OutputDebugStringA(message);
+    OutputDebugStringA("\\n");
+    wchar_t wide[256];
+    unsigned i = 0;
+    for (; i < sizeof(wide) / sizeof(wide[0]) - 1 && message[i]; ++i)
+        wide[i] = static_cast<unsigned char>(message[i]);
+    wide[i] = 0;
+    Shipyard::Platform::ShowError(L"Ship of Harkinian", wide);
+}
+
+extern "C" int Shipyard_TryInitOTR(int argc, char* argv[]) {
+    try {
+        InitOTR(argc, argv);
+        return 1;
+    } catch (const Shipyard::Async::native_error& error) {
+        Shipyard_ReportStartupFailure(error.what(), error.native_code(), true);
+    } catch (const std::system_error& error) {
+        Shipyard_ReportStartupFailure(error.what(), error.code().value(), true);
+    } catch (const std::exception& error) {
+        Shipyard_ReportStartupFailure(error.what(), 0, false);
+    } catch (...) {
+        Shipyard_ReportStartupFailure("unknown native exception", 0, false);
+    }
+    return 0;
+}
+
+extern "C" void SaveManager_ThreadPoolWait() {''')
     source=once(source,'#ifdef __APPLE__\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();',
                 '#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)\n    SpeechSynthesizer::Instance = new DarwinSpeechSynthesizer();')
     # Generation may still use Context, settings and resources during shutdown.
@@ -143,7 +167,7 @@ def platform_source(source):
     source=network_values(source)
     source=once(source,'    Extractor::ShowErrorBox(title, body);','    Shipyard::Platform::ShowError(StringToU16(title).c_str(), StringToU16(body).c_str());')
     source=once(source,'extern "C" void Messagebox_ShowErrorBox','std::wstring StringToU16(const std::string& s);\nextern "C" void Messagebox_ShowErrorBox')
-    return '#include "application/archive_preflight.h"\n#include "context/platform.h"\n#include "libultra/platform.h"\n#include "network/transport.h"\n#include "save-storage/storage.h"\n#include "async/detached.h"\n'+source
+    return '#include "application/archive_preflight.h"\n#include "context/platform.h"\n#include "libultra/platform.h"\n#include "network/transport.h"\n#include "save-storage/storage.h"\n#include "async/native.h"\n#include "async/detached.h"\n#include <exception>\n#include <system_error>\n'+source
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());texts={}
     for name,expected in lock['sources'].items():

@@ -53,6 +53,18 @@ class GameProjectionTests(unittest.TestCase):
         output, _ = module.project_header(name, (ROOT / name).read_bytes())
         self.assertNotIn(b'__VA_OPT__', output)
 
+    def test_xbox_main_pins_title_thread_before_startup(self):
+        module = self.module()
+        name = 'soh/src/code/main.c'
+        output, changes = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertEqual(output.count(b'XSetThreadProcessor(GetCurrentThread(), 0)'), 1)
+        self.assertLess(output.index(b'XSetThreadProcessor(GetCurrentThread(), 0)'),
+                        output.index(b'GameConsole_Init();'))
+        self.assertLess(output.index(b'GameConsole_Init();'), output.index(b'Shipyard_TryInitOTR(argc, argv))'))
+        self.assertIn(b'#ifdef _XBOX\n#include <xtl.h>\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif', output)
+        self.assertIn(b'if (!Shipyard_TryInitOTR(argc, argv)) return 1;', output)
+        self.assertTrue(any('application-thread placement' in change for change in changes))
+
     def test_bool_pointer_alias_and_aggregate_initialization_rejected(self):
         for code in [b'void f(void) { _Bool b=0; void *p=&b; }',
                      b'void f(void) { _Bool b=0; void *p; p=&b; }',

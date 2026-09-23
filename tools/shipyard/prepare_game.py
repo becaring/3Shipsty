@@ -593,6 +593,23 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {''',
             raise ValueError('Expected two desktop entry guards')
         text = text.replace('#ifdef _WIN32', '#if defined(_WIN32) && !defined(_XBOX)')
         changes.append('Xbox uses actual main body without desktop console/SDL entry setup')
+        replace_projected_once(
+            '#include "soh/CrashHandlerExt.h"',
+            '#include "soh/CrashHandlerExt.h"\n#ifdef _XBOX\n#include <xtl.h>\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif',
+            'Xbox native entry API declaration')
+        replace_projected_once(
+            '    GameConsole_Init();\n    InitOTR(argc, argv);',
+            '''#ifdef _XBOX
+    // SoH360 and Smash360 establish this before display, XAM and workers.
+    if (XSetThreadProcessor(GetCurrentThread(), 0) == (DWORD)-1) {
+        OutputDebugStringA("Shipyard: application processor setup failed\\n");
+        return 1;
+    }
+#endif
+    GameConsole_Init();
+    if (!Shipyard_TryInitOTR(argc, argv)) return 1;''',
+            'Pin the real title/render thread before native startup')
+        changes.append('Match hardware-proven SoH360/Smash360 application-thread placement')
     if name == 'libultraship/include/libultraship/libultra/message.h':
         helpers = []
         for suffix, typ, field in [('8', 'u8', 'data8'), ('16', 'u16', 'data16'), ('32', 'u32', 'data32'), ('PTR', 'void*', 'ptr')]:

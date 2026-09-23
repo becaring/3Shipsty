@@ -21,7 +21,8 @@ class ApplicationContracts(unittest.TestCase):
                     if n.type=='function_definition' and n.child_by_field_name('declarator') is not None]
         original=(ROOT/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
-        generated_helpers=['MakeItemIDtoGetItemIDMap','MakeItemIDtoRandomizerGetMap']
+        generated_helpers=['MakeItemIDtoGetItemIDMap','MakeItemIDtoRandomizerGetMap',
+                           'Shipyard_ReportStartupFailure','Shipyard_TryInitOTR']
         self.assertEqual(names(original),[n for n in names(projected) if n not in generated_helpers])
         # Compare actual resource-registration expressions independently of
         # surrounding platform lifetime and container-construction lowering.
@@ -35,10 +36,6 @@ class ApplicationContracts(unittest.TestCase):
         # surrounds them and value construction keeps Anchor's upstream zeros.
         init=function(projected,'InitOTR').text.decode()
         init=init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n','')
-        for stage in range(8):
-            marker='    Shipyard::Storage::RecordNativeBootStage('+str(stage)+');\n'
-            self.assertEqual(init.count(marker),1)
-            init=init.replace(marker,'')
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
         xbox_selection='#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)'
@@ -155,7 +152,6 @@ int main() {
         self.assertLess(start.index('SDLNet_Init()'),start.index('new OTRGlobals()'))
         self.assertLess(start.index('Storage::Mount()'),start.index('new OTRGlobals()'))
         self.assertIn('xbox_compat::filesystem::InitWorkingDirectory("game:/");',start)
-        self.assertLess(start.index('RecordNativeBootStage(0)'),start.index('Storage::Mount()'))
         self.assertLess(start.index('InitWorkingDirectory('),start.index('Storage::Mount()'))
         for remote in ('CrowdControl','Sail','Anchor'):
             self.assertLess(stop.index(remote+'::Instance->Disable();'),stop.index('OTRAudio_Exit();'))
@@ -166,5 +162,68 @@ int main() {
                'Storage::Shutdown();','SDLNet_Quit();']
         positions=[stop.index(s) for s in order]
         self.assertEqual(sorted(positions),positions)
+
+    def test_native_startup_failure_boundary(self):
+        source=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        wrapper=function(source,'Shipyard_TryInitOTR').text.decode()
+        self.assertIn('InitOTR(argc, argv);',wrapper)
+        self.assertIn('catch (const Shipyard::Async::native_error& error)',wrapper)
+        self.assertIn('error.native_code()',wrapper)
+        self.assertIn('catch (const std::system_error& error)',wrapper)
+        self.assertIn('catch (const std::exception& error)',wrapper)
+        self.assertIn('Shipyard::Platform::ShowError',source)
+        self.assertLess(source.index('extern "C" void InitOTR('),
+                        source.index('extern "C" int Shipyard_TryInitOTR('))
+
+    def test_native_startup_failure_returns_and_reports_code(self):
+        projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        folder=OUT/'host-startup-failure';folder.mkdir(exist_ok=True)
+        harness='''#include <cstdio>
+#include <cstring>
+#include <exception>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+typedef unsigned long DWORD;
+namespace Shipyard { namespace Async {
+class native_error : public std::runtime_error {
+public:
+    native_error(const char* message, DWORD code) : std::runtime_error(message), code_(code) {}
+    DWORD native_code() const { return code_; }
+private: DWORD code_;
+};
+} namespace Platform {
+std::wstring shown;
+void ShowError(const wchar_t*, const wchar_t* message) { shown=message; }
+} }
+void OutputDebugStringA(const char*) {}
+int failure;
+extern "C" void InitOTR(int, char*[]) {
+    if (failure==1) throw Shipyard::Async::native_error("XContentCreate", 123);
+    if (failure==2) throw std::system_error(std::error_code(5, std::system_category()), "filesystem");
+    if (failure==3) throw std::runtime_error("logger");
+    if (failure==4) throw 42;
+}
+'''+function(projected,'Shipyard_ReportStartupFailure').text.decode()+'\n'+function(projected,'Shipyard_TryInitOTR').text.decode()+'''
+int main() {
+    for (failure=0; failure<=4; ++failure) {
+        Shipyard::Platform::shown.clear();
+        int result=Shipyard_TryInitOTR(0, nullptr);
+        if (failure==0) { if (result!=1 || !Shipyard::Platform::shown.empty()) return 1; }
+        else if (result!=0 || Shipyard::Platform::shown.empty()) return 2;
+        if (failure==1 && Shipyard::Platform::shown.find(L"XContentCreate (Xbox error 123)")==std::wstring::npos) return 3;
+        if (failure==2 && Shipyard::Platform::shown.find(L"Xbox error 5")==std::wstring::npos) return 4;
+        if (failure==3 && Shipyard::Platform::shown.find(L"logger")==std::wstring::npos) return 5;
+        if (failure==4 && Shipyard::Platform::shown.find(L"unknown native exception")==std::wstring::npos) return 6;
+    }
+    puts("native startup failure boundary passed");
+}
+'''
+        path=folder/'startup_failure_contract.cpp';path.write_text(harness)
+        compiler,env=ENV['host_environment']()
+        ENV['invoke']([compiler,'/nologo','/EHsc','/MD',path,
+                       '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'startup_failure_contract.exe')],folder,'compile',env)
+        result=ENV['invoke']([folder/'startup_failure_contract.exe'],folder,'run',env)
+        self.assertIn('native startup failure boundary passed',result['stdout'])
 
 if __name__=='__main__':unittest.main()
