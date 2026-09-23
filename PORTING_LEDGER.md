@@ -21,6 +21,19 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, copied retail STFS package: 57,344 bytes, SHA256
+  `23ce7ba95803282cd905946f626bc7d6a8a7e8ccac603732e666e3d36d909106`,
+  valid CON/title `534F4809`, file table containing `mods` only. Selector and
+  XContent mount therefore succeeded; the real 9.2.3 RunExtract path created
+  the directory. Generic RGH fatal has no fault code. A six-file, flushed,
+  pre-logger diagnostic in `9dfa266bd849fd6bfe43af3a8b0497c68005ac53`
+  preserves actual application order and storage semantics. Fresh full build,
+  link and ImageXex pass; diagnostic XEX SHA256
+  `4c3078779b058761ac6558d5d6a7b1a68f288633ee9bf7ebb7d617a9a5e70622`.
+  Owned Xenia created stages 1–6 and reached save metadata. One retail run
+  and copied HDD package are required to identify the precise pre-logging
+  boundary. The markers are temporary and must be removed for a clean image.
+
 - 2026-09-22, first physical 9.2.3 test: user reports the previous candidate
   reached storage selection, then crashed and powered down the console without
   warning. No return/error code was captured. The current platform called

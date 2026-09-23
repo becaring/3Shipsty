@@ -1,5 +1,38 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 retail post-mount crash: diagnostic retest next
+
+The retail `3Shipsty` HDD save package supplied by the user was a valid
+57,344-byte STFS `CON` package, SHA256
+`23ce7ba95803282cd905946f626bc7d6a8a7e8ccac603732e666e3d36d909106`.
+Its title ID is `534F4809`; read-only file-table inspection found the `mods`
+directory and no other entries. Therefore the previous XEX successfully
+completed the selector and `XContentCreate`, then entered the real
+`OTRGlobals::RunExtract` code far enough to create `mods`. The generic RGH
+"fatal crash intercepted" screen gave no code, and a missing log is not
+conclusive about flush timing. Do not keep changing the storage selector.
+
+Commit `9dfa266bd849fd6bfe43af3a8b0497c68005ac53` adds only bounded
+pre-logging breadcrumbs persisted through the real XContent mount. Fresh
+1,836-PPC-object build/link/ImageXex produced diagnostic XEX
+`scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`4c3078779b058761ac6558d5d6a7b1a68f288633ee9bf7ebb7d617a9a5e70622`.
+Owned Xenia created all six files (`boot-1-mounted` through
+`boot-6-context`) and reached save-slot metadata initialization on this XEX.
+The marker sequence is: 1 mount complete; 2 RunExtract/preflight complete;
+3 optional archive discovery complete; 4 configuration/CVars complete;
+5 logging initialized; 6 full Context/application Initialize returned.
+They are temporary diagnostics, not part of the desired final image.
+
+Run this XEX **once** on the HDD and, if it crashes, copy the HDD
+`Content/<profile>/534F4809/00000001/3Shipsty` package immediately. Inspect
+the highest numbered `boot-*` entry in its STFS file table (the first run
+starts with no previous markers). A container with only `mods` again would
+instead implicate marker creation/flush or an earlier fault. Do not copy the
+STFS container beside the XEX as a runtime input. Keep both O2R archives and
+`espeak-ng-data` unchanged. The retail fault remains unresolved until this
+evidence arrives, then remove the diagnostic path after the narrow fix.
+
 ## 2026-09-22 hardware storage-selector failure and new retest candidate
 
 This supersedes the clean-hardware-candidate conclusion immediately below.

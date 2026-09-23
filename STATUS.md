@@ -1,5 +1,30 @@
 # 3Shipsty status
 
+## 2026-09-22 — Retail crash is after storage mount; bounded diagnostic XEX
+
+The user copied the 57,344-byte HDD save package `3Shipsty` after the retail
+crash (SHA256 `23ce7ba95803282cd905946f626bc7d6a8a7e8ccac603732e666e3d36d909106`).
+Read-only inspection found valid `CON`/title ID `534F4809` metadata and a
+single `mods` directory in its file table, with no log file. This proves
+`XContentCreate` succeeded and the real application entered `RunExtract` at
+least through mod-directory creation. It does **not** prove which subsequent
+call failed; absence of a log could reflect either pre-logging failure or
+unflushed contents. The generic RGH fatal screen provided no exception code.
+Do not attribute this second fault to the storage picker or change XContent
+without new evidence.
+
+Code commit `9dfa266bd849fd6bfe43af3a8b0497c68005ac53` adds six tiny,
+flushed, temporary boot-stage files inside the genuine save container at
+mount, preflight, archive discovery, configuration, logging, and Context
+return. No gameplay/save semantics are bypassed. Fresh full 1,836-object
+build/link/ImageXex produced staged diagnostic XEX SHA256
+`4c3078779b058761ac6558d5d6a7b1a68f288633ee9bf7ebb7d617a9a5e70622`.
+In owned Xenia, this exact image wrote all six files and reached real save
+metadata initialization; the user confirmed visible file select. The next required action is one retail attempt using
+that image, then copy the HDD save package immediately and inspect which
+`boot-*` entries it contains. Remove the temporary markers after identifying
+and fixing the fault, before claiming a final clean hardware image.
+
 ## 2026-09-22 — Hardware storage-selector crash; corrected XEX awaits console retest
 
 The prior clean candidate (`50f702fe...`) reached storage selection on a real
