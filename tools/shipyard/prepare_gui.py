@@ -98,6 +98,8 @@ def transform(name,text):
         for method,call in methods.items():
             begin=text.index('void Gui::'+method+'(');switch=text.index('switch (',begin);pos=text.index('{',switch)+1
             text=text[:pos]+'\n        case WindowBackend::FAST3D_XENOS: '+call+' break;'+text[pos:]
+        text=once(text,'    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());',
+                  '    Shipyard_ImGuiPlatformDrawCursor();\n    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());')
         # The renderer NewFrame hook rebuilds the atlas only when modern SoH
         # adds fonts after backend initialization and invalidates it.
         text=text.replace('mGuiTextures.contains(name)','Shipyard::Resources::contains(mGuiTextures,name)')

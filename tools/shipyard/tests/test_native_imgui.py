@@ -36,7 +36,7 @@ def main():
 #include <cstring>
 #include <stdexcept>
 typedef uint16_t WORD;
-#define CHECK(c) do{if(!(c))throw std::runtime_error(#c);}while(0)
+#define CHECK(c) do{if(!(c)){std::fprintf(stderr,"failed: %s line %d\\n",#c,__LINE__);throw std::runtime_error(#c);}}while(0)
 static double seconds=1;
 double Shipyard_Time(){return seconds;}
 static unsigned physicalSlot=0,refreshes=0;
@@ -105,6 +105,17 @@ int main(){
     physicalPad.buttons=0;frame(false);
     const int policy=io.ConfigFlags;Shipyard_ImGuiPlatformNewFrame(640,480,false);
     CHECK(io.DeltaTime==0.000001f);CHECK(io.DisplaySize.x==640 && io.DisplaySize.y==480);
+    physicalPad.buttons=0;seconds+=1.0/60;
+    Shipyard_ImGuiPlatformNewFrame(1280,720,true);
+    ImGui::NewFrame();ImGui::Begin("Cursor draw contract");ImGui::Text("Visible UI");ImGui::End();
+    Shipyard_ImGuiPlatformDrawCursor();
+    CHECK(!io.MouseDrawCursor);
+    ImGui::Render();
+    ImDrawList* cursorList=ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
+    CHECK(cursorList->VtxBuffer.Size>=6);
+    ImDrawData* drawData=ImGui::GetDrawData();bool cursorSubmitted=false;
+    if(drawData)for(int i=0;i<drawData->CmdListsCount;++i)if(drawData->CmdLists[i]==cursorList)cursorSubmitted=true;
+    CHECK(cursorSubmitted);
     CHECK(io.ConfigFlags==policy);Shipyard_ImGuiPlatformShutdown();CHECK(io.BackendPlatformName==NULL);
     ImGui::DestroyContext();std::printf("56 real ImGui button bindings, donor cursor mode, click suppression, analog/disconnect and navigation ownership pass (%u refreshes)\\n",refreshes);
 }

@@ -13,4 +13,5 @@ void Shipyard_ImGuiDestroyTexture(ImTextureID);
 void Shipyard_ImGuiPlatformInit();
 void Shipyard_ImGuiPlatformShutdown();
 void Shipyard_ImGuiPlatformNewFrame(unsigned width,unsigned height,bool menuVisible);
+void Shipyard_ImGuiPlatformDrawCursor();
 inline float Shipyard_FloatUnitU8(uint8_t value){return static_cast<float>(value)/255.0f;}

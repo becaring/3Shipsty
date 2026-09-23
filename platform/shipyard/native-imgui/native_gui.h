@@ -7,3 +7,4 @@ void Shipyard_ImGuiRender(ImDrawData*);
 void Shipyard_ImGuiPlatformInit();
 void Shipyard_ImGuiPlatformShutdown();
 void Shipyard_ImGuiPlatformNewFrame(unsigned width,unsigned height,bool menuVisible);
+void Shipyard_ImGuiPlatformDrawCursor();

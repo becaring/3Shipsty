@@ -96,3 +96,17 @@ void Shipyard_ImGuiPlatformNewFrame(unsigned width,unsigned height,bool menuVisi
     previousMenu=menuVisible;
     previousPointerActive=pointerActive;
 }
+void Shipyard_ImGuiPlatformDrawCursor(){
+    if(!previousPointerActive)return;
+    ImGuiIO& io=ImGui::GetIO();
+    const ImVec2 p=io.MousePos;
+    if(p.x<0||p.y<0)return;
+    // The baked atlas cursor can disappear on the native Xenos texture path.
+    // Draw the same controller pointer as ordinary ImGui geometry, using the
+    // already-working UI white pixel and a dark edge for either menu theme.
+    ImDrawList* draw=ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
+    draw->AddTriangleFilled(p,ImVec2(p.x+1,p.y+25),ImVec2(p.x+18,p.y+17),IM_COL32(0,0,0,255));
+    draw->AddTriangleFilled(ImVec2(p.x+3,p.y+4),ImVec2(p.x+4,p.y+20),
+                            ImVec2(p.x+14,p.y+16),IM_COL32(255,255,255,255));
+    io.MouseDrawCursor=false;
+}
