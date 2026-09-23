@@ -36,10 +36,6 @@ class ApplicationContracts(unittest.TestCase):
         init=function(projected,'InitOTR').text.decode()
         init=init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n','')
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
-        for stage in (1,2,6):
-            marker='    Shipyard::Storage::RecordBootStage('+str(stage)+');\n'
-            self.assertEqual(init.count(marker),1)
-            init=init.replace(marker,'')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
         xbox_selection='#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)'
         self.assertIn(xbox_selection,init)
@@ -56,12 +52,9 @@ class ApplicationContracts(unittest.TestCase):
     def test_initialize_keeps_real_randomizer_order(self):
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         body=function(projected,'OTRGlobals::Initialize').text.decode()
-        stages=[body.index('RecordBootStage('+str(stage)+')') for stage in (3,4,5)]
-        self.assertEqual(stages,sorted(stages))
         self.assertLess(body.index('if (!context->InitLogging('),
                         body.index('GetLogger()->set_pattern('))
-        self.assertLess(body.index('RecordBootStage(7)'),
-                        body.index('GetLogger()->set_pattern('))
+        self.assertNotIn('RecordBootStage(',body)
         landmarks=[
             'gSaveStateMgr = std::make_shared<SaveStateMgr>();',
             'gRandoContext->InitStaticData();',

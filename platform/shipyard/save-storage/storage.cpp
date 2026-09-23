@@ -124,33 +124,6 @@ void Mount(unsigned userIndex) {
     Check(XContentCreate(userIndex, root, &content, XCONTENTFLAG_OPENALWAYS, NULL, NULL, NULL), "XContentCreate");
     mounted = true;
 }
-void RecordBootStage(unsigned stage) {
-    static const char* const paths[] = {
-        NULL,
-        "shipyard:\\boot-1-mounted",
-        "shipyard:\\boot-2-preflight",
-        "shipyard:\\boot-3-archives",
-        "shipyard:\\boot-4-config",
-        "shipyard:\\boot-5-logging",
-        "shipyard:\\boot-6-context",
-        "shipyard:\\boot-7-logging-failed"
-    };
-    if(stage==0 || stage>=sizeof(paths)/sizeof(paths[0]))return;
-    Async::lock_guard<Async::mutex> lock(mutex);
-    if(!mounted)return;
-    HANDLE file=CreateFileA(paths[stage],GENERIC_WRITE,FILE_SHARE_READ,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-    if(file==INVALID_HANDLE_VALUE){Shipyard_Log("boot stage %u create error=%lu",stage,GetLastError());return;}
-    DWORD written=0;
-    const DWORD length=static_cast<DWORD>(strlen(paths[stage]));
-    const BOOL wrote=WriteFile(file,paths[stage],length,&written,NULL);
-    const DWORD writeError=wrote && written==length ? ERROR_SUCCESS : GetLastError();
-    const BOOL flushed=FlushFileBuffers(file);
-    const DWORD flushError=flushed ? ERROR_SUCCESS : GetLastError();
-    CloseHandle(file);
-    const DWORD contentError=XContentFlush(root,NULL);
-    if(writeError || flushError || contentError)
-        Shipyard_Log("boot stage %u write=%lu flush=%lu content=%lu",stage,writeError,flushError,contentError);
-}
 std::string SaveDirectory() {
     Async::lock_guard<Async::mutex> lock(mutex); RequireMounted();
     return "shipyard:\\Save";
