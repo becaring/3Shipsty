@@ -1,4 +1,6 @@
-"""Exercise the exact original and generated O2R LoadFile methods with controlled ZIP reads."""
+"""Contrast the pinned upstream O2R reader with its XDK integrity projection."""
+import hashlib
+import json
 from pathlib import Path
 import runpy
 import subprocess
@@ -21,17 +23,22 @@ def load_method(source):
 
 
 def main():
+    original = ROOT / 'libultraship/src/ship/resource/archive/O2rArchive.cpp'
+    lock = json.loads((prepare_resource_manager.OWN / 'runtime-sources.lock.json').read_text())
+    pinned = lock['sources']['src/ship/resource/archive/O2rArchive.cpp']
+    if hashlib.sha256(original.read_text(encoding='utf-8-sig').encode()).hexdigest() != pinned:
+        raise AssertionError('O2R upstream source no longer matches the stable release pin')
     prepare_resource_manager.prepare()
     compiler, environment = runpy.run_path(str(Path(__file__).with_name('test_binary.py')))['host_environment']()
     folder = ROOT / 'scratch/resource-manager-xdk/host-o2r-read'
     contract = Path(__file__).with_name('test_o2r_read_contract.cpp')
-    original = ROOT / 'libultraship/src/ship/resource/archive/O2rArchive.cpp'
     projected = prepare_resource_manager.OUT / 'generated/src/ship/resource/archive/O2rArchive.cpp'
     for label, source in [('original', original), ('projected', projected)]:
         target = folder / label
         target.mkdir(parents=True, exist_ok=True)
         (target / 'method.inc').write_bytes(load_method(source))
         command = [str(compiler), '/nologo', '/std:c++20', '/EHsc', '/MD',
+                   *(['/DSHIPYARD_PROJECTED'] if label == 'projected' else []),
                    '/I' + str(target), str(contract), '/Fe:' + str(target / 'contract.exe')]
         build = subprocess.run(command, cwd=target, env=environment, capture_output=True, text=True)
         if build.returncode:

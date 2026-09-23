@@ -63,6 +63,7 @@ int main() {
     assert(std::memcmp(complete->Buffer->data(), "abcde", 5) == 0 && closeCount == 1);
     assert(readCall == 1 && requested == std::vector<zip_uint64_t>{5});
 
+#ifdef SHIPYARD_PROJECTED
     readResults = {2, 2, 1}; readCall = sourceOffset = 0; requested.clear(); closeCount = 0;
     auto chunked = reader.LoadFile("asset");
     assert(chunked && chunked->IsLoaded && closeCount == 1);
@@ -78,5 +79,12 @@ int main() {
     }
     entrySize = static_cast<zip_uint64_t>(-1); openCount = closeCount = 0;
     assert(!reader.LoadFile("asset") && openCount == 0 && closeCount == 0);
-    std::cout << "O2R complete and chunked reads accepted; incomplete, failed and oversized reads rejected\n";
+    std::cout << "Projected O2R: chunked reads complete; incomplete and oversized entries rejected\n";
+#else
+    // Pin the inherited behavior so the regression demonstrates the projection fix.
+    readResults = {3}; readCall = sourceOffset = 0; closeCount = 0;
+    auto shortRead = reader.LoadFile("asset");
+    assert(shortRead && shortRead->IsLoaded && readCall == 1 && closeCount == 1);
+    std::cout << "Pinned upstream O2R: positive short read remains marked loaded\n";
+#endif
 }

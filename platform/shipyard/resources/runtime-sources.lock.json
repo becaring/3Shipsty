@@ -8,7 +8,7 @@
     "include/ship/resource/archive/ArchiveManager.h": "92a1187f7990db1ed2db105b55fb800b84a7ddb430ff9e76385f098b11a4b7f8",
     "src/ship/resource/archive/ArchiveManager.cpp": "eaf3a01161057c8bc07901ed551e87c9f397dfe871b21fa0d2dc9860ab3562cb",
     "include/ship/resource/archive/O2rArchive.h": "dc8cee076623d8ae3cd78a9ff81adea7c3afc84b516f9b0ec317c7360230f2a4",
-    "src/ship/resource/archive/O2rArchive.cpp": "136ecb6422c7e6d082694a2dc3c58de8707bf7ee5749eb92920ad106febb70aa",
+    "src/ship/resource/archive/O2rArchive.cpp": "c44b92cbbba69d755172d611fb7e06960035ac72dabf3afd0fe5b7ae01ee7ab7",
     "include/ship/resource/archive/OtrArchive.h": "41cd32158f0b7738c3d5cf0f207999b7abcb39a0805734f155d478b3b3d03ce2",
     "src/ship/resource/archive/OtrArchive.cpp": "0406e32bd46348097b5888fe2915097681b4e1d2aaabbd10084f14fc59225b6c",
     "include/ship/resource/archive/FolderArchive.h": "3acc6fe75d2426f1695f0f8bbbf2c5f1fde40fe06e665b1d211526d083ba7532",

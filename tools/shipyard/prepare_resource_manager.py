@@ -107,6 +107,42 @@ def transform(name, original):
         text=text.replace('#include "ResourceType.h"', '#include "ship/resource/ResourceType.h"')
     if name.endswith(('/Archive.cpp', '/O2rArchive.cpp', '/OtrArchive.cpp')):
         text=text.replace('#include "ship/window/Window.h"', '#include "ship/resource/ResourceManager.h"')
+    if name.endswith('/O2rArchive.cpp'):
+        # libzip may return a positive partial chunk. Keep the pinned upstream
+        # source intact and complete the declared entry in the XDK projection.
+        text=once(text,
+                  '    // Filesize 0, no logging needed\n'
+                  '    if (zipEntryStat.size == 0) {\n'
+                  '        SPDLOG_TRACE("Failed to load file {}; filesize 0", filePath, GetPath());\n'
+                  '        return nullptr;\n'
+                  '    }',
+                  '    // Filesize 0, no logging needed\n'
+                  '    if (zipEntryStat.size == 0) {\n'
+                  '        SPDLOG_TRACE("Failed to load file {}; filesize 0", filePath, GetPath());\n'
+                  '        return nullptr;\n'
+                  '    }\n'
+                  '    if (zipEntryStat.size > std::vector<char>().max_size()) {\n'
+                  '        SPDLOG_TRACE("Failed to load file {}; filesize too large", filePath, GetPath());\n'
+                  '        return nullptr;\n'
+                  '    }')
+        text=once(text,
+                  '    fileToLoad->Buffer = std::make_shared<std::vector<char>>(zipEntryStat.size);\n\n'
+                  '    if (zip_fread(zipEntryFile, fileToLoad->Buffer->data(), zipEntryStat.size) < 0) {\n'
+                  '        SPDLOG_TRACE("Error reading file {} in zip archive  {}.", filePath, GetPath());\n'
+                  '    }',
+                  '    fileToLoad->Buffer = std::make_shared<std::vector<char>>(static_cast<size_t>(zipEntryStat.size));\n\n'
+                  '    zip_uint64_t bytesRead = 0;\n'
+                  '    while (bytesRead < zipEntryStat.size) {\n'
+                  '        const zip_uint64_t remaining = zipEntryStat.size - bytesRead;\n'
+                  '        const auto chunk = zip_fread(zipEntryFile, fileToLoad->Buffer->data() + static_cast<size_t>(bytesRead),\n'
+                  '                                     remaining);\n'
+                  '        if (chunk <= 0 || static_cast<zip_uint64_t>(chunk) > remaining) {\n'
+                  '            SPDLOG_TRACE("Error reading file {} in zip archive  {}.", filePath, GetPath());\n'
+                  '            zip_fclose(zipEntryFile);\n'
+                  '            return nullptr;\n'
+                  '        }\n'
+                  '        bytesRead += static_cast<zip_uint64_t>(chunk);\n'
+                  '    }')
     if name.endswith('/ArchiveManager.cpp'):
         text=text.replace('dynamic_pointer_cast<Archive>', 'std::dynamic_pointer_cast<Archive>')
         text=text.replace('mValidGameVersions.contains(archive->GetGameVersion())', 'Shipyard::Resources::contains(mValidGameVersions, archive->GetGameVersion())')
