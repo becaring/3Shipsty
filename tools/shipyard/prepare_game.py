@@ -595,7 +595,7 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {''',
         changes.append('Xbox uses actual main body without desktop console/SDL entry setup')
         replace_projected_once(
             '#include "soh/CrashHandlerExt.h"',
-            '#include "soh/CrashHandlerExt.h"\n#ifdef _XBOX\n#include <xtl.h>\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif',
+            '#include "soh/CrashHandlerExt.h"\n#ifdef _XBOX\n#include <xtl.h>\nextern void Shipyard_InstallStartupFaultHandler(void);\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif',
             'Xbox native entry API declaration')
         replace_projected_once(
             '    GameConsole_Init();\n    InitOTR(argc, argv);',
@@ -605,6 +605,7 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {''',
         OutputDebugStringA("Shipyard: application processor setup failed\\n");
         return 1;
     }
+    Shipyard_InstallStartupFaultHandler();
 #endif
     GameConsole_Init();
     if (!Shipyard_TryInitOTR(argc, argv)) return 1;''',

@@ -122,6 +122,7 @@ static void Shipyard_ReportStartupFailure(const char* operation, DWORD code, boo
     for (; i < sizeof(wide) / sizeof(wide[0]) - 1 && message[i]; ++i)
         wide[i] = static_cast<unsigned char>(message[i]);
     wide[i] = 0;
+    Shipyard::Platform::RecordStartupFailure(message);
     Shipyard::Platform::ShowError(L"Ship of Harkinian", wide);
 }
 

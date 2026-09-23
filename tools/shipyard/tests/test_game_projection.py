@@ -61,7 +61,9 @@ class GameProjectionTests(unittest.TestCase):
         self.assertLess(output.index(b'XSetThreadProcessor(GetCurrentThread(), 0)'),
                         output.index(b'GameConsole_Init();'))
         self.assertLess(output.index(b'GameConsole_Init();'), output.index(b'Shipyard_TryInitOTR(argc, argv))'))
-        self.assertIn(b'#ifdef _XBOX\n#include <xtl.h>\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif', output)
+        self.assertIn(b'#ifdef _XBOX\n#include <xtl.h>\nextern void Shipyard_InstallStartupFaultHandler(void);\nextern int Shipyard_TryInitOTR(int argc, char* argv[]);\n#endif', output)
+        self.assertLess(output.index(b'Shipyard_InstallStartupFaultHandler();'),
+                        output.index(b'GameConsole_Init();'))
         self.assertIn(b'if (!Shipyard_TryInitOTR(argc, argv)) return 1;', output)
         self.assertTrue(any('application-thread placement' in change for change in changes))
 

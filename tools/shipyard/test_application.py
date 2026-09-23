@@ -171,9 +171,22 @@ int main() {
         self.assertIn('error.native_code()',wrapper)
         self.assertIn('catch (const std::system_error& error)',wrapper)
         self.assertIn('catch (const std::exception& error)',wrapper)
+        self.assertIn('Shipyard::Platform::RecordStartupFailure(message);',source)
         self.assertIn('Shipyard::Platform::ShowError',source)
         self.assertLess(source.index('extern "C" void InitOTR('),
                         source.index('extern "C" int Shipyard_TryInitOTR('))
+
+    def test_hardware_fault_receipt_has_no_success_path_io(self):
+        platform=(ROOT/'platform/shipyard/context/platform.cpp').read_text()
+        recorder=platform[platform.index('void RecordNativeFault('):platform.index('LONG WINAPI ShipyardUnhandledFault(')]
+        installer=platform[platform.index('extern "C" void Shipyard_InstallStartupFaultHandler()'):
+                           platform.index('namespace Shipyard { namespace Platform')]
+        self.assertIn('game:\\\\3Shipsty.startup-fault',recorder)
+        self.assertIn('FlushFileBuffers(file)',recorder)
+        self.assertNotIn('XContentFlush',recorder)
+        self.assertIn('SetUnhandledExceptionFilter(ShipyardUnhandledFault)',installer)
+        self.assertIn('std::set_terminate(ShipyardTerminated)',installer)
+        self.assertNotIn('RecordNativeFault(',installer)
 
     def test_native_startup_failure_returns_and_reports_code(self):
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
@@ -195,6 +208,7 @@ private: DWORD code_;
 } namespace Platform {
 std::wstring shown;
 void ShowError(const wchar_t*, const wchar_t* message) { shown=message; }
+void RecordStartupFailure(const char*) {}
 } }
 void OutputDebugStringA(const char*) {}
 int failure;
