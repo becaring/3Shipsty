@@ -21,6 +21,22 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, first physical 9.2.3 test: user reports the previous candidate
+  reached storage selection, then crashed and powered down the console without
+  warning. No return/error code was captured. The current platform called
+  XAM before native D3D creation and blocked the presentation owner. The
+  hardware-tested Smash360 contract requires an early native device, present
+  during pending selector UI, and one conditional retry only when sign-in
+  notifications interrupted the request without B cancellation or offline
+  profile change. `b9fcc89e7e2a0aa07394e2b615cbeb43d58a49f5` transfers
+  that platform contract while preserving actual XContent and modern saves.
+  Fresh full 1,836-object build, link, ImageXex, native compile and contract
+  checks pass. New staged XEX SHA256
+  `75a0562a7bdee9cf938ba9cacf615c53a09a7d7e1f20b408b59fa53368d55a20`.
+  Owned Xenia logged selector `initial=997 result=0`, then 9.2.3 identity,
+  save-slot metadata and real scene init. Retail root cause and retry outcome
+  await a console retest; do not call this hardware-validated yet.
+
 - 2026-09-22, hardware-candidate boundary: code HEAD
   `2e89e891489b9335044bc874830d20f95418fcd2`; clean full XDK/ImageXex
   result SHA256 `50f702fe34958ecc59bb07b2725a3a3ee4cd71d10e471e915ecb7c5bfa8958e1`.

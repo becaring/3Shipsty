@@ -1,5 +1,32 @@
 # 3Shipsty status
 
+## 2026-09-22 — Hardware storage-selector crash; corrected XEX awaits console retest
+
+The prior clean candidate (`50f702fe...`) reached storage selection on a real
+Xbox 360, then the title crashed and the console powered down without a
+warning. This is not a proven Dashboard-only exit. Its storage code called
+`XShowDeviceSelectorUI` before creating the native D3D device and blocked in
+`XGetOverlappedResult(..., TRUE)` without presenting the overlay. Smash360's
+physical-console evidence established that this platform contract needs an
+early display, continued presentation, and sometimes one guarded same-profile
+retry after XAM cancellation during sign-in notifications. The exact failure
+code for this SoH hardware attempt was not captured, so the root cause remains
+an evidence-backed hypothesis until the retest.
+
+Code commit `b9fcc89e7e2a0aa07394e2b615cbeb43d58a49f5` applies that
+platform contract without changing 9.x SaveManager or bypassing XContent.
+The new staged XEX at `scratch/runtime/3Shipsty/3Shipsty.xex` has SHA256
+`75a0562a7bdee9cf938ba9cacf615c53a09a7d7e1f20b408b59fa53368d55a20`.
+Fresh metadata, all 1,836 PPC objects, genuine link, and ImageXex succeeded.
+XDK Xenos/storage compiles, selector contract, Xenos interface, and save-schema
+tests passed. In owned Xenia this exact XEX logged a successful asynchronous
+selector attempt (`initial=997 result=0`) after native-display creation, then
+identified commit `b9fcc89` and reached real save metadata and scene init.
+Xenia cannot prove the retail sign-in-interruption retry or resolve the
+unlogged hardware power-off. Retest only this new XEX on hardware, keeping
+archives and speech data unchanged; record the selector attempt/error if it
+still fails.
+
 ## 2026-09-22 — Clean hardware candidate; physical Xbox 360 is next
 
 The genuine 9.2.3 XEX built from code commit

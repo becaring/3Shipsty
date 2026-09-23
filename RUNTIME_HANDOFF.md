@@ -1,5 +1,37 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 hardware storage-selector failure and new retest candidate
+
+This supersedes the clean-hardware-candidate conclusion immediately below.
+The user reports that XEX `50f702fe...` reached the storage picker on a real
+Xbox 360, then crashed and powered down the console with no warning. No
+retail return code or log was captured. Code inspection shows the Shipyard
+storage path invoked `XShowDeviceSelectorUI` before creating D3D and blocked
+on its overlapped result, while Smash360's physically verified path creates
+the display and presents the pending OS overlay. On that title a selection
+interrupted by sign-in notifications needed one same-profile retry; ordinary
+cancel, changed profile, and failed presentation do not retry.
+
+New code commit `b9fcc89e7e2a0aa07394e2b615cbeb43d58a49f5` implements
+the same narrow platform/UI contract in `platform/shipyard/save-storage` and
+`platform/shipyard/xenos`, keeping real XContent and 9.x SaveManager. Native
+XDK objects, selector contract test, Xenos test, and save-schema parity pass.
+Fresh metadata/full 1,836-object build/link/ImageXex produced the staged XEX
+`scratch/runtime/3Shipsty/3Shipsty.xex`, SHA256
+`75a0562a7bdee9cf938ba9cacf615c53a09a7d7e1f20b408b59fa53368d55a20`.
+The `soh.o2r`, `oot.o2r`, and `espeak-ng-data` beside it are unchanged.
+
+Owned Xenia run of this exact XEX logged native display creation before the
+selector, attempt 1 `initial=997 result=0 extended=0`, application identity
+`Ackbar Delta (9.2.3) ... Commit: b9fcc89`, real save-slot metadata, and
+scene init. The owned app log is under
+`scratch/runtime/xenia/content/E0300000052D89D9/534F4809/00000001/3Shipsty/logs/Ship of Harkinian.log`
+at `[02:17:00]` onward; Xenia log is `scratch/runtime/xenia/xenia.log` near
+`[2026-09-23 02:16:59]`. The retail power-off/root cause is not yet proven
+fixed. Next action: copy only the new XEX, leave the existing archives/speech
+package, retest on hardware, and capture any selector attempt/result or
+power-off behavior before further changes. Do not reuse the earlier hash.
+
 ## 2026-09-22 clean hardware candidate — current authority
 
 This supersedes older live-status claims below. Branch
