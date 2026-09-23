@@ -109,6 +109,10 @@ def platform_source(source):
                 '    OTRGlobals::Instance->Initialize();\n    Shipyard::Platform::RecordBootStage("context-ready", false);')
     source=once(source,'    SaveManager::Instance = new SaveManager();',
                 '    SaveManager::Instance = new SaveManager();\n    Shipyard::Platform::RecordBootStage("save-worker-ready", false);')
+    source=once(source,'    conf->RunVersionUpdates();',
+                '    Shipyard::Platform::RecordBootStage("config-updaters-ready", false);\n    conf->RunVersionUpdates();\n    Shipyard::Platform::RecordBootStage("config-ready", false);')
+    source=once(source,'    SohGui::SetupGuiElements();',
+                '    SohGui::SetupGuiElements();\n    Shipyard::Platform::RecordBootStage("gui-windows-ready", false);')
     source=once(source,'    SohGui::SetupMenuElements();',
                 '    SohGui::SetupMenuElements();\n    Shipyard::Platform::RecordBootStage("gui-ready", false);')
     source=once(source,'    SpeechSynthesizer::Instance->Init();',

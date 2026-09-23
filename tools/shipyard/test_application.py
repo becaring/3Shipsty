@@ -198,7 +198,8 @@ int main() {
         source=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         start=function(source,'InitOTR').text.decode()
         stages=['entry','mounted','constructor-ready','pre-context','context-ready',
-                'save-worker-ready','gui-ready','speech-ready','init-complete']
+                'save-worker-ready','config-updaters-ready','config-ready',
+                'gui-windows-ready','gui-ready','speech-ready','init-complete']
         positions=[start.index('RecordBootStage("'+stage+'"') for stage in stages]
         self.assertEqual(positions,sorted(positions))
         self.assertEqual(start.count('RecordBootStage('),len(stages))

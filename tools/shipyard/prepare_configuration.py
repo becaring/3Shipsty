@@ -33,7 +33,7 @@ def transform(name,text):
         text=once(text,'int32_t mLastScancode = -1;','int32_t mLastScancode; // Initialized by the projected Window constructors.')
     if name.endswith('/Config.cpp'):
         text=project_boundary('libultraship/'+name,text)
-        text=once(text,'#include <any>','#include <iterator>\n#include "ship/window/Window.h"\n#include "resources/runtime_support.h"')
+        text=once(text,'#include <any>','#include <iterator>\n#include "ship/window/Window.h"\n#include "resources/runtime_support.h"\n#include "context/platform.h"')
         # The local stream is never observed again and is destroyed immediately;
         # only its complete JSON result or caught parse failure is observable.
         text=once(text,'nlohmann::json::parse(ifs)',
@@ -44,6 +44,29 @@ def transform(name,text):
                   'return mVersionUpdaters.insert(std::make_pair(versionUpdater->GetVersion(), versionUpdater)).second;')
         text=once(text,'for (auto [_, versionUpdater] : mVersionUpdaters) {',
                   'for (auto entry : mVersionUpdaters) {\n        auto versionUpdater=entry.second;')
+        text=once(text,'            versionUpdater->Update(this);',
+                  '''#ifdef _XBOX
+            char stage[40];
+            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "config-v%u-begin", versionUpdater->GetVersion());
+            Shipyard::Platform::RecordBootStage(stage, false);
+#endif
+            versionUpdater->Update(this);
+#ifdef _XBOX
+            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "config-v%u-done", versionUpdater->GetVersion());
+            Shipyard::Platform::RecordBootStage(stage, false);
+#endif''')
+        text=once(text,'    }\n    Save();\n}\n\nConfigVersionUpdater::ConfigVersionUpdater',
+                  '''    }
+#ifdef _XBOX
+    Shipyard::Platform::RecordBootStage("config-save-begin", false);
+#endif
+    Save();
+#ifdef _XBOX
+    Shipyard::Platform::RecordBootStage("config-save-done", false);
+#endif
+}
+
+ConfigVersionUpdater::ConfigVersionUpdater''')
         # Native audio backend selection replaces unsupported desktop choices,
         # while preserving the explicit upstream null/error fallback.
         begin=text.index('AudioBackend Config::GetCurrentAudioBackend() {')

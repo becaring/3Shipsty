@@ -32,7 +32,8 @@ def host(projected):
     if projected:
         # Only conditional method code selects Xbox here. Header dependencies
         # were included as real host APIs above; no fake platform class exists.
-        body=body.replace(b'namespace Ship {',b'#define _XBOX\nnamespace Ship {',1)
+        body=body.replace(b'namespace Ship {',
+                          b'namespace Shipyard { namespace Platform { void RecordBootStage(const char*, bool) {} } }\n#define _XBOX\nnamespace Ship {',1)
     audit=folder/'config-method-audit.cpp';audit.write_bytes(body)
     if projected:
         includes=[OUT/'generated/include',ROOT/'scratch/audio-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+env['includes'](True)
