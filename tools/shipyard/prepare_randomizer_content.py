@@ -68,6 +68,37 @@ def containers(text):
         edits.append((value.start_byte,value.end_byte,replacement));audit.append(dict(name=name,type=t,rows=len(rows)))
     return edits_apply(raw,edits),audit
 
+def split_hint_initializer(text, method, label, chunk_size=16):
+    """Bound Xenon/JIT function size without changing upstream hint order."""
+    raw=text.encode();matches=[]
+    for node in walk(PARSER.parse(raw).root_node):
+        if node.type=='function_definition' and ('StaticData::'+method+'(').encode() in node.child_by_field_name('declarator').text:
+            matches.append(node)
+    assert len(matches)==1,(method,len(matches))
+    function=matches[0];body=function.child_by_field_name('body')
+    statements=[n for n in body.named_children if n.type=='expression_statement']
+    assert statements and all(n.text.startswith(b'hintTextTable[') or n.text.startswith(b'HintTable_Init_') for n in statements)
+    chunks=[];pending=[]
+    def flush():
+        if pending:
+            chunks.append(tuple(pending));pending.clear()
+    for statement in statements:
+        if statement.text.startswith(b'hintTextTable['):
+            pending.append(statement)
+            if len(pending)==chunk_size:flush()
+        else:flush()
+    flush()
+    assert len(chunks)>=8 and all(1<=len(c)<=chunk_size for c in chunks),(method,len(chunks))
+    edits=[];helpers=[]
+    for index,chunk in enumerate(chunks):
+        name='ShipyardHint_'+label+'_'+str(index)
+        helpers.append('static __declspec(noinline) void '+name+'(std::array<HintText, RHT_MAX>& hintTextTable) {\n'+
+                       '\n'.join('    '+n.text.decode() for n in chunk)+'\n}\n')
+        edits.append((chunk[0].start_byte,chunk[0].end_byte,name+'(hintTextTable);'))
+        edits.extend((n.start_byte,n.end_byte,'') for n in chunk[1:])
+    edits.append((function.start_byte,function.start_byte,'\n'.join(helpers)+'\n'))
+    return edits_apply(raw,edits),[len(chunk) for chunk in chunks]
+
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());texts={};outputs={};audits={}
     for name,digest in lock['sources'].items():
@@ -103,6 +134,15 @@ def prepare():
             lower=runpy.run_path(str(ROOT/'platform/shipyard/imgui/projection.py'))['lower_ranges']
             text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
             text,literals=lower_literals(text);audits[short]=dict(expressions=count,tables=tables,literals=literals)
+            hint_methods={
+                '3drando/hint_list.cpp':('HintTable_Init','Main'),
+                '3drando/hint_list/hint_list_item.cpp':('HintTable_Init_Item','Item'),
+                '3drando/hint_list/hint_list_exclude_overworld.cpp':('HintTable_Init_Exclude_Overworld','Overworld'),
+                '3drando/hint_list/hint_list_exclude_dungeon.cpp':('HintTable_Init_Exclude_Dungeon','Dungeon'),
+            }
+            if short in hint_methods:
+                text,chunks=split_hint_initializer(text,*hint_methods[short])
+                audits[short]['hint_chunks']=chunks
         text='#include "randomizer-content/support.h"\n#include "resources/runtime_support.h"\n'+text
         if short.startswith('3drando/'):
             text='#include "CustomMessageManager.h"\n'+text

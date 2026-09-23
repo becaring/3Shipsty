@@ -124,7 +124,37 @@ class ContentContracts(unittest.TestCase):
     def test_all_definitions_retained(self):
         for short in UNITS:
             if short=='randomizerEnumStrings.cpp':continue
-            self.assertEqual([sig(n) for n in functions(cpp(False,short))],[sig(n) for n in functions(cpp(True,short)) if not name(n).startswith('Build_')])
+            self.assertEqual([sig(n) for n in functions(cpp(False,short))],[sig(n) for n in functions(cpp(True,short)) if not name(n).startswith(('Build_','ShipyardHint_'))])
+    def test_hint_chunk_execution_order(self):
+        methods={
+            '3drando/hint_list.cpp':('HintTable_Init','Main'),
+            '3drando/hint_list/hint_list_item.cpp':('HintTable_Init_Item','Item'),
+            '3drando/hint_list/hint_list_exclude_overworld.cpp':('HintTable_Init_Exclude_Overworld','Overworld'),
+            '3drando/hint_list/hint_list_exclude_dungeon.cpp':('HintTable_Init_Exclude_Dungeon','Dungeon'),
+        }
+        audit=json.loads((OUT/'manifest.json').read_text())['audit']
+        for short,(method,label) in methods.items():
+            originals=functions(cpp(False,short));projected=functions(cpp(True,short))
+            original=next(n for n in originals if name(n)=='StaticData::'+method)
+            current=next(n for n in projected if name(n)=='StaticData::'+method)
+            helpers={name(n):n for n in projected if name(n).startswith('ShipyardHint_'+label+'_')}
+            expected=[];actual=[];sizes=[]
+            def steps(node):
+                return [n.text.decode() for n in node.child_by_field_name('body').named_children if n.type=='expression_statement']
+            def key(statement):
+                match=re.match(r'hintTextTable\[(RHT_\w+)\]',statement)
+                return match[1] if match else statement
+            expected=[key(s) for s in steps(original)]
+            for statement in steps(current):
+                match=re.fullmatch(r'(ShipyardHint_'+label+r'_\d+)\(hintTextTable\);',statement)
+                if match:
+                    chunk=steps(helpers[match[1]])
+                    sizes.append(len(chunk));actual.extend(key(s) for s in chunk)
+                else:actual.append(key(statement))
+            self.assertEqual(expected,actual,short)
+            self.assertEqual(sizes,audit[short]['hint_chunks'],short)
+            self.assertEqual(len(helpers),len(sizes),short)
+            self.assertTrue(all(1<=size<=16 for size in sizes),short)
     def test_actual_location_and_hint_tables(self):
         a=content_host(False);b=content_host(True);self.assertEqual(a,b)
         stable(OUT/'content-verification.json',json.dumps(dict(lines=len(a.splitlines()),stdout_sha256=hashlib.sha256(a.encode()).hexdigest(),runtime_services_executed=False),indent=2)+'\n')
