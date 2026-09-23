@@ -1,5 +1,47 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 diagnostic receipt gap fixed; one retail run needed
+
+The user tested XEX `b4e9ebd4...` and found **no**
+`game:\3Shipsty.startup-fault`. The old handler ran only for SEH, C++
+terminate, or a handled InitOTR error. Direct Xenos/audio `abort()` calls
+bypassed it, and `CreateFileA(game:)` failure was not reported. Therefore
+absence of that sidecar cannot establish that `game:` is unwritable or locate
+the shutdown. No root cause is claimed.
+
+Code commit `9117bce812de2e8aa156ac478355d35ca69a9355` adds a bounded
+hardware diagnostic on the genuine 9.2.3 boot path. It appends and flushes
+`game:\3Shipsty.bootlog` at ordered InitOTR/Context/application boundaries,
+starting before the storage selector. After a successful real XContent mount,
+it also writes and XContentFlushes **only two** save-container checkpoints,
+`boot-mounted.txt` and `boot-pre-context.txt`, before the async logger starts.
+Each includes `game_write_error`, allowing the first retail result to say
+whether `game:` actually accepted a write. The known Xenos and XAudio2
+fatal-abort paths now record operation/HRESULT before abort, and a SIGABRT
+handler covers other CRT aborts where the XDK delivers that signal. Faults
+write both `game:\3Shipsty.startup-fault` and, after mount,
+`shipyard:\startup-fault.txt` with XContentFlush. A kernel/RGH power-off or
+failure inside XContentFlush may still preempt a final receipt; the committed
+checkpoints remain the fallback. These are diagnostics, not a gameplay fix.
+
+Ten application tests, the targeted real OTRGlobals/Context/XAudio2/Xenos PPC
+compiles, fresh 1,836-object full build, genuine link, and ImageXex passed.
+The map contains `RecordBootStage`, `RecordStartupFatal`, and the startup
+handler. Staged XEX: `scratch/runtime/3Shipsty/3Shipsty.xex`, 45,703,168
+bytes, SHA256 `ddbdf8dd59bc6d6c895bca9909e73d14b0c0d169f8706b500b2f7b40f0697859`.
+Only that XEX was staged; the O2Rs and speech data are unchanged. A hidden
+owned-Xenia launch reached emulator configuration but did not load the title,
+so it is **not** runtime validation. The user-supplied untracked root
+`3Shipsty` CON evidence file remains untouched.
+
+For one physical test, replace **only** the console XEX with this hash. After
+the selector/shutdown, copy whichever exist: the game-directory
+`3Shipsty.bootlog` and `3Shipsty.startup-fault`; plus the newly updated HDD
+save package `Content/<profile>/534F4809/00000001/3Shipsty` containing the
+two checkpoint files or `startup-fault.txt`. Do not copy the CON beside the
+XEX as a runtime input. The missing/present combinations, including
+`game_write_error`, determine the next narrow investigation.
+
 ## 2026-09-22 same retail shutdown; bounded hard-fault receipt ready
 
 The user confirmed the physical console ran staged XEX SHA256

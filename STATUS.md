@@ -1,5 +1,19 @@
 # 3Shipsty status
 
+## 2026-09-22 — Dual-path hardware boot log built; retail result pending
+
+The prior `b4e9ebd4...` on-failure receipt did not appear after the user's
+hardware shutdown. Code review found direct Xenos/XAudio2 `abort()` bypasses
+and no confirmation that this title can write to `game:`. Commit
+`9117bce812de2e8aa156ac478355d35ca69a9355` records flushed ordered
+startup stages to `game:\3Shipsty.bootlog`, commits two pre-logger XContent
+checkpoints with the game-write result, and records direct fatal operations
+to both sinks after mount. This localizes without six repeated post-logger
+STFS flushes. Fresh full build/link/ImageXex pass; staged XEX SHA256
+`ddbdf8dd59bc6d6c895bca9909e73d14b0c0d169f8706b500b2f7b40f0697859`.
+Owned hidden Xenia did not load the title and is inconclusive. Physical
+boot and the actual shutdown cause remain unproven. See `RUNTIME_HANDOFF.md`.
+
 ## 2026-09-22 — Processor parity did not stop retail shutdown
 
 The user tested XEX SHA256 `562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`:

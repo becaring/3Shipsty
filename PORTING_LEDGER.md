@@ -21,6 +21,20 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, missing retail fault receipt: the user found no
+  `game:\3Shipsty.startup-fault` from XEX `b4e9ebd4...`.
+  `RecordNativeFault` was not called by direct Xenos/XAudio2 aborts, and its
+  `CreateFileA` failure was silent. Absence was not evidence of an unwritable
+  `game:` volume or a particular fault site. Commit
+  `9117bce812de2e8aa156ac478355d35ca69a9355` adds explicit fatal hooks,
+  SIGABRT capture, ordered flushed game-directory boot stages, and two bounded
+  pre-logger save-container checkpoints carrying `game_write_error`. Once
+  XContent is mounted, a fatal receipt also writes and flushes within the
+  selected `shipyard:` container. Ten startup tests, targeted PPC compiles,
+  fresh full 1,836-object build/link/XEX pass. Staged hash
+  `ddbdf8dd59bc6d6c895bca9909e73d14b0c0d169f8706b500b2f7b40f0697859`.
+  Retail result is pending; do not label the boot defect fixed.
+
 - 2026-09-22, retail rerun of main-thread parity candidate: XEX SHA256
   `562d2ac49b1eefba4a8f89ca6b5322693fd95f6b87909cd2b756925938f5d123`
   showed the same selector and 5–6-second post-HDD pause, then silent
