@@ -41,11 +41,16 @@ work, not an architectural blocker or a reason to bypass randomizer saves.
 
 Call `Shipyard::Storage::Mount(userIndex)` on the application thread with the
 real Xbox UI available, before `SaveManager::Init()` or any save operation.
-Default user index is 0, matching the primary donor. This invokes the real
-`XShowDeviceSelectorUI` and waits for its overlapped completion; cancel/error
-throws `Shipyard::Async::native_error`. It does not silently fall back to a
-different device or pretend storage exists. Application startup owns explicit
-retry/abort behavior.
+Default user index is 0, matching the primary donor. The storage boundary
+creates the native D3D display before `XShowDeviceSelectorUI`, then continues
+presenting the system overlay while its overlapped request is pending. Normal
+Fast3D surfaces/context are initialized later on the same device. A selector
+cancellation accompanied by sign-in notifications can retry once after the UI
+hides, but only if the same offline profile remains signed in and no B cancel,
+profile change, or presentation failure was observed. This mirrors the
+hardware-tested Smash360 platform contract; it does not alter modern 9.x save
+semantics. Other cancel/error results throw `Shipyard::Async::native_error`.
+It does not silently fall back to a different device or pretend storage exists.
 
 The content package filename is `3Shipsty`, display name is `Ship of Harkinian`,
 and mount root is `shipyard:`. The requested device capacity is 16 MiB. Modern

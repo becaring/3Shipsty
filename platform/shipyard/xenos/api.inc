@@ -8,6 +8,13 @@ static ShaderProgram* CurrentVariant(ShaderProgram* p){
     ShaderProgram* found=Lookup(key);return found?found:CreateShader(key);
 }
 void InitializeNativeDisplay(){InitializeDisplay();}
+HRESULT PresentNativeStartupUI(){
+    // XAM owns the overlay; Fast3D framebuffers are not initialized yet.
+    if(!xenos_device || !buffers.empty())return E_UNEXPECTED;
+    HRESULT result=xenos_device->Clear(0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0xff000000,1,0);
+    if(FAILED(result))return result;
+    return xenos_device->Present(NULL,NULL,NULL,NULL);
+}
 void BeginNativeGuiDraw(){BeginFramebuffer();}
 void InvalidateNativeGuiState(){InvalidateNativeState();}
 void ShutdownNativeDisplay(){Shipyard_ShutdownGraphics();}
