@@ -124,6 +124,20 @@ void Mount(unsigned userIndex) {
     Check(XContentCreate(userIndex, root, &content, XCONTENTFLAG_OPENALWAYS, NULL, NULL, NULL), "XContentCreate");
     mounted = true;
 }
+void RecordNativeBootStage(unsigned stage) {
+    if (stage > 7) return;
+    HANDLE file = CreateFileA("game:\\3Shipsty.boottrace", GENERIC_WRITE, FILE_SHARE_READ,
+                              NULL, stage == 0 ? CREATE_ALWAYS : OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE) return;
+    if (SetFilePointer(file, 0, NULL, FILE_END) != INVALID_SET_FILE_POINTER) {
+        const char line[] = { static_cast<char>('0' + stage), '\n' };
+        DWORD written = 0;
+        if (WriteFile(file, line, sizeof(line), &written, NULL) && written == sizeof(line))
+            FlushFileBuffers(file);
+    }
+    CloseHandle(file);
+}
 std::string SaveDirectory() {
     Async::lock_guard<Async::mutex> lock(mutex); RequireMounted();
     return "shipyard:\\Save";

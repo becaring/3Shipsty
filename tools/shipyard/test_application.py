@@ -35,6 +35,10 @@ class ApplicationContracts(unittest.TestCase):
         # surrounds them and value construction keeps Anchor's upstream zeros.
         init=function(projected,'InitOTR').text.decode()
         init=init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n','')
+        for stage in range(8):
+            marker='    Shipyard::Storage::RecordNativeBootStage('+str(stage)+');\n'
+            self.assertEqual(init.count(marker),1)
+            init=init.replace(marker,'')
         init=init.replace('    if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());\n    try { Shipyard::Storage::Mount(); }\n    catch (...) { SDLNet_Quit(); throw; }\n','')
         init=init.replace('new Anchor(Shipyard::SohUI::ValueInit())','new Anchor()')
         xbox_selection='#if defined(_XBOX)\n    SpeechSynthesizer::Instance = new XboxSpeechSynthesizer();\n#elif defined(__APPLE__)'
@@ -151,6 +155,7 @@ int main() {
         self.assertLess(start.index('SDLNet_Init()'),start.index('new OTRGlobals()'))
         self.assertLess(start.index('Storage::Mount()'),start.index('new OTRGlobals()'))
         self.assertIn('xbox_compat::filesystem::InitWorkingDirectory("game:/");',start)
+        self.assertLess(start.index('RecordNativeBootStage(0)'),start.index('Storage::Mount()'))
         self.assertLess(start.index('InitWorkingDirectory('),start.index('Storage::Mount()'))
         for remote in ('CrowdControl','Sail','Anchor'):
             self.assertLess(stop.index(remote+'::Instance->Disable();'),stop.index('OTRAudio_Exit();'))

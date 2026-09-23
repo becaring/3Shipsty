@@ -95,10 +95,24 @@ def platform_source(source):
     source=once(source,'#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif','')
     source=once(source,'extern "C" void InitOTR(int argc, char* argv[]) {','''extern "C" void InitOTR(int argc, char* argv[]) {
     xbox_compat::filesystem::InitWorkingDirectory("game:/");
+    Shipyard::Storage::RecordNativeBootStage(0);
     if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
     try { Shipyard::Storage::Mount(); }
     catch (...) { SDLNet_Quit(); throw; }
+    Shipyard::Storage::RecordNativeBootStage(1);
 '''.rstrip())
+    source=once(source,'    OTRGlobals::Instance = new OTRGlobals();',
+                '    OTRGlobals::Instance = new OTRGlobals();\n    Shipyard::Storage::RecordNativeBootStage(2);')
+    source=once(source,'    OTRGlobals::Instance->RunExtract(argc, argv);',
+                '    OTRGlobals::Instance->RunExtract(argc, argv);\n    Shipyard::Storage::RecordNativeBootStage(3);')
+    source=once(source,'    OTRGlobals::Instance->Initialize();',
+                '    OTRGlobals::Instance->Initialize();\n    Shipyard::Storage::RecordNativeBootStage(4);')
+    source=once(source,'    SaveManager::Instance = new SaveManager();',
+                '    SaveManager::Instance = new SaveManager();\n    Shipyard::Storage::RecordNativeBootStage(5);')
+    source=once(source,'    SohGui::SetupMenuElements();',
+                '    SohGui::SetupMenuElements();\n    Shipyard::Storage::RecordNativeBootStage(6);')
+    source=once(source,'    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();',
+                '    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();\n    Shipyard::Storage::RecordNativeBootStage(7);')
     source=once(source,'    context->InitLogging(logLevel, logLevel);',
                 '''    if (!context->InitLogging(logLevel, logLevel)) {
         throw std::runtime_error("Xbox save-container log initialization failed");
