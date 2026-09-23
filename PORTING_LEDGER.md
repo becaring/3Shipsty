@@ -21,6 +21,21 @@ are never hardware evidence. Stop only at the user's A/B/C conditions.
 
 ## Decisions and evidence
 
+- 2026-09-22, real-hardware XEX `ddbdf8dd...` again powered off after HDD
+  selection. Supplied `3Shipsty.bootlog` is 655 bytes, SHA256
+  `edb6a51cb33d78a0aab2f5a7486697ff11e7b1e844810b95c70eea495b0b0609`.
+  It proves `game:` writable and the main thread returned from storage,
+  archives, Context, audio, resource/randomizer setup, and SaveManager
+  construction, ending at `save-worker-ready`. The next code block is six
+  config migrations/save and GUI registration; the last marker alone does
+  not prove which failed or rule out a concurrent worker. Commit
+  `9b24272450a0f8dc452063da080ba80626ed6571` adds individual migration,
+  save and GUI markers to the already proven writable `game:` trace, without
+  another normal-path XContentFlush. Original/projected Config behavior and
+  native targeted compiles pass; fresh 1,836-object build/link/XEX pass.
+  Staged SHA256 `27f931b533f41fb08eae1eaf888bcfd57117e1af3b3919a13f06b9d24926ecdc`.
+  Hardware result pending; no fix/root-cause claim.
+
 - 2026-09-22, missing retail fault receipt: the user found no
   `game:\3Shipsty.startup-fault` from XEX `b4e9ebd4...`.
   `RecordNativeFault` was not called by direct Xenos/XAudio2 aborts, and its

@@ -1,5 +1,43 @@
 # 3Shipsty runtime resume point — 2026-09-22
 
+## 2026-09-22 retail boot log localizes post-SaveManager gap
+
+The user confirmed XEX SHA256 `ddbdf8dd59bc6d6c895bca9909e73d14b0c0d169f8706b500b2f7b40f0697859`
+again powered off after HDD selection. The supplied real-hardware
+`scratch/runtime/3Shipsty/3Shipsty.bootlog` is 655 bytes, SHA256
+`edb6a51cb33d78a0aab2f5a7486697ff11e7b1e844810b95c70eea495b0b0609`,
+preserved independently as `scratch/runtime/retail-9117bce.bootlog` before
+staging another XEX. It records the actual `9117bce` application thread
+through `entry`, `mounted`, `constructor-ready`, `pre-context`,
+`logging-ready`, `audio-ready`, `factories-ready`, `randomizer-ready`,
+`context-ready`, and finally `save-worker-ready` at tick 1299055. Thus this
+title **can write and flush `game:` on the console**, and the real selector,
+XContent mount, archives, Context, native audio initialization, resource
+factories, randomizer context, and SaveManager construction all returned.
+This does not prove the newly started save worker completed any task.
+
+The next uncompleted InitOTR lines register six ConfigVersionUpdaters, run
+their migrations and save, then register GUI windows and menu elements. The
+old log cannot distinguish those operations or a concurrent worker fault.
+No `startup-fault` receipt was supplied from this run. The current owned
+Xenia profile is already at ConfigVersion 6, so it does not establish the
+fresh-HDD migration behavior. Do not infer a migration root cause yet.
+
+Commit `9b24272450a0f8dc452063da080ba80626ed6571` adds only flushed
+`game:` trace calls within that exact gap: after updater registration, before
+and after each actually-run migration version, before/after Config::Save,
+after migration completion, and after GUI-window setup. It makes **no extra
+XContentFlush calls**. The original/projected Config host behavior matches,
+ten application tests and both affected PPC TUs pass, and a fresh complete
+1,836-object build, genuine link and ImageXex pass. Staged XEX
+`scratch/runtime/3Shipsty/3Shipsty.xex` is 45,703,168 bytes, SHA256
+`27f931b533f41fb08eae1eaf888bcfd57117e1af3b3919a13f06b9d24926ecdc`.
+Only the XEX changed beside the verified archives. One hardware run with
+this exact hash should supply the new `3Shipsty.bootlog`; a last
+`config-vN-begin`, `config-save-begin`, `gui-windows-ready`, or later stage
+directly selects the next code boundary. This is diagnostic, not a claimed
+boot fix. Do not copy the unrelated CON evidence file beside the XEX.
+
 ## 2026-09-22 diagnostic receipt gap fixed; one retail run needed
 
 The user tested XEX `b4e9ebd4...` and found **no**

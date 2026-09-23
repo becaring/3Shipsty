@@ -1,5 +1,19 @@
 # 3Shipsty status
 
+## 2026-09-22 — Retail reaches SaveManager; migration/GUI trace ready
+
+Hardware XEX `ddbdf8dd...` produced a flushed 655-byte `game:` boot log,
+proving that device path is writable and the real application reached
+`save-worker-ready` after Context/audio/randomizer initialization. The
+following ConfigVersionUpdater migrations, config save, and GUI setup remain
+unseparated; the worker may also fail concurrently. Commit `9b2427245`
+adds only `game:` trace markers within this bounded gap, including the
+individual migration version, without more XContent flushes. Original and
+projected Config host behavior, targeted PPC compiles, fresh full build/link
+and ImageXex pass. New staged XEX SHA256
+`27f931b533f41fb08eae1eaf888bcfd57117e1af3b3919a13f06b9d24926ecdc`.
+The console result for this XEX is pending; no root cause is claimed.
+
 ## 2026-09-22 — Dual-path hardware boot log built; retail result pending
 
 The prior `b4e9ebd4...` on-failure receipt did not appear after the user's
