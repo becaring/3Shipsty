@@ -62,6 +62,18 @@ def transform(name,text):
         if len(edits)!=2:raise ValueError('Context directory boundary drift')
         for start,end,body in sorted(edits,reverse=True):source=source[:start]+body+source[end:]
         text=source.decode()
+        text=once(text,'    // app configuration dir\n    fpath = GetPathRelativeToAppDirectory(path, appName);',
+                  '''#ifdef _XBOX
+    // The save container may contain the automatically created empty mods
+    // directory. Prefer an install-side mods directory beside the
+    // XEX, as the Xbox releases do, without changing other file lookups.
+    if (path == "mods") {
+        const std::string bundledMods = GetPathRelativeToAppBundle(path);
+        if (xbox_compat::filesystem::is_directory(bundledMods)) return bundledMods;
+    }
+#endif
+    // app configuration dir
+    fpath = GetPathRelativeToAppDirectory(path, appName);''')
         text=once(text,'        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "OTR file not found",\n                                 "Main OTR file not found. Please generate one", nullptr);',
                   '        Shipyard::Platform::ShowError(L"OTR file not found", L"Main OTR file not found. Please generate one");')
         text=once(text,'#include "ship/install_config.h"', '#ifndef _XBOX\n#include "ship/install_config.h"\n#endif')
