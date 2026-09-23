@@ -87,7 +87,8 @@ def platform_source(source):
     for name in ('IsSubpath','PathTestCleanup'):
         node=function(source,name);raw=source.encode();source=(raw[:node.start_byte]+b'#ifndef _XBOX\n'+node.text+b'\n#endif'+raw[node.end_byte:]).decode()
     source=source.replace('std::unique_lock<std::mutex>','Shipyard::Async::unique_lock<Shipyard::Async::mutex>')
-    source=once(source,'audio.thread = std::thread(OTRAudio_Thread);','audio.thread = Shipyard::Async::make_thread(OTRAudio_Thread);')
+    source=once(source,'audio.thread = std::thread(OTRAudio_Thread);',
+                'audio.thread = Shipyard::Async::make_thread_on_processor(OTRAudio_Thread, 2);')
     source=once(source,'    while (audio.running) {','    while (true) { // running is checked under audio.mutex below. No unlocked cross-thread read.')
     source=once(source,'return { INT16_MAX, INT16_MAX, INT16_MAX };','OTRVersion absent = { INT16_MAX, INT16_MAX, INT16_MAX }; return absent;')
     # Stop libultra timer callbacks before Context/game queues can be torn down.

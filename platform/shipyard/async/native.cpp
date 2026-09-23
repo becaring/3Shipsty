@@ -83,7 +83,9 @@ void condition_variable::notify_all() {
 struct joining_thread::invocation {
     entry_point entry;
     void* context;
-    invocation(entry_point fn, void* arg) : entry(fn), context(arg) {}
+    unsigned processor;
+    invocation(entry_point fn, void* arg, unsigned target = (unsigned)-1)
+        : entry(fn), context(arg), processor(target) {}
 };
 
 joining_thread::joining_thread() : thread_(NULL), thread_id_(0) {}
@@ -99,11 +101,34 @@ joining_thread::joining_thread(entry_point entry, void* context) : thread_(NULL)
         throw native_error("CreateThread", error);
     }
 }
+#ifdef _XBOX
+joining_thread::joining_thread(entry_point entry, void* context, unsigned processor)
+    : thread_(NULL), thread_id_(0) {
+    if (!entry) throw std::invalid_argument("thread entry must not be null");
+    std::unique_ptr<invocation> call(new invocation(entry, context, processor));
+    invocation* raw = call.release();
+    thread_ = CreateThread(NULL, 128 * 1024, &joining_thread::run, raw, 0, &thread_id_);
+    if (!thread_) {
+        DWORD error = GetLastError();
+        delete raw;
+        throw native_error("CreateThread", error);
+    }
+}
+#endif
 DWORD WINAPI joining_thread::run(void* context) {
     std::unique_ptr<invocation> call(static_cast<invocation*>(context));
     entry_point entry = call->entry;
     void* argument = call->context;
+#ifdef _XBOX
+    const unsigned processor = call->processor;
+#endif
     call.reset();
+#ifdef _XBOX
+    // XDK has no TerminateThread; pin this trampoline before application work
+    // instead of creating a suspended worker with no recoverable failure path.
+    if (processor != (unsigned)-1 && XSetThreadProcessor(GetCurrentThread(), processor) == (DWORD)-1)
+        std::terminate();
+#endif
     try { entry(argument); }
     catch (...) { std::terminate(); }
     return 0;

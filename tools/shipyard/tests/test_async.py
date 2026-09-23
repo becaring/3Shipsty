@@ -27,6 +27,10 @@ def run(command, folder, name, env=None, success=True):
 
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--upstream-only', action='store_true'); args = parser.parse_args()
+    native = (ROOT / 'platform/shipyard/async/native.cpp').read_text(encoding='utf-8')
+    pinned = native[native.index('DWORD WINAPI joining_thread::run'):native.index('joining_thread::joining_thread(joining_thread&&')]
+    assert pinned.index('XSetThreadProcessor(GetCurrentThread(), processor)') < pinned.index('entry(argument)')
+    assert 'TerminateThread(' not in pinned, 'XDK has no recoverable native thread termination API'
     generated = OUT / 'generated'
     assert (generated / 'BS_thread_pool.hpp').exists(), 'async projection not implemented'
     compiler, env = ENV.host_environment()

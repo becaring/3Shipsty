@@ -160,6 +160,12 @@ static void shutdown_and_wakeups() {
 }
 
 static void copy_seed(std::string seed, std::string* result) { *result = seed; }
+#ifdef _XBOX
+static void pinned_mixer_compile_contract() {
+    Shipyard::Async::joining_thread worker = Shipyard::Async::make_thread_on_processor([]() {}, 2);
+    worker.join();
+}
+#endif
 static void randomizer_shape() {
     std::string seed = "owned seed", output;
     Shipyard::Async::joining_thread worker;

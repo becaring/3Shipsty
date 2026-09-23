@@ -15,6 +15,15 @@ class ApplicationContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):prepare()
 
+    def test_audio_mixer_keeps_native_hardware_placement(self):
+        projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        original=(ROOT/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+        self.assertIn('audio.thread = std::thread(OTRAudio_Thread);',original)
+        init=function(projected,'OTRAudio_Init').text.decode()
+        self.assertIn('audio.thread = Shipyard::Async::make_thread_on_processor(OTRAudio_Thread, 2);',init)
+        self.assertIn('ResourceMgr_LoadDirectory("audio");',init)
+        self.assertEqual(projected.count('make_thread_on_processor(OTRAudio_Thread, 2)'),1)
+
     def test_all_application_functions_retained(self):
         def names(text):
             return [n.child_by_field_name('declarator').text.decode().split('(')[0].strip()

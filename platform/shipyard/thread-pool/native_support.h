@@ -29,6 +29,14 @@ inline joining_thread make_thread(const std::function<void()>& fn) {
     owned.release();
     return std::move(thread);
 }
+#ifdef _XBOX
+inline joining_thread make_thread_on_processor(const std::function<void()>& fn, unsigned processor) {
+    std::unique_ptr<std::function<void()> > owned(new std::function<void()>(fn));
+    joining_thread thread(&run_function, owned.get(), processor);
+    owned.release();
+    return std::move(thread);
+}
+#endif
 inline unsigned int hardware_concurrency() {
 #ifdef _XBOX
     return MAXIMUM_PROCESSORS; // XDK winnt.h declares six logical hardware threads.

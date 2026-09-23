@@ -107,6 +107,10 @@ public:
     typedef void (*entry_point)(void*);
     joining_thread();
     joining_thread(entry_point entry, void* context);
+#ifdef _XBOX
+    // Pin in the entry trampoline before invoking the user callback.
+    joining_thread(entry_point entry, void* context, unsigned processor);
+#endif
     joining_thread(joining_thread&& other);
     joining_thread& operator=(joining_thread&& other);
     ~joining_thread();
