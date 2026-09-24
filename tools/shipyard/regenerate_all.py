@@ -102,21 +102,32 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def owned_directories():
+def owned_targets():
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
     names = {Path(pattern).parts[1] for patterns in config["reports"].values()
              for pattern in patterns}
     names.update(("logging-xdk", "project-xdk", "link-integration"))
-    return [SCRATCH / name for name in sorted(names)]
+    # Speech keeps two clean, pinned Git dependency checkouts beside its
+    # generated products. Never classify their parent as an owned output.
+    names.remove("speech-xdk")
+    targets = [SCRATCH / name for name in sorted(names)]
+    speech = SCRATCH / "speech-xdk"
+    if speech.is_dir():
+        targets.extend(child for child in sorted(speech.iterdir())
+                       if child.name not in ("espeak-ng", "sonic"))
+    return targets
 
 
 def clean_owned():
     root = SCRATCH.resolve()
-    paths = owned_directories()
+    paths = owned_targets()
+    speech_root = (SCRATCH / "speech-xdk").resolve()
     for path in paths:
         resolved = path.resolve()
-        if resolved.parent != root or not resolved.is_relative_to(root):
+        if resolved.parent not in (root, speech_root) or not resolved.is_relative_to(root):
             raise ValueError("Generated target escapes owned scratch: " + str(path))
+        if path.is_dir() and any(p.name == ".git" for p in path.rglob(".git")):
+            raise ValueError("Generated target contains a Git checkout: " + str(path))
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     preserved = SCRATCH / "final-preclean" / stamp
     preserved.mkdir(parents=True, exist_ok=False)
@@ -136,7 +147,7 @@ def clean_owned():
         if path.is_dir():
             shutil.rmtree(path)
         elif path.exists():
-            raise ValueError("Expected generated directory: " + str(path))
+            path.unlink()
     return preserved, [path.relative_to(ROOT).as_posix() for path in paths]
 
 
@@ -146,8 +157,8 @@ def main():
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args()
     if args.list:
-        print(json.dumps({"directories": [p.relative_to(ROOT).as_posix()
-                                          for p in owned_directories()], "stages": STAGES}, indent=2))
+        print(json.dumps({"owned_targets": [p.relative_to(ROOT).as_posix()
+                                            for p in owned_targets()], "stages": STAGES}, indent=2))
         return
     from platform_base import resolve
     resolve(ROOT)
