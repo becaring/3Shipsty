@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "libultraship/include/ship/window/gui/GuiWindow.h": "e9d3dcf62b6f1e63bc543497e9f676f60d7d512ad16c2eb3b8794f31c6227e22",
-    "soh/soh/SohGui/UIWidgets.hpp": "c1a55a5b44a4e5dad430bd759120a1325278c6a3ea0ebb35e859f2910759a0b4",
+    "soh/soh/SohGui/UIWidgets.hpp": "1638c1ca98021c1b824a24a0b4b93633411e2b6159f8b5f188cc029bc5fcac07",
     "soh/soh/SohGui/MenuTypes.h": "f22f0b6f637bbc4577f9a7d9ad0e6229487c3d1142f965a40c7210ea779333ea"
   }
 }

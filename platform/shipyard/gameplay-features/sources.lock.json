@@ -95,7 +95,7 @@
   "dependencies": {
     "soh/include/z64math.h": "34aeec3a1d2f947f315fdf3de19b174738e7f85e22866c0082f10c1bfd5cb262",
     "soh/soh/Notification/Notification.h": "06928b3fe517cd4a40ffa1e5a942beb5248d5f40b8248ce1e1e631be341a4660",
-    "soh/soh/SohGui/UIWidgets.hpp": "c1a55a5b44a4e5dad430bd759120a1325278c6a3ea0ebb35e859f2910759a0b4",
+    "soh/soh/SohGui/UIWidgets.hpp": "1638c1ca98021c1b824a24a0b4b93633411e2b6159f8b5f188cc029bc5fcac07",
     "soh/soh/ObjectExtension/ObjectExtension.h": "752a5078b879230cdbc9d86ef57ebb6008eca574e2866760db3070968daaf131",
     "soh/include/macros.h": "c64cdb8d94026650ed94acb3aa9ea93e75b05e6a2122f02eb7ee94c26017bf00"
   }
