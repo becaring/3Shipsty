@@ -5,13 +5,17 @@ import subprocess
 from test_binary import host_environment
 
 ROOT=Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 def main():
     compiler,env=host_environment();out=ROOT/'scratch/async-xdk/detached-contract';results=[]
     for original in (True,False):
         folder=out/('original' if original else 'projected');folder.mkdir(parents=True,exist_ok=True)
-        command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/I'+str(ROOT/'platform/shipyard'),str(ROOT/'platform/shipyard/async/detached_contract.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
+        command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),str(ROOT/'platform/shipyard/async/detached_contract.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
         if original:command+=['/DTEST_UPSTREAM']
-        else:command+=[str(ROOT/'platform/shipyard/async/detached.cpp'),str(ROOT/'platform/shipyard/async/native.cpp')]
+        else:command+=[str(PLATFORM_BASE / 'sources/async/detached.cpp'),str(PLATFORM_BASE / 'sources/async/native.cpp')]
         build=subprocess.run(command,cwd=folder,env=env,capture_output=True,text=True)
         (folder/'build.log').write_text(build.stdout+build.stderr)
         assert build.returncode==0,folder/'build.log'

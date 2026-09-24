@@ -12,8 +12,8 @@
     "libultraship/cmake/dependencies/common.cmake": "fc33342abaa27528dfd05210840b39ce32652400558b2946e611072ece3a40fd"
   },
   "donor": {
-    "local": "platform/shipyard/graphics/donor/shader_lower.cpp",
-    "source": "D:/Projects/Smash360/platform/xbox360/graphics/shader_lower.cpp",
-    "sha256": "9bb5c187f1e1c5a38867c755969392b19c0d32668e4145732d8cda7d876537cb"
+    "platform_base": "sources/graphics/shader_lower.cpp",
+    "origin": "Shipyard/sources/graphics/shader_lower.cpp",
+    "sha256": "658149fcbc16b0665c3be44f21a49211ad5d0b1de978c50d49ada85de016e0ae"
   }
 }

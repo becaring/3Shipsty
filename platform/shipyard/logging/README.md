@@ -1,5 +1,9 @@
 # Shipyard logging compiler provider
 
+The spdlog core projector is now `LibUltraShip+Fast3D360/python/xbox360_platform/logging_core.py`.
+This directory supplies the pinned input, native support and a narrow adapter
+that selects filter-before-conversion and the Modern formatter boundary.
+
 This projects actual spdlog 1.16 logger, registry, backtracer, pattern formatter,
 rotating sink, stdout sink and asynchronous queue algorithms. It uses the owned
 Shipyard native mutex/CV/thread implementation. No logging macro is suppressed,
@@ -20,7 +24,8 @@ operations and has no dependency on the donor's mega-build script.
 Acquire the two official dependency commits in `dependency-lock.json` into
 `scratch/deps/spdlog` and `scratch/deps/fmt-xdk`. Existing owned receipts record
 their complete clean Git-archive snapshots. Place tree-sitter 0.25.2 and
-tree-sitter-cpp 0.23.4 in `scratch/logging-xdk/python-tools` for host generation.
+tree-sitter-cpp 0.23.4 in `scratch/python-tools` for host generation, using
+`tools/shipyard/requirements.txt` for the exact versions.
 These are host tools only.
 
 Run:

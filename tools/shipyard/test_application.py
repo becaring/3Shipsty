@@ -7,6 +7,8 @@ import struct
 import subprocess
 import unittest
 from prepare_application import ROOT, OUT, OWN, prepare, probe, boundary_probe, function
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from cpp_ast import PARSER, walk
 
 ENV=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))
@@ -114,7 +116,7 @@ int main() {
 '''
         path=folder/'archive_contract.cpp';path.write_text(source)
         compiler,env=ENV['host_environment']()
-        command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),path,'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'archive_contract.exe')]
+        command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),path,'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'archive_contract.exe')]
         ENV['invoke'](command,folder,'compile',env)
         result=ENV['invoke']([folder/'archive_contract.exe'],folder,'run',env)
         self.assertIn('65536',result['stdout'])
@@ -140,10 +142,10 @@ int main() {
         path=folder/'app_path_contract.cpp';path.write_text(source)
         compiler,env=ENV['host_environment']()
         command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/DNOMINMAX',
-                 '/I'+str(ROOT/'platform/shipyard'),path,
+                 '/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE),'/I'+str(PLATFORM_BASE/'sources'),path,
                  ROOT/'platform/shipyard/context/platform.cpp',
-                 ROOT/'platform/shipyard/filesystem/filesystem.cpp',
-                 ROOT/'platform/shipyard/async/native.cpp','user32.lib',
+                 PLATFORM_BASE/'sources/filesystem/filesystem.cpp',
+                 PLATFORM_BASE / 'sources/async/native.cpp','user32.lib',
                  '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'app_path_contract.exe')]
         ENV['invoke'](command,folder,'compile',env)
         ENV['invoke']([folder/'app_path_contract.exe'],folder,'run',env)

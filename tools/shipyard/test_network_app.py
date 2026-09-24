@@ -5,6 +5,8 @@ from prepare_archives import stable
 from prepare_randomizer_item import methods
 from prepare_custom_message import literal_bytes,escape_literal
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 def name(n):return n.child_by_field_name('declarator').text.decode().split('(')[0].lstrip('*& ')
 def main():
@@ -30,9 +32,9 @@ def main():
         header=re.sub(r'^\s*#include[^\n]*\n','',header,flags=re.M)
         source='#include <cstdio>\n#include <cassert>\n#include <cstring>\n#include "input/compiler.h"\n#include "z64.h"\n#include "randomizer-context/colors.h"\n#include <nlohmann/json.hpp>\n'+client+'\n'+header+'\n'+(OWN/'json_contract.cpp').read_text()
         stable(folder/'contract.cpp',source)
-        roots=[ROOT/('platform/shipyard/json/include' if projected else 'platform/shipyard/json/upstream/include')]+includes()
+        roots=[PLATFORM_BASE/'sources/json/include' if projected else ROOT/'platform/shipyard/json/upstream/include']+includes()
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t']+['/I'+str(p) for p in roots]+[str(folder/'contract.cpp')]
-        if projected:command.append(str(ROOT/'platform/shipyard/json/json.cpp'))
+        if projected:command.append(str(PLATFORM_BASE/'sources/json/json.cpp'))
         command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
         r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',r.stdout+r.stderr);assert not r.returncode,folder/'build.log'
         r=subprocess.run([str(folder/'contract.exe')],cwd=ROOT,capture_output=True);assert not r.returncode,(r.stdout,r.stderr)

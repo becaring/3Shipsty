@@ -47,8 +47,7 @@ int main(){
     spdlog::set_level(spdlog::level::off);
     union Storage {double align;unsigned char bytes[sizeof(Network)];} storage;
     memset(storage.bytes,0xa5,sizeof(storage.bytes));Network* normal=new(storage.bytes) Network;
-    unsigned char unchanged[sizeof(normal->isEnabled)];memcpy(unchanged,&normal->isEnabled,sizeof(unchanged));
-    for(size_t i=0;i<sizeof(unchanged);++i)assert(unchanged[i]==0xa5);normal->~Network();
+    assert(!normal->isEnabled && !normal->isConnected);normal->~Network();
     Network* initialized=new(storage.bytes) Network(Shipyard::SohUI::ValueInit());
     assert(!initialized->isEnabled && !initialized->isConnected);initialized->~Network();
     assert(SDLNet_Init()==0);assert(SDLNet_Init()==0);SDLNet_Quit();

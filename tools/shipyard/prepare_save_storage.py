@@ -1,12 +1,14 @@
 """Source-locked full modern SaveManager and native XContent storage boundary."""
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from dependency_sources import ROOT
+from platform_base import resolve as resolve_platform_base
 from prepare_archives import stable
 from prepare_configuration import once
 from prepare_resource_manager import syntax
 from prepare_game_interactor import call_sites
 from cpp_ast import PARSER,walk
 OWN=ROOT/'platform/shipyard/save-storage';OUT=ROOT/'scratch/save-storage-xdk'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 SOURCES=['soh/soh/SaveManager.h','soh/soh/SaveManager.cpp','soh/soh/SohGui/SohGui.hpp']
 METHODS=['LoadBaseVersion1','LoadBaseVersion2','LoadBaseVersion3','LoadBaseVersion4','SaveBase',
          'SaveArray','SaveStruct','LoadArray','LoadStruct','LoadCharArray','AddInitFunction',
@@ -133,13 +135,16 @@ def includes():
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     flags=json.loads((ROOT/'scratch/ship-utils-xdk/xdk/build.json').read_text())[0]['command'][:-3]
-    flags[1:1]=['/I'+str(p) for p in includes()]
+    flags[1:1]=['/I'+str(PLATFORM_BASE/'sources')]+['/I'+str(p) for p in includes()]
     rows=[]
-    for source in [OUT/'generated/SaveSerialization.cpp',OWN/'storage.cpp',OWN/'atomic_file.cpp']:
+    for source in [OUT/'generated/SaveSerialization.cpp',OWN/'storage.cpp',
+                   PLATFORM_BASE/'sources/storage/atomic_file.cpp',PLATFORM_BASE/'sources/storage/device.cpp']:
         obj=folder/(source.stem+'.obj');command=flags+['/TP',str(source),'/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True)
         stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-        row=dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+        label=('shipyard/'+source.relative_to(PLATFORM_BASE).as_posix() if source.is_relative_to(PLATFORM_BASE)
+               else source.relative_to(ROOT).as_posix())
+        row=dict(source=label,command=command,exit=result.returncode,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
         if not result.returncode:row['object_sha256']=hashlib.sha256(obj.read_bytes()).hexdigest()
         if source.name=='SaveSerialization.cpp':row['source_fragment']=dict(original=SOURCES[1],methods=METHODS)
         rows.append(row)

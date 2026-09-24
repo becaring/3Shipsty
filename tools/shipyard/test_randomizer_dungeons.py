@@ -3,6 +3,8 @@ import hashlib,json,re,runpy,subprocess
 from prepare_randomizer_dungeons import ROOT,OUT,OWN,BASE,prepare,includes,methods
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 EXCLUDE={'DungeonInfo::PlaceVanillaMap','DungeonInfo::PlaceVanillaCompass','DungeonInfo::PlaceVanillaBossKey','DungeonInfo::PlaceVanillaSmallKeys','TrialInfo::GetName','Trials::ParseJson'}
 def sig(n):return n.child_by_field_name('declarator').text.decode()
 def name(n):return sig(n).split('(')[0]
@@ -33,7 +35,7 @@ def main():
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/I'+str(folder)]
         if not projected_flag:command+=['/Zc:preprocessor','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
         command+=['/I'+str(p) for p in includes()]+[str(folder/'contract.cpp')]
-        if projected_flag:command+=[str(ROOT/'platform/shipyard/json/json.cpp')]
+        if projected_flag:command+=[str(PLATFORM_BASE/'sources/json/json.cpp')]
         command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe'),'/link','/OPT:REF']
         r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',r.stdout+r.stderr);assert not r.returncode,folder/'build.log'
         r=subprocess.run([str(folder/'contract.exe')],cwd=ROOT,capture_output=True,text=True)

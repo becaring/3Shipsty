@@ -4,6 +4,10 @@ import subprocess
 import json
 
 ROOT=Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT=ROOT/'scratch/logging-xdk/tests'
 BASE=ROOT/'platform/shipyard/logging'
 def run(command,name,cwd=None):
@@ -16,11 +20,11 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     run(['C:/Python313/python.exe','-B',str(ROOT/'tools/shipyard/prepare_logging.py')],'generate')
     vs=subprocess.check_output(['C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe','-latest','-products','*','-requires','Microsoft.VisualStudio.Component.VC.Tools.x86.x64','-property','installationPath'],text=True).strip()
-    source=BASE/'tests/core_cases.cpp';native=ROOT/'platform/shipyard/async/native.cpp';chrono=BASE/'chrono/chrono.cpp';results=[];formats=[];gaps=[]
+    source=BASE/'tests/core_cases.cpp';native=PLATFORM_BASE / 'sources/async/native.cpp';chrono=PLATFORM_BASE/'sources/clock/chrono.cpp';results=[];formats=[];gaps=[]
     for original in (1,0):
         target=OUT/str(original);target.mkdir(exist_ok=True);exe=target/'core.exe';batch=target/'build.cmd'
         for file in target.glob('rotation*.log'):file.unlink()
-        includes=[ROOT/'scratch/deps/spdlog/include'] if original else [OUT.parent/'core-include',OUT.parent/'include',ROOT/'scratch/deps/fmt-xdk']
+        includes=([ROOT/'scratch/deps/spdlog/include'] if original else [OUT.parent/'core-include',OUT.parent/'include',ROOT/'scratch/deps/fmt-xdk'])+[PLATFORM_BASE/'sources']
         batch.write_text(f'@echo off\ncall "{vs}/VC/Auxiliary/Build/vcvars64.bat" >nul\ncl /nologo /EHsc /std:c++20 /utf-8 /MT /D_CRT_SECURE_NO_WARNINGS /DORIGINAL_SPDLOG={original} /DSPDLOG_EOL=\\\"\\n\\\" /I"{ROOT}" '+ ' '.join('/I"'+str(p)+'"' for p in includes)+f' "{source}" "{native}" "{chrono}" /Fo"{target}/" /Fe"{exe}"\nexit /b %errorlevel%\n')
         run(['cmd','/d','/c',str(batch)],str(original)+'-compile');results.append(run([str(exe),str(target)],str(original)+'-run'))
         format_source=BASE/'tests/format_cases.cpp';format_exe=target/'format.exe'
@@ -36,7 +40,7 @@ def main():
     xdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     for name,src in [('core',source),('format',BASE/'tests/format_cases.cpp'),('chrono',chrono),('environment',BASE/'environment.cpp')]:
         obj=OUT/(name+'-xdk.obj')
-        run([str(xdk/'bin/win32/cl.exe'),'/nologo','/TP','/EHsc','/D_XBOX','/DORIGINAL_SPDLOG=0','/c','/I'+str(ROOT),'/I'+str(OUT.parent/'core-include'),'/I'+str(OUT.parent/'include'),'/I'+str(ROOT/'scratch/deps/fmt-xdk'),'/I'+str(xdk/'include/xbox'),'/Fo'+str(obj),str(src)],'xdk-'+name)
+        run([str(xdk/'bin/win32/cl.exe'),'/nologo','/TP','/EHsc','/D_XBOX','/DORIGINAL_SPDLOG=0','/c','/I'+str(ROOT),'/I'+str(PLATFORM_BASE/'sources'),'/I'+str(OUT.parent/'core-include'),'/I'+str(OUT.parent/'include'),'/I'+str(ROOT/'scratch/deps/fmt-xdk'),'/I'+str(xdk/'include/xbox'),'/Fo'+str(obj),str(src)],'xdk-'+name)
         if int.from_bytes(obj.read_bytes()[:2],'little')!=0x1f2:raise RuntimeError('Expected PPC COFF')
     print(results[0]);print('PASS exact host logger and SoH typed formatting differentials, four XDK PPC objects; no Xbox execution')
 

@@ -9,10 +9,12 @@ import argparse
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'tools/shipyard'))
-from prepare_prism import prepare,OUT,OWN
+from prepare_prism import prepare,OUT
 from prepare_archives import stable
 from prepare_configuration import once
 from dependency_sources import verified
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 
 
 def audit(text,projected):
@@ -62,15 +64,15 @@ def main():
         namespace='xbox_compat' if projected else 'std'
         stable(folder/'audit.h','#pragma once\nextern std::string AuditTemplate;\n'+namespace+'::optional<std::string> AuditInclude(const std::string&);\nnamespace Fast {\nstd::string gfx_direct3d_common_build_shader(size_t&,const CCFeatures&,bool,bool,bool);\n}\n')
         resources=runpy.run_path(str(Path(__file__).with_name('test_resources.py')))
-        paths=[base,folder,ROOT/'scratch/graphics-xdk/include']+resources['includes'](projected)
+        paths=[base,folder,ROOT/'scratch/graphics-xdk/include',PLATFORM_BASE/'sources/graphics',PLATFORM_BASE/'sources',PLATFORM_BASE/'sources/value_types']+resources['includes'](projected)
         flags=['/nologo','/std:c++20','/utf-8','/EHsc','/MD','/O2','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0']
         if projected:flags+=['/DSHIPYARD_PROJECTED']
         common=[compiler]+flags+['/I'+str(p) for p in paths]
         invoke=folder/'invoke.obj'
         env['invoke'](common+['/TC','/c',base/'prism/utils/invoke.c','/Fo'+str(invoke)],folder,'invoke',environment)
         sources=[base/'prism'/n for n in ('lexer.cpp','ast.cpp','processor.cpp','utils/gv.cpp')]
-        sources += [folder/'builder-audit.cpp',ROOT/'scratch/graphics-xdk/cc_features.cpp',ROOT/'scratch/graphics-xdk/shader_lower.cpp',Path(__file__).with_name('test_prism_contract.cpp')]
-        if projected:sources += [ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
+        sources += [folder/'builder-audit.cpp',ROOT/'scratch/graphics-xdk/cc_features.cpp',resolve_platform_base(ROOT)/'sources/graphics/shader_lower.cpp',Path(__file__).with_name('test_prism_contract.cpp')]
+        if projected:sources += [PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
         env['invoke'](common+sources+[invoke,'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
         result=env['invoke']([folder/'contract.exe',ROOT/'libultraship/src/fast/shaders/directx/default.shader.hlsl'],folder,'run')
         results.append(result['stdout'])

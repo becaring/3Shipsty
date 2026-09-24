@@ -4,15 +4,18 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import runpy
 import struct
 import subprocess
 from dependency_sources import ROOT,verified
 from prepare_archives import stable
 from prepare_configuration import once
+from platform_base import resolve as resolve_platform_base
+from cpp_ast import PARSER
 
-OWN=ROOT/'platform/shipyard/prism'
 OUT=ROOT/'scratch/prism-xdk'
+PLATFORM_BASE=resolve_platform_base(ROOT)
+from xbox360_platform.prism import PrismProjector
+PROJECTOR=PrismProjector(PARSER,'bbcbc7e3f890a5806b579361e7aa0336acd547e7')
 
 
 def source_builder(text,compat):
@@ -29,9 +32,9 @@ def source_builder(text,compat):
             lines.append('    mContext["'+match[1]+'"] = prism::ContextTypes('+expression+');')
         if len(entries)!=38:raise ValueError('Shader context inventory drift '+str(len(entries)))
         text=text[:start]+'\n'.join(lines)+text[end:]
-        text=runpy.run_path(str(OWN/'projection.py'))['lower'](text,'shader_builder.cpp')
-        # lower prepends compat.h; keep all includes outside the Fast namespace.
-        text=once(text,'#include "compat.h"\n','')
+        text=PROJECTOR.lower(text,'shader_builder.cpp')
+        # Keep all includes outside the Fast namespace.
+        text=once(text,'#include <prism/compat.h>\n','')
         text=text.replace('static_pointer_cast<Ship::Shader>','std::static_pointer_cast<Ship::Shader>')
     return ('#include "prism/processor.h"\n#include "fast/interpreter.h"\n'
             '#include "ship/Context.h"\n#include "ship/resource/ResourceManager.h"\n'
@@ -40,18 +43,14 @@ def source_builder(text,compat):
 
 
 def prepare():
-    dependency=verified('prism');lower=runpy.run_path(str(OWN/'projection.py'))['lower'];pending={}
-    for name,row in json.loads((OWN/'donor.lock.json').read_text()).items():
-        if 'sha256' not in row:continue
-        if hashlib.sha256((OWN/'donor'/name).read_bytes()).hexdigest()!=row['sha256']:raise ValueError('Imported helper drift '+name)
-    variant=runpy.run_path(str(OWN/'donor/value_generator.py'))['variant_header']()
-    pending['xbox_compat/variant.h']=variant
-    for name in ('common.h','optional.h'):pending['xbox_compat/'+name]=(OWN/'donor'/name).read_text()
-    pending['compat.h']=(OWN/'donor/compat.h').read_text()
+    dependency=verified('prism');pending={}
+    for name in ('compat.h','xbox_compat/common.h','xbox_compat/optional.h','xbox_compat/variant.h'):
+        stale=OUT/'generated'/name
+        if stale.is_file():stale.unlink()
     for path in sorted((dependency/'src/prism').rglob('*')):
         if path.suffix not in ('.h','.cpp','.c'):continue
         name=path.relative_to(dependency/'src').as_posix();text=path.read_text(encoding='utf-8-sig')
-        pending[name]=lower(text,path.name) if path.suffix!='.c' else text
+        pending[name]=PROJECTOR.lower(text,path.name) if path.suffix!='.c' else text
     dx=ROOT/'libultraship/src/fast/backends/gfx_direct3d11.cpp'
     text=dx.read_text(encoding='utf-8-sig')
     locks=json.loads((ROOT/'platform/shipyard/graphics/source-lock.json').read_text())
@@ -70,7 +69,7 @@ def build():
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     flags=['/nologo','/c','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]
-    flags+=['/I'+str(p) for p in [OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/gui-resources-xdk/generated/include',ROOT/'scratch/context-xdk/generated/include']+includes()+[ROOT/'scratch/async-xdk/generated']]
+    flags+=['/I'+str(p) for p in [PLATFORM_BASE/'sources',PLATFORM_BASE/'sources/value_types',OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/gui-resources-xdk/generated/include',ROOT/'scratch/context-xdk/generated/include']+includes()+[ROOT/'scratch/async-xdk/generated']]
     sources=[OUT/'generated'/n for n in ('prism/lexer.cpp','prism/ast.cpp','prism/processor.cpp','prism/utils/gv.cpp','prism/utils/invoke.c','shader_builder.cpp')]
     records=[]
     for source in sources:

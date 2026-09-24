@@ -4,6 +4,7 @@ The host fixture supplies physical bytes; it does not prove native controller I/
 import json,runpy,subprocess
 from pathlib import Path
 from prepare_input import ROOT,OUT,OWN,prepare
+from platform_base import resolve as resolve_platform_base
 from cpp_ast import PARSER,walk
 
 def host(projected):
@@ -25,11 +26,12 @@ def host(projected):
     audit=folder/'stick-method-audit.cpp';audit.write_text('#include "input/compiler.h"\n#include <algorithm>\n#include "ship/controller/controldevice/controller/ControllerStick.h"\n#define M_PI 3.14159265358979323846\n#define M_TAU 2 * M_PI\n#define MINIMUM_RADIUS_TO_MAP_NOTCH 0.9\nnamespace Ship {\n'+'\n'.join(n.text.decode() for n in funcs)+'\n}')
     paths=['src/ship/controller/controldevice/controller/mapping/'+name+'.cpp' for name in ['ControllerAxisDirectionMapping','ControllerInputMapping','ControllerMapping','ControllerDefaultMappings']]
     paths+=['src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp']
-    inc=[source/'include' if projected else folder/'include',ROOT/'platform/shipyard',ROOT/'libultraship/include']
+    platform_base=resolve_platform_base(ROOT)
+    inc=[source/'include' if projected else folder/'include',ROOT/'platform/shipyard',ROOT/'libultraship/include',platform_base/'sources']
     command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/MD','/DCONTROLLERBUTTONS_T=uint32_t']+['/I'+str(p) for p in inc]
     # Distinct object names avoid Ship/LUS ControllerDefaultMappings collision.
     objects=[]
-    for i,p in enumerate([source/n for n in paths]+[audit,OWN/'physical.cpp',OWN/'contract.cpp']):
+    for i,p in enumerate([source/n for n in paths]+[audit,platform_base/'sources/input/physical.cpp',OWN/'contract.cpp']):
         obj=folder/(str(i)+'.obj');cmd=command+['/c',str(p),'/Fo'+str(obj)]
         result=subprocess.run(cmd,env=env,cwd=ROOT,capture_output=True,text=True)
         (folder/(str(i)+'.log')).write_text(result.stdout+result.stderr)

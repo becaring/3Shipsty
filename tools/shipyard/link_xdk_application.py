@@ -35,7 +35,7 @@ def main():
     if manifest!=gen.collect():raise ValueError('Current project configuration differs from the compiled manifest')
     if not proof.get('header_sha256'):raise ValueError('Actual compiled header closure is required')
     for name,digest in proof['header_sha256'].items():
-        if sha(gen.ROOT/name)!=digest:raise ValueError('Header changed after compilation: '+name)
+        if sha(gen.source_path(name))!=digest:raise ValueError('Header changed after compilation: '+name)
     if manifest['application_counts']!={'selected':1094}:
         raise ValueError('The genuine application source inventory is incomplete')
     unresolved=[r['path'] for r in manifest['coverage'] if r['status']=='pending']
@@ -44,7 +44,7 @@ def main():
     application=[];library=[]
     for row in manifest['sources']:
         record=records[row['source']];obj=gen.ROOT/record['object']
-        if sha(gen.ROOT/row['source'])!=record['source_sha256'] or sha(obj)!=record['object_sha256']:
+        if sha(gen.source_path(row['source']))!=record['source_sha256'] or sha(obj)!=record['object_sha256']:
             raise ValueError('Changed compiled input: '+row['source'])
         # Keep every application initializer linked. LUS and dependencies use
         # ordinary static archive extraction, including the os_pi/cache members

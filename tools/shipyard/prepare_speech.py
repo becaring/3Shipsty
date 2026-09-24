@@ -4,8 +4,10 @@ from pathlib import Path
 from dependency_sources import ROOT
 from prepare_archives import stable
 from prepare_configuration import once
+from platform_base import resolve as resolve_platform_base
 
 OWN=ROOT/'platform/shipyard/speech';OUT=ROOT/'scratch/speech-xdk';DEP=OUT/'espeak-ng';GEN=OUT/'generated/espeak-ng'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 PIN='4870adfa25b1a32b4361592f1be8a40337c58d6c'
 SDK=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
 
@@ -42,7 +44,7 @@ def prepare_engine():
     return units
 
 def engine_flags():
-    roots=[OWN/'include',ROOT/'platform/shipyard',ROOT/'platform/shipyard/game/include',GEN/'src/include',GEN/'src/include/compat',GEN/'src/ucd-tools/src/include',SDK/'include/xbox']
+    roots=[OWN/'include',PLATFORM_BASE/'sources',ROOT/'platform/shipyard',ROOT/'platform/shipyard/game/include',GEN/'src/include',GEN/'src/include/compat',GEN/'src/ucd-tools/src/include',SDK/'include/xbox']
     return [str(SDK/'bin/win32/cl.exe'),'/nologo','/TC','/MT','/O2','/Gy','/W3','/D_XBOX','/D_XENON','/DSHIPYARD_ESPEAK_STATIC','/Dinline=__inline']+['/I'+str(p) for p in roots]
 
 def build_engine():
@@ -94,12 +96,12 @@ def prepare_application():
 def build_application():
     prepare_application();folder=OUT/'xdk-application';folder.mkdir(parents=True,exist_ok=True)
     flags=json.loads((ROOT/'scratch/randomizer-content-xdk/xdk/build.json').read_text())[0]['command'][:-2]
-    flags[1:1]=['/DSHIPYARD_ESPEAK_STATIC','/I'+str(OUT/'generated/soh'),'/I'+str(GEN/'src/include')]
-    sources=sorted((OUT/'generated/soh').rglob('*.cpp'))+[OWN/'XboxSpeechSynthesizer.cpp',OWN/'data_boundary.c'];rows=[]
+    flags[1:1]=['/DSHIPYARD_ESPEAK_STATIC','/I'+str(PLATFORM_BASE/'sources'),'/I'+str(PLATFORM_BASE/'sources/json/include'),'/I'+str(PLATFORM_BASE/'sources/value_types'),'/I'+str(OUT/'generated/soh'),'/I'+str(GEN/'src/include')]
+    sources=sorted((OUT/'generated/soh').rglob('*.cpp'))+[OWN/'XboxSpeechSynthesizer.cpp',PLATFORM_BASE/'sources/speech/data_boundary.c'];rows=[]
     for source in sources:
         command=[p for p in flags if p!='/TP']+(['/TC'] if source.suffix=='.c' else [])+[str(source),'/Fo'+str(folder/(source.stem+'.obj'))]
         r=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(folder/(source.stem+'.log'),r.stdout+r.stderr)
-        row=dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=r.returncode,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+        row=dict(source=('platform_base:'+source.relative_to(PLATFORM_BASE).as_posix()) if PLATFORM_BASE in source.parents else source.relative_to(ROOT).as_posix(),command=command,exit=r.returncode,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
         if not r.returncode:
             obj=folder/(source.stem+'.obj');assert struct.unpack_from('<H',obj.read_bytes())[0]==0x1f2
             row.update(object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest(),machine='PowerPC big-endian COFF 0x1f2')

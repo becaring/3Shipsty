@@ -47,3 +47,21 @@ disables dither via the public API because seeking legitimately changes
 noise-shaping state; the full memory/file comparison retains default dither.
 These are codec contract checks, not application, Xenia or hardware validation.
 Commands and results are recorded under `scratch/codec-xdk`.
+
+## Compiler projection ownership
+
+The optional codec compiler package review found no shared Xbox-specific
+implementation to extract. Modern compiles pinned Opus, opusfile and Ogg,
+deriving Opus units from upstream manifests and listing the other units
+explicitly. It separately compiles pinned Vorbis with its own XDK C
+declaration/loop lowering. Smash's `tools/prepare_stb_xdk.py`
+instead compiles one pinned `stb_image` implementation. Both consumers pin
+`stb` commit `0bc88af4de5fb022db643c2d8e549a0927749354`, but Modern
+generates a C implementation in `prepare_gui_resources.py` and Smash generates
+a C++ implementation. Their `stb_image.h` files have the same SHA-256,
+`650e1428da2aab3461c191da3641bbfa37f7b7756d0370e85174f5b625d0c68e`.
+The common decoder is the upstream header, not a copied Shipyard compiler
+projection. Translation-unit inventories, feature flags, source patches,
+language mode, and application decoder registration stay with
+each consumer and its pinned dependency. A common wrapper around `cl.exe`
+would add an interface without moving a reusable mechanism.

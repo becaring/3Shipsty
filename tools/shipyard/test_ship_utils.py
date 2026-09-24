@@ -45,8 +45,9 @@ def host(projected):
                     '#include <libultraship/bridge/consolevariablebridge.h>\n#include <ship/utils/binarytools/endianness.h>')
             path = base / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
     compiler, env = ENV['host_environment']()
+    platform_base = (ROOT / json.loads((ROOT / 'platform-base.lock.json').read_text())['base']).resolve()
     inc = [base / 'soh', ROOT / 'soh', ROOT / 'soh/include', ROOT / 'soh/assets', ROOT / 'libultraship/include',
-           ROOT / 'platform/shipyard/json/upstream/include', ROOT / 'platform/shipyard']
+           ROOT / 'platform/shipyard/json/upstream/include', ROOT / 'platform/shipyard', platform_base / 'sources']
     command = [compiler, '/nologo', '/std:c++20', '/Zc:preprocessor', '/EHsc', '/GR', '/MD', '/Gy', '/O2', '/DNOMINMAX',
                '/DF3DEX_GBI_2', '/DCONTROLLERBUTTONS_T=uint32_t', '/FIbit', '/FIcassert', '/FIcmath']
     command += ['/I' + str(p) for p in inc]
@@ -131,7 +132,10 @@ class ShipUtilsContracts(unittest.TestCase):
         self.assertEqual(original.count('default_init = true;'), projected.count('default_init = true;'))
         boundary = (OWN / 'native_entropy.cpp').read_text()
         xbox = boundary[boundary.index('uint32_t Shipyard::Utils::DeviceRandom()'):].split('#else')[0]
-        self.assertIn('XNetRandom(', xbox)
+        self.assertIn('Shipyard::Entropy::FillBytes(', xbox)
+        base = (ROOT / json.loads((ROOT / 'platform-base.lock.json').read_text())['base']).resolve()
+        provider = (base / 'sources/entropy/native.h').read_text()
+        self.assertIn('XNetRandom(buffer, length)', provider)
         self.assertIn('throw std::runtime_error', xbox)
         self.assertNotIn('rand()', xbox)
         self.assertNotIn('time(', xbox)

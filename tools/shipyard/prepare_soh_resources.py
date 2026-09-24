@@ -12,7 +12,9 @@ from prepare_archives import stable
 from prepare_binary import strong_enum
 from prepare_configuration import once
 from prepare_resource_manager import syntax
+from platform_base import resolve as resolve_platform_base
 
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/soh-resources-xdk'
 OWN = ROOT / 'platform/shipyard/soh-resources'
 NAMES = ('Background', 'PlayerAnimation', 'Text', 'Array', 'Cutscene',
@@ -190,7 +192,7 @@ def includes(projected):
              ROOT/'scratch/codec-xdk/include', ROOT / 'soh/include', ROOT / 'soh', ROOT/'soh/assets']
     if projected:
         paths[1:1]=[ROOT/'scratch/game-xdk/full/source/soh',ROOT/'scratch/game-xdk/full/source/soh/include']
-        paths += [ROOT / 'scratch/fast3d-xdk/generated/include', ROOT / 'platform/shipyard/game/include',
+        paths += [PLATFORM_BASE / 'sources', ROOT / 'scratch/fast3d-xdk/generated/include', ROOT / 'platform/shipyard/game/include',
                   ROOT / 'scratch/console-variables-xdk/generated/include', ROOT / 'scratch/audio-xdk/generated/include',
                   ROOT / 'scratch/resource-manager-xdk/generated/include', ROOT / 'scratch/async-xdk/generated']
     return paths + resources['includes'](projected) + [ROOT / 'libultraship/include']
@@ -222,14 +224,16 @@ def build(scene_only=False,sample_only=False,skeleton_only=False):
     records = []
     sources = units(OUT / 'generated') if not scene_only else scene_units(OUT / 'generated') + [
         OUT / 'generated/soh/soh/resource/type/Scene.cpp', OUT / 'generated/soh/soh/resource/importer/SceneFactory.cpp']
-    if sample_only:sources=[p for p in units(OUT/'generated') if p.stem in ('AudioSample','AudioSampleFactory')]+[ROOT/'platform/shipyard/async/detached.cpp']
+    if sample_only:sources=[p for p in units(OUT/'generated') if p.stem in ('AudioSample','AudioSampleFactory')]+[PLATFORM_BASE/'sources/async/detached.cpp']
     if skeleton_only:sources=[p for p in units(OUT/'generated') if p.stem in ('Skeleton','SkeletonFactory')]
     for source in sources + [OWN / 'xdk_abi.cpp']:
         obj = folder / (source.stem + '.obj')
         command = [str(sdk / 'bin/win32/cl.exe')] + flags + [str(source), '/Fo' + str(obj)]
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         stable(obj.with_suffix('.log'), result.stdout + result.stderr)
-        records.append(dict(source=source.relative_to(ROOT).as_posix(), exit=result.returncode, command=command,
+        label=('shipyard/'+source.relative_to(PLATFORM_BASE).as_posix()
+               if source.is_relative_to(PLATFORM_BASE) else source.relative_to(ROOT).as_posix())
+        records.append(dict(source=label, exit=result.returncode, command=command,
                             source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                             object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest() if not result.returncode else None))
         if not result.returncode and struct.unpack_from('<H', obj.read_bytes())[0] != 0x1f2:

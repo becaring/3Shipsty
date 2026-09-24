@@ -1,6 +1,6 @@
 #pragma once
 // Narrow source-level bridge for current controller classes; not an SDL library.
-#include "physical.h"
+#include "input/physical.h"
 #include <cstring>
 typedef ShipyardInputGamepad SDL_GameController;
 typedef ShipyardInputGamepad SDL_Joystick;

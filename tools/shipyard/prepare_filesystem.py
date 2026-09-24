@@ -9,9 +9,11 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from platform_base import resolve as resolve_platform_base
 
 ROOT = Path(__file__).resolve().parents[2]
 OWN = ROOT / 'platform/shipyard/filesystem'
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/filesystem-xdk'
 DIRECTORY = 'libultraship/include/ship/utils/filesystemtools/Directory.h'
 RUNTIME_APIS = frozenset(('path current_path exists is_directory is_regular_file remove rename create_directory '
@@ -108,7 +110,7 @@ def generate(out=OUT / 'generated'):
         raise ValueError('output must stay inside owned scratch/filesystem-xdk')
     locks = json.loads((OWN / 'sources.lock.json').read_text())
     for name, expected in locks['helpers'].items():
-        if digest(normalized(OWN / name)) != expected:
+        if digest(normalized(PLATFORM_BASE / 'sources/filesystem' / name)) != expected:
             raise ValueError('Filesystem helper hash mismatch: ' + name)
     audit = []; hooks = []
     for relative, expected in locks['sources'].items():
@@ -125,7 +127,8 @@ def generate(out=OUT / 'generated'):
     (out / 'projection-hooks.json').write_text(json.dumps(hooks, indent=2) + '\n', encoding='utf-8')
     manifest = {'consumers': audit, 'generated_directory_sha256': digest(generated),
                 'donor_provenance': json.loads((OWN / 'donor-provenance.json').read_text()),
-                'helpers': {name: digest(normalized(OWN / name)) for name in ['filesystem.h', 'filesystem.cpp']},
+                'helpers': {name: digest(normalized(PLATFORM_BASE / 'sources/filesystem' / name))
+                            for name in ['filesystem.h', 'filesystem.cpp']},
                 'changes': ['filesystem include/namespace', 'range-for to input iterator'],
                 'limits': 'Actual current Directory header only; other consumers inventoried, not compiled or changed.'}
     (out / 'provenance.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')

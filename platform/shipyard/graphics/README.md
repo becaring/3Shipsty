@@ -37,8 +37,8 @@ is checked before generation; drift fails closed. No generated output goes
 into upstream or either reference project. The generator does not need to
 read a reference project after this import.
 
-`donor/shader_lower.cpp` is an unchanged, hash-proven copy of
-`D:/Projects/Smash360/platform/xbox360/graphics/shader_lower.cpp`. The generated
+The hash-pinned `sources/graphics/shader_lower.cpp` in the platform base is
+shared with Smash360. The generated
 copy changes only its include/symbol/ABI label and removes Smash profiling
 hooks. Its D3D SM4-to-Xenos SM3 syntax transforms are retained. It must receive
 expanded authoritative HLSL; unexpanded Prism and missing cbuffer contracts

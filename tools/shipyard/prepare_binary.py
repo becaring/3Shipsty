@@ -9,8 +9,12 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 COMMIT = 'fdcaf6336776d24a6408d016b0a52243f108f250'
 INPUTS = {'include/ship/utils/binarytools/BinaryWriter.h': 'bf37667f3e438c1ab0e42a23c72c222ddde6800b774e1ea27bd376a110a9b66a',
  'include/ship/utils/binarytools/BinaryReader.h': '46405096528e34f312c650e83e83d215216184ffb5b98db9d31f8354d9376d03',
@@ -21,8 +25,10 @@ INPUTS = {'include/ship/utils/binarytools/BinaryWriter.h': 'bf37667f3e438c1ab0e4
  'src/ship/utils/binarytools/BinaryReader.cpp': '0060874646084935b1c7de52486ea16968c3866ca6abfb0311c2804ed37f16ac',
  'src/ship/utils/binarytools/MemoryStream.cpp': 'b39db54658c4b8c923082c48846118f02f0f75a7b31eb01641578d0c53fb92f8',
  'src/ship/utils/binarytools/Stream.cpp': '6a9574c06b0fad06d48a564d221918a1a2eb8ae3b3559824482f8c14f1dfc185'}
-HELPERS = {'compat.h': '04346301b0626b4de06e41bcd6551fda1412b3b1435a9587e76d64cf3371b993',
+HELPERS = {'compat.h': '9128a141d3e66943e1dd40a2788884fb0b6318aa107ee4a1b3178bce124ba51e',
  'endian.h': '4fc6b78cdd0ede693acdbddde7bc5a6ffae6d77e79835a34463f16d5e12c8784'}
+HELPER_PATHS = {'compat.h': PLATFORM_BASE / 'sources/binary/compat.h',
+                'endian.h': ROOT / 'platform/shipyard/binary/endian.h'}
 NATIVE_CONDITION = '#if (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(__BIG_ENDIAN__)\n'
 XDK_NATIVE_CONDITION = '#if SHIPYARD_BIG_ENDIAN\n'
 
@@ -151,7 +157,7 @@ def generate(source, destination):
     # Validate every source/helper and prepare every transform before writing.
     prepared = []
     for name, expected in HELPERS.items():
-        raw = normalized((ROOT / 'platform/shipyard/binary' / name).read_bytes())
+        raw = normalized(HELPER_PATHS[name].read_bytes())
         if digest(raw) != expected:
             raise ValueError('helper SHA-256 mismatch: ' + name)
     for relative, expected in INPUTS.items():
@@ -163,7 +169,8 @@ def generate(source, destination):
                          'output_sha256': digest(output), 'edits': edits}))
     manifest = {'libultraship_commit': COMMIT, 'source_root': 'libultraship',
                 'generator_sha256': digest(normalized(Path(__file__).read_bytes())),
-                'helper_sha256': HELPERS, 'normalization': 'UTF-8, optional BOM removed, CRLF -> LF',
+                'helper_sha256': HELPERS, 'compat_header_source': 'platform_base:sources/binary/compat.h',
+                'normalization': 'UTF-8, optional BOM removed, CRLF -> LF',
                 'files': {relative: metadata for relative, _, metadata in prepared}}
     for relative, output, _ in prepared:
         target = destination / relative

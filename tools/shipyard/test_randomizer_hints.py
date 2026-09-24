@@ -4,6 +4,8 @@ from prepare_randomizer_hints import ROOT,OUT,OWN,BASE,prepare,build,value_expre
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
 from test_custom_message import bounded_source
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 ENV=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))
 VALUES={'AddHintedLocation','GetHintedLocations','SetHintType','GetHintType','AddHintedArea','GetHintedAreas','SetDistribution','GetDistribution','IsEnabled','GetHintTextKeys','GetHintedItems','GetItemNamesChosen','GetHintTextsChosen','GetAreaTextsChosen','GetHintedTrials','GetNum','ResetVariables'}
@@ -52,11 +54,11 @@ def host(projected):
         source+=ctor+'\n#define VALUE_STATIC_INFO StaticHintInfo()\n#define HINT_VARIANT std::variant\n#define HINT_GET std::get\n'
     source+=(OWN/'contract.cpp').read_text();stable(folder/'contract.cpp',source)
     compiler,env=ENV['host_environment']()
-    roots=[OUT/'generated/soh',ROOT/'scratch/randomizer-xdk/generated/soh',ROOT/'scratch/randomizer-xdk/generated'/BASE,ROOT/'soh/include',ROOT/'scratch/deps/spdlog/include',ROOT/'platform/shipyard',ROOT/'scratch/binary-xdk/generated/include',ROOT/'scratch/prism-xdk/generated',ROOT/'libultraship/include']
-    if projected:roots=[ROOT/'platform/shipyard/json/include',ROOT/'scratch/json-xdk/backend-generated']+roots
+    roots=[OUT/'generated/soh',ROOT/'scratch/randomizer-xdk/generated/soh',ROOT/'scratch/randomizer-xdk/generated'/BASE,ROOT/'soh/include',ROOT/'scratch/deps/spdlog/include',ROOT/'platform/shipyard',ROOT/'scratch/binary-xdk/generated/include',PLATFORM_BASE/'sources/value_types',ROOT/'scratch/prism-xdk/generated',ROOT/'libultraship/include']
+    if projected:roots=[PLATFORM_BASE/'sources/json/include',ROOT/'scratch/json-xdk/backend-generated']+roots
     else:roots=[ROOT/'platform/shipyard/json/upstream/include']+roots
     cmd=[compiler,'/nologo','/std:c++20','/utf-8','/Zc:preprocessor','/EHsc','/GR','/MD','/DNOMINMAX','/D_CRT_SECURE_NO_WARNINGS','/DSPDLOG_ACTIVE_LEVEL=0']+['/I'+str(p) for p in roots]+[folder/'contract.cpp']
-    if projected:cmd+=[ROOT/'platform/shipyard/json/json.cpp']
+    if projected:cmd+=[PLATFORM_BASE/'sources/json/json.cpp']
     cmd+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     result=ENV['invoke'](cmd,folder,'compile',env,success=False)
     assert result['returncode']==0,'\n'.join(l for l in (result['stdout']+result['stderr']).splitlines() if 'error ' in l)[:5000]

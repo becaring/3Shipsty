@@ -8,8 +8,13 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/filesystem-xdk'
 OWN = ROOT / 'platform/shipyard/filesystem'
+SOURCE = PLATFORM_BASE / 'sources/filesystem/filesystem.cpp'
 TEST = Path(__file__).with_name('test_filesystem_contract.cpp')
 SPEC = importlib.util.spec_from_file_location('binary_environment', Path(__file__).with_name('test_binary.py'))
 ENV = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(ENV)
@@ -32,10 +37,11 @@ def main():
                           ('logical', '/DSHIPYARD_TEST_LOGICAL_CWD')]:
         folder = OUT / ('host-' + label); folder.mkdir(parents=True, exist_ok=True)
         command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/MD', '/W4', define,
-                   '/I' + str(OWN), '/I' + str(OUT / 'generated'),
+                   '/I' + str(OWN), '/I' + str(OUT / 'generated'), '/I' + str(PLATFORM_BASE),
+                   '/I' + str(PLATFORM_BASE / 'sources'),
                    '/Fe:' + str(folder / 'contract.exe'), '/Fo:' + str(folder) + '/', TEST]
         if label != 'upstream':
-            command += [OWN / 'filesystem.cpp', ROOT / 'platform/shipyard/async/native.cpp']
+            command += [SOURCE, PLATFORM_BASE / 'sources/async/native.cpp']
         run(command, folder, 'compile', env)
         # Kept as evidence; all fixture mutations are inside owned scratch only.
         fixture = Path(tempfile.mkdtemp(prefix='fixture-', dir=folder))
@@ -45,9 +51,10 @@ def main():
     assert len(set(results.values())) == 1, 'host filesystem contract differs'
     folder = OUT / 'xdk'; folder.mkdir(parents=True, exist_ok=True)
     base = [ENV.XDK / 'bin/win32/cl.exe', '/nologo', '/c', '/EHsc', '/D_XBOX', '/D_XBOX_VER=200',
-            '/I' + str(ENV.XDK / 'include/xbox'), '/I' + str(OWN), '/I' + str(OUT / 'generated')]
+            '/I' + str(ENV.XDK / 'include/xbox'), '/I' + str(OWN), '/I' + str(OUT / 'generated'),
+            '/I' + str(PLATFORM_BASE), '/I' + str(PLATFORM_BASE / 'sources')]
     objects = {}
-    for source in [OWN / 'filesystem.cpp', TEST]:
+    for source in [SOURCE, TEST]:
         obj = folder / (source.stem + '.obj')
         run(base + ['/Fo' + str(obj), source], folder, source.stem)
         assert struct.unpack_from('<H', obj.read_bytes())[0] == 0x1f2, 'expected PPC BE object'

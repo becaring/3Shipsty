@@ -5,6 +5,8 @@ import runpy
 import struct
 import subprocess
 from prepare_libultra import ROOT,OWN,OUT,prepare,transform
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 
 def public_symbols(path):
@@ -60,7 +62,7 @@ def main():
         outputs.append(result.stdout)
     assert outputs[0]==outputs[1]
     folder=OUT/'host-native-timer';folder.mkdir(exist_ok=True)
-    command=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),'/Fe:'+str(folder/'contract.exe'),'/Fo:'+str(folder)+'/']+[str(p) for p in [OWN/'platform.cpp',OWN/'timer_contract.cpp',ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp']]
+    command=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),'/Fe:'+str(folder/'contract.exe'),'/Fo:'+str(folder)+'/']+[str(p) for p in [PLATFORM_BASE/'sources/libultra/clock.cpp',PLATFORM_BASE/'sources/libultra/timer.cpp',OWN/'timer_contract.cpp',PLATFORM_BASE/'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp']]
     result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'compile.log',result.stdout+result.stderr)
     if result.returncode:raise RuntimeError('Timer build failed '+str(folder/'compile.log'))
     result=subprocess.run([str(folder/'contract.exe')],cwd=folder,capture_output=True,text=True,timeout=15)

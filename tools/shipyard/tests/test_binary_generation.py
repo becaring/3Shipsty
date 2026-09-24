@@ -64,30 +64,36 @@ class BinaryGeneration(unittest.TestCase):
             GEN.transform(relative, raw, Path('libultraship') / relative)
 
     def test_helper_drift_rejected_before_output(self):
-        helper_dir = self.work / 'platform/shipyard/binary'
+        helper_dir = self.work / 'helpers'
         helper_dir.mkdir(parents=True)
         for name in GEN.HELPERS:
-            (helper_dir / name).write_bytes((ROOT / 'platform/shipyard/binary' / name).read_bytes())
+            (helper_dir / name).write_bytes(GEN.HELPER_PATHS[name].read_bytes())
         path = helper_dir / 'compat.h'; path.write_bytes(path.read_bytes() + b'// drift\n')
         saved_root = GEN.ROOT
+        saved_paths = GEN.HELPER_PATHS
         try:
             GEN.ROOT = self.work
+            GEN.HELPER_PATHS = {name: helper_dir / name for name in GEN.HELPERS}
             target = self.work / 'scratch/binary-xdk/rejected'
             with self.assertRaisesRegex(ValueError, 'helper SHA-256 mismatch'):
                 GEN.generate(ROOT / 'libultraship', target)
             self.assertFalse(target.exists())
         finally:
             GEN.ROOT = saved_root
+            GEN.HELPER_PATHS = saved_paths
 
     def test_outside_owned_scratch_rejected(self):
         with self.assertRaisesRegex(ValueError, 'owned scratch'):
             GEN.generate(ROOT / 'libultraship', ROOT / 'libultraship')
 
     def test_manifest_covers_owned_source_and_helpers(self):
+        self.assertEqual(GEN.HELPER_PATHS['compat.h'], GEN.PLATFORM_BASE / 'sources/binary/compat.h')
+        self.assertFalse((ROOT / 'platform/shipyard/binary/compat.h').exists())
         target = self.work / 'manifest'
         result = GEN.generate(ROOT / 'libultraship', target)
         self.assertEqual(set(result['files']), set(GEN.INPUTS))
         self.assertEqual(result['helper_sha256'], GEN.HELPERS)
+        self.assertEqual(result['compat_header_source'], 'platform_base:sources/binary/compat.h')
         self.assertEqual(result['libultraship_commit'], 'fdcaf6336776d24a6408d016b0a52243f108f250')
         self.assertEqual(json.loads((target / 'manifest.json').read_text()), result)
 

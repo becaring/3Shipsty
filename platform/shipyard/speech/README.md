@@ -53,7 +53,7 @@ retained, but Xbox startup never calls dictionary or phoneme compilation.
 
 ## Worker and audio ownership
 
-`SpeechQueue.h` owns one critical section, an event, copied strings, and an
+Shipyard `sources/speech/SpeechQueue.h` owns one critical section, an event, copied strings, and an
 interlocked request generation. A newer request cancels current synthesis;
 `Speak("", language)` cancels without synthesizing, matching the real TTS cancel
 call and SAPI's purge-before-speak behavior. The worker invokes genuine
@@ -80,6 +80,7 @@ serialized lifecycle after gameplay callbacks stop; the upstream base class's
 
 ## Endian proof and data packaging
 
+Shipyard `sources/speech/data_boundary.c` owns the eSpeak data and PCM conversions.
 These are **PC-generated eSpeak data files**, not N64 bytes or native Xbox data.
 The packaged files stay in the standard upstream format.
 

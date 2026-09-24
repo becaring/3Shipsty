@@ -4,14 +4,17 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import runpy
 import struct
 import subprocess
 from dependency_sources import ROOT, verified
+from platform_base import resolve as resolve_platform_base
+import sys
 
 OUT = ROOT / 'scratch/libzip-xdk'
-OWN = ROOT / 'platform/shipyard/libzip'
+PLATFORM_BASE = resolve_platform_base(ROOT)
+sys.path.insert(0, str(PLATFORM_BASE / 'python'))
+from xbox360_platform.libzip import project
 ZLIB_UNITS = 'adler32 compress crc32 deflate infback inffast inflate inftrees trees uncompr zutil'.split()
 
 
@@ -25,40 +28,7 @@ def stable(path, text):
 def prepare():
     source = verified('libzip')
     verified('zlib')
-    generated = OUT / 'generated'
-    transform = runpy.run_path(str(OWN / 'projection.py'))['transform']
-    units = re.findall(r'^  (zip_\S+\.c)$', (source / 'lib/CMakeLists.txt').read_text().split('add_library(libzip::zip')[0], re.M)
-    units += ['zip_err_str.c', 'zip_source_file_win32.c', 'zip_source_file_win32_named.c',
-              'zip_source_file_win32_ansi.c', 'zip_source_file_win32_utf8.c',
-              'zip_source_file_win32_utf16.c', 'zip_random_win32.c']
-    pending = {}
-    for path in sorted((source / 'lib').glob('*')):
-        if path.suffix not in ('.h', '.c') or (path.suffix == '.c' and path.name not in units):
-            continue
-        pending[path.name] = '// Generated Shipyard XDK projection; do not edit.\n#line 1 "' + path.relative_to(ROOT).as_posix() + '"\n' + transform(path.name, path.read_text())
-    enabled = set('ENABLE_FDOPEN HAVE__CLOSE HAVE__DUP HAVE__FDOPEN HAVE__FILENO HAVE__FSEEKI64 HAVE__FSTAT64 HAVE__SETMODE HAVE__SNPRINTF HAVE__SNPRINTF_S HAVE__SNWPRINTF_S HAVE__STAT64 HAVE__STRDUP HAVE__STRICMP HAVE__STRTOI64 HAVE__STRTOUI64 HAVE__UNLINK HAVE_LOCALTIME_S HAVE_MEMCPY_S HAVE_STRERROR_S HAVE_STRNCPY_S'.split())
-    config = re.sub(r'^#cmakedefine (\w+).*$', lambda m: '#define ' + m[1] if m[1] in enabled else '/* unavailable: ' + m[1] + ' */', (source / 'config.h.in').read_text(), flags=re.M)
-    config = config.replace('/* unavailable: SIZEOF_OFF_T */', '#define SIZEOF_OFF_T 4')
-    config = config.replace('/* unavailable: SIZEOF_SIZE_T */', '#ifdef _XBOX\n#define SIZEOF_SIZE_T 4\n#define WORDS_BIGENDIAN\n#else\n#define SIZEOF_SIZE_T 8\n#endif')
-    config = config.replace('@CMAKE_PROJECT_NAME@', 'libzip').replace('@CMAKE_PROJECT_VERSION@', '1.11.4')
-    config = config.replace('/* END DEFINES */', '#ifndef _XBOX\n#define HAVE_SNPRINTF\n#endif\n/* END DEFINES */')
-    pending['config.h'] = config
-    config = (source / 'zipconf.h.in').read_text().replace('#cmakedefine ZIP_STATIC', '#define ZIP_STATIC')
-    values = dict(libzip_VERSION='1.11.4', libzip_VERSION_MAJOR='1', libzip_VERSION_MINOR='11', libzip_VERSION_PATCH='4', LIBZIP_TYPES_INCLUDE='#include <stdint.h>')
-    for width in (8, 16, 32, 64):
-        values['ZIP_INT' + str(width) + '_T'] = 'int' + str(width) + '_t'
-        values['ZIP_UINT' + str(width) + '_T'] = 'uint' + str(width) + '_t'
-    for key, value in values.items():
-        config = config.replace('${' + key + '}', value)
-    if '${' in config or '#cmakedefine' in config:
-        raise ValueError('Unresolved libzip public configuration')
-    pending['zipconf.h'] = config
-    errors = OUT / 'error-strings'; errors.mkdir(parents=True, exist_ok=True)
-    subprocess.run(['cmake', '-DPROJECT_SOURCE_DIR=' + str(source), '-P', str(source / 'cmake/GenerateZipErrorStrings.cmake')], cwd=errors, check=True, capture_output=True)
-    pending['zip_err_str.c'] = (errors / 'zip_err_str.c').read_text()
-    for name, text in pending.items():
-        stable(generated / name, text)
-    manifest = dict(units=units, outputs={name: hashlib.sha256(text.encode()).hexdigest() for name, text in sorted(pending.items())})
+    manifest = project(source, OUT / 'generated', source.relative_to(ROOT).as_posix())
     stable(OUT / 'manifest.json', json.dumps(manifest, indent=2) + '\n')
     return manifest
 
@@ -76,9 +46,10 @@ def build(host=False):
     else:
         compiler = sdk / 'bin/win32/cl.exe'; librarian = sdk / 'bin/win32/lib.exe'
         flags = ['/nologo', '/c', '/MT', '/W3', '/D_XBOX', '/I' + str(sdk / 'include/xbox')]
-    flags += ['/DNOMINMAX', '/I' + str(OUT / 'generated'), '/I' + str(ROOT / 'platform/shipyard'),
+    flags += ['/DNOMINMAX', '/I' + str(OUT / 'generated'), '/I' + str(PLATFORM_BASE / 'sources'),
+              '/I' + str(ROOT / 'platform/shipyard'),
               '/I' + str(ROOT / 'scratch/deps/zlib')]
-    groups = {'zip': [OUT / 'generated' / name for name in manifest['units']] + [OWN / 'native_boundary.cpp'],
+    groups = {'zip': [OUT / 'generated' / name for name in manifest['units']] + [PLATFORM_BASE / 'sources/libzip/native_boundary.cpp'],
               'zlib': [ROOT / 'scratch/deps/zlib' / (name + '.c') for name in ZLIB_UNITS],
               'tinyxml2': [verified('tinyxml2') / 'tinyxml2.cpp']}
     records = []; libraries = {}
@@ -89,7 +60,9 @@ def build(host=False):
             command = [str(compiler)] + flags + (['/TP', '/EHsc', '/GR'] if source.suffix == '.cpp' else ['/TC']) + [str(source), '/Fo' + str(obj)]
             result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
             stable(folder / (obj.stem + '.log'), result.stdout + result.stderr)
-            records.append(dict(source=source.relative_to(ROOT).as_posix(), command=command, exit=result.returncode))
+            source_name = ('shipyard/' + source.relative_to(PLATFORM_BASE).as_posix()
+                           if source.is_relative_to(PLATFORM_BASE) else source.relative_to(ROOT).as_posix())
+            records.append(dict(source=source_name, command=command, exit=result.returncode))
             if result.returncode:
                 raise RuntimeError('Archive source failed, see ' + str(folder / (obj.stem + '.log')))
             if not host and struct.unpack_from('<H', obj.read_bytes())[0] != 0x1f2:

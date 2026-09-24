@@ -7,8 +7,8 @@ factories. It does not yet project Archive, ArchiveManager, ResourceLoader or
 ResourceManager. No substitute manager, Context, logger, archive reader or game
 consumer is supplied. No source or reference checkout is modified.
 
-`sources.lock.json` records normalized SHA-256 for every source and the independently
-authored variant helper. `tools/shipyard/prepare_resources.py` verifies all inputs
+`sources.lock.json` records normalized SHA-256 for every source.
+`tools/shipyard/prepare_resources.py` verifies all inputs
 before writing output under `scratch/resources-xdk/generated`. UTF-8 BOM and CRLF
 checkout differences are normalized. Changed input fails closed. Generated headers
 have physical include guards and source-relative `#line` mapping; the manifest
@@ -25,16 +25,11 @@ file buffer offsets, silent destructor, or manager cache correction is imported.
 
 ## Narrow variant contract
 
-`Shipyard::Resources::variant<A,B>` independently owns aligned storage, lifetime,
-copy/move, type switching, default first alternative, typed const/nonconst access,
-`holds_alternative`, invalid-access exceptions, valueless state and recovery. It
-supports exactly one convertible alternative and rejects ambiguous conversion.
-This covers the current File pair of distinct shared pointers and the current
-cache error/shared-pointer shape. It is not a general C++17 `std::variant`
-replacement: visitor/index-based/in-place APIs, arbitrary alternative counts and
-the full overload-ranking/exception-guarantee matrix for arbitrary user types are
-outside its contract. The reached shared-pointer and enum alternatives do not need
-those additional operations. Full manager integration still needs its own tests.
+The projected resources include Shipyard's physical
+`sources/value_types/xbox_compat/variant.h` through `<xbox_compat/variant.h>`.
+The reached File shared-pointer pair and cache error/shared-pointer shape use the
+same canonical implementation as other Shipyard consumers. Full manager
+integration still needs its own tests.
 
 ## Validation and exact commands
 
@@ -67,8 +62,8 @@ Blob remains exactly its declared payload size.
 
 The variant test additionally compares std::variant ownership counts, default
 alternative, copy/type switch, move/moved-from state, null assignment, bad access,
-throwing conversion and valueless recovery. Five generator tests cover deterministic
-bytes/mapping, BOM/CRLF, source rejection, helper rejection and output confinement.
+throwing conversion and valueless recovery. The generator tests cover deterministic
+bytes/mapping, BOM/CRLF, source rejection, canonical variant use and output confinement.
 
 Native validation uses `C:/Program Files (x86)/Microsoft Xbox 360 SDK/bin/win32/cl.exe`
 with `/EHsc /D_XBOX /D_XBOX_VER=200 /DSPDLOG_ACTIVE_LEVEL=0`. The nine actual resource

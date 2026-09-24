@@ -22,8 +22,9 @@ static void Wav(const char* name,int rate){FILE* f=fopen(name,"wb");fwrite("RIFF
 #define CHECK(x) do{if(!(x)){fprintf(stderr,"line %d: %s\n",__LINE__,#x);return 1;}}while(0)
 int main(int argc,char** argv){
     CHECK(argc==2);
-    ShipyardSpeech::Queue queue;CHECK(queue.Valid());
+    ShipyardSpeech::Queue queue("en");CHECK(queue.Valid());
     char text[]="Copied input",language[]="fr";queue.Submit(text,language);text[0]='X';language[0]='x';ShipyardSpeech::Job job;CHECK(queue.Take(job));CHECK(job.text=="Copied input"&&job.language=="fr"&&queue.Current(job.generation));
+    queue.Submit("fallback",NULL);CHECK(queue.Take(job)&&job.language=="en");
     LONG old=job.generation;queue.Submit("superseded","en");queue.Submit("latest","de");CHECK(!queue.Current(old));CHECK(queue.Take(job)&&job.text=="latest"&&job.language=="de");
     old=job.generation;queue.Submit("","de");CHECK(!queue.Current(old));CHECK(queue.Take(job)&&job.text.empty());
     std::atomic<bool> finished(false);std::thread waiter([&](){ShipyardSpeech::Job next;finished=!queue.Take(next);});queue.Stop();waiter.join();CHECK(finished);

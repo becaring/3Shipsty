@@ -1,7 +1,7 @@
 """Real synthesis, native application/engine compilation and endian/lifetime contracts."""
 import ctypes,hashlib,json,re,runpy,struct,subprocess,unittest
 from pathlib import Path
-from prepare_speech import ROOT,OWN,OUT,GEN,DEP,PIN,SDK,prepare_engine,build_engine,build_application,engine_flags
+from prepare_speech import ROOT,OWN,OUT,GEN,DEP,PIN,SDK,PLATFORM_BASE,prepare_engine,build_engine,build_application,engine_flags
 from prepare_archives import stable
 ENV=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))
 DATA=OUT/'host-ninja/espeak-ng-data'
@@ -27,7 +27,7 @@ def build_host_engine():
     units=json.loads((OUT/'engine-manifest.json').read_text())['units']
     # Original host compatibility headers forward to the installed host CRT;
     # target-specific CRT spelling is not imported into this host execution.
-    roots=[OWN/'include',ROOT/'platform/shipyard',GEN/'src/include',DEP/'src/include/compat',GEN/'src/ucd-tools/src/include']
+    roots=[OWN/'include',PLATFORM_BASE/'sources',ROOT/'platform/shipyard',GEN/'src/include',DEP/'src/include/compat',GEN/'src/ucd-tools/src/include']
     for name in units:
         obj=folder/(name.replace('/','__')[:-2]+'.obj');objects.append(obj)
         invoke([compiler,'/nologo','/c','/TC','/std:c11','/O2','/MD','/DSHIPYARD_ESPEAK_STATIC','/D_CRT_SECURE_NO_WARNINGS']+['/I'+str(p) for p in roots]+[GEN/name,'/Fo'+str(obj)],folder,obj.stem,env)
@@ -39,12 +39,12 @@ def host_synthesis(projected,objects):
     header=GEN/'src/include' if projected else DEP/'src/include'
     # LIBESPEAK_NG_EXPORT is upstream's static-library consumer setting.
     flag='/DSHIPYARD_ESPEAK_STATIC' if projected else '/DLIBESPEAK_NG_EXPORT'
-    invoke([compiler,'/nologo','/std:c++20','/utf-8','/EHsc','/MD',flag,'/DNOMINMAX','/I'+str(header),'/I'+str(ROOT/'platform/shipyard'),OWN/'synthesis_contract.cpp',OWN/'data_boundary.c']+libs+['advapi32.lib','/Fo'+str(folder)+'/', '/Fe'+str(folder/'contract.exe')],folder,'compile',env)
+    invoke([compiler,'/nologo','/std:c++20','/utf-8','/EHsc','/MD',flag,'/DNOMINMAX','/I'+str(header),'/I'+str(PLATFORM_BASE/'sources'),'/I'+str(ROOT/'platform/shipyard'),OWN/'synthesis_contract.cpp',PLATFORM_BASE/'sources/speech/data_boundary.c']+libs+['advapi32.lib','/Fo'+str(folder)+'/', '/Fe'+str(folder/'contract.exe')],folder,'compile',env)
     return invoke([folder/'contract.exe',DATA],folder,'run',env)['stdout']
 
 def boundary_library():
     compiler,env=ENV['host_environment']();folder=OUT/'host-boundary';folder.mkdir(exist_ok=True)
-    invoke([compiler,'/nologo','/LD','/TC','/O2',OWN/'data_boundary.c','/Fo'+str(folder/'boundary.obj'),'/Fe'+str(folder/'boundary.dll'),'/link','/EXPORT:ShipyardSpeechFixupData','/EXPORT:ShipyardSpeechPcmToNative'],folder,'compile',env)
+    invoke([compiler,'/nologo','/LD','/TC','/O2',PLATFORM_BASE/'sources/speech/data_boundary.c','/Fo'+str(folder/'boundary.obj'),'/Fe'+str(folder/'boundary.dll'),'/link','/EXPORT:ShipyardSpeechFixupData','/EXPORT:ShipyardSpeechPcmToNative'],folder,'compile',env)
     dll=ctypes.CDLL(str(folder/'boundary.dll'));dll.ShipyardSpeechFixupData.argtypes=[ctypes.c_void_p,ctypes.c_size_t,ctypes.c_char_p,ctypes.c_char_p];dll.ShipyardSpeechFixupData.restype=ctypes.c_int
     dll.ShipyardSpeechPcmToNative.argtypes=[ctypes.POINTER(ctypes.c_short),ctypes.c_void_p,ctypes.c_size_t]
     return dll

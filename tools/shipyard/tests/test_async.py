@@ -6,8 +6,12 @@ import json
 from pathlib import Path
 import struct
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve
+BASE = resolve(ROOT)
 OUT = ROOT / 'scratch/async-xdk'
 TEST = Path(__file__).with_name('test_async_contract.cpp')
 SPEC = importlib.util.spec_from_file_location('binary_environment', Path(__file__).with_name('test_binary.py'))
@@ -27,7 +31,7 @@ def run(command, folder, name, env=None, success=True):
 
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--upstream-only', action='store_true'); args = parser.parse_args()
-    native = (ROOT / 'platform/shipyard/async/native.cpp').read_text(encoding='utf-8')
+    native = (BASE / 'sources/async/native.cpp').read_text(encoding='utf-8')
     pinned = native[native.index('DWORD WINAPI joining_thread::run'):native.index('joining_thread::joining_thread(joining_thread&&')]
     assert pinned.index('XSetThreadProcessor(GetCurrentThread(), processor)') < pinned.index('entry(argument)')
     assert 'TerminateThread(' not in pinned, 'XDK has no recoverable native thread termination API'
@@ -39,9 +43,9 @@ def main():
                                     ('generated', generated, '/DSHIPYARD_PROJECTED')]:
         folder = OUT / ('host-' + label); folder.mkdir(parents=True, exist_ok=True)
         command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/MD', '/W4', define,
-                   '/I' + str(includes), '/I' + str(ROOT / 'platform/shipyard'),
+                   '/I' + str(includes), '/I' + str(BASE / 'sources'), '/I' + str(ROOT / 'platform/shipyard'),
                    '/Fe:' + str(folder / 'contract.exe'), '/Fo:' + str(folder) + '/',
-                   TEST, ROOT / 'platform/shipyard/async/native.cpp']
+                   TEST, BASE / 'sources/async/native.cpp']
         run(command, folder, 'compile', env)
         results[label] = run([folder / 'contract.exe'], folder, 'run')['stdout']
         death = run([folder / 'contract.exe', '--detached-throws'], folder, 'detached-exception', success=False)
@@ -50,9 +54,10 @@ def main():
     assert results['upstream'] == results['generated'], 'pool behavior differs'
     folder = OUT / 'xdk'; folder.mkdir(parents=True, exist_ok=True)
     base = [ENV.XDK / 'bin/win32/cl.exe', '/nologo', '/c', '/EHsc', '/D_XBOX', '/D_XBOX_VER=200',
-            '/I' + str(ENV.XDK / 'include/xbox'), '/I' + str(generated), '/I' + str(ROOT / 'platform/shipyard')]
+            '/I' + str(ENV.XDK / 'include/xbox'), '/I' + str(generated),
+            '/I' + str(BASE / 'sources'), '/I' + str(ROOT / 'platform/shipyard')]
     objects = {}
-    for source in [ROOT / 'platform/shipyard/async/native.cpp', TEST]:
+    for source in [BASE / 'sources/async/native.cpp', TEST]:
         obj = folder / (source.stem + '.obj')
         run(base + ['/Fo' + str(obj), source], folder, source.stem)
         assert struct.unpack_from('<H', obj.read_bytes())[0] == 0x1f2, 'expected PPC BE object'

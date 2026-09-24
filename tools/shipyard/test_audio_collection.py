@@ -7,6 +7,8 @@ with only member qualification rebased for this isolated method audit.
 """
 import hashlib,json,re,runpy,struct,subprocess,unittest
 from prepare_audio_collection import ROOT,OUT,OWN,BASE,prepare,build
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
 
@@ -84,8 +86,9 @@ typedef int32_t s32;
     compiler,environment=ENV['host_environment']()
     command=[compiler,'/nologo','/std:c++20','/EHsc','/GR','/MD','/utf-8','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST',
         '/I'+str(OUT/'generated/soh'),'/I'+str(ROOT/'soh/include'),'/I'+str(ROOT/'soh'),'/I'+str(ROOT/'libultraship/include'),
-        '/I'+str(ROOT/'scratch/imgui-xdk/generated'),'/I'+str(ROOT/'platform/shipyard'),folder/'contract.cpp']
-    if projected:command+=[ROOT/'platform/shipyard/filesystem/filesystem.cpp',ROOT/'platform/shipyard/async/native.cpp']
+        '/I'+str(ROOT/'scratch/imgui-xdk/generated'),'/I'+str(ROOT/'platform/shipyard'),
+        '/I'+str(PLATFORM_BASE),'/I'+str(PLATFORM_BASE/'sources'),folder/'contract.cpp']
+    if projected:command+=[PLATFORM_BASE/'sources/filesystem/filesystem.cpp',PLATFORM_BASE / 'sources/async/native.cpp']
     command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     record=ENV['invoke'](command,folder,'compile',environment,success=False)
     assert record['returncode']==0,'\n'.join(l for l in (record['stdout']+record['stderr']).splitlines() if 'error ' in l)[:4500]

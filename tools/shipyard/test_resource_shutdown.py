@@ -2,6 +2,8 @@
 import hashlib,json,re,runpy,struct,subprocess
 from pathlib import Path
 from dependency_sources import ROOT
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 import prepare_resource_manager as resource
 from cpp_ast import PARSER,walk
@@ -23,7 +25,7 @@ def main():
     compiler,env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))['host_environment']()
     recipe=next(row for row in json.loads((resource.OUT/'xdk/report.json').read_text()) if row['source']=='resource/ResourceManager.cpp')
     paths=[Path(arg[2:]) for arg in recipe['command'] if arg.startswith('/I') and 'Microsoft Xbox 360 SDK' not in arg]
-    paths=[folder,ROOT/'platform/shipyard',resource.OUT/'generated/include']+paths
+    paths=[folder,ROOT/'platform/shipyard',PLATFORM_BASE/'sources',resource.OUT/'generated/include']+paths
     flags=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=6']+['/I'+str(p) for p in paths]
     records=[]
     def build_run(label,units,defines=(),death=False):
@@ -36,8 +38,8 @@ def main():
         if death:
             died=subprocess.run([str(target/'contract.exe'),'--throws'],cwd=ROOT,capture_output=True,text=True,timeout=15);row['uncaught_exit']=died.returncode;assert died.returncode==73,row
         stable(target/'run.json',json.dumps(row,indent=2)+'\n');assert not run.returncode,row;records.append(row);print(run.stdout,flush=True)
-    native=ROOT/'platform/shipyard/async/native.cpp'
-    detached=ROOT/'platform/shipyard/async/detached.cpp'
+    native=PLATFORM_BASE / 'sources/async/native.cpp'
+    detached=PLATFORM_BASE / 'sources/async/detached.cpp'
     stable(folder/'creation_failure.h','''extern HANDLE WINAPI ContractCreateThread(LPSECURITY_ATTRIBUTES,SIZE_T,LPTHREAD_START_ROUTINE,LPVOID,DWORD,LPDWORD);
 #define CreateThread ContractCreateThread
 ''')
@@ -49,16 +51,16 @@ def main():
     build_run('detached-original',[ROOT/'platform/shipyard/async/detached_contract.cpp'],defines=['/DTEST_UPSTREAM'],death=True)
     assert records[-1]['stdout']==records[-2]['stdout']
     target=OUT/'xdk';target.mkdir(exist_ok=True);native_rows=[]
-    command=recipe['command'][:-2]
+    command=recipe['command'][:-2]+['/I'+str(PLATFORM_BASE/'sources')]
     for unit,label in [(resource.OUT/'generated/src/ship/resource/ResourceManager.cpp','ResourceManager'),(detached,'detached')]:
         obj=target/(label+'.obj');call=command+[str(unit),'/Fo'+str(obj)]
         run=subprocess.run(call,cwd=ROOT,capture_output=True,text=True);stable(target/(label+'.log'),run.stdout+run.stderr)
-        row=dict(source=unit.relative_to(ROOT).as_posix(),command=call,exit=run.returncode,source_sha256=sha(unit))
+        row=dict(source=unit.relative_to(PLATFORM_BASE if unit.is_relative_to(PLATFORM_BASE) else ROOT).as_posix(),command=call,exit=run.returncode,source_sha256=sha(unit))
         native_rows.append(row);assert not run.returncode,target/(label+'.log');assert struct.unpack_from('<H',obj.read_bytes())[0]==0x1f2
         row['object_sha256']=sha(obj)
     stable(target/'build.json',json.dumps(native_rows,indent=2)+'\n')
     stable(OUT/'verification.json',json.dumps(dict(host=records,native=native_rows,
-        owned={str(p.relative_to(ROOT)):sha(p) for p in [Path(__file__),detached,detached.with_suffix('.h'),OWN/'resource_contract.cpp',OWN/'detached_contract.cpp',ROOT/'tools/shipyard/prepare_resource_manager.py']},
+        owned={str(p.relative_to(PLATFORM_BASE if p.is_relative_to(PLATFORM_BASE) else ROOT)):sha(p) for p in [Path(__file__),detached,detached.with_suffix('.h'),OWN/'resource_contract.cpp',OWN/'detached_contract.cpp',ROOT/'tools/shipyard/prepare_resource_manager.py']},
         target_runtime_executed=False,full_context_runtime_executed=False),indent=2)+'\n')
     print('ResourceManager full TU and tracked detached implementation compile for native PPC.')
 if __name__=='__main__':main()

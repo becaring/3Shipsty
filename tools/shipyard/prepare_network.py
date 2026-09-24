@@ -7,8 +7,10 @@ from prepare_configuration import once
 from prepare_randomizer import edits_apply
 from prepare_soh_menus import inherited
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
 
 OWN=ROOT/'platform/shipyard/network';OUT=ROOT/'scratch/network-xdk';BASE='soh/soh/Network/'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 def value_expressions(text):
     names=('Network','Anchor','Effect','Response');raw=text.encode();edits=[]
@@ -94,13 +96,16 @@ def includes():
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(exist_ok=True)
     flags=json.loads((ROOT/'scratch/randomizer-options-xdk/xdk/build.json').read_text())[0]['command'][:-2]
-    flags[1:1]=['/DENABLE_REMOTE_CONTROL','/I'+str(OUT/'generated/soh')]
+    flags[1:1]=['/DENABLE_REMOTE_CONTROL','/I'+str(OUT/'generated/soh'),
+                '/I'+str(PLATFORM_BASE/'sources'),'/I'+str(PLATFORM_BASE/'sources/json/include'),
+                '/I'+str(ROOT/'scratch/json-xdk/backend-generated')]
     probe=folder/'declarations.cpp';stable(probe,'#include "soh/Network/CrowdControl/CrowdControl.h"\n#include "soh/Network/Sail/Sail.h"\n#include "soh/Network/Anchor/Anchor.h"\nvoid Probe(){Network value((Shipyard::SohUI::ValueInit()));Anchor a((Shipyard::SohUI::ValueInit()));}\n')
     rows=[]
-    for path in [OWN/'transport.cpp',OUT/'generated'/BASE/'Network.cpp',OUT/'generated'/BASE/'Anchor/AnchorConstants.cpp',probe]:
+    for path in [PLATFORM_BASE/'sources/network/transport.cpp',OUT/'generated'/BASE/'Network.cpp',OUT/'generated'/BASE/'Anchor/AnchorConstants.cpp',probe]:
         obj=folder/(path.stem+'.obj');command=flags+[str(path),'/Fo'+str(obj)]
         r=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),r.stdout+r.stderr)
-        rows.append(dict(source=path.relative_to(ROOT).as_posix(),command=command,exit=r.returncode,production=path!=probe,
+        source=('shipyard/'+path.relative_to(PLATFORM_BASE).as_posix()) if path.is_relative_to(PLATFORM_BASE) else path.relative_to(ROOT).as_posix()
+        rows.append(dict(source=source,command=command,exit=r.returncode,production=path!=probe,
             source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest() if not r.returncode else None))
         print(path.name,r.returncode)
         if r.returncode:print('\n'.join(s for s in r.stdout.splitlines() if 'error ' in s)[:4500])

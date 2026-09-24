@@ -11,6 +11,9 @@ import prepare_fast3d as projection
 from cpp_ast import PARSER,walk
 from prepare_archives import stable
 from prepare_window import includes
+from platform_base import resolve
+
+BASE=resolve(ROOT)
 
 
 def audit_source(text):
@@ -59,7 +62,7 @@ def main():
     for projected in (False,True):
         folder=projection.OUT/('host-projected' if projected else 'host-original');folder.mkdir(exist_ok=True)
         stable(folder/'methods.h',audit_source(generated if projected else original))
-        paths=([projection.OUT/'generated/include',ROOT/'scratch/gui-resources-xdk/generated/include']+includes()) if projected else [ROOT/'libultraship/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard']
+        paths=([projection.OUT/'generated/include',ROOT/'scratch/gui-resources-xdk/generated/include']+includes()) if projected else [ROOT/'libultraship/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard',BASE/'sources']
         paths=[folder]+paths
         flags=['/nologo','/std:c++20','/utf-8','/EHsc','/MD','/DNOMINMAX']+(['/DSHIPYARD_PROJECTED'] if projected else [])
         command=[compiler]+flags+['/I'+str(p) for p in paths]+[Path(__file__).with_name('test_fast3d_contract.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]

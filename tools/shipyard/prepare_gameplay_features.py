@@ -9,6 +9,9 @@ from prepare_enhancements import transform as enhancement_transform
 from prepare_randomizer import edits_apply
 from cpp_ast import PARSER,walk
 OWN=ROOT/'platform/shipyard/gameplay-features';OUT=ROOT/'scratch/gameplay-features-xdk'
+from platform_base import resolve as resolve_platform_base
+resolve_platform_base(ROOT)
+from xbox360_platform.cpp_syntax import lower_if_initializers
 def sha(text):return hashlib.sha256(text.encode()).hexdigest()
 def project(name,text):
     if name.endswith('/WeirdAnimation.h'):
@@ -104,8 +107,8 @@ def project(name,text):
         text=once(text,'struct CamDataBackup {','struct CamDataBackup {\n CamDataBackup():original(nullptr),copy(nullptr),len(0),active(false){}')
         text=text.replace('CamData* original = nullptr;','CamData* original;').replace('CamData* copy = nullptr;','CamData* copy;').replace('size_t len = 0;','size_t len;').replace('bool active = false;','bool active;')
     text=lowering['syntax'](text,{'IndexDirection'}).replace('fmax(', 'Shipyard::GameplayFeatures::Fmax(')
-    from prepare_custom_message import escape_literal,lower_if_initializers
-    text=lower_if_initializers(text)
+    from prepare_custom_message import escape_literal
+    text=lower_if_initializers(text,PARSER,walk,max_depth=3)
     raw=text.encode();edits=[(n.start_byte,n.end_byte,escape_literal(n.text.decode())) for n in walk(PARSER.parse(raw).root_node) if n.type=='string_literal' and any(c>=128 for c in n.text)]
     prefix='#include "gameplay-features/support.h"\n#include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"\n'
     if 'RAND_GET_OPTION' in text or 'Rando::Context' in text:prefix+='#include "soh/Enhancements/randomizer/SeedContext.h"\n'

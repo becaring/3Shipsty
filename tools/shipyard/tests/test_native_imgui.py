@@ -9,13 +9,14 @@ import sys
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'tools/shipyard'))
 from prepare_native_imgui import prepare,OUT,OWN
+from platform_base import resolve as resolve_platform_base
 from prepare_archives import stable
 
 
 def main():
     prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    native=(OUT/'generated/imgui_xenos.cpp').read_text()
+    native=(resolve_platform_base(ROOT)/'sources/imgui/imgui_xenos.cpp').read_text()
     begin=native.index('    static const char* source =');end=native.index('\n    ID3DXBuffer* code=',begin)
     shader=''.join(ast.literal_eval(m[0]) for m in re.finditer(r'"(?:[^"\\]|\\.)*"',native[begin:end]))
     shaderpath=folder/'gui.hlsl';stable(shaderpath,shader)
@@ -27,7 +28,10 @@ def main():
     # time and physical-device fixtures, keeping the complete platform TU body.
     defines=(sdk/'include/xbox/xinputdefs.h').read_text()
     masks='\n'.join(m[0] for m in re.finditer(r'^#define XINPUT_GAMEPAD_\w+\s+0x[0-9A-Fa-f]+',defines,re.M))
-    platform=(OWN/'platform_frame.cpp').read_text().replace('#include "imgui_xenos.h"','')
+    base=resolve_platform_base(ROOT)
+    platform=(base/'sources/imgui/platform_frame.cpp').read_text()
+    adapter=(OWN/'platform_adapter.cpp').read_text().replace('#include "imgui_xenos.h"','')
+    assert not (OWN/'platform_frame.cpp').exists()
     text='''#include "imgui.h"
 #include "input/physical.h"
 #include "native-imgui/font_lifecycle.h"
@@ -39,13 +43,14 @@ typedef uint16_t WORD;
 #define CHECK(c) do{if(!(c)){std::fprintf(stderr,"failed: %s line %d\\n",#c,__LINE__);throw std::runtime_error(#c);}}while(0)
 static double seconds=1;
 double Shipyard_Time(){return seconds;}
-static unsigned physicalSlot=0,refreshes=0;
+static unsigned physicalSlot=0,refreshes=0,presentations=0;
 static ShipyardInputRawPad physicalPad={0};
 void ShipyardInput_RefreshGamepadsForGui(){++refreshes;}
+void ShipyardInput_BeginGamepadPresentation(){++presentations;}
 bool ShipyardInput_ReadCachedGamepad(unsigned slot,ShipyardInputRawPad* out){
     if(slot==physicalSlot){*out=physicalPad;return true;}std::memset(out,0,sizeof(*out));return false;
 }
-'''+masks+'\n'+platform+'''
+'''+masks+'\n'+platform+'\n'+adapter+'''
 static unsigned fontRebuilds=0;
 static void RebuildFonts(){
     ++fontRebuilds;unsigned char* pixels;int width,height;
@@ -117,12 +122,19 @@ int main(){
     if(drawData)for(int i=0;i<drawData->CmdListsCount;++i)if(drawData->CmdLists[i]==cursorList)cursorSubmitted=true;
     CHECK(cursorSubmitted);
     CHECK(io.ConfigFlags==policy);Shipyard_ImGuiPlatformShutdown();CHECK(io.BackendPlatformName==NULL);
+    const Shipyard::ImGuiPlatform::Services alternate={Shipyard_Time,ShipyardInput_BeginGamepadPresentation,"Alternate_XInput"};
+    Shipyard::ImGuiPlatform::Init(alternate);
+    const unsigned priorRefreshes=refreshes;
+    seconds+=1.0/60;Shipyard::ImGuiPlatform::NewFrame(1280,720,false);
+    CHECK(presentations==1 && refreshes==priorRefreshes);
+    CHECK(std::strcmp(io.BackendPlatformName,"Alternate_XInput")==0);
+    Shipyard::ImGuiPlatform::Shutdown();
     ImGui::DestroyContext();std::printf("56 real ImGui button bindings, donor cursor mode, click suppression, analog/disconnect and navigation ownership pass (%u refreshes)\\n",refreshes);
 }
 '''
     stable(folder/'contract.cpp',text)
     env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
-    includes=[OUT/'generated',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard']
+    includes=[OUT/'generated',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard',resolve_platform_base(ROOT)/'sources/imgui',resolve_platform_base(ROOT)/'sources']
     units=[ROOT/'scratch/imgui-xdk/generated'/(n+'.cpp') for n in ('imgui','imgui_draw','imgui_tables','imgui_widgets')]
     command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/O2']+['/I'+str(p) for p in includes]+[folder/'contract.cpp']+units+['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     env['invoke'](command,folder,'build',environment)

@@ -1,6 +1,8 @@
 """Actual modern save schema/migration differential plus native recipe checks."""
 import json,runpy,subprocess,hashlib,re
 from prepare_save_storage import ROOT,OUT,OWN,prepare,methods,includes,METHODS
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from prepare_soh_resources import includes as resource_includes
 from cpp_ast import PARSER,walk
@@ -46,13 +48,13 @@ def main():
         source+='\n'+leaf[0]+'\n'
         source+=(OWN/'serialization_contract.cpp').read_text().replace('SaveManager manager(SaveSerializationFixtureTag());','SaveManager manager((SaveSerializationFixtureTag()));')
         stable(folder/'contract.cpp',source)
-        paths=[folder,ROOT/'platform/shipyard',ROOT/'scratch/async-xdk/generated']+(includes() if projected else resource_includes(False))
+        paths=[folder,ROOT/'platform/shipyard',PLATFORM_BASE,PLATFORM_BASE/'sources',ROOT/'scratch/async-xdk/generated']+(includes() if projected else resource_includes(False))
         command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t']
         if not projected:command+=['/Zc:preprocessor','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
         command+=['/I'+str(p) for p in paths]
-        units=[folder/'contract.cpp',ROOT/'platform/shipyard/async/native.cpp']
+        units=[folder/'contract.cpp',PLATFORM_BASE / 'sources/async/native.cpp']
         if projected:
-            units += [ROOT/'platform/shipyard/json/json.cpp']
+            units += [PLATFORM_BASE/'sources/json/json.cpp']
         command+=list(map(str,units))+['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe'),'/link','/OPT:REF']
         result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',result.stdout+result.stderr)
         if result.returncode:raise AssertionError(folder/'build.log')
@@ -67,9 +69,9 @@ def main():
         folder=OUT/('atomic-projected' if projected else 'atomic-original');folder.mkdir(exist_ok=True)
         command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX']
         if not projected:command+=['/DSHIPYARD_COMPARE_ORIGINAL','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
-        command+=['/I'+str(p) for p in includes()]
-        command+=list(map(str,[OWN/'atomic_contract.cpp',OWN/'atomic_file.cpp']))
-        if projected:command+=[str(ROOT/'platform/shipyard/json/json.cpp')]
+        command+=['/I'+str(p) for p in [PLATFORM_BASE]+includes()]
+        command+=list(map(str,[OWN/'atomic_contract.cpp',PLATFORM_BASE/'sources/storage/atomic_file.cpp']))
+        if projected:command+=[str(PLATFORM_BASE/'sources/json/json.cpp')]
         command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe'),'/link','/OPT:REF']
         result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',result.stdout+result.stderr)
         assert result.returncode==0,folder/'build.log'

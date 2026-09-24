@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "fast3d/unit_color.h"
+#include "fast3d/coordinate.h"
 
 struct RGBA { uint8_t r, g, b, a; };
 struct Vertex { float x, y, z, w; int16_t u, v; RGBA color; };

@@ -7,11 +7,13 @@ import re
 import struct
 import subprocess
 from dependency_sources import ROOT
+from platform_base import resolve as resolve_platform_base
 from prepare_archives import stable
 from prepare_configuration import once
 from prepare_resource_manager import syntax
 
 OWN=ROOT/'platform/shipyard/presentation'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 OUT=ROOT/'scratch/presentation-xdk'
 
 
@@ -68,14 +70,14 @@ def prepare():
     if count!=1:raise ValueError('Window base constructor drift')
     decl=once(decl,'virtual ~GfxWindowBackend() {};','GfxWindowBackendXenos();')
     decl=decl.replace(' = 0','')
-    pending['include/window_xenos.h']='#pragma once\n#include "fast/backends/gfx_window_manager_api.h"\n#include "pacing.h"\nnamespace Fast {\nclass GfxWindowBackendXenos : public GfxWindowBackend {\n'+decl+'  private:\n    void (*mAllKeysUp)();\n    uint32_t mRefreshRate;\n    Shipyard::PresentationPacing mPacing;\n};\n}\n'
+    pending['include/window_xenos.h']='#pragma once\n#include "fast/backends/gfx_window_manager_api.h"\n#include "presentation/xenos_surface.h"\nnamespace Fast {\nclass GfxWindowBackendXenos : public GfxWindowBackend {\n'+decl+'  private:\n    void (*mAllKeysUp)();\n    Shipyard::XenosPresentationSurface mSurface;\n};\n}\n'
     for name,text in pending.items():stable(OUT/'generated'/name,text)
     stable(OUT/'manifest.json',json.dumps({n:hashlib.sha256(t.encode()).hexdigest() for n,t in pending.items()},indent=2)+'\n')
 
 
 def includes():
     from prepare_input import includes as input_includes
-    return [OUT/'generated/include',OWN,ROOT/'platform/shipyard/xenos',ROOT/'scratch/xenos-xdk/generated',
+    return [OUT/'generated/include',PLATFORM_BASE/'sources',OWN,ROOT/'platform/shipyard/xenos',ROOT/'scratch/xenos-xdk/generated',
             ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',
             ROOT/'scratch/gui-resources-xdk/generated/include']+input_includes()
 

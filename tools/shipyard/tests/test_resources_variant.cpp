@@ -5,10 +5,22 @@
 #include <variant>
 namespace values = std;
 #else
-#include "resources/variant.h"
-namespace values = Shipyard::Resources;
+#include <xbox_compat/variant.h>
+namespace values = xbox_compat;
 #endif
 static void check(bool value) { if (!value) throw std::runtime_error("variant contract"); }
+namespace tinyxml2 { struct XMLDocument {}; }
+namespace Ship { struct BinaryReader {}; struct IResource {}; }
+#ifdef _XBOX
+#include "binary/compat.h"
+struct ResourceLoadError : Shipyard::Binary::ScopedEnum<ResourceLoadError> {
+    enum Value { None, NotCached, NotFound };
+    ResourceLoadError() {}
+    ResourceLoadError(Value value) : Shipyard::Binary::ScopedEnum<ResourceLoadError>(value) {}
+};
+#else
+enum class ResourceLoadError { None, NotCached, NotFound };
+#endif
 struct Failure {
     Failure() {}
     Failure(const Failure&) { throw std::runtime_error("copy failure"); }
@@ -35,6 +47,15 @@ int main() {
         try { failed = error; } catch (const std::runtime_error&) {}
         check(failed.valueless_by_exception());
         failed = 4; check(values::get<int>(failed) == 4);
+        values::variant<std::shared_ptr<tinyxml2::XMLDocument>, std::shared_ptr<Ship::BinaryReader> > reader;
+        check(reader.index() == 0 && !values::get<std::shared_ptr<tinyxml2::XMLDocument> >(reader));
+        std::shared_ptr<Ship::BinaryReader> binary(new Ship::BinaryReader());
+        reader = binary;
+        check(reader.index() == 1 && values::get<std::shared_ptr<Ship::BinaryReader> >(reader) == binary);
+        values::variant<ResourceLoadError, std::shared_ptr<Ship::IResource> > cache = nullptr;
+        check(cache.index() == 1 && !values::get<std::shared_ptr<Ship::IResource> >(cache));
+        cache = ResourceLoadError::NotFound;
+        check(cache.index() == 0 && values::get<ResourceLoadError>(cache) == ResourceLoadError::NotFound);
         std::puts("PASS variant ownership/default/type-switch/move/null/bad-access/valueless recovery");
         return 0;
     } catch (const std::exception& e) { std::fprintf(stderr, "%s\n", e.what()); return 1; }

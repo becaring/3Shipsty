@@ -10,6 +10,10 @@ from cpp_ast import PARSER,walk
 
 def main():
     prepare();compiler,env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))['host_environment']();rows=[]
+    projected=(OUT/'generated'/BASE/'UIWidgets.cpp').read_text()
+    assert '#include "math/color.h"' in projected
+    assert all('Shipyard::Math::ColorByte(colorVec.'+component+')' in projected for component in 'xyz')
+    assert 'inline double FMin' not in (OWN/'value_init.h').read_text()
     assert 'ButtonOptions(Shipyard::SohUI::ValueInit())' in value_expressions('auto x=ButtonOptions{};')
     assert 'WidgetInfo x= WidgetInfo(Shipyard::SohUI::ValueInit());'==value_expressions('WidgetInfo x{};')
     for projected in (False,True):

@@ -1,6 +1,17 @@
 # Deterministic Xbox source/project inventory
 
-Current integration (2026-09-21): all 1,094 application TUs are selected. Sixteen
+The current from-source setup, empty-output regeneration, fresh PPC build and
+link procedure is [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md). The figures and
+integration notes below document earlier milestones; use
+`porting/SHIPYARD_FINAL_STATUS.md` for the frozen final candidate.
+
+Parallel compilation is authorized and is the default workflow. The complete
+build uses eight independent XDK compiler shards by default; pass `--jobs N` to
+`build_xdk_project.py` to select another supported worker count. The shared
+driver isolates each shard's intermediate outputs and verifies the combined
+source/header/object receipt before linking.
+
+Historical integration (2026-09-21): all 1,094 application TUs were selected. Sixteen
 desktop/mobile backends have explicit Xbox replacement decisions; unchanged
 upstream stox.cpp is included directly. The historical checkpoints below retain
 their original scope. The complete build and genuine link run through:
@@ -165,7 +176,7 @@ pending application C++ TUs. These are recipe coverage counts, not an engineerin
 percentage, full-project compilation claim, link claim, or runtime validation.
 The generated manifest is authoritative as additional projections are completed.
 
-Remaining work outside this generator includes reviewing unresolved desktop
+At that historical milestone, remaining work outside this generator included reviewing unresolved desktop
 backend equivalents, testing the complete combined build with shared ABI/header
 ownership, adding the genuine application entry/link target, and validating the
 real application in Xenia. No XEX or runtime artifact is produced here.

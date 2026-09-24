@@ -3,18 +3,59 @@ import argparse
 import copy
 import hashlib
 import json
+import os
 import struct
 import subprocess
+import sys
+import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import generate_xdk_project as gen
+import build_xdk_project as build
 
 
 class ProjectTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.manifest = gen.collect()
+
+    def test_shards_remain_until_success_receipt_verification(self):
+        with tempfile.TemporaryDirectory(dir=gen.ROOT/'scratch') as directory:
+            output = Path(directory)
+            project = output/'ShipyardCompile.vcxproj'
+            project.write_bytes(b'project')
+            (output/'manifest.json').write_bytes(b'{}')
+            planned = SimpleNamespace(project=project, output=output/'build/shards')
+            manifest = {'missing_subsystem_recipes': [], 'sources': [], 'application_counts': {}}
+            shared = {'builds': [], 'build_exit': 0, 'sources': [], 'headers': {}}
+            events = []
+            with (patch.object(gen, 'OUT', output),
+                  patch.object(gen, 'collect', return_value=manifest),
+                  patch.object(gen, 'write'),
+                  patch.object(build, 'project_plan', return_value=planned),
+                  patch.object(build.parallel_build, 'run', return_value=shared),
+                  patch.object(build.parallel_build, 'verify_receipt',
+                               side_effect=lambda *_: events.append('verify')),
+                  patch.object(build.parallel_build, 'remove_shards',
+                               side_effect=lambda *_: events.append('remove')),
+                  patch.object(sys, 'argv', ['build_xdk_project.py'])):
+                self.assertEqual(build.main(), 0)
+            self.assertEqual(events, ['verify', 'remove'])
+
+    def test_regeneration_preserves_unchanged_project_timestamp(self):
+        with tempfile.TemporaryDirectory(dir=gen.ROOT/'scratch') as directory:
+            with patch.object(gen, 'OUT', Path(directory)):
+                gen.write(self.manifest)
+                paths = (gen.OUT/'manifest.json', gen.OUT/'ShipyardCompile.vcxproj')
+                for path in paths:
+                    os.utime(path, ns=(1_000_000_000, 1_000_000_000))
+                gen.write(self.manifest)
+                for path in paths:
+                    self.assertEqual(path.stat().st_mtime_ns, 1_000_000_000)
 
     def test_reproducible_project(self):
         self.assertEqual(gen.project(self.manifest), gen.project(copy.deepcopy(self.manifest)))
@@ -23,11 +64,140 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(len(items), len(self.manifest['sources']))
         self.assertEqual(len({r['object'] for r in self.manifest['sources']}), len(items))
 
+    def test_shared_shard_plan_keeps_canonical_objects(self):
+        gen.write(self.manifest)
+        planned = build.project_plan(self.manifest, jobs=8)
+        self.assertEqual(len(planned.shards), 8)
+        self.assertEqual(len(planned.sources), len(self.manifest['sources']))
+        self.assertEqual(
+            {str(row.object) for row in planned.sources},
+            {str(gen.OUT/'build/obj'/row['object']) for row in self.manifest['sources']},
+        )
+        self.assertEqual(
+            {str(row.source) for row in planned.sources if row.source.is_relative_to(gen.PLATFORM_BASE)},
+            {str(gen.source_path(row['source'])) for row in self.manifest['sources']
+             if row['source'].startswith('shipyard/')},
+        )
+
     def test_shared_xbox_compiler_policy(self):
         xml = ET.fromstring(gen.project(self.manifest))
         definition = xml.find('.//{'+gen.NS+'}ItemDefinitionGroup/{'+gen.NS+'}ClCompile')
         self.assertEqual(definition.findtext('{'+gen.NS+'}FunctionLevelLinking'), 'true')
         self.assertEqual(definition.findtext('{'+gen.NS+'}FloatingPointModel'), 'Precise')
+
+    def test_direct_shipyard_graphics_and_gamepad_inputs(self):
+        selected={row['source']:row for row in self.manifest['sources']}
+        shader='shipyard/sources/graphics/shader_lower.cpp'
+        self.assertIn(shader,selected)
+        self.assertNotIn('scratch/graphics-xdk/shader_lower.cpp',selected)
+        self.assertEqual(gen.source_path(shader),gen.PLATFORM_BASE/'sources/graphics/shader_lower.cpp')
+        xml=ET.fromstring(gen.project(self.manifest))
+        includes={item.attrib['Include'] for item in xml.findall('.//{'+gen.NS+'}ClCompile[@Include]')}
+        self.assertIn('$(ShipyardPlatformBase)/sources/graphics/shader_lower.cpp',includes)
+        provider='shipyard/sources/graphics/shader_provider.cpp'
+        self.assertIn(provider,selected)
+        self.assertEqual(gen.source_path(provider),gen.PLATFORM_BASE/'sources/graphics/shader_provider.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/graphics/shader_provider.cpp',includes)
+        self.assertIn('platform/shipyard/xenos/shader_provider.cpp',selected)
+        xenos='shipyard/sources/xenos/core.cpp'
+        self.assertIn(xenos,selected)
+        self.assertEqual(gen.source_path(xenos),gen.PLATFORM_BASE/'sources/xenos/core.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/xenos/core.cpp',includes)
+        surface='shipyard/sources/presentation/xenos_surface.cpp'
+        self.assertIn(surface,selected)
+        self.assertEqual(gen.source_path(surface),gen.PLATFORM_BASE/'sources/presentation/xenos_surface.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/presentation/xenos_surface.cpp',includes)
+        self.assertIn('platform/shipyard/presentation/window_xenos.cpp',selected)
+        window=(gen.ROOT/'platform/shipyard/presentation/window_xenos.cpp').read_text()
+        self.assertIn('mSurface.Prepare(',window)
+        self.assertNotIn('ApplyXenosPresentationInterval(',window)
+        self.assertNotIn('mPacing.Next()',window)
+        self.assertIn('platform/shipyard/xenos/api.cpp',selected)
+        self.assertNotIn('scratch/xenos-xdk/generated/native.cpp',selected)
+        self.assertFalse((gen.ROOT/'scratch/xenos-xdk/generated/native.cpp').exists())
+        imgui='shipyard/sources/imgui/imgui_xenos.cpp'
+        self.assertIn(imgui,selected)
+        self.assertNotIn('scratch/native-imgui-xdk/generated/imgui_xenos.cpp',selected)
+        self.assertEqual(gen.source_path(imgui),gen.PLATFORM_BASE/'sources/imgui/imgui_xenos.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/imgui/imgui_xenos.cpp',includes)
+        frame=selected['shipyard/sources/imgui/platform_frame.cpp']
+        self.assertIn('/I$(ShipyardPlatformBase)/sources/imgui',frame['options'])
+        self.assertEqual(gen.source_path('shipyard/sources/imgui/platform_frame.cpp'),gen.PLATFORM_BASE/'sources/imgui/platform_frame.cpp')
+        self.assertIn('platform/shipyard/native-imgui/platform_adapter.cpp',selected)
+        self.assertNotIn('platform/shipyard/native-imgui/platform_frame.cpp',selected)
+        self.assertFalse((gen.ROOT/'scratch/native-imgui-xdk/generated/gamepad_bindings.inc').exists())
+        self.assertFalse((gen.ROOT/'scratch/native-imgui-xdk/generated/imgui_xenos.cpp').exists())
+        for name in ('physical.cpp', 'xinput.cpp'):
+            source='shipyard/sources/input/'+name
+            self.assertIn(source, selected)
+            self.assertEqual(gen.source_path(source), gen.PLATFORM_BASE/'sources/input'/name)
+            self.assertIn('$(ShipyardPlatformBase)/sources/input/'+name, includes)
+            self.assertFalse((gen.ROOT/'platform/shipyard/input'/name).exists())
+        self.assertFalse((gen.ROOT/'platform/shipyard/input/physical.h').exists())
+        self.assertFalse(any(row['source'].startswith('platform/shipyard/input/') and
+                             row['source'].endswith(('physical.cpp','xinput.cpp'))
+                             for row in self.manifest['sources']))
+        for name in ('native.cpp', 'detached.cpp'):
+            source='shipyard/sources/async/'+name
+            self.assertIn(source, selected)
+            self.assertEqual(gen.source_path(source), gen.PLATFORM_BASE/'sources/async'/name)
+            self.assertIn('$(ShipyardPlatformBase)/sources/async/'+name, includes)
+            self.assertFalse((gen.ROOT/'platform/shipyard/async'/name).exists())
+        for name in ('native.h', 'future.h', 'detached.h'):
+            self.assertFalse((gen.ROOT/'platform/shipyard/async'/name).exists())
+        self.assertFalse((gen.ROOT/'platform/shipyard/thread-pool/native_support.h').exists())
+        pool='shipyard/sources/audio/PcmBufferPool.cpp'
+        self.assertIn(pool, selected)
+        self.assertEqual(gen.source_path(pool), gen.PLATFORM_BASE/'sources/audio/PcmBufferPool.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/audio/PcmBufferPool.cpp', includes)
+        self.assertFalse((gen.ROOT/'platform/shipyard/audio/PcmBufferPool.cpp').exists())
+        self.assertFalse((gen.ROOT/'platform/shipyard/audio/PcmBufferPool.h').exists())
+        sink='shipyard/sources/audio/XAudio2AudioPlayer.cpp'
+        self.assertIn(sink, selected)
+        self.assertEqual(gen.source_path(sink), gen.PLATFORM_BASE/'sources/audio/XAudio2AudioPlayer.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/audio/XAudio2AudioPlayer.cpp', includes)
+        self.assertFalse((gen.ROOT/'platform/shipyard/audio/XAudio2AudioPlayer.cpp').exists())
+        self.assertFalse((gen.ROOT/'platform/shipyard/audio/XAudio2AudioPlayer.h').exists())
+        clock='shipyard/sources/clock/chrono.cpp'
+        self.assertIn(clock, selected)
+        self.assertEqual(gen.source_path(clock), gen.PLATFORM_BASE/'sources/clock/chrono.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/clock/chrono.cpp', includes)
+        self.assertFalse((gen.ROOT/'platform/shipyard/logging/chrono/chrono.cpp').exists())
+        storage='shipyard/sources/storage/device.cpp'
+        self.assertIn(storage, selected)
+        self.assertEqual(gen.source_path(storage), gen.PLATFORM_BASE/'sources/storage/device.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/storage/device.cpp', includes)
+        self.assertIn('platform/shipyard/save-storage/storage.cpp', selected)
+        self.assertNotIn('scratch/save-storage-xdk/generated/storage.cpp', selected)
+        atomic='shipyard/sources/storage/atomic_file.cpp'
+        self.assertIn(atomic, selected)
+        self.assertEqual(gen.source_path(atomic), gen.PLATFORM_BASE/'sources/storage/atomic_file.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/storage/atomic_file.cpp', includes)
+        self.assertFalse((gen.ROOT/'platform/shipyard/save-storage/atomic_file.cpp').exists())
+        self.assertNotIn('platform/shipyard/save-storage/atomic_file.cpp', selected)
+        filesystem='shipyard/sources/filesystem/filesystem.cpp'
+        self.assertIn(filesystem, selected)
+        self.assertEqual(gen.source_path(filesystem), gen.PLATFORM_BASE/'sources/filesystem/filesystem.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/filesystem/filesystem.cpp', includes)
+        self.assertFalse((gen.ROOT/'platform/shipyard/filesystem/filesystem.cpp').exists())
+        self.assertNotIn('platform/shipyard/filesystem/filesystem.cpp', selected)
+
+    def test_parallel_shards_cover_each_object_once(self):
+        gen.write(self.manifest)
+        planned=build.project_plan(self.manifest,jobs=8)
+        objects=[];intermediates=set()
+        for shard in planned.shards:
+            xml=ET.fromstring(shard.contents)
+            namespace='{'+gen.NS+'}'
+            interim=xml.findtext('.//'+namespace+'IntDir')
+            intermediates.add(interim)
+            for item in xml.findall('.//'+namespace+'ClCompile[@Include]'):
+                path=item.findtext(namespace+'ObjectFileName')
+                self.assertTrue(path.startswith(str(gen.OUT/'build/obj')))
+                objects.append(path)
+        self.assertEqual(len(objects),len(self.manifest['sources']))
+        self.assertEqual(len(set(objects)),len(objects))
+        self.assertEqual(len(intermediates),8)
 
     def test_complete_application_inventory(self):
         app = [r for r in self.manifest['coverage'] if r['role']=='application']
@@ -42,7 +212,9 @@ class ProjectTests(unittest.TestCase):
         selected={r['source']:r for r in self.manifest['sources']}
         self.assertEqual(selected['scratch/build-metadata-xdk/build.c']['language'],'c')
         for name in ('float.cpp','format.cpp'):
-            self.assertIn('platform/shipyard/crt/'+name,selected)
+            self.assertIn('shipyard/sources/crt/'+name,selected)
+            self.assertNotIn('platform/shipyard/crt/'+name,selected)
+            self.assertFalse((gen.ROOT/'platform/shipyard/crt'/name).exists())
         self.assertNotIn('platform/shipyard/crt/contract.cpp',selected)
 
     def test_new_source_is_pending_and_removed_projection_detectable(self):
@@ -77,6 +249,7 @@ class ProjectTests(unittest.TestCase):
         self.assertNotIn('scratch/graphics-xdk/cc_features.cpp', {r['source'] for r in self.manifest['sources']})
         for r in self.manifest['sources']:
             self.assertTrue(r['requires_fresh_build'])
+            self.assertIn('/I$(ShipyardPlatformBase)/sources', r['options'])
             self.assertNotIn('/tests/', r['source'])
             self.assertFalse(r['source'].startswith('tools/'))
             self.assertFalse(r['source'].endswith(('contract.cpp','xdk_abi.cpp')))
@@ -84,6 +257,8 @@ class ProjectTests(unittest.TestCase):
             if r['language']=='cpp':
                 self.assertIn('/GR',r['options']);self.assertIn('/TP',r['options'])
                 self.assertNotIn('/TC',r['options'])
+                self.assertIn('/I$(ShipyardPlatformBase)/sources/json/include',r['options'])
+                self.assertNotIn('/I$(ShipyardRoot)/platform/shipyard/json/include',r['options'])
             else:
                 self.assertIn('/TC',r['options']);self.assertNotIn('/GR',r['options'])
         self.assertEqual(gen.project_option('/I$(XEDK)/include/xbox'), '"/I$(XEDK)/include/xbox"')

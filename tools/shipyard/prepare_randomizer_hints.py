@@ -5,8 +5,10 @@ from prepare_archives import stable
 from prepare_configuration import once
 from prepare_randomizer import default_arguments,edits_apply
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
 
 OWN=ROOT/'platform/shipyard/randomizer-hints';OUT=ROOT/'scratch/randomizer-hints-xdk';BASE='soh/soh/Enhancements/randomizer/'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 def value_expressions(text):
     """Preserve empty/value initialization of the newly canonical static record."""
@@ -62,7 +64,7 @@ def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     flags=json.loads((ROOT/'scratch/application-xdk/xdk/build.json').read_text())[0]['command'][:-2]
     from prepare_randomizer_item import includes
-    flags[1:1]=['/I'+str(p) for p in [OUT/'generated/soh',OUT/'generated'/BASE,ROOT/'scratch/prism-xdk/generated']+includes()]
+    flags[1:1]=['/I'+str(p) for p in [OUT/'generated/soh',OUT/'generated'/BASE,PLATFORM_BASE/'sources/value_types',ROOT/'scratch/prism-xdk/generated']+includes()]
     probe=folder/'declarations.cpp'
     stable(probe,'''#include "soh/Enhancements/randomizer/3drando/StaticHintInfo.h"
 #include "soh/Enhancements/randomizer/hint.h"

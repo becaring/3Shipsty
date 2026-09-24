@@ -1,8 +1,9 @@
-# Bounded JSON compiler dependency
+# Modern SoH JSON contract probes
 
-See [consumer-audit.md](consumer-audit.md) for the current 9.2.3 contracts,
-remaining compile-proven gaps, source authority, build commands and evidence.
-This backend preserves pinned nlohmann 3.12.0 scanner/Grisu2 algorithms and
-supplies a distinct insertion-ordered DOM as well as the ordinary sorted DOM;
-it does not implement generic basic_json or every conversion API. No application/game sources
-are replaced. Do not use donor-only tests to claim modern save/seed parity.
+The Xbox backend and its pinned algorithm generators live in Shipyard
+`sources/json` and `python/xbox360_platform/json`. This directory retains the
+official 3.12.0 source for host differential tests and the modern SoH enum and
+randomizer probes. `tools/shipyard/prepare_json.py` invokes the Shipyard
+generator, then emits only those consumer probes.
+
+See [consumer-audit.md](consumer-audit.md) for reached API coverage and gaps.

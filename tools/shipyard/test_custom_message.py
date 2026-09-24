@@ -2,6 +2,8 @@
 import hashlib,json,re,runpy,struct,subprocess,unittest
 from pathlib import Path
 from prepare_custom_message import ROOT,OWN,OUT,RANDOMIZER_OUT,CUSTOM,PARSER,walk,functions,prepare,sha
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 ENV=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))
 EXCLUDED=['CustomMessage::LoadVanillaMessageTableEntry','CustomMessage::GetForCurrentLanguage','CustomMessage::LoadIntoFont']
 
@@ -70,7 +72,7 @@ def host(projected):
             if d is not None and d.type=='field_identifier':layout.append('std::cout<<"layout-offset-'+cls+'.'+d.text.decode()+':"<<offsetof('+cls+','+d.text.decode()+')<<"\\n";')
     driver=(OWN/'contract.cpp').read_text().replace('SHIPYARD_MESSAGE_LITERALS','\n'.join(prints)).replace('SHIPYARD_MESSAGE_LAYOUT','\n'.join(layout))
     source=folder/'contract.cpp';source.write_text(bundle+'\n'+driver,encoding='utf-8',newline='\n')
-    compiler,env=ENV['host_environment']();incs=[ROOT/'soh/include',ROOT/'scratch/deps/spdlog/include',ROOT/'platform/shipyard',ROOT/'scratch/binary-xdk/generated/include']
+    compiler,env=ENV['host_environment']();incs=[ROOT/'soh/include',ROOT/'scratch/deps/spdlog/include',ROOT/'platform/shipyard',PLATFORM_BASE/'sources',ROOT/'scratch/binary-xdk/generated/include']
     cmd=[compiler,'/nologo','/std:c++20','/utf-8','/Zc:preprocessor','/EHsc','/GR','/MD','/D_CRT_SECURE_NO_WARNINGS','/DSPDLOG_ACTIVE_LEVEL=0']+['/I'+str(p) for p in incs]+[source,'/Fe'+str(folder/'contract.exe'),'/Fo'+str(folder/'contract.obj')]
     ENV['invoke'](cmd,folder,'compile',env)
     record=ENV['invoke']([folder/'contract.exe'],folder,'run',env)

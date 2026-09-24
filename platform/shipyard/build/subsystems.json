@@ -356,19 +356,39 @@
   },
   "supplemental_sources": [
     {
+      "source": "shipyard/sources/presentation/xenos_surface.cpp",
+      "subsystem": "presentation",
+      "options_from": "presentation"
+    },
+    {
       "source": "platform/shipyard/logging/environment.cpp",
       "subsystem": "logging",
       "options_from": "async"
     },
     {
-      "source": "platform/shipyard/logging/chrono/chrono.cpp",
+      "source": "shipyard/sources/clock/chrono.cpp",
       "subsystem": "logging",
       "options_from": "async"
     },
     {
-      "source": "platform/shipyard/async/detached.cpp",
+      "source": "shipyard/sources/fast3d/vertex_transform.cpp",
+      "subsystem": "fast3d",
+      "options_from": "fast3d"
+    },
+    {
+      "source": "shipyard/sources/fast3d/clip_quantize.cpp",
+      "subsystem": "fast3d",
+      "options_from": "fast3d"
+    },
+    {
+      "source": "shipyard/sources/async/detached.cpp",
       "subsystem": "async",
       "options_from": "async"
+    },
+    {
+      "source": "shipyard/sources/storage/device.cpp",
+      "subsystem": "save-storage",
+      "options_from": "save-storage"
     },
     {
       "source": "libultraship/src/ship/utils/stox.cpp",

@@ -155,9 +155,11 @@ def prepare():
     menu=menu.replace('std::variant','xbox_compat::variant').replace('std::get<','xbox_compat::get<')
     menu=common(maps(menu));menu,menu_audit=constructors(menu,MENU)
     stable(OUT/'generated'/BASE/'MenuTypes.h',menu)
-    source=once(original[BASE+'UIWidgets.cpp'],'#include <libultraship/libultraship.h>','#include "ship/window/gui/IconsFontAwesome4.h"\n#include "input/compiler.h"')
+    source=once(original[BASE+'UIWidgets.cpp'],'#include <libultraship/libultraship.h>','#include "ship/window/gui/IconsFontAwesome4.h"\n#include "input/compiler.h"\n#include "math/color.h"')
     source=once(source,'std::round(*value * factor)','ShipyardInputCompiler::Round(*value * factor)')
-    source=source.replace('fmin(fmax(colorVec.','Shipyard::SohUI::FMin(Shipyard::SohUI::FMax(colorVec.')
+    for component in 'xyz':
+        source=once(source,'fmin(fmax(colorVec.'+component+' * 255, 0), 255)',
+                    'Shipyard::Math::ColorByte(colorVec.'+component+')')
     source=once(source,'{ { options.tooltip, options.disabled, options.disabledTooltip },\n                                     options.size,\n                                     options.padding,\n                                     options.color }','MakeWindowButtonOptions(options)')
     helper='static ButtonOptions MakeWindowButtonOptions(const WindowButtonOptions& options){ ButtonOptions result((Shipyard::SohUI::ValueInit())); result.tooltip=options.tooltip;result.disabled=options.disabled;result.disabledTooltip=options.disabledTooltip;result.size=options.size;result.padding=options.padding;result.color=options.color;return result; }\n'
     source=once(source,'namespace UIWidgets {','namespace UIWidgets {\n'+helper)

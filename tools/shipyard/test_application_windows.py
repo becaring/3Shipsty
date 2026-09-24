@@ -5,6 +5,8 @@ from prepare_archives import stable
 from prepare_randomizer_item import methods
 from cpp_ast import PARSER,walk
 from prepare_custom_message import literal_bytes,escape_literal
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 
 def fname(n):return n.child_by_field_name('declarator').text.decode().split('(')[0].lstrip('*& ')
 def calls(text):
@@ -48,7 +50,7 @@ def main():
         icon_decl=icon_decl.replace('""','(void*)""')
         source='#include <vector>\n#include <tuple>\n#include <cmath>\n#include <cstdio>\n#include <cassert>\n#include <bit>\n#include "performanceTimer.h"\n#include "async/native.h"\n#include "application-windows/support.h"\n#include "resources/runtime_support.h"\n#include "soh/SohGui/ImGuiUtils.h"\n#include "soh_assets.h"\nextern "C" {\n'+icon_decl+'\n}\n'+tables+'\n'+getter+'\n'+declarations+'\n'+macros+'\n'+'\n'.join(geometry)+'\n'+'\n'.join(n.text.decode() for n in methods(timer))+'\n'+(OWN/'geometry_contract.cpp').read_text()
         stable(folder/'contract.cpp',source)
-        command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/I'+str(folder)]+['/I'+str(p) for p in includes()]+[str(folder/'contract.cpp'),str(ROOT/'platform/shipyard/logging/chrono/chrono.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
+        command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/I'+str(folder)]+['/I'+str(p) for p in includes()]+[str(folder/'contract.cpp'),str(PLATFORM_BASE/'sources/clock/chrono.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
         r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',r.stdout+r.stderr);assert not r.returncode,folder/'build.log'
         r=subprocess.run([str(folder/'contract.exe')],cwd=ROOT,capture_output=True,text=True);assert not r.returncode,(r.stdout,r.stderr)
         stable(folder/'values.txt',r.stdout);runs.append(dict(projected=projected,command=command,exit=r.returncode,stdout_sha256=hashlib.sha256(r.stdout.encode()).hexdigest(),lines=len(r.stdout.splitlines())))

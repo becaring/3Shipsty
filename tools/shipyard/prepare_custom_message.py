@@ -5,6 +5,9 @@ from cpp_ast import PARSER,walk
 from prepare_randomizer import ROOT,OUT as RANDOMIZER_OUT,CUSTOM,includes as randomizer_includes
 OWN=ROOT/'platform/shipyard/custom-message'
 OUT=ROOT/'scratch/custom-message-xdk'
+from platform_base import resolve as resolve_platform_base
+resolve_platform_base(ROOT)
+from xbox360_platform.cpp_syntax import lower_if_initializers
 
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 def functions(text):
@@ -93,21 +96,6 @@ def adapt_calls(text):
     if counts!={'literal_to_rvalue':7,'dynamic_log_view':2,'map_insert':2}:raise ValueError('call boundary inventory changed: '+str(counts))
     return edit(raw,edits),counts
 
-def lower_if_initializers(text):
-    for iteration in range(3):
-        raw=text.encode();edits=[]
-        for n in walk(PARSER.parse(raw).root_node):
-            if n.type!='if_statement':continue
-            condition=n.child_by_field_name('condition');init=condition.child_by_field_name('initializer')
-            if init is None:continue
-            if any(m.type=='if_statement' and m.child_by_field_name('condition').child_by_field_name('initializer') is not None for m in list(walk(n))[1:]):continue
-            value=condition.child_by_field_name('value').text.decode()
-            tail=raw[condition.end_byte:n.end_byte].decode()
-            edits.append((n.start_byte,n.end_byte,'{ '+init.text.decode()+' if ('+value+')'+tail+' }'))
-        if not edits:return text
-        text=edit(raw,edits)
-    raise ValueError('if initializer nesting changed')
-
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());texts={}
     for rel,digest in lock['sources'].items():
@@ -131,7 +119,7 @@ def prepare():
     text=text.replace('messages[language].starts_with(TODO_TRANSLATE)','Shipyard::Resources::starts_with(messages[language], TODO_TRANSLATE)')
     text=text.replace("std::erase(str, '#');", "str.erase(std::remove(str.begin(), str.end(), '#'), str.end());")
     text=text.replace('std::to_string(', 'Shipyard::CustomMessages::decimal(')
-    text=lower_if_initializers(text)
+    text=lower_if_initializers(text,PARSER,walk,max_depth=3)
     lower=runpy.run_path(str(ROOT/'platform/shipyard/imgui/projection.py'))['lower_ranges']
     range_count=sum(n.type=='for_range_loop' for n in walk(PARSER.parse(text.encode()).root_node))
     text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()

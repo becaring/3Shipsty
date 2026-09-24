@@ -1,21 +1,18 @@
 # Current Xenos rendering backend
 
-The primary SoH360 native backend is imported byte-for-byte and hash-locked;
-its hash also matches Smash360's copy. The owned generator selects production
-rendering, readback and shutdown mechanics, excluding old callback tables and
-diagnostic test scenes. The concrete class implements every current 9.2.3
-GfxRenderingAPI method, retaining its original uint64/uint32 shader API.
+Both active consumers compile Shipyard's physical `sources/xenos/core.cpp`.
+Modern SoH's local `api.cpp` adapts the current 9.2.3 rendering interface,
+including its uint64/uint32 shader IDs.
 
-Reviewed generic modern adaptations from Smash360 are recorded in
-donor.lock.json: six texture/sampler slots, six dimension uniforms, independent
-attachment clears, rectangular copy, native RGB5551 readback, write-only depth
-and native display creation before Xbox system UI. BattleShip held-VI texture
-ownership, framebuffer destruction/color-write extensions, postprocess and
-Smash application callbacks are excluded. No donor generator runs in a
-reference tree. Generated code is under scratch/xenos-xdk.
+The shared core implements six texture/sampler slots, independent attachment
+clears, rectangular copy, native RGB5551 readback, and native display creation
+before Xbox system UI. BattleShip-specific callback behavior remains in its
+adapter.
 
-Production shader creation calls the actual current interpreter decoder and
-Prism builder, then the reviewed generic Xenos lowerer and D3DXCompileShader.
+Shipyard's physical `sources/graphics/shader_provider.cpp` runs feature decode,
+Prism HLSL generation, and exception handling. This adapter supplies the
+current interpreter decoder; Smash supplies its own full-width decoder. The
+shared Xenos lowerer and D3DX compiler consume the result.
 The old donor combiner generator is removed. An internal cache key includes
 the complete current IDs, filtering and sRGB, because those modes change the
 generated shader. Existing interpreter-held pointers are resolved to the
@@ -48,11 +45,9 @@ python -B tools/shipyard/prepare_xenos.py --build
 python -B tools/shipyard/tests/test_xenos.py
 ```
 
-Three complete native TUs compile. The host boundary audit checks all 196,608
+Five native Xenos and shader-provider TUs compile. The host boundary audit checks all 196,608
 channel/alpha cases, 1,536 full-width/mode shader identities and a concrete
 current interface. Prism's separate audit covers actual generated shaders.
 These tests do not execute D3D, independent clears, copies, GPU ownership or
-mode transitions. The class still needs real Fast3dWindow/Gui wiring, native
-presentation, device events, storage and application linking. No XEX, GPU or
-hardware result is claimed. Error dumps currently use game:; writable XContent
-must be integrated before claiming durable diagnostics/cache storage.
+mode transitions. They are not runtime or hardware validation of the migrated
+build.

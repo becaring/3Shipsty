@@ -8,17 +8,15 @@ from collections import Counter
 import hashlib
 import json
 import os
-import sys
 from pathlib import Path
 import re
 import subprocess
 import xml.etree.ElementTree as ET
 
 from source_inventory import ROOT, BASE, inventory
-PLATFORM_BASE = ROOT.parent/'LibUltraShip+Fast3D360'
-sys.path.insert(0,str(PLATFORM_BASE/'python'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from xbox360_platform.build_policy import CXX_MSBUILD
-from xbox360_platform.contract import verify as verify_platform_base
 
 CONFIG = ROOT / 'platform/shipyard/build/subsystems.json'
 OUT = ROOT / 'scratch/project-xdk'
@@ -33,13 +31,21 @@ def digest(path):
 
 def relative(path):
     resolved = Path(path).resolve()
-    if not resolved.is_relative_to(ROOT):
-        raise ValueError('Production source outside owned tree: ' + str(path))
-    return resolved.relative_to(ROOT).as_posix()
+    if resolved.is_relative_to(ROOT):
+        return resolved.relative_to(ROOT).as_posix()
+    if resolved.is_relative_to(PLATFORM_BASE):
+        return 'shipyard/' + resolved.relative_to(PLATFORM_BASE).as_posix()
+    raise ValueError('Production source outside consumer and Shipyard: ' + str(path))
+
+
+def source_path(source):
+    if source.startswith('shipyard/'):
+        return PLATFORM_BASE / source[len('shipyard/'):]
+    return ROOT / source
 
 
 def portable(value):
-    return value.replace('\\', '/').replace(ROOT.as_posix(), '$(ShipyardRoot)').replace(
+    return value.replace('\\', '/').replace(PLATFORM_BASE.as_posix(), '$(ShipyardPlatformBase)').replace(ROOT.as_posix(), '$(ShipyardRoot)').replace(
         SDK.as_posix(), '$(XEDK)')
 
 
@@ -75,6 +81,10 @@ def parse_command(record):
     language = 'c' if '/TC' in options or (source.endswith('.c') and '/TP' not in options) else 'cpp'
     # Explicit unified ABI requirements. Do not inherit old XDK /GR- defaults.
     options = [o for o in options if o not in ('/TC', '/TP', '/GR', '/GR-', '/MT', '/MTd', '/MD', '/MDd', '/EHsc', '/c', '/nologo')]
+    options.insert(0, '/I$(ShipyardPlatformBase)')
+    options.insert(1, '/I$(ShipyardPlatformBase)/sources')
+    options.insert(2, '/I$(ShipyardPlatformBase)/sources/value_types')
+    options.insert(3, '/I$(ShipyardPlatformBase)/sources/json/include')
     options += ['/MT', '/TP', '/EHsc', '/GR'] if language == 'cpp' else ['/MT', '/TC']
     return source, language, options
 
@@ -184,10 +194,10 @@ def collect(config=None):
                 if reason:
                     exclusions.append(dict(source=source, reason=reason))
                     continue
-                if not (ROOT / source).is_file():
+                if not source_path(source).is_file():
                     raise ValueError('Missing generated production source: ' + source)
                 row = dict(source=source, subsystem=subsystem, language=language,
-                           options=options, object=object_name(source), sha256=digest(ROOT / source),
+                           options=options, object=object_name(source), sha256=digest(source_path(source)),
                            upstream_source=upstream_for(source, record, known), report=relative(report),
                            prior_compile_exit=record.get('compile_exit', record.get('exit', record.get('returncode'))))
                 row['target_definition_corrections'] = target_definitions(config, subsystem, record, source, options)
@@ -202,7 +212,7 @@ def collect(config=None):
         source = entry['source']
         template = next(r for r in selected.values() if r['subsystem'] == entry['options_from'])
         selected[source] = dict(source=source, subsystem=entry['subsystem'], language='cpp',
-            options=template['options'], object=object_name(source), sha256=digest(ROOT / source),
+            options=template['options'], object=object_name(source), sha256=digest(source_path(source)),
             upstream_source=source if source in known else None, report='explicit supplemental_sources; not a prior compile claim',
             prior_compile_exit=None, requires_fresh_build=True, target_definition_corrections=[])
     rows = sorted(selected.values(), key=lambda r: r['source'])
@@ -235,7 +245,6 @@ def node(parent, name, value=None, **attributes):
 
 
 def project(manifest, subsystem=None):
-    verify_platform_base(PLATFORM_BASE,ROOT/'platform-base.lock.json')
     p = ET.Element('{'+NS+'}Project', {'DefaultTargets':'Build', 'ToolsVersion':'4.0'})
     group = node(p, 'ItemGroup', Label='ProjectConfigurations')
     c = node(group, 'ProjectConfiguration', Include='Release|Xbox 360')
@@ -244,6 +253,7 @@ def project(manifest, subsystem=None):
     node(g, 'ProjectGuid', '{D072AB7D-9230-4346-BC71-022A79BC5D1F}')
     node(g, 'Keyword', 'Xbox360Proj'); node(g, 'RootNamespace', 'ShipyardCompile')
     node(g, 'ShipyardRoot', '$(MSBuildThisFileDirectory)..\\..')
+    node(g, 'ShipyardPlatformBase', str(PLATFORM_BASE))
     node(g, 'XEDK', str(SDK), Condition="'$(XEDK)' == ''")
     node(p, 'Import', Project='$(VCTargetsPath)\\Microsoft.Cpp.Default.props')
     g = node(p, 'PropertyGroup', Label='Configuration')
@@ -251,7 +261,8 @@ def project(manifest, subsystem=None):
     node(g, 'CharacterSet', 'MultiByte')
     node(p, 'Import', Project='$(VCTargetsPath)\\Microsoft.Cpp.props')
     g = node(p, 'PropertyGroup')
-    node(g, 'OutDir', '$(ProjectDir)build\\'); node(g, 'IntDir', '$(OutDir)obj\\')
+    node(g, 'OutDir', '$(ProjectDir)build\\')
+    node(g, 'IntDir', '$(OutDir)obj\\')
     node(g, 'TargetName', 'ShipyardCompileOnly')
     d = node(node(p, 'ItemDefinitionGroup'), 'ClCompile')
     for name, value in [('PrecompiledHeader','NotUsing'),('RuntimeLibrary','MultiThreaded'),
@@ -261,7 +272,10 @@ def project(manifest, subsystem=None):
     for source in manifest['sources']:
         if subsystem and source['subsystem'] != subsystem:
             continue
-        item = node(items, 'ClCompile', Include='$(ShipyardRoot)/'+source['source'])
+        path = source['source']
+        include = ('$(ShipyardPlatformBase)/'+path[len('shipyard/'):] if path.startswith('shipyard/')
+                   else '$(ShipyardRoot)/'+path)
+        item = node(items, 'ClCompile', Include=include)
         node(item, 'ObjectFileName', '$(IntDir)'+source['object'])
         node(item, 'CompileAs', 'CompileAsCpp' if source['language']=='cpp' else 'CompileAsC')
         node(item, 'RuntimeTypeInfo', 'true' if source['language']=='cpp' else 'false')
@@ -277,8 +291,12 @@ def project(manifest, subsystem=None):
 
 def write(manifest, subsystem=None):
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
-    (OUT/'ShipyardCompile.vcxproj').write_bytes(project(manifest, subsystem))
+    for path, content in (
+        (OUT/'manifest.json', (json.dumps(manifest, indent=2)+'\n').encode('utf-8')),
+        (OUT/'ShipyardCompile.vcxproj', project(manifest, subsystem)),
+    ):
+        if not path.exists() or path.read_bytes() != content:
+            path.write_bytes(content)
 
 
 def main():

@@ -11,6 +11,9 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from platform_base import resolve as resolve_platform_base
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / 'platform/shipyard/graphics'
@@ -87,9 +90,10 @@ def prepare(root=ROOT, out=OUT):
         check_source(data, digest, name)
         inputs[name] = data.decode('utf-8-sig').replace('\r\n', '\n')
     donor = lock['donor']
-    data = (root / donor['local']).read_bytes()
-    check_source(data, donor['sha256'], donor['local'])
-    native = data.decode('utf-8-sig').replace('\r\n', '\n')
+    platform_base = resolve_platform_base(root)
+    shared = platform_base / donor['platform_base']
+    data = shared.read_bytes()
+    check_source(data, donor['sha256'], donor['platform_base'])
     for filename, classname in [('gfx_rendering_api.h', 'GfxRenderingAPI'),
                                 ('gfx_window_manager_api.h', 'GfxWindowBackend')]:
         source = 'libultraship/include/fast/backends/' + filename
@@ -116,15 +120,9 @@ def prepare(root=ROOT, out=OUT):
     write(out / 'cc_features.cpp', '#include "fast/cc_features.h"\n' + decoder)
     for variant, lower in [('original', False), ('projected', True)]:
         write(out / ('decoder_' + variant + '.inc'), feature_header(interp, lower=lower) + decoder)
-    # Preserve the original imported lowerer byte-for-byte under donor/.
-    # Project only names and unrelated Smash profiling hooks in the output.
-    native = replace_once(native, '#include "shader_provider.h"', '#include "shader_lower.h"')
-    native = replace_once(native, '#ifdef _XBOX\n#include "../runtime/perf_trace.h"\n#endif\n', '')
-    native = replace_once(native, '#ifdef _XBOX\n    Smash360PerfScope profileScope(SMASH_PERF_SHADER_LOWER);\n#endif\n', '')
-    native = replace_once(native, 'bool Smash360_LowerShader(', 'bool Shipyard_LowerShader(')
-    native = replace_once(native, '// Smash360 Xenos lowering ABI 2', '// Shipyard Xenos lowering ABI 1')
-    write(out / 'shader_lower.cpp', native)
-    write(out / 'include/shader_lower.h', '#pragma once\n#include <string>\nbool Shipyard_LowerShader(const std::string&, std::string&, std::string&);\n')
+    header = platform_base / 'sources/graphics/shader_lower.h'
+    if not header.is_file():
+        raise FileNotFoundError(header)
     # Keep exact current template bytes available for later real Prism work.
     write(out / 'shaders/default.shader.hlsl', inputs['libultraship/src/fast/shaders/directx/default.shader.hlsl'])
     outputs = [p for p in out.rglob('*') if p.is_file() and p.suffix in ('.cpp', '.h', '.hlsl', '.inc')]
@@ -141,11 +139,13 @@ def compile_xdk(out=OUT, raw=False):
     includes = out / ('raw/include' if raw else 'include')
     dest = out / ('raw' if raw else 'compiled')
     dest.mkdir(parents=True, exist_ok=True)
+    platform_base = resolve_platform_base(ROOT)
     flags = [str(xdk / 'bin/win32/cl.exe'), '/nologo', '/c', '/TP', '/D_XBOX', '/DNOMINMAX',
-             '/EHsc', '/GR', '/MT', '/W4', '/I' + str(includes), '/I' + str(xdk / 'include/xbox')]
+             '/EHsc', '/GR', '/MT', '/W4', '/I' + str(includes),
+             '/I' + str(platform_base / 'sources/graphics'), '/I' + str(xdk / 'include/xbox')]
     sources = [BASE / 'interface_contract.cpp', out / 'cc_features.cpp']
     if not raw:
-        sources.append(out / 'shader_lower.cpp')
+        sources.append(platform_base / 'sources/graphics/shader_lower.cpp')
     results = []
     for source in sources:
         command = flags + ['/Fo' + str(dest / (source.stem + '.obj')), str(source)]
@@ -170,8 +170,9 @@ def differential_host(out=OUT):
     # Fixed task-owned batch path and measured toolchain; no destructive ops.
     command = ('@echo off\ncall "' + str(vcvars) + '" >nul\nif errorlevel 1 exit /b 1\n' +
                'cl /nologo /std:c++20 /EHsc /W4 /O2 /I"' + str(out / 'include') + '" /I"' + str(out) +
+               '" /I"' + str(resolve_platform_base(ROOT) / 'sources/graphics') +
                '" /Fo"' + dest.as_posix() + '/" /Fe"' + str(executable) + '" "' +
-               str(BASE / 'decoder_differential.cpp') + '" "' + str(out / 'shader_lower.cpp') +
+               str(BASE / 'decoder_differential.cpp') + '" "' + str(resolve_platform_base(ROOT) / 'sources/graphics/shader_lower.cpp') +
                '"\nif errorlevel 1 exit /b 1\n"' + str(executable) + '"\n')
     batch = dest / 'run.cmd'
     write(batch, command)

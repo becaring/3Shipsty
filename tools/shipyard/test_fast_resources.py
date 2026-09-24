@@ -6,6 +6,8 @@ import struct
 import subprocess
 import zipfile
 from prepare_fast_resources import ROOT,OUT,OWN,prepare
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from dependency_sources import verified
 
@@ -32,12 +34,12 @@ def main():
         gui=ROOT/'scratch/gui-resources-xdk/generated' if projected else ROOT/'libultraship'
         resource=ROOT/'scratch/resources-xdk/generated' if projected else ROOT/'libultraship'
         binary=ROOT/'scratch/binary-xdk/generated' if projected else ROOT/'libultraship'
-        includes=[base/'include',gui/'include',verified('tinyxml2')]+environment['includes'](projected)+[ROOT/'libultraship/include']
+        includes=[base/'include',gui/'include',verified('tinyxml2'),PLATFORM_BASE/'sources']+environment['includes'](projected)+[ROOT/'libultraship/include']
         sources=[base/n for n in json.loads((OWN/'sources.lock.json').read_text())['sources'] if n.endswith('.cpp')]
         sources += [gui/'src/fast/resource/type/Texture.cpp',OWN/'contract.cpp',verified('tinyxml2')/'tinyxml2.cpp']
         sources += [resource/'src/ship/resource'/(n+'.cpp') for n in ('Resource','ResourceFactoryBinary','ResourceFactoryXML')]
         sources += [binary/'src/ship/utils/binarytools'/(n+'.cpp') for n in ('BinaryReader','MemoryStream','Stream')]
-        if projected:sources += [ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
+        if projected:sources += [PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/DNOMINMAX','/DF3DEX_GBI_2','/DSPDLOG_ACTIVE_LEVEL=0']
         if projected:command+=['/DSHIPYARD_PROJECTION']
         command += ['/I'+str(p) for p in includes]+[str(p) for p in sources]+['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]

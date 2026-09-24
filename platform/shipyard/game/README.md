@@ -46,12 +46,11 @@ returns zero; an old object does not turn a failed run into success.
   resolved, and earlier cache values survive later defaults. A generated
   forced-include header avoids command-line string quoting changes. The
   game-print cutoff comes from the root CMake `SPDLOG_LEVEL_OFF` value.
-- The unchanged donor `c89_lower.py` is hash-locked. The in-memory projection
-  changes only its source-marker selection from the donor's `/upstream/`
-  layout to non-XDK source spans. It preserves declaration execution points
-  using nested scopes and scoped `for` initializers. It also retains the
-  donor's literal `CutsceneData.f` bit-pattern conversion, without importing
-  unrelated old game/runtime code.
+- Both active game generators import Shipyard's physical
+  `python/xbox360_platform/c89_lower.py`. This consumer selects non-XDK source
+  spans and enables the `CutsceneData.f` literal bit-pattern conversion. The
+  shared lowerer retains declaration execution points using nested scopes and
+  scoped `for` initializers.
 
 ## Boolean conversion proof and limits
 

@@ -5,6 +5,8 @@ from prepare_archives import stable
 from prepare_randomizer_item import methods
 from prepare_custom_message import literal_bytes
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 BASE='soh/soh/Enhancements/'
 def read(path):return path.read_text(encoding='utf-8-sig')
 def method(text,name):return next(n.text.decode() for n in methods(text) if n.child_by_field_name('declarator').text.decode().split('(')[0]==name)
@@ -74,7 +76,7 @@ def main():
             if projected_flag:command+=['/DSHIPYARD_FEATURE_PROJECTED']
             elif kind=='warp':command+=['/Zc:preprocessor','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
             command+=['/I'+str(p) for p in includes()]+[str(folder/(kind+'.cpp'))]
-            if kind=='warp' and projected_flag:command+=[str(ROOT/'platform/shipyard/json/json.cpp')]
+            if kind=='warp' and projected_flag:command+=[str(PLATFORM_BASE/'sources/json/json.cpp')]
             command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/(kind+'.exe')),'/link','/OPT:REF']
             r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/(kind+'-build.log'),r.stdout+r.stderr);assert not r.returncode,folder/(kind+'-build.log')
             r=subprocess.run([str(folder/(kind+'.exe'))],cwd=ROOT,capture_output=True,text=True);row=dict(kind=kind,projected=projected_flag,command=command,exit=r.returncode,stdout=r.stdout,stderr=r.stderr);rows.append(row);assert not r.returncode,row

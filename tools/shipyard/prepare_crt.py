@@ -3,7 +3,8 @@ import argparse, hashlib, json, struct, subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OWN = ROOT / 'platform/shipyard/crt'
+from platform_base import resolve as resolve_platform_base
+OWN = resolve_platform_base(ROOT) / 'sources/crt'
 OUT = ROOT / 'scratch/crt-xdk'
 SDK = Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
 UNITS = ('float.cpp', 'format.cpp')
@@ -14,10 +15,11 @@ def stable(path, value):
         path.write_text(value, encoding='utf-8')
 
 def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def label(path): return 'shipyard/sources/crt/' + path.name
 
 def prepare():
     stable(OUT/'manifest.json', json.dumps(dict(kind='generic Shipyard Xbox CRT compatibility',
-        sources={p.relative_to(ROOT).as_posix(): sha(p) for p in sorted(OWN.glob('*')) if p.is_file()},
+        sources={label(p): sha(p) for p in sorted(OWN.glob('*')) if p.is_file()},
         generator_sha256=sha(Path(__file__))), indent=2)+'\n')
 
 def build():
@@ -29,7 +31,7 @@ def build():
             str(source), '/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True)
         stable(obj.with_suffix('.log'), result.stdout+result.stderr)
-        row=dict(source=source.relative_to(ROOT).as_posix(),command=command,exit=result.returncode,source_sha256=sha(source))
+        row=dict(source=label(source),command=command,exit=result.returncode,source_sha256=sha(source))
         if result.returncode == 0:
             assert struct.unpack_from('<H',obj.read_bytes())[0] == 0x1f2
             row.update(object_sha256=sha(obj),machine='PowerPC big-endian COFF 0x1f2')

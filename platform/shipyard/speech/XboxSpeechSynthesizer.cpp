@@ -13,7 +13,7 @@ void XboxSpeechSynthesizer::Log(const char* what,long code){char message[240];_s
 bool XboxSpeechSynthesizer::DoInit(){
     if(InterlockedCompareExchange(&ownerClaim_,1,0)!=0){Log("eSpeak singleton already owned",0);return false;}
     callbackOwner_=this;
-    try{queue_=new ShipyardSpeech::Queue;}catch(...){Log("speech queue allocation failed",0);DoUninitialize();return false;}
+    try{queue_=new ShipyardSpeech::Queue("en");}catch(...){Log("speech queue allocation failed",0);DoUninitialize();return false;}
     available_=CreateEvent(NULL,FALSE,FALSE,NULL);
     if(!queue_->Valid()||!available_){Log("worker event creation failed",GetLastError());DoUninitialize();return false;}
     // The legacy espeak_Initialize returns a rate even after some initialization

@@ -5,13 +5,30 @@ M=runpy.run_path(str(ROOT/'tools/shipyard/prepare_json.py'))
 class GenerationTests(unittest.TestCase):
     def test_deterministic(self):
         one=M['generate']();two=M['generate']();self.assertEqual(one,two)
+    def test_shared_outputs_reproducible_from_clean_state(self):
+        with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
+            output=Path(folder)
+            first=M['generate'](output=output)
+            shared=first['shipyard']
+            expected={
+                **{Path(name).stem+'.hpp':record['output_sha256'] for name,record in shared['algorithms'].items()},
+                **{'stream_writer.hpp':record['output_sha256'] for record in shared['streams'].values()},
+                **shared['ordered']['generated_sha256'],
+            }
+            self.assertEqual(len(expected),5)
+            for name,digest in expected.items():
+                self.assertEqual(hashlib.sha256((output/name).read_bytes()).hexdigest(),digest)
+            (output/'lexer.hpp').write_bytes(b'corrupt generated output')
+            second=M['generate'](output=output)
+            self.assertEqual(first,second)
+            for name,digest in expected.items():
+                self.assertEqual(hashlib.sha256((output/name).read_bytes()).hexdigest(),digest)
     def test_reject_output_escape(self):
         with self.assertRaisesRegex(ValueError,'output must remain'):M['generate'](output=ROOT/'scratch/not-json')
     def test_reject_changed_source(self):
         with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
-            source=Path(folder);lock=json.loads((M['BACKEND']/'source-authority.json').read_text())
-            first=next(iter(lock['upstream_files']));p=source/first;p.parent.mkdir(parents=True);p.write_text('changed')
-            with self.assertRaisesRegex(ValueError,'source SHA-256 mismatch'):M['generate'](source=source)
+            source=Path(folder);p=source/'include/nlohmann/detail/input/lexer.hpp';p.parent.mkdir(parents=True);p.write_text('changed')
+            with self.assertRaisesRegex(ValueError,'lexer source mismatch'):M['generate'](source=source)
     def test_actual_save_template_source_still_matches(self):
         evidence=json.loads((Path(__file__).parent/'test_json/save-template-source.json').read_text())
         self.assertEqual(hashlib.sha256((ROOT/evidence['source']).read_bytes()).hexdigest(),evidence['sha256'])
@@ -40,10 +57,10 @@ class GenerationTests(unittest.TestCase):
             for statement in record['statements']:
                 self.assertIn(statement,source.read_text())
                 self.assertIn(statement,probe)
-        manifest=M['generate']()['streams']
+        manifest=M['generate']()['shipyard']['streams']
         self.assertIn('detail/output/serializer.hpp',manifest)
     def test_reject_changed_serializer_source(self):
-        generator=runpy.run_path(str(M['BACKEND']/'generate_streams.py'))['generate']
+        generator=runpy.run_path(str(M['PLATFORM_BASE']/'python/xbox360_platform/json/generate_streams.py'))['generate']
         with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
             source=Path(folder);p=source/'include/nlohmann/detail/output/serializer.hpp'
             p.parent.mkdir(parents=True);p.write_text('changed')
@@ -51,7 +68,7 @@ class GenerationTests(unittest.TestCase):
                 generator(source,M['OUT'])
     def test_ordered_generation_and_consumer_projection(self):
         manifest=M['generate']()
-        self.assertTrue(manifest['ordered']['distinct_from_sorted_json'])
+        self.assertTrue(manifest['shipyard']['ordered']['distinct_from_sorted_json'])
         generated=M['OUT']
         original=(generated/'ordered_consumer_original.cpp').read_text()
         for statement in manifest['ordered_consumers']['extracted_statements']:
@@ -66,7 +83,7 @@ class GenerationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'ordered consumer SHA-256 mismatch'):
                 generator(M['OUT'],source)
     def test_reject_changed_ordered_map(self):
-        generator=runpy.run_path(str(M['BACKEND']/'generate_ordered.py'))['generate']
+        generator=runpy.run_path(str(M['PLATFORM_BASE']/'python/xbox360_platform/json/generate_ordered.py'))['generate']
         with tempfile.TemporaryDirectory(dir=ROOT/'scratch/json-xdk') as folder:
             source=Path(folder);p=source/'include/nlohmann/ordered_map.hpp'
             p.parent.mkdir(parents=True);p.write_text('changed')

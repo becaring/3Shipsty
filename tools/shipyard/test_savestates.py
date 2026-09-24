@@ -1,6 +1,8 @@
 """Actual savestate methods against typed memory fixtures; no game/service stubs."""
 import hashlib,json,re,runpy,struct,unittest
 from prepare_savestates import ROOT,OUT,OWN,BASE,prepare,build
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from prepare_configuration import once
 from cpp_ast import PARSER,walk
@@ -34,10 +36,10 @@ def host(projected):
     stable(folder/'contract.cpp',source)
     compiler,env=ENV['host_environment']()
     native=json.loads((OUT/'xdk/build.json').read_text())[0]['command']
-    roots=[p for p in native if p.startswith('/I') and 'Microsoft Xbox 360 SDK' not in p]
+    roots=[p for p in native if p.startswith('/I') and 'Microsoft Xbox 360 SDK' not in p]+['/I'+str(PLATFORM_BASE/'sources')]
     command=[compiler,'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/DNOMINMAX','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/DSHIPYARD_AUDIO_TEST',
         '/I'+str(OUT/'generated/soh/soh/Enhancements')]+roots+[folder/'contract.cpp']
-    command+=[ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp']
+    command+=[PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp']
     command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     result=ENV['invoke'](command,folder,'compile',env,success=False)
     assert result['returncode']==0,'\n'.join(l for l in (result['stdout']+result['stderr']).splitlines() if 'error ' in l)[:4500]

@@ -1,6 +1,8 @@
 """Actual Network.cpp loopback, native transport and declaration verification."""
 import hashlib,json,runpy,subprocess,unittest
 from prepare_network import ROOT,OUT,OWN,BASE,prepare,build,value_expressions
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
 
@@ -13,9 +15,11 @@ class NetworkContracts(unittest.TestCase):
     def test_real_loopback(self):
         folder=OUT/'host';folder.mkdir(exist_ok=True);compiler,env=ENV['host_environment']()
         command=[compiler,'/nologo','/std:c++20','/EHsc','/GR','/MD','/utf-8','/DNOMINMAX','/DENABLE_REMOTE_CONTROL',
-            '/I'+str(OUT/'generated/soh'),'/I'+str(ROOT/'platform/shipyard'),'/I'+str(ROOT/'platform/shipyard/json/upstream/include'),
+            '/I'+str(OUT/'generated/soh'),'/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),
+            '/I'+str(PLATFORM_BASE/'sources/json/include'),'/I'+str(ROOT/'scratch/json-xdk/backend-generated'),
             '/I'+str(ROOT/'scratch/deps/spdlog/include'),'/I'+str(ROOT/'libultraship/include'),
-            OWN/'loopback.cpp',OWN/'transport.cpp',OUT/'generated'/BASE/'Network.cpp',ROOT/'platform/shipyard/async/native.cpp',
+            OWN/'loopback.cpp',PLATFORM_BASE/'sources/network/transport.cpp',OUT/'generated'/BASE/'Network.cpp',
+            PLATFORM_BASE/'sources/async/native.cpp',PLATFORM_BASE/'sources/json/json.cpp',
             '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'loopback.exe'),'/link','ws2_32.lib']
         record=ENV['invoke'](command,folder,'compile',env,success=False)
         self.assertEqual(record['returncode'],0,'\n'.join(l for l in (record['stdout']+record['stderr']).splitlines() if 'error ' in l)[:4500])

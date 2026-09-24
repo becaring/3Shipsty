@@ -14,8 +14,10 @@ from prepare_configuration import once
 from prepare_resource_manager import syntax
 from prepare_fast3d import member_defaults
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
 OWN=ROOT/'platform/shipyard/gui'
 OUT=ROOT/'scratch/gui-xdk'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 
 def inherited_window(text,classname):
@@ -205,7 +207,7 @@ def prepare():
 
 def includes():
     from prepare_presentation import includes as presentation_includes
-    return [OUT/'generated/include',ROOT/'platform/shipyard/native-imgui',verified('stb'),verified('libgfxd'),ROOT/'scratch/async-xdk/generated',ROOT/'scratch/prism-xdk/generated']+presentation_includes()
+    return [OUT/'generated/include',ROOT/'platform/shipyard/native-imgui',verified('stb'),verified('libgfxd'),ROOT/'scratch/async-xdk/generated',ROOT/'scratch/prism-xdk/generated',PLATFORM_BASE/'sources/value_types']+presentation_includes()
 
 
 def build():

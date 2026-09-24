@@ -42,3 +42,16 @@ encrypted zlib/bzip2/LZMA/PKWARE/sparse members, seek and read partial data,
 check the listfile and reject missing members. Exact commands/results are in
 `scratch/stormlib-xdk`. Big-endian execution, target I/O and signature behavior
 still need native validation. No Xenia or hardware claim is made.
+
+## Compiler projection ownership
+
+This is Modern's pinned StormLib v9.25 dependency projection. It applies the
+exact LUS patch, selects StormLib's own 231 translation units, and makes
+target-specific endian, header, file-provider and crypto changes. Smash's
+`tools/prepare_stb_xdk.py` prepares the unrelated pinned `stb_image` decoder;
+its active application lists the stb implementation as a selected unit and
+does not have a counterpart to this StormLib compiler projection. A StormLib
+header include root in Smash's port preparation is not a shared compilation
+mechanism. StormLib revision, patch, selected features and archive behavior
+therefore remain consumer dependency/version policy. No optional Shipyard
+StormLib compiler package was introduced by this review.

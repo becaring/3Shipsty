@@ -34,9 +34,9 @@ def syntax(text):
         start = node.start_byte - (raw[node.start_byte-1:node.start_byte] == b' ')
         raw = raw[:start] + raw[node.end_byte:]
     text = raw.decode('utf-8')
-    text = text.replace('std::variant<', 'Shipyard::Resources::variant<').replace('std::get<', 'Shipyard::Resources::get<')
-    text = text.replace('std::holds_alternative<', 'Shipyard::Resources::holds_alternative<').replace('std::bad_variant_access', 'Shipyard::Resources::bad_variant_access')
-    text = text.replace('#include <variant>', '#include "resources/variant.h"').replace('#include <mutex>', '#include "async/native.h"')
+    text = text.replace('std::variant<', 'xbox_compat::variant<').replace('std::get<', 'xbox_compat::get<')
+    text = text.replace('std::holds_alternative<', 'xbox_compat::holds_alternative<').replace('std::bad_variant_access', 'xbox_compat::bad_variant_access')
+    text = text.replace('#include <variant>', '#include <xbox_compat/variant.h>').replace('#include <mutex>', '#include "async/native.h"')
     text = text.replace('#include <thread>', '#include "thread-pool/native_support.h"')
     for name in ('mutex', 'lock_guard', 'shared_future', 'promise'):
         text = text.replace('std::' + name, 'Shipyard::Async::' + name)

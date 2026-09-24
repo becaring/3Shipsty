@@ -2,7 +2,7 @@
 from pathlib import Path
 import sys,json,hashlib
 ROOT=Path(__file__).resolve().parents[3]
-sys.path.insert(0,str(ROOT/'scratch/logging-xdk/python-tools'))
+sys.path.insert(0,str(ROOT/'scratch/python-tools'))
 import tree_sitter as ts
 import tree_sitter_cpp
 PARSER=ts.Parser(ts.Language(tree_sitter_cpp.language()))

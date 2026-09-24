@@ -1,12 +1,8 @@
 {
   "imgui_xenos.cpp": {
-    "source": "D:\\Projects\\SoH360\\platform\\xbox360\\imgui_xenos.cpp",
-    "sha256": "eb5a6f44e06c48bb83eb5cec90af7194a6900db25ab36a4481c80acb9526d411",
-    "classification": "generic Xbox platform; renderer full, platform bindings selected only"
-  },
-  "imgui_platform.cpp": {
-    "source": "D:\\Projects\\SoH360\\platform\\xbox360\\imgui_platform.cpp",
-    "sha256": "db3b4e2447d6ebdd750ab1d550b7ee65792c06cb88c875aa8907a536e78e6167",
+    "platform_base": "sources/imgui/imgui_xenos.cpp",
+    "origin": "SoH360/platform/xbox360/imgui_xenos.cpp",
+    "sha256": "e3e3e4b3994b1ff6daff4164ca3858b800730ebc41cc4d6b9feeae6fe6a4f72d",
     "classification": "generic Xbox platform; renderer full, platform bindings selected only"
   }
 }

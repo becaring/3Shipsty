@@ -1,7 +1,6 @@
 {
   "schema": 1,
   "inputs": {
-    "platform/shipyard/game/donor/c89_lower.py": "5ea53ea8c5bf0712672462e45191880fdb8f7d4ddb053134561e84472f469551",
     "libultraship/include/libultraship/libultra/message.h": "39f54ab8e7d1b711adcb7f113094b5b4d0952a8cca22b8eedc44fb86390cdfaa",
     "libultraship/include/ship/audio/AudioChannelsSetting.h": "18a233ed93c039ce2dd04419fb7ab7325ba88b8319a695f0c1bff6394514b29c",
     "libultraship/cmake/cvars.cmake": "3231a4ec2a122211ca2584a9f4a6726b8251faef2a21599f57581685412c19b6",
@@ -23,5 +22,5 @@
     "libultraship/src/fast/interpreter.cpp": "24b99b3ebc2f7f6b729f724740f9deda8f36e1b27b4132d690e32110ceca21f7",
     "soh/soh/mixer.c": "81c3625a04b7fd4527b7f8bec517ff910cc9b9db54ab3508486d25ce2e375bf5"
   },
-  "donor_origin": "D:/Projects/SoH360/tools/c89_lower.py"
+  "donor_origin": "SoH360/tools/c89_lower.py"
 }

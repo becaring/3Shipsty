@@ -1,6 +1,8 @@
 """Check that save states and the worker share the actual OTRAudio state."""
 import json,re,runpy,subprocess
 from prepare_application import ROOT,OUT,prepare
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 
 def main():
@@ -31,9 +33,9 @@ int main(){
   assert(same ? !acquired : acquired);
 }
 ''')
-        command=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(header),'/I'+str(ROOT/'platform/shipyard'),
+        command=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(header),'/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),
                  str(folder/'owner.cpp'),str(folder/'consumer.cpp')]
-        if projected:command.append(str(ROOT/'platform/shipyard/async/native.cpp'))
+        if projected:command.append(str(PLATFORM_BASE / 'sources/async/native.cpp'))
         command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
         run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',run.stdout+run.stderr)
         assert run.returncode==0,folder/'build.log'

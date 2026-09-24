@@ -10,7 +10,9 @@ import sys
 import json
 
 ROOT=Path(__file__).resolve().parents[3]
-sys.path.insert(0,str(ROOT/'tools/shipyard'))
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_context import prepare,OUT
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
@@ -27,7 +29,7 @@ def main():
         # implementation include narrowed to the exact settings declaration.
         for path in ('ship/Context.h','ship/audio/AudioSettings.h'):
             stable(folder/'include'/path,(ROOT/'scratch/resource-manager-xdk/generated/include'/path).read_text())
-        includes=[folder/'include']+includes+[ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard',ROOT/'scratch/resource-manager-xdk/generated/include']
+        includes=[folder/'include']+includes+[ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard',PLATFORM_BASE/'sources',ROOT/'scratch/resource-manager-xdk/generated/include']
         console=(base/'src/ship/debug/Console.cpp').read_bytes()
         definitions=[n for n in walk(PARSER.parse(console).root_node) if n.type=='function_definition'
                      and n.child_by_field_name('declarator').text.startswith(b'Console::Run(')]
@@ -36,7 +38,7 @@ def main():
         audit=folder/'console-method-audit.cpp';audit.write_bytes(console)
         sources=[audit,base/'src/fast/debug/GfxDebugger.cpp',
                  (ROOT/'scratch/resource-manager-xdk/generated' if projected else ROOT/'libultraship')/'src/ship/utils/StringHelper.cpp']
-        if projected:sources += [ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
+        if projected:sources += [PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/MD','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0']
         if projected:command+=['/Dnssv_CONFIG_SELECT_STRING_VIEW=1']
         command+=['/I'+str(p) for p in includes]+[str(p) for p in sources]+[str(Path(__file__).with_name('test_context_controls.cpp')),

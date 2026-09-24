@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 std::string Read(const char* path) {
     std::ifstream input(path, std::ios::binary); std::ostringstream bytes; bytes << input.rdbuf(); return bytes.str();
 }
@@ -25,6 +26,21 @@ int main(int argc, char** argv) {
     assert(GetFileAttributesA(temporary.c_str()) == INVALID_FILE_ATTRIBUTES);
     Shipyard::Storage::WriteAtomicFile(path, std::string()); assert(Read(path.c_str()).empty());
     Shipyard::Storage::WriteAtomicFile(path, "short"); assert(Read(path.c_str()) == "short");
+    const size_t separator=path.find_last_of("\\/");
+    assert(separator!=std::string::npos);
+    const std::string root=path.substr(0,separator+1);
+    const std::string relativePath=root+"relative-atomic.bin";
+    Shipyard::Storage::WriteAtomicRelativeFile(root.c_str(),"relative-atomic.bin",bytes.data(),bytes.size());
+    assert(Read(relativePath.c_str())==bytes);
+    threw=false;
+    try {Shipyard::Storage::WriteAtomicRelativeFile(root.c_str(),"../escape.bin",bytes.data(),bytes.size());}
+    catch(const std::invalid_argument&) {threw=true;}
+    assert(threw);
+    threw=false;
+    try {Shipyard::Storage::WriteAtomicFile(path,NULL,1);}
+    catch(const std::invalid_argument&) {threw=true;}
+    assert(threw);
+    DeleteFileA(relativePath.c_str());
     SetFileAttributesA(path.c_str(), FILE_ATTRIBUTE_READONLY); threw = false;
     try { Shipyard::Storage::WriteAtomicFile(path, bytes); }
     catch (const Shipyard::Async::native_error&) { threw = true; }

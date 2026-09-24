@@ -4,6 +4,7 @@ from pathlib import Path
 from dependency_sources import ROOT
 from prepare_archives import stable
 from prepare_configuration import once
+from platform_base import resolve as resolve_platform_base
 OUT=ROOT/'scratch/input-xdk'
 OWN=ROOT/'platform/shipyard/input'
 LOWER=runpy.run_path(str(OWN/'lowering.py'))
@@ -103,7 +104,7 @@ def prepare():
 
 def includes():
     from prepare_window import includes as window_includes
-    return [OUT/'generated/include',ROOT/'platform/shipyard/game/include',ROOT/'scratch/context-xdk/generated/include']+window_includes()
+    return [OUT/'generated/include',ROOT/'platform/shipyard/game/include',ROOT/'scratch/context-xdk/generated/include',resolve_platform_base(ROOT)/'sources']+window_includes()
 
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
@@ -113,12 +114,14 @@ def build():
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0','/DCONTROLLERBUTTONS_T=uint32_t','/Dnssv_CONFIG_SELECT_STRING_VIEW=1','/I'+str(sdk/'include/xbox')]
     flags+=['/FI'+str(cvars)]+['/I'+str(p) for p in includes()]
-    sources=[OUT/'generated'/n for n in json.loads((OWN/'sources.lock.json').read_text())['sources'] if n.endswith('.cpp')]+[OWN/'physical.cpp',OWN/'xinput.cpp']
+    platform_base=resolve_platform_base(ROOT)
+    sources=[OUT/'generated'/n for n in json.loads((OWN/'sources.lock.json').read_text())['sources'] if n.endswith('.cpp')]+[platform_base/'sources/input/physical.cpp',platform_base/'sources/input/xinput.cpp']
     records=[]
     for i,source in enumerate(sources):
         obj=folder/(str(i)+'-'+source.stem+'.obj');command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-        records.append(dict(source=source.relative_to(ROOT).as_posix(),exit=result.returncode,command=command))
+        source_id=('shipyard/'+source.relative_to(platform_base).as_posix()) if source.is_relative_to(platform_base) else source.relative_to(ROOT).as_posix()
+        records.append(dict(source=source_id,exit=result.returncode,command=command))
         if not result.returncode and struct.unpack_from('<H',obj.read_bytes())[0]!=0x1f2:raise ValueError('Not a Xenon object')
     stable(folder/'build.json',json.dumps(records,indent=2)+'\n')
     for row in records:print(str(row['exit'])+' '+row['source'])

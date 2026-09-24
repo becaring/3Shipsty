@@ -1,11 +1,11 @@
 #include "services.h"
 #include "metrics.h"
 #include "context/platform.h"
+#include "storage/atomic_file.h"
 #include <spdlog/spdlog.h>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
-__declspec(thread) ShipyardPerfSample shipyard_graphics_samples[SHIPYARD_PERF_COUNT]={};
 static bool verifyReuse=false;
 void Shipyard_SetGraphicsVerification(bool enabled){verifyReuse=enabled;}
 bool Shipyard_VerifyFast3DReuse(){return verifyReuse;}
@@ -24,7 +24,6 @@ void Shipyard_Fatal(const char* operation,HRESULT result){
 }
 double Shipyard_Time(){LARGE_INTEGER tick,freq;QueryPerformanceCounter(&tick);QueryPerformanceFrequency(&freq);return double(tick.QuadPart)/double(freq.QuadPart);}
 bool Shipyard_WriteFile(const char* relative,const void* bytes,size_t size){
-    // Diagnostic only. Modern writable storage owns future shader persistence.
-    std::string path="game:\\";path+=relative;FILE* file=fopen(path.c_str(),"wb");if(!file)return false;
-    bool ok=fwrite(bytes,1,size,file)==size;return fclose(file)==0 && ok;
+    try {Shipyard::Storage::WriteAtomicRelativeFile("game:\\",relative,bytes,size);return true;}
+    catch(...) {return false;}
 }

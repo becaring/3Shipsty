@@ -2,7 +2,12 @@
 from pathlib import Path
 import subprocess,os,json,hashlib,runpy,difflib
 ROOT=Path(__file__).resolve().parents[3]
-OUT=ROOT/'scratch/json-xdk'; TESTS=Path(__file__).parent/'test_json'; BACKEND=ROOT/'platform/shipyard/json'
+import sys
+sys.path.insert(0,str(ROOT/'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
+OUT=ROOT/'scratch/json-xdk'; TESTS=Path(__file__).parent/'test_json'; BACKEND=PLATFORM_BASE/'sources/json'
+ORIGINAL=ROOT/'platform/shipyard/json/upstream'
 def execute(args,label,env=None,success=True):
     folder=OUT/label;folder.mkdir(parents=True,exist_ok=True)
     r=subprocess.run(list(map(str,args)),cwd=folder,env=env,text=True,capture_output=True)
@@ -19,7 +24,7 @@ def host():
 INCLUDES=['/I'+str(BACKEND/'include'),'/I'+str(BACKEND.parent),'/I'+str(OUT/'backend-generated')]
 def build(source,label,backend=True,syntax=False,success=True,extra=None):
     compiler,env=host();folder=OUT/label
-    args=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/W4']+(INCLUDES if backend else ['/I'+str(BACKEND/'upstream/include')])
+    args=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/W4']+(INCLUDES if backend else ['/I'+str(ORIGINAL/'include')])
     args+=['/Zs'] if syntax else ['/Fo'+str(folder)+'\\','/Fe'+str(folder/'test.exe')]
     args += list(extra or [])
     args += [source]

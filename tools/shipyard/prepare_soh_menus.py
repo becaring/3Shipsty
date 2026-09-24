@@ -96,9 +96,9 @@ def project(name,text):
         text=once(text,'for (auto& [reason, info] : disabledMap) {','for (auto& disabledPair : disabledMap) {\nconst auto& reason=disabledPair.first;auto& info=disabledPair.second;')
         text=re.sub(r'(ImVec2|ImRect) (\w+) = \{([^;{}]*)\};',r'\1 \2(\3);',text)
         text=text.replace(' noexcept',' throw()')
-        text='#include "ship/config/Config.h"\n#include "ship/window/gui/IconsFontAwesome4.h"\n#include "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n#include "soh-menus/support.h"\n'+text
+        text='#include "ship/config/Config.h"\n#include "ship/window/gui/IconsFontAwesome4.h"\n#include "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n#include "soh-menus/support.h"\n#include "math/color.h"\n'+text
         text=once(text,'(int32_t)(configWindowBackend)','configWindowBackend.GetValue()')
-        text=once(text,'std::fminf(windowWidth * 0.9f, (windowHeight * 1.77f))','static_cast<float>(Shipyard::SohUI::FMin(windowWidth * 0.9f, (windowHeight * 1.77f)))')
+        text=once(text,'std::fminf(windowWidth * 0.9f, (windowHeight * 1.77f))','static_cast<float>(Shipyard::Math::FMin(windowWidth * 0.9f, (windowHeight * 1.77f)))')
         text=text.replace('static_pointer_cast<Menu>','std::static_pointer_cast<Menu>').replace('std::reinterpret_pointer_cast<','Shipyard::GuiCompat::ReinterpretPointerCast<')
         text=text.replace('menuEntries["Settings"]','Shipyard::SohMenus::ValueIndex(menuEntries,"Settings")')
         text=once(text,'menuEntry.sidebars[sidebarLabel]','Shipyard::SohMenus::ValueIndex(menuEntry.sidebars,sidebarLabel)')

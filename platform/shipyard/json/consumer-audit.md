@@ -3,15 +3,15 @@
 The owned dependency is unmodified nlohmann v3.12.0, commit
 `55f93686c01528224f448c19128836e7df245f72`. Its 46 headers and MIT license were
 copied after checking the read-only reference checkout's commit and clean state.
-`source-authority.json` records every official input hash, donor file/hash,
-owned implementation hash, and transforms. This version matches the fallback
+Shipyard `third_party/nlohmann-3.12.0` pins the four production algorithm inputs;
+the full local source remains a differential test reference. Shipyard `NOTICE.md`
+records backend provenance and rights status. This version matches the fallback
 in current `libultraship/CMake/dependencies/android.cmake:22` and `ios.cmake:21`.
 The Windows vcpkg recipe requests JSON without an exact version; common.cmake
 does not select JSON.
 
-The backend is generic compiler-library code carried from
-`D:/Projects/Smash360/platform/xbox360/cpp-compat/json`; no Smash game semantics
-are included. Its lazy named object/array storage derives from the SoH360
+The active backend is compiled from Shipyard `sources/json`. Its lazy named
+object/array storage derives from the historical SoH360
 save_json implementation, but this does not import that game's save model.
 The scanner and floating formatting are generated from the complete pinned
 `detail/input/lexer.hpp` and `detail/conversions/to_chars.hpp`. Only syntax,

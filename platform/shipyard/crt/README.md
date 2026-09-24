@@ -1,17 +1,13 @@
 # Shipyard missing C runtime functions
 
-This is generic Shipyard platform compatibility, not 3Shipsty game behavior.
-The pinned modern application calls four C functions that the XDK CRT does not
-provide: `snprintf`, `roundf`, `truncf`, and `nearbyintf`. These two small source
-files define their genuine unmangled C ABI symbols. There is no alternate game
-path or replacement caller. Compatibility classification: **B**, missing
-standard-library functions; **A**, implementation restricted to XDK-supported
-C++ syntax. The sources are original implementations, not copied donor or SDK
-code. SDK source was inspected read-only to establish its contracts.
+The canonical providers are `sources/crt/float.cpp` and `sources/crt/format.cpp`
+in the pinned Shipyard checkout. This consumer retains only its contract test.
+They define the Xbox CRT's missing `roundf`, `truncf`, `nearbyintf`, and
+`snprintf` symbols; `format.cpp` also defines `Shipyard_Vsnprintf`.
 
 ## Floating-point contract
 
-`float.cpp` operates on native IEEE binary32 representation copied with `memcpy`.
+Shipyard's `float.cpp` operates on native IEEE binary32 representation copied with `memcpy`.
 It verifies the representation at compile time. This is a runtime native value
 boundary; it is not ROM, archive, GPU or serialized data and requires **no
 byteswap** on Xenon.
@@ -43,13 +39,14 @@ item. Host contract results do not claim that target execution occurred.
 
 ## Formatting contract
 
-`format.cpp` uses `_vscprintf` for the required length, then a **fresh**
-`va_start` with `_vsnprintf_s(...,_TRUNCATE,...)` when capacity is nonzero.
+Shipyard's `format.cpp` uses `_vscprintf` for the required length, then an
+independent `va_list` copy with `_vsnprintf_s(...,_TRUNCATE,...)` when capacity is
+nonzero. Its `snprintf` entry starts and ends the original `va_list`.
 It returns the required length on truncation; writes a terminating NUL for
 nonzero capacity; permits a null destination with zero capacity; and preserves
 negative encoding-error results. This supplies C99 length/truncation semantics
-on top of the XDK CRT's formatting dialect and locale behavior. It does not
-promise support for additional format modifiers absent from that CRT.
+on top of the XDK CRT's formatting dialect and locale behavior. The native
+`%z` integer modifier is translated to the equivalent Xbox ILP32 width.
 
 The actual unresolved application callers in `z_std_dma.c`, `audio_load.c`,
 `fault.c`, and `graph.c` use `%s`, `%d`, `%X` and widths, including the real
@@ -76,8 +73,8 @@ compares required lengths and complete written bytes (including embedded NULs),
 capacities 0 through 129, prefix/suffix canaries, a null length query, empty
 output and an encoding failure.
 
-The same command compiles both production files with the native Xbox compiler,
-checks PPC big-endian COFF machine `0x1f2`, verifies all four C symbols, and
+The same command compiles both physical Shipyard sources with the native Xbox
+compiler, checks PPC big-endian COFF machine `0x1f2`, verifies their C symbols, and
 records disassembly. `scratch/crt-xdk/verification.json` contains the receipt.
 `scratch/crt-xdk/xdk/build.json` is the production recipe consumed by
 `generate_xdk_project.command_rows`; it contains exactly **two production TUs**.

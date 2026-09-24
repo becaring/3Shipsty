@@ -152,7 +152,7 @@ def project(name,text):
     text=containers(text)
     text=re.sub(r'(ImVec[24]) (\w+) = \{([^;{}]*)\};',r'\1 \2(\3);',text)
     text=common(SYNTAX(text,set()))
-    if name.endswith('colViewer.cpp'):text=re.sub(r'Shipyard::Resources::get<([012])>',r'std::get<\1>',text)
+    if name.endswith('colViewer.cpp'):text=re.sub(r'xbox_compat::get<([012])>',r'std::get<\1>',text)
     raw=text.encode();edits=[]
     for n in walk(PARSER.parse(raw).root_node):
         if n.type=='string_literal' and any(b>=128 for b in n.text):edits.append((n.start_byte,n.end_byte,escape_literal(n.text.decode())))

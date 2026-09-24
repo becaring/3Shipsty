@@ -12,43 +12,44 @@ from prepare_archives import stable
 from prepare_configuration import once
 from prepare_graphics import feature_header,lower_api
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
+resolve_platform_base(ROOT)
+from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
+from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
 OWN=ROOT/'platform/shipyard/fast3d'
+TRIANGLE_SPLIT_BOUNDARY='    bool depth_test = (mRsp->geometry_mode & G_ZBUFFER) == G_ZBUFFER;'
 
 
 def member_defaults(text,classname):
-    """Move exact member defaults to constructor initializers, preserving order.
-
-    Generic AST technique inspected in Smash360 prepare_fast3d_xdk.py; this
-    implementation rejects nonempty array defaults rather than guessing them.
-    """
-    source=text.encode();edits=[];initializers=[];body=[]
-    matches=[n for n in walk(PARSER.parse(source).root_node) if n.type in ('class_specifier','struct_specifier')
-             and n.child_by_field_name('name') and n.child_by_field_name('name').text.decode()==classname]
-    if len(matches)!=1:raise ValueError('Expected single class '+classname)
-    for member in matches[0].child_by_field_name('body').named_children:
-        if member.type!='field_declaration':continue
-        if any(n.type=='storage_class_specifier' and n.text==b'static' for n in member.named_children):continue
-        declarators=member.children_by_field_name('declarator')
-        for value in member.children_by_field_name('default_value'):
-            decl=next((d for d in reversed(declarators) if d.end_byte<=value.start_byte),None)
-            if not decl or decl.type=='function_declarator':raise ValueError('Unsupported member default '+member.text.decode())
-            names=[n for n in walk(decl) if n.type=='field_identifier']
-            if len(names)!=1:raise ValueError('Ambiguous member name')
-            name=names[0].text.decode();literal=value.text.decode()
-            if decl.type=='array_declarator':
-                if literal!='{}':raise ValueError('Nonempty member array needs explicit projection')
-                body.append('    std::fill('+name+', '+name+' + sizeof('+name+')/sizeof('+name+'[0]), 0);')
-            else:
-                if value.type=='initializer_list':literal=literal[1:-1].strip()
-                initializers.append(name+'('+literal+')')
-            edits.append((decl.end_byte,value.end_byte))
-    for start,end in sorted(edits,reverse=True):source=source[:start]+source[end:]
-    return source.decode(),initializers,body
+    text,fields=collect_member_defaults(text,classname,PARSER,walk)
+    initializers=[];body=[]
+    for item in fields:
+        if item.is_array:
+            if item.value!='{}':raise ValueError('Nonempty member array needs explicit projection')
+            body.append('    std::fill('+item.name+', '+item.name+' + sizeof('+item.name+')/sizeof('+item.name+'[0]), 0);')
+        else:initializers.append(item.name+'('+item.value+')')
+    return text,initializers,body
 
 
 def header(text):
+    text='#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
+    text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
+    text=fast3d_triangle_split.header(text)
+    text=combiner_lookup.header(text)
+    text=once(text,'class Interpreter {',
+              '#include "fast3d/triangle_traits.h"\n#include "fast3d/triangle_pipeline.h"\n\nclass Interpreter {')
+    text=once(text,'    GfxTextureCache mTextureCache{};',
+              '    GfxTextureCache mTextureCache{};\n'
+              '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
+              '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
+              '    XboxTrianglePipelineResult mXboxPipelineResult;')
+    text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
+              '    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);\n'
+              '    void XboxPrepareTrianglePipeline();')
+    text=once(text,'std::stack<F3DGfx*> cmd_stack = {};',
+              'Shipyard::Fast3D::CommandStack<F3DGfx*> cmd_stack = {};')
     # Share the real current shader constants/features with the decoder/backend.
     start=text.index('enum {\n    SHADER_0,');end=text.index('\nunion Gfx;',start)
     key_start=text.index('struct ColorCombinerKey {',start);key_end=text.index('#define SHADER_MAX_TEXTURES',key_start)
@@ -75,47 +76,64 @@ def header(text):
 
 
 def opcode_tables(text):
-    start=text.index('class UcodeHandler {');end=text.index('\n};',start)+3
-    cls=text[start:end]
-    old='''    inline constexpr UcodeHandler(
-        std::initializer_list<std::pair<int8_t, std::pair<const char*, GfxOpcodeHandlerFunc>>> initializer) {
-        std::fill(std::begin(mHandlers), std::end(mHandlers),
-                  std::pair<const char*, GfxOpcodeHandlerFunc>(nullptr, nullptr));
+    return fast3d_opcode.lower(text,PARSER,walk,fast3d_opcode.FAST3D_TABLES)
 
-        for (const auto& [opcode, handler] : initializer) {
-            mHandlers[static_cast<uint8_t>(opcode)] = handler;
+
+def triangle_split(text):
+    return fast3d_triangle_split.transform(text, TRIANGLE_SPLIT_BOUNDARY)
+
+
+def texture_bindings(text):
+    text=once(text,'void Interpreter::TextureCacheClear() {',
+              'void Interpreter::TextureCacheClear() {\n    Flush();\n    mXboxTextureBindings.Invalidate();')
+    text=once(text,'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {',
+              'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {\n    Flush();\n    mXboxTextureBindings.Invalidate();')
+    text=once(text,'void Interpreter::SpReset() {',
+              'void Interpreter::SpReset() {\n    mXboxTextureBindings.Invalidate();')
+    text=once(text,'    mRapi = rapi;',
+              '    mRapi = rapi;\n    mXboxTextureBindings.Invalidate();')
+    text=once(text,'GfxRenderingAPI* Interpreter::GetCurrentRenderingAPI() {',
+              'GfxRenderingAPI* Interpreter::GetCurrentRenderingAPI() {\n    Flush();\n    mXboxTextureBindings.Invalidate();')
+    text=once(text,'    gfx->mRapi->SelectTextureFb((uint32_t)cmd->words.w1);',
+              '    gfx->mXboxTextureBindings.Invalidate();\n    gfx->mRapi->SelectTextureFb((uint32_t)cmd->words.w1);')
+    text=once(text,'''    if (it != mTextureCache.map.end()) {
+        mRapi->SelectTexture(i, it->second.texture_id);
+        *n = &*it;''',
+              '''    if (it != mTextureCache.map.end()) {
+        TextureCacheNode* node=&*it;
+        const Shipyard::Fast3D::TextureSamplerState sampler(it->second.linear_filter,
+                                                             it->second.cms,it->second.cmt);
+        if (mXboxTextureBindings.NeedsSelect(i,node,it->second.texture_id,sampler)) {
+            Flush();
+            mRapi->SelectTexture(i,it->second.texture_id);
+            mXboxTextureBindings.Selected(i,node,it->second.texture_id,sampler);
         }
-    }'''
-    new='''    UcodeHandler(const UcodeEntry* initializer, size_t count) {
-        std::fill(mHandlers, mHandlers + sizeof(mHandlers)/sizeof(mHandlers[0]),
-                  std::pair<const char*, GfxOpcodeHandlerFunc>(nullptr, nullptr));
-        for (size_t i=0; i<count; ++i) {
-            const UcodeEntry& entry=initializer[i];
-            mHandlers[static_cast<uint8_t>(entry.opcode)] = std::make_pair(entry.name, entry.handler);
-        }
-    }'''
-    cls=once(cls,old,new)
-    cls=once(cls,'std::numeric_limits<uint8_t>::max() + 1','256 /* complete uint8_t opcode domain */')
-    text=text[:start]+'struct UcodeEntry { int8_t opcode; const char* name; GfxOpcodeHandlerFunc handler; };\n'+cls+text[end:]
-    source=text.encode();edits=[];tables=[]
-    for node in walk(PARSER.parse(source).root_node):
-        if node.type!='declaration' or not node.text.startswith(b'static constexpr UcodeHandler '):continue
-        declarator=node.child_by_field_name('declarator');name=declarator.child_by_field_name('declarator').text.decode()
-        values=declarator.child_by_field_name('value');rows=[]
-        for entry in values.named_children:
-            if entry.type=='comment':continue
-            fields=[n for n in entry.named_children if n.type!='comment']
-            if len(fields)!=2 or fields[1].type!='initializer_list':raise ValueError('Opcode entry shape drift')
-            pair=[n for n in fields[1].named_children if n.type!='comment']
-            if len(pair)!=2:raise ValueError('Opcode pair shape drift')
-            rows.append('{ '+fields[0].text.decode()+', '+pair[0].text.decode()+', '+pair[1].text.decode()+' }')
-        tables.append(dict(name=name,count=len(rows)))
-        replacement='static const UcodeEntry '+name+'Entries[] = {\n    '+',\n    '.join(rows)+'\n};\n'
-        replacement+='static const UcodeHandler '+name+'('+name+'Entries, sizeof('+name+'Entries)/sizeof('+name+'Entries[0]));'
-        edits.append((node.start_byte,node.end_byte,replacement.encode()))
-    if len(tables)!=6:raise ValueError('Current opcode table count drift')
-    for start,end,replacement in sorted(edits,reverse=True):source=source[:start]+replacement+source[end:]
-    return source.decode(),tables
+        *n = node;''')
+    text=once(text,'    if (mTextureCache.map.size() >= TEXTURE_CACHE_MAX_SIZE) {',
+              '    Flush();\n    if (mTextureCache.map.size() >= TEXTURE_CACHE_MAX_SIZE) {\n'
+              '        mXboxTextureBindings.Invalidate();')
+    text=once(text,'''    mRapi->SelectTexture(i, texture_id);
+    mRapi->SetSamplerParameters(i, false, 0, 0);''',
+              '''    mRapi->SelectTexture(i, texture_id);
+    mRapi->SetSamplerParameters(i, false, 0, 0);
+    mXboxTextureBindings.Selected(i,node,texture_id,Shipyard::Fast3D::TextureSamplerState());''')
+    text=once(text,'''            bool linear_filter = (mRdp->other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
+            if (linear_filter != mRenderingState.mTextures[i]->second.linear_filter ||
+                cms != mRenderingState.mTextures[i]->second.cms || cmt != mRenderingState.mTextures[i]->second.cmt) {''',
+              '''            bool linear_filter = (mRdp->other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
+            const Shipyard::Fast3D::TextureSamplerState desiredSampler(linear_filter,cms,cmt);
+            if (linear_filter != mRenderingState.mTextures[i]->second.linear_filter ||
+                cms != mRenderingState.mTextures[i]->second.cms || cmt != mRenderingState.mTextures[i]->second.cmt ||
+                mXboxTextureBindings.NeedsSampler(i,desiredSampler) ||
+                (mRdp->loaded_texture[i].blended &&
+                 mXboxTextureBindings.NeedsSampler(SHADER_FIRST_REPLACEMENT_TEXTURE+i,desiredSampler))) {''')
+    text=once(text,'                    mRapi->SetSamplerParameters(SHADER_FIRST_REPLACEMENT_TEXTURE + i, linear_filter, cms, cmt);',
+              '                    mRapi->SetSamplerParameters(SHADER_FIRST_REPLACEMENT_TEXTURE + i, linear_filter, cms, cmt);\n'
+              '                    mXboxTextureBindings.SamplerChanged(SHADER_FIRST_REPLACEMENT_TEXTURE+i,desiredSampler);')
+    text=once(text,'                mRapi->SetSamplerParameters(i, linear_filter, cms, cmt);',
+              '                mRapi->SetSamplerParameters(i, linear_filter, cms, cmt);\n'
+              '                mXboxTextureBindings.SamplerChanged(i,desiredSampler);')
+    return text
 
 
 def static_arrays(text):
@@ -144,20 +162,6 @@ def local_array_initializers(text):
         if decl and value and decl.type=='array_declarator' and value.type=='initializer_list':
             gap=source[decl.end_byte:value.start_byte]
             if b'=' not in gap:edits.append((decl.end_byte,value.start_byte,b' = '))
-    for start,end,replacement in sorted(edits,reverse=True):source=source[:start]+replacement+source[end:]
-    return source.decode()
-
-
-def if_initializers(text):
-    source=text.encode();edits=[]
-    for node in walk(PARSER.parse(source).root_node):
-        if node.type!='if_statement':continue
-        condition=node.child_by_field_name('condition');init=condition.child_by_field_name('initializer')
-        if not init:continue
-        value=condition.child_by_field_name('value')
-        replacement=b'{ '+init.text+b' if ('+value.text+b')'+source[condition.end_byte:node.end_byte]+b' }'
-        edits.append((node.start_byte,node.end_byte,replacement))
-    if len(edits)!=2:raise ValueError('Current if-initializer inventory drift')
     for start,end,replacement in sorted(edits,reverse=True):source=source[:start]+replacement+source[end:]
     return source.decode()
 
@@ -204,12 +208,14 @@ def prepare():
     text=once(text,'#include <any>','#include "fast3d/value_init.h"\n#include "fast3d/math.h"\n#include <array>')
     text=text.replace('#include <stdbool.h>','')
     text=once(text,'Interpreter::Interpreter() {','Interpreter::Interpreter() : '+', '.join(defaults)+' {\n'+'\n'.join(arrays))
-    text=once(text,'mRsp = new RSP();','mRsp = Shipyard::Fast3D::NewValueInitializedRSP();')
-    text=once(text,'mRdp = new RDP();','mRdp = Shipyard::Fast3D::NewValueInitializedRDP();')
+    text=once(text,'mRsp = new RSP();','mRsp = Shipyard::Fast3D::NewValueInitialized<RSP>();')
+    text=once(text,'mRdp = new RDP();','mRdp = Shipyard::Fast3D::NewValueInitialized<RDP>();')
     text,tables=opcode_tables(text)
     text=static_arrays(text)
     text=local_array_initializers(text)
-    text=if_initializers(text)
+    resolve_platform_base(ROOT)
+    from xbox360_platform.cpp_syntax import lower_if_initializers
+    text=lower_if_initializers(text,PARSER,walk,expected=2)
     text=aggregate_assignments(text)
     text,count=re.subn(r'RawTexMetadata (rawTexMetadata|rawTexMetdata) = \{\};',r'RawTexMetadata \1;',text)
     if count!=5:raise ValueError('Raw texture local initialization inventory drift')
@@ -235,10 +241,21 @@ def prepare():
     text=text.replace('constexpr size_t','const size_t')
     text=re.sub(r'using (\w+) = ([^;]+?)\(\*\)(\([^;]*\));',r'typedef \2 (*\1)\3;',text)
     vertex_packing=runpy.run_path(str(OWN/'vertex_packing.py'))
+    vertex_transform=runpy.run_path(str(OWN/'vertex_transform.py'))
+    text=vertex_transform['transform'](text)
     text=vertex_packing['transform'](text)
+    text=runpy.run_path(str(OWN/'material_cache_projection.py'))['transform'](text)
+    dispatch_owner=runpy.run_path(str(OWN/'dispatch_owner_projection.py'))
+    text=dispatch_owner['transform'](text)
+    text=triangle_split(text)
+    text=texture_bindings(text)
+    text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['transform'](text)
+    text=combiner_lookup.transform(text)
+    text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
     pending['src/fast/interpreter.cpp']=text
-    pending['include/fast3d/unit_color.h']=vertex_packing['color_header']()
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
+    stale_color=OUT/'generated/include/fast3d/unit_color.h'
+    if stale_color.is_file():stale_color.unlink()
     for name,text in pending.items():stable(OUT/'generated'/name,text)
     stable(OUT/'manifest.json',json.dumps(dict(outputs={n:hashlib.sha256(t.encode()).hexdigest() for n,t in pending.items()},
            interpreter_initializers=defaults,interpreter_array_initialization=arrays,opcode_tables=tables),indent=2)+'\n')

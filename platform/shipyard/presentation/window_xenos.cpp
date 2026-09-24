@@ -4,15 +4,13 @@
 #include "input/physical.h"
 
 namespace Fast {
-GfxWindowBackendXenos::GfxWindowBackendXenos() : mAllKeysUp(NULL), mRefreshRate(60) {
+GfxWindowBackendXenos::GfxWindowBackendXenos() : mAllKeysUp(NULL) {
     mOnFullscreenChanged=NULL; mOnKeyDown=NULL; mOnKeyUp=NULL;
     mOnMouseButtonDown=NULL; mOnMouseButtonUp=NULL; mFullScreen=true;
 }
 void GfxWindowBackendXenos::Init(const char*,const char*,bool,uint32_t,uint32_t,int32_t,int32_t) {
     InitializeNativeDisplay();
-    D3DDISPLAYMODE mode;
-    Shipyard_Check(xenos_device->GetDisplayMode(0,&mode),"display mode");
-    mPacing.SetRefresh(mode.RefreshRate); mRefreshRate=mode.RefreshRate;
+    Shipyard_Check(mSurface.Attach(xenos_device),"display mode");
     mIsRunning=true;
 }
 void GfxWindowBackendXenos::Close(){mIsRunning=false;ShipyardInput_StopPhysicalRumble();}
@@ -20,7 +18,7 @@ void GfxWindowBackendXenos::SetKeyboardCallbacks(bool (*down)(int),bool (*up)(in
 void GfxWindowBackendXenos::SetMouseCallbacks(bool (*down)(int),bool (*up)(int)){mOnMouseButtonDown=down;mOnMouseButtonUp=up;}
 void GfxWindowBackendXenos::SetFullscreenChangedCallback(void (*callback)(bool)){mOnFullscreenChanged=callback;if(callback)callback(true);}
 void GfxWindowBackendXenos::SetFullscreen(bool){if(mOnFullscreenChanged)mOnFullscreenChanged(true);}
-void GfxWindowBackendXenos::GetActiveWindowRefreshRate(uint32_t* hz){*hz=mRefreshRate;}
+void GfxWindowBackendXenos::GetActiveWindowRefreshRate(uint32_t* hz){*hz=mSurface.Refresh();}
 // This native target currently exposes controllers, with no pointer device.
 // Retained modern mappings receive no invented keyboard or pointer events.
 void GfxWindowBackendXenos::SetCursorVisibility(bool){}
@@ -35,24 +33,18 @@ void GfxWindowBackendXenos::GetDimensions(uint32_t* w,uint32_t* h,int32_t* x,int
 void GfxWindowBackendXenos::HandleEvents(){ShipyardInput_PumpGamepads();}
 bool GfxWindowBackendXenos::IsFrameReady(){
     if(!mIsRunning)return false;
-    uint32_t intervals=mPacing.Next();
-    if(!intervals)return false;
-    const DWORD values[]={D3DPRESENT_INTERVAL_ONE,D3DPRESENT_INTERVAL_TWO,D3DPRESENT_INTERVAL_THREE,D3DPRESENT_INTERVAL_FOUR};
-    if(intervals>4){
-        const double until=Shipyard_Time()+double(intervals-4)/mRefreshRate;
-        while(Shipyard_Time()<until)Sleep(1);
-        intervals=4;
-    }
-    Shipyard_Check(xenos_device->SetRenderState(D3DRS_PRESENTINTERVAL,values[intervals-1]),"presentation interval");
+    bool ready=false;
+    Shipyard_Check(mSurface.Prepare(Shipyard_Time,&ready),"presentation interval");
+    if(!ready)return false;
     ShipyardInput_BeginGamepadPresentation();
     return true;
 }
-void GfxWindowBackendXenos::SwapBuffersBegin(){Shipyard_Check(xenos_device->Present(NULL,NULL,NULL,NULL),"Present");}
+void GfxWindowBackendXenos::SwapBuffersBegin(){Shipyard_Check(mSurface.Present(),"Present");}
 void GfxWindowBackendXenos::SwapBuffersEnd(){}
 double GfxWindowBackendXenos::GetTime(){return Shipyard_Time();}
 int GfxWindowBackendXenos::GetTargetFps(){return mTargetFps;}
-void GfxWindowBackendXenos::SetTargetFps(int fps){if(fps<=0)throw std::invalid_argument("presentation rate must be positive");mPacing.SetRate(fps);mTargetFps=fps;}
-void GfxWindowBackendXenos::SetMaxFrameLatency(int frames){Shipyard_Check(xenos_device->SetRenderState(D3DRS_BUFFER2FRAMES,frames>=2),"frame latency");}
+void GfxWindowBackendXenos::SetTargetFps(int fps){if(fps<=0)throw std::invalid_argument("presentation rate must be positive");mSurface.SetRate(fps);mTargetFps=fps;}
+void GfxWindowBackendXenos::SetMaxFrameLatency(int frames){Shipyard_Check(mSurface.SetMaxFrameLatency(frames),"frame latency");}
 const char* GfxWindowBackendXenos::GetKeyName(int){return "Unknown";}
 bool GfxWindowBackendXenos::CanDisableVsync(){return false;}
 bool GfxWindowBackendXenos::IsRunning(){return mIsRunning;}

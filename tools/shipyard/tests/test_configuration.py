@@ -11,8 +11,10 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT=ROOT/'scratch/configuration-xdk'
-sys.path.insert(0,str(ROOT/'tools/shipyard'))
 from cpp_ast import PARSER,walk
 from prepare_game import release_cvars
 
@@ -36,10 +38,11 @@ def host(projected):
                           b'namespace Shipyard { namespace Platform { void RecordBootStage(const char*, bool) {} } }\n#define _XBOX\nnamespace Ship {',1)
     audit=folder/'config-method-audit.cpp';audit.write_bytes(body)
     if projected:
-        includes=[OUT/'generated/include',ROOT/'scratch/audio-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+env['includes'](True)
+        includes=[OUT/'generated/include',ROOT/'scratch/audio-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include',
+                  PLATFORM_BASE,PLATFORM_BASE/'sources']+env['includes'](True)
         sources=[audit,ROOT/'scratch/resource-manager-xdk/generated/src/ship/utils/StringHelper.cpp',
-                 ROOT/'platform/shipyard/json/json.cpp',ROOT/'platform/shipyard/filesystem/filesystem.cpp',
-                 ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp',
+                 PLATFORM_BASE/'sources/json/json.cpp',PLATFORM_BASE/'sources/filesystem/filesystem.cpp',
+                 PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',
                  ROOT/'platform/shipyard/logging/environment.cpp']
     else:
         # Preserve the entire real Config declaration; replace unrelated class

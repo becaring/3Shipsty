@@ -7,9 +7,11 @@ import subprocess
 from pathlib import Path
 from prepare_archives import stable
 from prepare_configuration import once
+from platform_base import resolve as resolve_platform_base
 ROOT=Path(__file__).resolve().parents[2]
 OWN=ROOT/'platform/shipyard/libultra'
 OUT=ROOT/'scratch/libultra-xdk'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 def transform(name,text):
     if '/libultra/' in name and text:
@@ -47,7 +49,7 @@ def prepare():
 
 def includes():
     from prepare_gui import includes as gui_includes
-    return [ROOT/'platform/shipyard']+gui_includes()
+    return [ROOT/'platform/shipyard',PLATFORM_BASE/'sources']+gui_includes()
 
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
@@ -63,10 +65,14 @@ def build():
         print(source.name+': '+str(result.returncode),flush=True)
         if result.returncode:print('\n'.join(l for l in result.stdout.splitlines() if 'error ' in l)[:2000])
         elif struct.unpack_from('<H',obj.read_bytes())[0]!=0x1f2:raise ValueError('Not Xenon')
-    source=OWN/'platform.cpp';obj=folder/'platform.obj';command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
-    result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-    rows.append(dict(source=source.relative_to(ROOT).as_posix(),exit=result.returncode,command=command));print('platform.cpp: '+str(result.returncode))
-    if not result.returncode and struct.unpack_from('<H',obj.read_bytes())[0]!=0x1f2:raise ValueError('Not Xenon')
+    for name in ('clock.cpp','timer.cpp'):
+        source=PLATFORM_BASE/'sources/libultra'/name;obj=folder/name.replace('.cpp','.obj')
+        command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
+        result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);stable(obj.with_suffix('.log'),result.stdout+result.stderr)
+        rows.append(dict(source='shipyard/sources/libultra/'+name,exit=result.returncode,command=command,
+                         source_sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
+        print(name+': '+str(result.returncode),flush=True)
+        if not result.returncode and struct.unpack_from('<H',obj.read_bytes())[0]!=0x1f2:raise ValueError('Not Xenon')
     stable(folder/'build.json',json.dumps(rows,indent=2)+'\n')
     if any(r['exit'] for r in rows):raise SystemExit(1)
     # Upstream supplies these as a static library. Preserve archive extraction:

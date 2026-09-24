@@ -9,9 +9,11 @@ import struct
 import subprocess
 from dependency_sources import ROOT
 from prepare_archives import stable
+from platform_base import resolve as resolve_platform_base
 
 OUT=ROOT/'scratch/audio-xdk'
 OWN=ROOT/'platform/shipyard/audio'
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 
 def once(text,old,new):
@@ -90,19 +92,22 @@ def prepare():
 def build():
     prepare()
     resource=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_resources.py'))
-    includes=[OUT/'generated/include',ROOT/'scratch/configuration-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+resource['includes'](True)
+    includes=[PLATFORM_BASE/'sources',OUT/'generated/include',ROOT/'scratch/configuration-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+resource['includes'](True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
     flags=['/nologo','/c','/TP','/EHsc', '/GR','/MT','/O2','/fp:precise','/D_XBOX','/D_XBOX_VER=200','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0',
            '/I'+str(sdk/'include/xbox')]+['/I'+str(p) for p in includes]
     sources=[OUT/'generated/src/ship/audio'/(n+'.cpp') for n in ('SoundMatrixDecoder','AudioPlayer','NullAudioPlayer','Audio')]
-    sources += [OWN/(n+'.cpp') for n in ('PcmBufferPool','XAudio2AudioPlayer','audio_log')]
+    sources += [PLATFORM_BASE/'sources/audio/PcmBufferPool.cpp',
+                PLATFORM_BASE/'sources/audio/XAudio2AudioPlayer.cpp', OWN/'audio_log.cpp']
     records=[]
     for source in sources:
         obj=folder/(source.stem+'.obj');command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True)
         stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-        records.append(dict(source=source.relative_to(ROOT).as_posix(),exit=result.returncode,command=command))
+        label=('shipyard/'+source.relative_to(PLATFORM_BASE).as_posix() if source.is_relative_to(PLATFORM_BASE)
+               else source.relative_to(ROOT).as_posix())
+        records.append(dict(source=label,exit=result.returncode,command=command))
         if not result.returncode and struct.unpack_from('<H',obj.read_bytes())[0]!=0x1f2:raise ValueError('Not a Xenon object')
     stable(folder/'build.json',json.dumps(records,indent=2)+'\n')
     for row in records:print(str(row['exit'])+' '+row['source'])

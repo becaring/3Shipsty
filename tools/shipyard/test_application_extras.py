@@ -4,6 +4,8 @@ from prepare_application_extras import ROOT,OUT,OWN,prepare,includes
 from prepare_archives import stable
 from test_gameplay_features import read,structure,inventory
 from cpp_ast import PARSER,walk
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 BASE='soh/soh/Enhancements/'
 def method(text,name):
  return next(n.text.decode() for n in walk(PARSER.parse(text.encode()).root_node) if n.type=='function_definition' and n.child_by_field_name('declarator').text.decode().split('(')[0].lstrip('* ')==name)
@@ -57,7 +59,7 @@ def main():
   command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/FI'+str(ROOT/'scratch/configuration-xdk/generated/include/compile_definitions.h')]
   if not is_projected:command+=['/Zc:preprocessor','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
   command+=['/I'+str(p) for p in includes()]+[str(folder/'data.cpp')]
-  if is_projected:command+=[str(ROOT/'platform/shipyard/json/json.cpp')]
+  if is_projected:command+=[str(PLATFORM_BASE/'sources/json/json.cpp')]
   command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'data.exe'),'/link','/OPT:REF']
   r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'data-build.log',r.stdout+r.stderr);assert not r.returncode,folder/'data-build.log'
   r=subprocess.run([str(folder/'data.exe')],cwd=ROOT,capture_output=True,text=True,encoding='utf-8');row=dict(projected=is_projected,command=command,exit=r.returncode,stdout=r.stdout,stderr=r.stderr);rows.append(row);assert not r.returncode,row

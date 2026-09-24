@@ -5,7 +5,7 @@ import runpy
 import sys
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'tools/shipyard'))
-from prepare_presentation import prepare,OUT,OWN
+from prepare_presentation import prepare,OUT,OWN,PLATFORM_BASE
 from prepare_archives import stable
 
 
@@ -50,7 +50,7 @@ int main(){
 '''
     stable(folder/'contract.cpp',text)
     env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
-    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [OWN,OUT/'generated/include',ROOT/'scratch/fast3d-xdk/generated/include']]
+    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [PLATFORM_BASE/'sources',OWN,OUT/'generated/include',ROOT/'scratch/fast3d-xdk/generated/include']]
     env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
     result=env['invoke']([folder/'contract.exe'],folder,'run')
     stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],draw_path_unchanged=True,deterministic=True,target_runtime_executed=False),indent=2)+'\n')

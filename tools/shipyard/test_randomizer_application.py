@@ -1,6 +1,8 @@
 """Full-source inventory plus actual entrance/tracker table and JSON contracts."""
 import collections,hashlib,json,re,runpy,struct,subprocess
 from prepare_randomizer_application import ROOT,OUT,OWN,BASE,includes,prepare,kids
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
 from prepare_custom_message import literal_bytes
@@ -96,10 +98,10 @@ number(sizeof(entranceData)/sizeof(entranceData[0]));for(const auto& row:entranc
     text+='printf("application tables and 8196 JSON cases: %llu\\n",digest);}\n'
     stable(folder/'contract.cpp',text)
     compiler,env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))['host_environment']()
-    jsonroots=[ROOT/'platform/shipyard/json/include',ROOT/'scratch/json-xdk/backend-generated'] if projected else [ROOT/'platform/shipyard/json/upstream/include']
-    roots=jsonroots+includes();cmd=[str(compiler),'/nologo','/std:c++20','/Zc:preprocessor','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/DSPDLOG_ACTIVE_LEVEL=6']+['/I'+str(p) for p in roots]+[str(folder/'contract.cpp')]
-    if projected:cmd.append(str(ROOT/'platform/shipyard/json/json.cpp'))
-    cmd.append(str(ROOT/'platform/shipyard/async/native.cpp'))
+    jsonroots=[PLATFORM_BASE/'sources/json/include',ROOT/'scratch/json-xdk/backend-generated'] if projected else [ROOT/'platform/shipyard/json/upstream/include']
+    roots=jsonroots+includes()+[PLATFORM_BASE/'sources'];cmd=[str(compiler),'/nologo','/std:c++20','/Zc:preprocessor','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/DSPDLOG_ACTIVE_LEVEL=6']+['/I'+str(p) for p in roots]+[str(folder/'contract.cpp')]
+    if projected:cmd.append(str(PLATFORM_BASE/'sources/json/json.cpp'))
+    cmd.append(str(PLATFORM_BASE / 'sources/async/native.cpp'))
     cmd+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     r=subprocess.run(cmd,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',r.stdout+r.stderr);assert not r.returncode,folder/'build.log'
     r=subprocess.run([str(folder/'contract.exe')],cwd=ROOT,capture_output=True,text=True);assert not r.returncode,(r.stdout,r.stderr)
@@ -143,7 +145,7 @@ int main(){
 '''
     stable(folder/'contract.cpp',text)
     compiler,env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))['host_environment']()
-    cmd=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),str(folder/'contract.cpp'),str(ROOT/'platform/shipyard/async/native.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
+    cmd=[str(compiler),'/nologo','/std:c++20','/EHsc','/MD','/I'+str(ROOT/'platform/shipyard'),'/I'+str(PLATFORM_BASE/'sources'),str(folder/'contract.cpp'),str(PLATFORM_BASE / 'sources/async/native.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     result=subprocess.run(cmd,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',result.stdout+result.stderr);assert result.returncode==0,folder/'build.log'
     result=subprocess.run([str(folder/'contract.exe')],cwd=ROOT,capture_output=True,text=True);assert result.returncode==0,result.stdout+result.stderr
     return dict(command=cmd,exit=result.returncode,stdout=result.stdout)

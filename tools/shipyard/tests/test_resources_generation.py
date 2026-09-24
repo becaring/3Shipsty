@@ -14,16 +14,14 @@ class Generation(unittest.TestCase):
     def setUp(self):
         scratch=ROOT/'scratch/resources-xdk';scratch.mkdir(parents=True,exist_ok=True)
         self.temp=tempfile.TemporaryDirectory(dir=scratch)
-        self.root=Path(self.temp.name);self.source=self.root/'source';self.helper=self.root/'helper'
-        self.helper.mkdir();self.output=self.root/'generated'
+        self.root=Path(self.temp.name);self.source=self.root/'source';self.output=self.root/'generated'
         lock=json.loads((GEN.BASE/'sources.lock.json').read_text())
         for rel in lock['sources']:
             dest=self.source/rel;dest.parent.mkdir(parents=True,exist_ok=True)
             dest.write_bytes((ROOT/'libultraship'/rel).read_bytes())
-        for rel in lock['helpers']:(self.helper/rel).write_bytes((GEN.BASE/rel).read_bytes())
 
     def tearDown(self):self.temp.cleanup()
-    def generate(self):return GEN.generate(self.source,self.output,self.helper)
+    def generate(self):return GEN.generate(self.source,self.output)
 
     def test_deterministic_and_mapping(self):
         first=self.generate();saved={str(p.relative_to(self.output)):p.read_bytes() for p in self.output.rglob('*') if p.is_file()}
@@ -48,13 +46,14 @@ class Generation(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Source hash mismatch'):self.generate()
         self.assertFalse(self.output.exists())
 
-    def test_changed_helper_is_rejected_before_output(self):
-        target=self.helper/'variant.h';target.write_bytes(target.read_bytes()+b'\n// changed\n')
-        with self.assertRaisesRegex(ValueError,'Helper hash mismatch'):self.generate()
-        self.assertFalse(self.output.exists())
+    def test_generation_uses_shared_variant_without_local_helper(self):
+        self.generate()
+        text=(self.output/'include/ship/resource/File.h').read_text()
+        self.assertIn('#include <xbox_compat/variant.h>',text)
+        self.assertIn('xbox_compat::variant<',text)
 
     def test_output_outside_scratch_rejected(self):
         with self.assertRaisesRegex(ValueError,'owned scratch'):
-            GEN.generate(self.source,ROOT/'platform/shipyard/resources/should-not-exist',self.helper)
+            GEN.generate(self.source,ROOT/'platform/shipyard/resources/should-not-exist')
 
 if __name__=='__main__':unittest.main()

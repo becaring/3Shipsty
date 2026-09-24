@@ -30,10 +30,10 @@ def transform(relative, original):
     output += ['#line 1 "'+mapped+'"\n']
     spans=[]
     for number,line in enumerate(lines,1):
-        replacement=line.replace('#include <variant>','#include "resources/variant.h"')
-        replacement=replacement.replace('std::variant<','Shipyard::Resources::variant<')
-        replacement=replacement.replace('std::get<','Shipyard::Resources::get<')
-        replacement=replacement.replace('std::holds_alternative<','Shipyard::Resources::holds_alternative<')
+        replacement=line.replace('#include <variant>','#include <xbox_compat/variant.h>')
+        replacement=replacement.replace('std::variant<','xbox_compat::variant<')
+        replacement=replacement.replace('std::get<','xbox_compat::get<')
+        replacement=replacement.replace('std::holds_alternative<','xbox_compat::holds_alternative<')
         replacement=replacement.replace(' final :',' :').replace(' override','')
         if relative.endswith('/ResourceType.h'):
             if line=='#pragma once\n': replacement+='#include "binary/compat.h"\n'
@@ -69,15 +69,14 @@ def transform(relative, original):
     return ''.join(output),spans
 
 
-def generate(source_root=None, output=None, helper_root=None):
+def generate(source_root=None, output=None):
     source_root=Path(source_root or ROOT/'libultraship')
-    helper_root=Path(helper_root or BASE)
     output=Path(output or ROOT/'scratch/resources-xdk/generated').resolve()
     scratch=(ROOT/'scratch').resolve()
     if not output.is_relative_to(scratch): raise ValueError('Generated output must remain beneath owned scratch')
     lock=json.loads((BASE/'sources.lock.json').read_text(encoding='utf-8'))
     if lock['lus_commit']!=COMMIT: raise ValueError('Unexpected LUS source pin')
-    staged={};manifest={'lus_commit':COMMIT,'normalization':'UTF-8 BOM removed; CRLF to LF','files':{},'helpers':{}}
+    staged={};manifest={'lus_commit':COMMIT,'normalization':'UTF-8 BOM removed; CRLF to LF','files':{}}
     # Verify every input before creating output or writing any generated file.
     for relative,expected in lock['sources'].items():
         original=normalize((source_root/relative).read_bytes())
@@ -85,10 +84,6 @@ def generate(source_root=None, output=None, helper_root=None):
         generated,spans=transform(relative,original)
         staged[relative]=generated
         manifest['files'][relative]={'source_sha256':expected,'generated_sha256':digest(generated),'edits':spans}
-    for relative,expected in lock['helpers'].items():
-        if digest(normalize((helper_root/relative).read_bytes()))!=expected:
-            raise ValueError('Helper hash mismatch: '+relative)
-        manifest['helpers'][relative]=expected
     for relative,text in staged.items():
         target=output/relative;target.parent.mkdir(parents=True,exist_ok=True)
         target.write_bytes(text.encode('utf-8'))

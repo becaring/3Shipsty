@@ -40,12 +40,13 @@ audit, not evidence that the complete application links.
 | A | Qualify the real `std::static_pointer_cast` in `GfxSetNativeDimensions` because XDK misses the unqualified explicit-template call through ADL | Same shared owner, weak interpreter acquisition, exact native dimensions call. Dynamic cast and null-result paths in pixel-depth methods remain. |
 | B | Narrow umbrella headers to the actual libultra declarations and needed real service definitions | Avoids unrelated SDL/desktop header dependencies; all methods retained. Resource bridge methods use real ResourceManager and archives, with no providers substituted. |
 
-`StopTimers()` stops and joins workers. Call it during orderly application
-shutdown **before destroying callback queue storage**. The registry also joins
-at process teardown, but that fallback does not extend caller-owned queue
-lifetimes. The present VI callback only enqueues; it must not recursively stop
-or add timers while registry shutdown is joining it. A stopped registry accepts
-new timers, matching reinitialization needs.
+`StopTimers()` stops and joins workers when it returns true. Call it during
+orderly application shutdown **before destroying callback queue storage**.
+It returns false from a timer callback or during another shutdown; `AddTimer()`
+also returns false while shutdown is joining workers. The registry accepts new
+timers after a completed shutdown, matching reinitialization needs. The
+registry also joins at process teardown, but that fallback does not extend
+caller-owned queue lifetimes.
 
 The constructor warning about passing `this` to the worker is expected: all
 callback values and the stop event precede the worker in declaration and

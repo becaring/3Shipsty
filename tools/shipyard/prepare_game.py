@@ -12,10 +12,10 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import types
 from collections import Counter
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from source_inventory import ROOT, inventory
+from platform_base import resolve as resolve_platform_base
 
 OUT = ROOT / 'scratch/game-xdk'
 TREE = OUT / 'source'
@@ -90,6 +90,7 @@ def summarize_batch(directory):
 
 def lower_c(raw):
     validate_inputs()
+    platform_base = resolve_platform_base(ROOT)
     sys.path.insert(0, str(ROOT / 'scratch/python-tools'))
     sys.path.insert(0, str(ROOT / 'platform/shipyard/game'))
     import semantic_bool
@@ -123,14 +124,12 @@ def lower_c(raw):
         stack.extend(node.named_children)
     for offset, value in sorted(case_edits, reverse=True):
         source = source[:offset] + value + source[offset:]
-    path = ROOT / 'platform/shipyard/game/donor/c89_lower.py'
-    donor = path.read_bytes()
-    module = types.ModuleType('shipyard_c89_lower')
-    module.__file__ = str(path)
-    text = donor.decode().replace("active = b'/upstream/' in name and name.endswith((b'.c', b'.inc'))",
-        "active = b'microsoft xbox 360 sdk/' not in name")
-    exec(compile(text, str(path), 'exec'), module.__dict__)
-    source, scopes = module.lower(source)
+    sys.path.insert(0, str(platform_base / 'python'))
+    from xbox360_platform import c89_lower
+    source, scopes = c89_lower.lower(
+        source,
+        active_source=lambda name: b'microsoft xbox 360 sdk/' not in name,
+        float_union_type=b'CutsceneData')
     stats['c89_scopes'] = scopes + case_scopes
     return source, stats
 
@@ -709,8 +708,10 @@ def main():
     definitions += ['LOG_LEVEL_GAME_PRINTS=' + match[1]]
     common = [str(cl), '/nologo', '/MT', '/fp:precise']
     flags = ['/D' + d for d in definitions] + ['/I' + str(p) for p in includes] + ['/FI' + str(cvar_header), '/FI' + str(INCLUDE / 'xdk_math_boundary.h')]
+    lowerer = resolve_platform_base(ROOT) / 'python/xbox360_platform/c89_lower.py'
     report = dict(scope='Real C source compilation audit; no archive or runtime parity claim',
-                  selected_count=len(selected), complete=False, compiler_sha256=digest(cl.read_bytes()), results=[])
+                  selected_count=len(selected), complete=False, compiler_sha256=digest(cl.read_bytes()),
+                  lowering_source=str(lowerer.resolve()), lowering_sha256=digest(lowerer.read_bytes()), results=[])
     for name in selected:
         stem = name.replace('/', '__')[:-2]
         output = OUT / 'generated' / (stem + '.c')

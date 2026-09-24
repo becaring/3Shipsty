@@ -9,6 +9,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/binary-xdk'
 TESTS = Path(__file__).parent
 NAMES = ('BinaryReader', 'BinaryWriter', 'MemoryStream', 'Stream')
@@ -54,6 +57,7 @@ def host(label, source):
     compiler, env = host_environment()
     command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/GR', '/MD', '/W4',
                '/I' + str(source / 'include'), '/I' + str(ROOT / 'platform/shipyard'),
+               '/I' + str(PLATFORM_BASE / 'sources'),
                '/Fe:' + str(folder / 'contract.exe'), '/Fo:' + str(folder) + '/',
                TESTS / 'test_binary_contract.cpp']
     command += [source / 'src/ship/utils/binarytools' / (name + '.cpp') for name in NAMES]
@@ -67,7 +71,7 @@ def xdk(label, source, expected_success):
     folder = OUT / label; folder.mkdir(parents=True, exist_ok=True)
     base = [XDK / 'bin/win32/cl.exe', '/nologo', '/EHsc', '/GR', '/D_XBOX', '/D_XBOX_VER=200',
             '/I' + str(XDK / 'include/xbox'), '/I' + str(source / 'include'),
-            '/I' + str(ROOT / 'platform/shipyard')]
+            '/I' + str(ROOT / 'platform/shipyard'), '/I' + str(PLATFORM_BASE / 'sources')]
     records = []
     for name in NAMES:
         record = invoke(base + ['/c', '/Fo' + str(folder / (name + '.obj')),

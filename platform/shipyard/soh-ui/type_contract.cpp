@@ -72,7 +72,7 @@ int main(){
     uint32_t bits=17;uint64_t hash=1469598103934665603ULL;
     for(unsigned i=0;i<1048576;++i){bits=bits*1664525u+1013904223u;float v;std::memcpy(&v,&bits,4);
 #ifdef SHIPYARD_UI_PROJECTED
-        unsigned char channel=(unsigned char)Shipyard::SohUI::FMin(Shipyard::SohUI::FMax(v*255,0),255);
+        unsigned char channel=Shipyard::Math::ColorByte(v);
 #else
         unsigned char channel=(unsigned char)fmin(fmax(v*255,0),255);
 #endif

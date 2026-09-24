@@ -24,6 +24,16 @@
     "url": "https://github.com/ocornut/imgui.git",
     "receipt_sha256": "cd57d2e911cede76d2635367c8b60ca8dc3dbd5e5c4390041b225fa04acdd937"
   },
+  "spdlog": {
+    "commit": "486b55554f11c9cccc913e11a87085b2a91f706f",
+    "url": "https://github.com/gabime/spdlog.git",
+    "receipt_sha256": "e694de3febe0ea6de3ff0054563916ca7f12fbab79da7be3c0d2fbf524727f64"
+  },
+  "fmt-xdk": {
+    "commit": "135ab5cf71ed731fc9fa0653051e7d4884a3652f",
+    "url": "https://github.com/fmtlib/fmt.git",
+    "receipt_sha256": "35a1266cc268f9d59d08d05d3c9493e75645e725985c6208a137e7612a07d2e1"
+  },
   "opus": {
     "commit": "22244de5a79bd1d6d623c32e72bf1954b56235be",
     "url": "https://github.com/xiph/opus.git",

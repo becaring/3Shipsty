@@ -1,8 +1,7 @@
 #include "ship-utils/support.h"
+#include "entropy/native.h"
 #include <stdexcept>
-#ifdef _XBOX
-#include <xtl.h>
-#else
+#ifndef _XBOX
 #include <random>
 #endif
 
@@ -11,7 +10,7 @@ uint32_t Shipyard::Utils::DeviceRandom() {
     // Match random_device's 32-bit result. XNet initialization belongs to the
     // application, as with the existing native libzip entropy boundary.
     uint32_t seed;
-    if (XNetRandom(reinterpret_cast<BYTE*>(&seed), sizeof(seed)) != 0) {
+    if (!Shipyard::Entropy::FillBytes(reinterpret_cast<unsigned char*>(&seed), sizeof(seed))) {
         throw std::runtime_error("XNetRandom failed to seed ShipUtils");
     }
     return seed;

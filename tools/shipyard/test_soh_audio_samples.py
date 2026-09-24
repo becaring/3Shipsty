@@ -7,6 +7,8 @@ import struct
 import subprocess
 import wave
 from prepare_soh_resources import ROOT,OWN,OUT,prepare,includes
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from cpp_ast import PARSER,walk
 
@@ -35,13 +37,13 @@ def main():
             text=text.replace('#include '+unused,'// Unused service header omitted in this bounded host audit.')
         if not projected:text=text.replace('#include "z64.h"','').replace('#include "z64audio.h"','#include "soh/resource/audio_enums.h"')
         stable(dest/'factory_contract.cpp',text+'\n'+(OWN/'audio_sample_contract.cpp').read_text())
-        inc=includes(projected)
+        inc=includes(projected)+[PLATFORM_BASE/'sources']
         if not projected:inc+=[OUT/'generated/soh']
         resources=ROOT/'scratch/resources-xdk/generated' if projected else ROOT/'libultraship';binary=ROOT/'scratch/binary-xdk/generated' if projected else ROOT/'libultraship'
         sources=[dest/'factory_contract.cpp',base/'soh/soh/resource/type/AudioSample.cpp']
         sources += [resources/'src/ship/resource'/(n+'.cpp') for n in ('Resource','ResourceFactoryBinary','ResourceFactoryXML')]
         sources += [binary/'src/ship/utils/binarytools'/(n+'.cpp') for n in ('BinaryReader','MemoryStream','Stream')]
-        if projected:sources += [ROOT/'platform/shipyard/async/native.cpp',ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
+        if projected:sources += [PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/GR','/MD','/DNOMINMAX','/DSPDLOG_ACTIVE_LEVEL=0']
         command += ['/I'+str(p) for p in inc]+[str(p) for p in sources]+[str(ROOT/'scratch/vorbis-xdk/host/vorbis.lib'),str(ROOT/'scratch/codec-xdk/host/ogg.lib'),'/Fo:'+str(dest)+'/', '/Fe:'+str(dest/'contract.exe')]
         result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(dest/'build.log',result.stdout+result.stderr)

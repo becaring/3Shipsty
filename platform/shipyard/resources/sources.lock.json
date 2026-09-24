@@ -23,8 +23,5 @@
     "src/ship/resource/type/Json.cpp": "982ca0edebdd12a8fc97ce68b43d82a92cb410a348f005c4db2fe3515615bc1e",
     "src/ship/resource/type/Shader.cpp": "2b3436bbf6a8585d339922ba1b441fa60b12c76c31b29020a09d5353e73d058b"
   },
-  "helpers": {
-    "variant.h": "4953b3467f00519b52c27768c6ce55e768bae6b0565fe408c9b2c4abf981c874"
-  },
-  "provenance": "Transforms independently authored against pinned owned LUS. Variant independently authored; no Smash resource runtime copied."
+  "provenance": "Transforms independently authored against pinned owned LUS. Variant uses the pinned Shipyard value types implementation."
 }

@@ -5,7 +5,7 @@ import runpy
 import sys
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'tools/shipyard'))
-from prepare_xenos import prepare,OUT,OWN
+from prepare_xenos import prepare,OUT,OWN,PLATFORM_BASE
 from prepare_archives import stable
 
 def main():
@@ -38,53 +38,24 @@ int main(){
 }
 '''
     stable(folder/'contract.cpp',text)
-    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [OWN,OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',ROOT/'scratch/graphics-xdk/include']]
+    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [PLATFORM_BASE/'sources/xenos',OWN,OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',PLATFORM_BASE/'sources/graphics']]
     env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
     result=env['invoke']([folder/'contract.exe'],folder,'run')
-    generated=(OUT/'generated/native.cpp').read_text()
-    begin=generated.index('void SetNativeBindingConstants(')
-    end=generated.index('\n}',begin)+2
-    assert 'native_state.binding_constants_valid=false;' in generated
-    binding='''#include <cstring>
-#include <cstdio>
-#include <stdexcept>
-struct NativeState { float binding_constants[24]; bool binding_constants_valid; } native_state = {};
-struct Device {
-    int writes = 0;
-    float values[24] = {};
-    int SetPixelShaderConstantF(int start, const float* values, int count) {
-        if (start != 8 || count != 6) return -1;
-        std::memcpy(this->values, values, sizeof(this->values));
-        ++writes;
-        return 0;
-    }
-} device, *xenos_device = &device;
-void Shipyard_Check(int result, const char*) { if (result) throw std::runtime_error("SDK write"); }
-''' + generated[begin:end] + '''
-int main() {
-    float values[24] = {};
-    SetNativeBindingConstants(values);
-    SetNativeBindingConstants(values);
-    if (device.writes != 1) return 1;
-    values[23] = 640.0f;
-    SetNativeBindingConstants(values);
-    SetNativeBindingConstants(values);
-    if (device.writes != 2 || device.values[23] != 640.0f) return 2;
-    native_state.binding_constants_valid = false;
-    SetNativeBindingConstants(values);
-    if (device.writes != 3) return 3;
-    values[0] = -0.0f;
-    SetNativeBindingConstants(values);
-    if (device.writes != 4) return 4;
-    std::puts("binding constants: reuse, change, invalidation, exact bits pass");
-}
-'''
-    stable(folder/'binding_contract.cpp',binding)
-    env['invoke']([compiler,'/nologo','/std:c++20','/EHsc','/MD',folder/'binding_contract.cpp',
-                   '/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'binding_contract.exe')],folder,'build-binding',environment)
-    binding_result=env['invoke']([folder/'binding_contract.exe'],folder,'run-binding')
-    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout']+binding_result['stdout'],
-                                                  target_runtime_executed=False),indent=2)+'\n')
+    core=(PLATFORM_BASE/'sources/xenos/core.cpp').read_text()
+    assert all('SetTexture('+str(slot)+',texture)' in core for slot in range(6))
+    assert 'SetTexture(tile,texture)' not in core
+    assert core.count('__vxor(__lvx(cached,')==6
+    assert core.count('__stvx(__lvx(values,')==6
+    assert 'native_state.binding_constants_valid=false;' in core
+    assert 'published_framebuffer_image=image;' in core
+    assert 'void DestroyFramebufferNative(int id)' in core
+    assert 'void ClearRegion(float x0,float y0,float x1,float y1)' in core
+    assert 'Smash360_' not in core and 'SoH_' not in core
+    assert 'ShipyardXenos::SetShaderCache(NULL)' in (OWN/'api.cpp').read_text()
+    assert not (OUT/'generated/native.cpp').exists()
+    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],
+                                                  target_runtime_executed=False,
+                                                  physical_core=str(PLATFORM_BASE/'sources/xenos/core.cpp')),indent=2)+'\n')
     print(result['stdout'])
-    print(binding_result['stdout'])
+    print('physical Xenos core and six literal binding contracts pass')
 if __name__=='__main__':main()

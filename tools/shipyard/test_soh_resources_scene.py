@@ -5,6 +5,8 @@ import runpy
 import subprocess
 import re
 from prepare_soh_resources import ROOT, OUT, OWN, SCENE_COMMANDS, prepare, includes
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 from prepare_archives import stable
 from dependency_sources import verified
 from cpp_ast import PARSER, walk
@@ -79,8 +81,8 @@ namespace SOH {
         sources += [resources / 'src/ship/resource' / (n + '.cpp') for n in ('Resource',)]
         sources += [binary / 'src/ship/utils/binarytools' / (n + '.cpp') for n in ('BinaryReader', 'MemoryStream', 'Stream')]
         if projected:
-            sources += [ROOT / 'platform/shipyard/async/native.cpp', ROOT / 'platform/shipyard/logging/chrono/chrono.cpp', ROOT / 'platform/shipyard/logging/environment.cpp']
-        paths = includes(projected) + [ROOT / 'platform/shipyard']
+            sources += [PLATFORM_BASE / 'sources/async/native.cpp', PLATFORM_BASE / 'sources/clock/chrono.cpp', ROOT / 'platform/shipyard/logging/environment.cpp']
+        paths = includes(projected) + [ROOT / 'platform/shipyard', PLATFORM_BASE/'sources']
         command = [str(compiler), '/nologo', '/std:c++20', '/utf-8', '/EHsc', '/GR', '/MD', '/DNOMINMAX', '/DSPDLOG_ACTIVE_LEVEL=0']
         command += ['/I' + str(p) for p in paths] + [str(p) for p in sources]
         command += ['/Fo:' + str(folder) + '/', '/Fe:' + str(folder / 'audit.exe')]

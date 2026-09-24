@@ -1,6 +1,6 @@
 {
   "base": "../LibUltraShip+Fast3D360",
-  "git_revision": "78dde51",
-  "api_version": 1,
-  "baseline_sha256": "0a69c692493e941cbf4093ce27abe4b18e3a4a0ab96bd29f6f6e7c626a77c9ca"
+  "git_revision": "1b8090e71db8a12efe11b6ab366a27ab80a82f0d",
+  "api_version": 5,
+  "baseline_sha256": "d6889f2495b3289c066942ee37c676f0fc47330c7153effe8c6db0a83ea75fad"
 }

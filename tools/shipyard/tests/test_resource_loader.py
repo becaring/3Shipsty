@@ -6,6 +6,10 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT=ROOT/'scratch/resource-manager-xdk'
 
 
@@ -13,14 +17,13 @@ def main():
     env=runpy.run_path(str(Path(__file__).with_name('test_resources.py')))
     compiler,environment=env['ENV'].host_environment()
     folder=OUT/'host-loader';folder.mkdir(parents=True,exist_ok=True)
-    includes=[OUT/'generated/include']+env['includes'](True)+[ROOT/'scratch/async-xdk/generated',
+    includes=[OUT/'generated/include']+env['includes'](True)+[PLATFORM_BASE/'sources',ROOT/'scratch/async-xdk/generated',
               ROOT/'scratch/deps/tinyxml2', ROOT/'libultraship/include']
     flags=['/nologo','/std:c++20','/EHsc','/MD','/Gy','/Zc:inline','/DSPDLOG_ACTIVE_LEVEL=0','/DNOMINMAX','/Dnssv_CONFIG_SELECT_STRING_VIEW=1']
     flags+=['/I'+str(p) for p in includes]
     # This bounded unit audit extracts exact method definitions, as the shader
     # decoder audit does. It is never a production source or application path.
     # The complete TU is separately compiled by prepare_resource_manager.py.
-    sys.path.insert(0,str(ROOT/'tools/shipyard'))
     from cpp_ast import PARSER,walk
     complete=OUT/'generated/src/ship/resource/ResourceLoader.cpp'
     data=complete.read_bytes()
@@ -48,8 +51,9 @@ def main():
     sources += [glob_audit]
     sources += [ROOT/'scratch/resources-xdk/generated/src/ship/resource'/n for n in env['NAMES']]
     sources += [ROOT/'scratch/binary-xdk/generated/src/ship/utils/binarytools'/(n+'.cpp') for n in ('BinaryReader','BinaryWriter','MemoryStream','Stream')]
-    sources += [ROOT/p for p in ('platform/shipyard/json/json.cpp','platform/shipyard/async/native.cpp',
-                 'platform/shipyard/logging/chrono/chrono.cpp','platform/shipyard/logging/environment.cpp')]
+    sources += [PLATFORM_BASE/'sources/json/json.cpp',ROOT/'platform/shipyard/logging/environment.cpp',
+                PLATFORM_BASE/'sources/clock/chrono.cpp']
+    sources += [PLATFORM_BASE/'sources/async/native.cpp']
     objects=[];records=[]
     for index,source in enumerate(sources):
         obj=folder/(str(index)+'-'+source.stem+'.obj');objects.append(obj)

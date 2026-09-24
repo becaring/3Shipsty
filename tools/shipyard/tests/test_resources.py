@@ -7,6 +7,10 @@ from pathlib import Path
 import struct
 
 ROOT = Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/resources-xdk'
 SPEC = importlib.util.spec_from_file_location('binary_environment', Path(__file__).with_name('test_binary.py'))
 ENV = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(ENV)
@@ -18,9 +22,9 @@ NAMES = ['Resource.cpp', 'ResourceFactoryBinary.cpp', 'ResourceFactoryXML.cpp',
 def includes(projected):
     if projected:
         return [OUT/'generated/include', ROOT/'scratch/binary-xdk/generated/include',
-                ROOT/'platform/shipyard/json/include', ROOT/'scratch/json-xdk/backend-generated',
+                PLATFORM_BASE/'sources/json/include', ROOT/'scratch/json-xdk/backend-generated',
                 ROOT/'scratch/logging-xdk/core-include', ROOT/'scratch/logging-xdk/include',
-                ROOT/'scratch/deps/fmt-xdk', ROOT/'platform/shipyard', ROOT]
+                ROOT/'scratch/deps/fmt-xdk', ROOT/'platform/shipyard', PLATFORM_BASE, PLATFORM_BASE/'sources', PLATFORM_BASE/'sources/value_types', ROOT]
     return [ROOT/'libultraship/include', ROOT/'platform/shipyard/json/upstream/include',
             ROOT/'scratch/deps/spdlog/include']
 
@@ -61,9 +65,9 @@ def host(projected):
         # Windows folds Json.cpp and json.cpp to one basename; compile the backend separately.
         backend=folder/'json-backend.obj'
         ENV.invoke([compiler,'/nologo','/std:c++20','/utf-8','/EHsc', '/GR','/MD','/c','/Fo'+str(backend)]+
-                   ['/I'+str(p) for p in includes(True)]+[ROOT/'platform/shipyard/json/json.cpp'],folder,'backend',env)
-        command += [backend,ROOT/'platform/shipyard/async/native.cpp',
-                    ROOT/'platform/shipyard/logging/chrono/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
+                   ['/I'+str(p) for p in includes(True)]+[PLATFORM_BASE/'sources/json/json.cpp'],folder,'backend',env)
+        command += [backend,PLATFORM_BASE / 'sources/async/native.cpp',
+                    PLATFORM_BASE/'sources/clock/chrono.cpp',ROOT/'platform/shipyard/logging/environment.cpp']
     ENV.invoke(command,folder,'compile',env)
     return ENV.invoke([folder/'contract.exe'],folder,'run')['stdout']
 

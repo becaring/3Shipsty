@@ -37,15 +37,6 @@ public:
     }
 private:logging_buffer(const logging_buffer&);logging_buffer& operator=(const logging_buffer&);
 };
-template<class T> class logging_atomic {
-public:
-    explicit logging_atomic(T value=T()):value_(value){}
-    T load()const{lock_guard<mutex> hold(mutex_);return value_;}
-    void store(T value){lock_guard<mutex> hold(mutex_);value_=value;}
-    T exchange(T value){lock_guard<mutex> hold(mutex_);T old=value_;value_=value;return old;}
-    logging_atomic& operator=(T value){store(value);return *this;}
-private:mutable mutex mutex_;T value_;logging_atomic(const logging_atomic&);logging_atomic& operator=(const logging_atomic&);
-};
 template<class C> typename C::iterator LoggingBegin(C& c){return c.begin();}
 template<class C> typename C::const_iterator LoggingBegin(const C& c){return c.begin();}
 template<class C> typename C::iterator LoggingEnd(C& c){return c.end();}

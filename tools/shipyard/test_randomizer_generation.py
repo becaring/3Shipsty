@@ -2,6 +2,8 @@
 import collections,hashlib,json,re,runpy,struct,subprocess
 from prepare_randomizer_generation import *
 from test_randomizer_regions import tokens
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE=resolve_platform_base(ROOT)
 
 def methods(text):return [n for n in walk(PARSER.parse(text.encode()).root_node) if n.type=='function_definition']
 def sig(n):return next(d.text.decode() for d in walk(n.child_by_field_name('declarator')) if d.type=='function_declarator')
@@ -110,11 +112,11 @@ def host(projected):
     rng=(ROOT/'scratch/ship-utils-xdk/generated/soh/soh/ShipUtils.cpp').read_text();rng=rng[rng.index('static bool default_init = false;'):]
     stable(folder/'rng.cpp','#include "soh/ShipUtils.h"\n#include <cassert>\n#include <cmath>\n'+rng)
     compiler,env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'))['host_environment']()
-    jsonroots=[ROOT/'platform/shipyard/json/include',ROOT/'scratch/json-xdk/backend-generated'] if projected else [ROOT/'platform/shipyard/json/upstream/include']
+    jsonroots=[PLATFORM_BASE/'sources/json/include',ROOT/'scratch/json-xdk/backend-generated'] if projected else [ROOT/'platform/shipyard/json/upstream/include']
     roots=[folder]+jsonroots+includes()
     command=[str(compiler),'/nologo','/std:c++20','/Zc:preprocessor','/utf-8','/EHsc','/GR','/MD','/O2','/DNOMINMAX','/DSHIPYARD_AUDIO_TEST','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t']+['/I'+str(p) for p in roots]
     command += [str(folder/'contract.cpp'),str(folder/'rng.cpp'),str(ROOT/('scratch/ship-utils-xdk/generated/'+DIR+'random.cpp')),str(ROOT/'platform/shipyard/ship-utils/native_entropy.cpp')]
-    if projected:command.append(str(ROOT/'platform/shipyard/json/json.cpp'))
+    if projected:command.append(str(PLATFORM_BASE/'sources/json/json.cpp'))
     command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
     r=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',r.stdout+r.stderr)
     assert not r.returncode,folder/'build.log'

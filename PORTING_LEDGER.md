@@ -1,5 +1,27 @@
 # 3Shipsty porting ledger
 
+## Current integration checkpoint (2026-09-23)
+
+Both active locks pin clean Shipyard `66959d6` with API 5 and baseline `16ef0bb550dbddd5dbf0ee13537cb3f9712b590d17aa2f6ff45246f097f0b1ca`. The stale JSON recipe gate is repaired and both active consumers have fresh complete native build/link receipts. Verified source-state archives were preserved before read-only remaining ownership classification resumed. Use [the checkpoint and receipt index](porting/SHIPYARD_66959D6_CHECKPOINT.md) for current evidence and [the remaining ownership classification](porting/SHIPYARD_REMAINING_OWNERSHIP_66959D6.md) for further migration boundaries. Parallel compilation is authorized by the user. No new runtime or hardware result is claimed.
+
+## Earlier ownership notes (2026-09-23, historical)
+
+Current Shipyard pin `6a7f858` has baseline SHA-256 `dd3f0ae18d6d9287180ef40eff8a6daeab4faa3f6a78289fe3f07e1206de110d`. The shared member-default collector replaces both active Fast3D AST walkers while keeping interpreter/selected GUI header bytes unchanged; both interpreters compile for PPC. Smash's physical triangle certificate now receives version-specific shader/tile/clip/redirect traits, with unchanged host differential and PPC compile. Modern's local two-alternative resource variant was deleted; its active projection uses physical `xbox_compat/variant.h`, with host/PPC and missing-include negative dependency checks. No current full clean build, Xenia or hardware result. JSON's 531 stale include recipes remain an explicit failing project gate.
+
+Newest Shipyard checkpoint is `496b134` (baseline SHA-256 `5a13d73eca7b7700b8ebf95892672236c66ec596dd160a2aacd159453d9aac08`). Smash's triangle certificate header was relocated byte-identically into Shipyard and its local/staged shadow removed. Twelve focused Fast3D tests, actual PPC interpreter and Texture builds, and physical-header C1189 negative dependency pass. This is Smash-only certificate dependency so far; modern SoH still needs an explicit version adapter and original/projected behavioral proof. The prior full XEX hashes below are superseded as source receipts. Modern JSON regeneration passes 12/12, while the strengthened project contract intentionally fails for 531 stale recipes with the removed local JSON include root; clean recipe regeneration remains required.
+
+Current pin is Shipyard `7db50f2cc8ad08ceb296fc55386da3561292573a`, baseline SHA-256 `841b7e02942c8b8d4bcfed73b8de37646c73126acaa8c101fd7780b3cee762a3`. Both active interpreters compile physical `sources/fast3d/texture_bindings.h` and use the physical triangle splitter and opcode lowerer. The binding tracker records per-native-slot sampler state; the prior Smash shortcut failed a new aliased-slot differential before the correction. Its 133,152-step cache/import contract, 8,233-step triangle reconciliation test, 22/22 Shipyard package tests, both physical-header C1189 dependency tests and both empty-stage Fast3D PPC rebuilds pass. Smash's full link/ImageXex/native-link check passes, XEX SHA-256 `775d5ba204f9edd32c42ffeec33e26e0cfc9bb6cfcc88329d3a33573eb358588`. Modern's eight shards verified 1,844 PPC objects and genuine link/ImageXex produced XEX SHA-256 `256b7bd0f424952a3eac6818bc28bc22f1407dcf5d3acbc838d3b8e053c9cc75`. Fresh modern JSON ran ten host differentials and seven PPC compiles; five explicit reached-API gaps remain. Async and Prism/value host/PPC contracts pass. No new Xenia/hardware or whole-tree clean-build claim.
+
+Prior review-hardening pin Shipyard `7dd6b7023f5e15247018e59db2bff5305faaf8e5`, baseline SHA-256 `0efc0e960b8ad0e8c22839b2e905dad15bf12eb736f9ae285472effd3afe6a10`, fixed timer shutdown re-entry, network Flag default, shader-worker completion/configuration ownership, and atomic-file logical paths. The 21/21 package tests and both full builds/links passed; those XEXs are superseded.
+
+Current Shipyard pin is `6707cfc`, baseline SHA-256 `9add30432b4ad3b330b3f5eae2d2c64e567d6c9034146a10aaeceb989d806fa2` in both active locks. The physical Fast3D command stack, dispatch owner, and optional Smash shade cache are source-selected and focused-verified with their relevant active consumers; finite-wait and address-gap helpers are optional Smash dependencies without invented modern SoH callsites. The shared bounded XDK build module has 17/17 package tests and modern project tests pass 16/16. Smash's real eight-shard build compiled 140 libultraship and 111 application TUs, linked/ImageXex, and passed `verify_native_link.py`; XEX SHA-256 `c04865d8b1714421713db592bcdb65986d98ec180f3008a078400d5a365c06cb`. This is not generated-state-free, Xenia or hardware validation. Modern's full build at this pin is pending; the preceding modern receipt below predates it.
+
+Prior modern integration receipt: pinned Shipyard `2c7fe70` built 1,844 verified PPC objects across eight successful shards and genuine link/ImageXex, XEX SHA-256 `17de66852e5070adf00afa416ed0cfc29747e3bec063ae0898b46727bc09a294`. The selected manifest includes physical `sources/presentation/xenos_surface.cpp` SHA-256 `862a839f89883965e3f8961958d5cb75e73d4619c9618f84904089c3c92834e8`. Presentation/atomic focused negative tests were restored before this build. This is not a clean generated-state-free build, Smash full-build receipt, runtime or hardware proof; the following older receipt remains historical.
+
+Older integration receipt: modern's 1,843-object XDK build and XEX SHA-256 `63ba755eca9d0a119fa728b4b930c8eb14e4477ebd6d920f9ef97103b319e070` used `32e325e` source state. It compiled in eight passing shards and linked/ImageXex successfully. The project generator now puts the physical Shipyard JSON header path before legacy local JSON include paths; 50 of 79 inherited build recipes still require source-side regeneration for a whole-tree clean-state proof. This older receipt does not prove Smash's latest full build, Xenia behavior, hardware behavior, or absence of every remaining platform shadow.
+
+Shipyard at `D:/Projects/LibUltraShip+Fast3D360` is the intended single source of truth for reusable Xbox 360/Xenos/Fast3D/libultraship platform implementations. Modern 3Shipsty and Smash360 are active consumers; historical SoH 4.0.5 is a read-only reference and is not a migration or validation target. A consumer may provide a narrow version/game adapter but may not retain a second generic implementation or rewrite shared Shipyard source during preparation. The earlier mission wording below predates this authorization and is superseded where it conflicts. Track each subsystem's exact compiled source, interface boundary, shadow/staging audit, negative dependency, generated-state-free build, runtime behavior, and hardware status in `porting/SHIPYARD_OWNERSHIP.md`.
+
 ## Design and acceptance
 
 Forward-port the real pinned Shipwright 9.2.3 application through its LUS/Fast3D
@@ -9,8 +31,9 @@ rendering, input, audio, storage, timing and narrow compiler/OS boundaries.
 Generated compatibility files must trace to exact source hashes and deterministic
 transforms; never maintain a second independent game implementation.
 
-Only D:/Projects/3Shipsty9.x is writable for this mission. No reference builds,
-reference caches, reference Git state or reference source may be changed.
+The authorized active work trees are modern 3Shipsty, Smash360, and the
+Shipyard checkout at D:/Projects/LibUltraShip+Fast3D360. Historical SoH 4.0.5
+and other read-only references must not be modified or built.
 No Xenos64/bromurokkk implementation, recomp architecture, custom asset format,
 parallel renderer, fake menu, alternate loop or bypass of the real application.
 

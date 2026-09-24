@@ -7,6 +7,10 @@ import struct
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / 'tools/shipyard'))
+from platform_base import resolve as resolve_platform_base
+PLATFORM_BASE = resolve_platform_base(ROOT)
 OUT = ROOT / 'scratch/libzip-xdk'
 
 
@@ -16,10 +20,11 @@ def main():
     folder = OUT / 'host'
     command = [str(compiler), '/nologo', '/EHsc', '/MD', '/DNOMINMAX',
                '/I' + str(OUT / 'generated'), '/I' + str(ROOT / 'platform/shipyard'),
+               '/I' + str(PLATFORM_BASE), '/I' + str(PLATFORM_BASE / 'sources'),
                '/I' + str(ROOT / 'scratch/deps/zlib'),
                str(Path(__file__).with_name('test_archives_contract.cpp')),
-               str(ROOT / 'platform/shipyard/filesystem/filesystem.cpp'),
-               str(ROOT / 'platform/shipyard/async/native.cpp'),
+               str(PLATFORM_BASE / 'sources/filesystem/filesystem.cpp'),
+               str(PLATFORM_BASE / 'sources/async/native.cpp'),
                str(folder / 'zip.lib'), str(folder / 'zlib.lib'), 'advapi32.lib',
                '/Fe:' + str(folder / 'archives.exe'), '/Fo:' + str(folder) + '/']
     result = subprocess.run(command, env=env, cwd=ROOT, capture_output=True, text=True)

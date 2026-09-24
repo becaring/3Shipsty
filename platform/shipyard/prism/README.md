@@ -10,13 +10,17 @@ BattleShip shader builder is used.
 
 Generic Shipyard A/B/H adaptations:
 
-- Reviewed fixed-arity inline variant/optional support and Prism syntax
-  algorithms derive from Smash360's modern compiler work; source provenance
-  and imported byte hashes are in donor.lock.json. The owned value generator
-  is only invoked for its pure variant-header function. It never executes its
-  reference-tree writer. Maximum 19 alternatives matches the real Prism AST.
+- The version-constrained compiler projector is
+  `xbox360_platform.prism.PrismProjector` in Shipyard. This consumer supplies
+  its own pinned Prism source, tree-sitter parser, shader builder, 38 context
+  entries, resource loading, and debug policy. The old local syntax projector
+  has been removed.
+- Fixed-arity variant/optional and Prism range helpers are physical Shipyard
+  headers under `sources/value_types/xbox_compat` and `sources/prism`.
+  `xbox360_platform.value_types` deterministically renders the checked-in
+  19-alternative variant header; the consumer does not generate a copy.
 - Preserve variant selection (including bool to int), owned alternatives,
-  exception/valueless behavior, copy/move and optional engagement. Generated
+  exception/valueless behavior, copy/move and optional engagement. These
   helper types remain outside std; the smaller resource two-reader variant
   retains its own existing boundary.
 - Preserve member defaults and AST node fields with explicit constructors;
