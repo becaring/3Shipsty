@@ -23,6 +23,8 @@ def includes(projected):
     if projected:
         return [OUT/'generated/include', ROOT/'scratch/binary-xdk/generated/include',
                 PLATFORM_BASE/'sources/json/include', ROOT/'scratch/json-xdk/backend-generated',
+                ROOT/'scratch/stormlib-xdk/generated/src',
+                ROOT/'scratch/libzip-xdk/generated', ROOT/'scratch/async-xdk/generated',
                 ROOT/'scratch/logging-xdk/core-include', ROOT/'scratch/logging-xdk/include',
                 ROOT/'scratch/deps/fmt-xdk', ROOT/'platform/shipyard', PLATFORM_BASE, PLATFORM_BASE/'sources', PLATFORM_BASE/'sources/value_types', ROOT]
     return [ROOT/'libultraship/include', ROOT/'platform/shipyard/json/upstream/include',

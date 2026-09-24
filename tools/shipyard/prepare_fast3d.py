@@ -245,6 +245,7 @@ def prepare():
     text=vertex_transform['transform'](text)
     text=vertex_packing['transform'](text)
     text=runpy.run_path(str(OWN/'material_cache_projection.py'))['transform'](text)
+    text=runpy.run_path(str(OWN/'cull_projection.py'))['transform'](text)
     dispatch_owner=runpy.run_path(str(OWN/'dispatch_owner_projection.py'))
     text=dispatch_owner['transform'](text)
     text=triangle_split(text)

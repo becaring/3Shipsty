@@ -110,7 +110,8 @@ def build_application():
     stable(folder/'build.json',json.dumps(rows,indent=2)+'\n');return all(r['exit']==0 for r in rows)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--engine',action='store_true');p.add_argument('--application',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--engine',action='store_true');p.add_argument('--application',action='store_true');p.add_argument('--prepare-application',action='store_true');a=p.parse_args()
     if a.engine:raise SystemExit(0 if build_engine() else 1)
     if a.application:raise SystemExit(0 if build_application() else 1)
+    if a.prepare_application:prepare_application();raise SystemExit(0)
     prepare_engine()

@@ -68,7 +68,12 @@ STAGES = [
     ("prepare_soh_resources.py", ["--build"]),
     ("prepare_interpolation.py", ["--build"]),
     ("prepare_libultra.py", ["--build"]),
+    ("prepare_ship_utils.py", []),
     ("prepare_game_interactor.py", ["--build"]),
+    # Enhancement TUs include the projected savestates declaration, whose
+    # authoritative owner is the application generator.
+    ("prepare_application.py", []),
+    ("prepare_randomizer.py", []),
     ("prepare_enhancements.py", ["--build"]),
     ("prepare_object_extension.py", ["--build"]),
     ("prepare_app_services.py", ["--build"]),
@@ -82,8 +87,14 @@ STAGES = [
     ("prepare_soh_input_editor.py", ["--build"]),
     ("prepare_legacy_save.py", ["--build"]),
     ("prepare_network.py", ["--build"]),
-    ("prepare_application.py", ["--build"]),
+    # The application and GUI TUs include headers projected by these
+    # independent generators. Stage the owners before either compile.
+    ("prepare_audio_collection.py", []),
+    ("prepare_randomizer_item.py", []),
+    ("prepare_speech.py", []),
+    ("prepare_speech.py", ["--prepare-application"]),
     ("prepare_application_gui.py", ["--build"]),
+    ("prepare_application.py", ["--build"]),
     ("prepare_audio_collection.py", ["--build"]),
     ("prepare_randomizer_item.py", ["--build"]),
     ("prepare_randomizer_logic.py", ["--build"]),
