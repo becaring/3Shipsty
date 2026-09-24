@@ -170,6 +170,34 @@ def completed_prefix(receipt, log_dir):
     return len(rows)
 
 
+def preflight_source_locks():
+    """Catch changed local inputs before clearing or rebuilding any output."""
+    checked = 0
+    for lock in sorted((ROOT / "platform/shipyard").rglob("sources.lock.json")):
+        document = json.loads(lock.read_text(encoding="utf-8"))
+        for section in ("sources", "files"):
+            entries = document.get(section, {})
+            if not isinstance(entries, dict):
+                continue
+            for name, expected in entries.items():
+                source = ROOT / name
+                if not isinstance(expected, str) or len(expected) != 64 or not source.is_file():
+                    continue
+                raw = source.read_bytes()
+                allowed = {hashlib.sha256(raw).hexdigest()}
+                try:
+                    decoded = raw.decode("utf-8-sig")
+                    allowed.add(hashlib.sha256(decoded.encode()).hexdigest())
+                    allowed.add(hashlib.sha256(decoded.replace("\r\n", "\n").encode()).hexdigest())
+                except UnicodeError:
+                    pass
+                if expected.lower() not in allowed:
+                    raise ValueError("Local source lock drift before regeneration: "
+                                     + str(lock.relative_to(ROOT)) + " -> " + name)
+                checked += 1
+    return checked
+
+
 def owned_targets():
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
     names = {Path(pattern).parts[1] for patterns in config["reports"].values()
@@ -232,6 +260,7 @@ def main():
         return
     from platform_base import resolve
     resolve(ROOT)
+    preflight_source_locks()
     git_environment = scoped_git_environment()
     log_dir = SCRATCH / "final-regeneration"
     log_dir.mkdir(parents=True, exist_ok=True)

@@ -56,6 +56,21 @@ class ResumeReceiptTest(unittest.TestCase):
         self.assertGreaterEqual(int(env["GIT_CONFIG_COUNT"]), 1)
         self.assertIn(regeneration.ROOT.resolve().as_posix(), env.values())
 
+    def test_source_lock_preflight_catches_shared_header_drift(self):
+        source = self.root / "soh/soh/SohGui/UIWidgets.hpp"
+        source.parent.mkdir(parents=True)
+        source.write_text("button option\n", encoding="utf-8")
+        lock = self.root / "platform/shipyard/soh-ui/sources.lock.json"
+        lock.parent.mkdir(parents=True)
+        expected = hashlib.sha256(source.read_bytes()).hexdigest()
+        lock.write_text(json.dumps({"sources": {"soh/soh/SohGui/UIWidgets.hpp": expected},
+                                    "producer": {"files": {"soh/soh/SohGui/UIWidgets.hpp": "0" * 64}}}),
+                        encoding="utf-8")
+        self.assertEqual(regeneration.preflight_source_locks(), 1)
+        source.write_text("changed\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "source lock drift"):
+            regeneration.preflight_source_locks()
+
 
 if __name__ == "__main__":
     unittest.main()
