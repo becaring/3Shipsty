@@ -63,6 +63,8 @@ STAGES = [
     ("prepare_fast_resources.py", ["--build"]),
     ("prepare_input.py", ["--build"]),
     ("prepare_gui.py", ["--build"]),
+    # SoH resource Skeleton includes the game randomizer enum projection.
+    ("prepare_game.py", ["--output-full", "--stage-only"]),
     ("prepare_soh_resources.py", ["--build"]),
     ("prepare_interpolation.py", ["--build"]),
     ("prepare_libultra.py", ["--build"]),

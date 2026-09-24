@@ -674,6 +674,7 @@ def main():
     parser.add_argument('--preprocess-only', action='store_true')
     parser.add_argument('--verify-semantics', action='store_true')
     parser.add_argument('--output-full', action='store_true', help='Write this batch below scratch/game-xdk/full')
+    parser.add_argument('--stage-only', action='store_true', help='Project pinned headers and selected sources without native compilation')
     parser.add_argument('--summarize', action='store_true', help='Summarize the completed/in-progress full batch without compiling')
     args = parser.parse_args()
     if args.summarize:
@@ -692,6 +693,9 @@ def main():
         parser.error('Source outside pinned application C selection')
     stage(selected)
     stable(OUT / 'selected-sources.json', (json.dumps([available[name] for name in selected], indent=2) + '\n').encode())
+    if args.stage_only:
+        print('Staged pinned game headers and selected sources without compilation')
+        return 0
     xdk = Path(os.environ.get('XEDK', r'C:\Program Files (x86)\Microsoft Xbox 360 SDK'))
     cl = xdk / 'bin/win32/cl.exe'
     includes = [INCLUDE, ROOT / 'scratch/codec-xdk/include', ROOT / 'scratch/deps/opus/include'] + [TREE / p for p in ('libultraship/include', 'soh', 'soh/include', 'soh/src', 'soh/assets', 'ZAPDTR/ZAPD/resource/type')] + [xdk / 'include/xbox']
