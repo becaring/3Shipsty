@@ -33,6 +33,14 @@ STAGES = [
     ("prepare_codecs.py", ["--build"]),
     ("prepare_vorbis.py", ["--build"]),
     ("prepare_imgui.py", ["--compile"]),
+    # Prism's real shader builder includes the complete Fast3D, resource,
+    # audio and GUI declarations. Generate their canonical header providers
+    # before its isolated native compile; their full builds follow below.
+    ("prepare_resources.py", []),
+    ("prepare_audio.py", []),
+    ("prepare_resource_manager.py", []),
+    ("prepare_gui_resources.py", []),
+    ("prepare_fast3d.py", []),
     ("prepare_prism.py", ["--build"]),
     ("prepare_graphics.py", ["--compile"]),
     ("prepare_xenos.py", ["--build"]),
