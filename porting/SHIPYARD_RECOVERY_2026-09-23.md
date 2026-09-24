@@ -1,5 +1,7 @@
 # Shipyard recovery checkpoint — 2026-09-23
 
+> Historical recovery checkpoint. The current technical status is [SHIPYARD_FINAL_STATUS.md](SHIPYARD_FINAL_STATUS.md).
+
 Later update: the stale recipe gate, fresh complete build/link receipts and source-state preservation are now closed in [the 66959d6 integration checkpoint](SHIPYARD_66959D6_CHECKPOINT.md). This document retains the intake assessment and its historical stopping point.
 
 This is the recovered state from filesystem, Git, generated manifests, build receipts and fresh focused tests at approximately 18:15 Pacific. It supersedes the current-state summaries in SHIPYARD_OWNERSHIP.md, SHIPYARD_MIGRATION_REPORT.md and POST_SHIPYARD_HANDOFF.md; their historical evidence remains useful. This recovery did not implement another migration, commit changes, run a full application build, or execute an XEX.

@@ -1,5 +1,7 @@
 # Post-Shipyard modern SoH handoff (working)
 
+> Historical working handoff. The current technical status is [SHIPYARD_FINAL_STATUS.md](SHIPYARD_FINAL_STATUS.md).
+
 Read [the fresh 66959d6 integration checkpoint](SHIPYARD_66959D6_CHECKPOINT.md) first for current migration state, complete native build/link receipts and verified recovery archives. Continue from [the remaining ownership classification](SHIPYARD_REMAINING_OWNERSHIP_66959D6.md). The shared-source pins and build receipts below are historical; empty-generated-state and runtime/hardware gates remain open.
 
 This captures paused consumer work; it is not the final handoff. Finish and verify the Shipyard ownership invariant first. Do not rebuild or migrate historical SoH 4.0.5.

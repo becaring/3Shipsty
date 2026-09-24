@@ -1,5 +1,7 @@
 # Shipyard migration evidence (working)
 
+> Historical working evidence. The current technical status is [SHIPYARD_FINAL_STATUS.md](SHIPYARD_FINAL_STATUS.md).
+
 Current-state correction: [the fresh 66959d6 integration checkpoint](SHIPYARD_66959D6_CHECKPOINT.md) records passing complete native builds/links for both active consumers, verified source-state archives and exact final hashes. Remaining ownership work is in [the post-checkpoint classification](SHIPYARD_REMAINING_OWNERSHIP_66959D6.md). The chronology below contains superseded checkpoints.
 
 This is a live report, not a completion or publication claim. Active consumers are modern 3Shipsty and Smash360; SoH 4.0.5 is historical reference only. The per-subsystem source and proof register is `SHIPYARD_OWNERSHIP.md`. Finalization requires one implementation per reusable responsibility, direct dependency in both active consumers, no staging rewrite or shadow, negative dependency where feasible, clean generated-state-free builds, and separate runtime/hardware status.
