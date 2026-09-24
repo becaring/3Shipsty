@@ -155,6 +155,11 @@ struct ButtonOptions : WidgetOptions {
         return *this;
     }
 
+    ButtonOptions& Disabled(bool disabled_) {
+        WidgetOptions::disabled = disabled_;
+        return *this;
+    }
+
     ButtonOptions& Color(Colors color_) {
         color = color_;
         return *this;

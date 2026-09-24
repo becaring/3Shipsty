@@ -39,6 +39,13 @@ int main(){
     info.activeDisables.push_back(DISABLE_FOR_NULL_PLAY_STATE);info.ResetDisables();
     assert(!info.isHidden&&!info.options->disabled&&info.activeDisables.empty());
     assert(std::strcmp(info.options->disabledTooltip,"")==0);
+    // The Xbox file-folder button exercises this exact fluent chain. Keep the
+    // ButtonOptions alternative when marking it disabled.
+    WidgetInfo folderButton=VALUE(WidgetInfo);
+    folderButton.type=WIDGET_BUTTON;
+    folderButton.Options(OptionsVariant(VALUE(ButtonOptions).Tooltip("folder").Disabled(true).DisabledTooltip("Xbox unavailable")));
+    assert(folderButton.options&&folderButton.options->disabled);
+    assert(std::strcmp(folderButton.options->disabledTooltip,"Xbox unavailable")==0);
     bool value=false;info.ValuePointer(&value);assert(VGET<bool*>(info.valuePointer)==&value);
     bool caught=false;try{VGET<int32_t*>(info.valuePointer);}catch(const BAD_VARIANT&){caught=true;}assert(caught);
     OptionsVariant options=VALUE(ButtonOptions);assert(options.index()==0);
