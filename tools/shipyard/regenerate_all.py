@@ -9,6 +9,7 @@ first. Dependency snapshots and historical checkpoints are never removed.
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -127,6 +128,48 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def scoped_git_environment():
+    """Trust only the source checkouts this build reads, for child Git calls."""
+    environment = os.environ.copy()
+    count = int(environment.get("GIT_CONFIG_COUNT", "0"))
+    checkouts = (ROOT, SCRATCH / "speech-xdk/espeak-ng",
+                 SCRATCH / "speech-xdk/sonic")
+    for checkout in checkouts:
+        if not checkout.is_dir():
+            continue
+        environment[f"GIT_CONFIG_KEY_{count}"] = "safe.directory"
+        environment[f"GIT_CONFIG_VALUE_{count}"] = checkout.resolve().as_posix()
+        count += 1
+    environment["GIT_CONFIG_COUNT"] = str(count)
+    for checkout in checkouts:
+        if checkout.is_dir():
+            subprocess.run(["git", "rev-parse", "HEAD"], cwd=checkout,
+                           env=environment, check=True, capture_output=True)
+    return environment
+
+
+def completed_prefix(receipt, log_dir):
+    """Validate prior successful stages before continuing an interrupted run."""
+    rows = receipt["stages"]
+    if len(rows) > len(STAGES):
+        raise ValueError("Regeneration receipt has too many stages")
+    for index, row in enumerate(rows):
+        script, options = STAGES[index]
+        expected_log = log_dir / (f"{index + 1:02d}-{Path(script).stem}.log")
+        if row["script"] != script or row["options"] != options:
+            raise ValueError("Regeneration stage order changed at " + str(index + 1))
+        if row["log"] != expected_log.relative_to(ROOT).as_posix():
+            raise ValueError("Regeneration log path changed at " + str(index + 1))
+        if not expected_log.is_file() or sha(expected_log) != row["log_sha256"]:
+            raise ValueError("Regeneration log drift at " + str(index + 1))
+        if row["exit"]:
+            if index != len(rows) - 1:
+                raise ValueError("Failed regeneration stage is not last")
+            rows.pop()
+            return index
+    return len(rows)
+
+
 def owned_targets():
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
     names = {Path(pattern).parts[1] for patterns in config["reports"].values()
@@ -178,7 +221,9 @@ def clean_owned():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--empty-owned-outputs", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--empty-owned-outputs", action="store_true")
+    mode.add_argument("--resume", action="store_true")
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args()
     if args.list:
@@ -187,29 +232,49 @@ def main():
         return
     from platform_base import resolve
     resolve(ROOT)
-    if args.empty_owned_outputs:
+    git_environment = scoped_git_environment()
+    log_dir = SCRATCH / "final-regeneration"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    receipt_path = log_dir / "receipt.json"
+    if args.resume:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        start = completed_prefix(receipt, log_dir)
+        if "source_revision" in receipt:
+            revision = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                               cwd=ROOT, env=git_environment,
+                                               text=True).strip()
+            if revision != receipt["source_revision"]:
+                raise ValueError("Source revision changed since regeneration began")
+        preserved, removed = None, None
+    elif args.empty_owned_outputs:
         preserved, removed = clean_owned()
     else:
         preserved, removed = None, []
-    log_dir = SCRATCH / "final-regeneration"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    receipt = {"preserved": str(preserved.relative_to(ROOT)) if preserved else None,
-               "emptied_directories": removed, "stages": []}
-    for index, (script, options) in enumerate(STAGES, 1):
+    if not args.resume:
+        revision = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                           cwd=ROOT, env=git_environment,
+                                           text=True).strip()
+        receipt = {"source_revision": revision,
+                   "preserved": str(preserved.relative_to(ROOT)) if preserved else None,
+                   "emptied_directories": removed, "stages": []}
+        start = 0
+    for index in range(start, len(STAGES)):
+        script, options = STAGES[index]
         command = [sys.executable, "-B", "-X", "utf8",
                    str(ROOT / "tools/shipyard" / script), *options]
-        print("Regenerating %02d/%02d: %s %s" % (index, len(STAGES), script,
+        print("Regenerating %02d/%02d: %s %s" % (index + 1, len(STAGES), script,
                                                  " ".join(options)), flush=True)
-        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
-        label = "%02d-%s" % (index, Path(script).stem)
+        result = subprocess.run(command, cwd=ROOT, env=git_environment,
+                                capture_output=True, text=True)
+        label = "%02d-%s" % (index + 1, Path(script).stem)
         log = log_dir / (label + ".log")
         log.write_text(result.stdout + result.stderr, encoding="utf-8")
         receipt["stages"].append({"script": script, "options": options,
                                   "exit": result.returncode,
                                   "log": log.relative_to(ROOT).as_posix(),
                                   "log_sha256": sha(log)})
-        (log_dir / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n",
-                                               encoding="utf-8")
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n",
+                                encoding="utf-8")
         if result.returncode:
             print((result.stdout + result.stderr)[-6000:], flush=True)
             raise SystemExit(result.returncode)
