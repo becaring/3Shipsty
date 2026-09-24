@@ -107,14 +107,15 @@ struct WindowBackend : Shipyard::Binary::ScopedEnum<WindowBackend> {
 }
 '''
     for name,text in pending.items():stable(OUT/'generated'/name,text)
+    from prepare_game import release_cvars
+    cvar_header=OUT/'generated/include/compile_definitions.h'
+    stable(cvar_header,'#pragma once\n'+''.join('#define '+name+' "'+value+'"\n' for name,value in release_cvars().items()))
     stable(OUT/'manifest.json',json.dumps({n:hashlib.sha256(t.encode()).hexdigest() for n,t in pending.items()},indent=2)+'\n')
 
 
 def build():
     prepare();folder=OUT/'xdk';folder.mkdir(parents=True,exist_ok=True)
-    from prepare_game import release_cvars
     cvar_header=OUT/'generated/include/compile_definitions.h'
-    stable(cvar_header,'#pragma once\n'+''.join('#define '+name+' "'+value+'"\n' for name,value in release_cvars().items()))
     env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_resources.py'))
     includes=[OUT/'generated/include',ROOT/'scratch/audio-xdk/generated/include',ROOT/'scratch/resource-manager-xdk/generated/include']+env['includes'](True)+[ROOT/'libultraship/include']
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
