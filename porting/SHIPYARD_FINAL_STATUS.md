@@ -1,7 +1,10 @@
-# Shipyard technical freeze and ownership status
+# Shipyard frozen baseline and ownership status
 
-This is the current status document for the active Modern 3Shipsty and
-Smash360 Xbox 360 consumers. The ownership decisions in
+This records the completed technical migration baseline and its exact frozen
+artifacts. The isolated `codex/shipyard-hardening` source branches are a
+successor candidate; their test/build/Xenia receipts must be identified
+separately before they replace any baseline acceptance claim. The ownership
+decisions in
 `SHIPYARD_REMAINING_OWNERSHIP_66959D6.md` remain the design authority. The
 66959d6 checkpoint and earlier migration, recovery, and handoff reports are
 historical evidence, not competing descriptions of the final candidate.
@@ -98,11 +101,25 @@ Xbox before describing either artifact as hardware validated.
 
 ## Release gate and scope
 
-Shipyard's `NOTICE.md` identifies unresolved authorship and redistribution
-permission for the donor-derived Xbox adaptations, including Fast3D's distinct
-binary restriction. Existing upstream notices remain in place. This is a
-publication blocker, not a reason to label source migration incomplete or to
-relicense upstream code. No repository has been pushed or published.
+Shipyard's successor `NOTICE.md`, maintainer-scoped `LICENSE`, and
+`provenance/SHIPYARD_PROVENANCE_AUDIT.md` supersede the frozen checkout's
+blanket donor-permission language. The maintainer identifies the original
+SoH360, 3Shipsty, Smash360, and Shipyard Xbox implementations as their own,
+and confirms that becaring is their account. The historical Fast3D citation
+`23eb15e6bee171d6c1c2bd38350d222bedff0d4c` is in
+`becaring/Re60-Legacy-Xenos-Renderer`, with the asset-exception notice.
+The old SoH360 source-only notice, later conditional notice, and active
+consumer MIT notices remain distinct; which text governs a current linked
+implementation still depends on its actual lineage.
+
+Modern statically links GPL-3.0-or-later eSpeak NG. Distribution review must
+cover the entire combined XEX under GPL sections 5 and 6, including its
+Corresponding Source and build/projection scripts, not just an eSpeak source
+bundle. This interacts with game/decomp source rights and the applicable
+Xbox SDK terms; any System Library exception needs component-specific review.
+Standalone Shipyard's original MIT grant is separate. Source publication and
+XEX/package distribution remain separate gates. Existing upstream notices
+remain in place. No repository has been pushed or published.
 
 ResourceManager/archive semantics beyond an agreed bounded-read contract,
 window/GUI/resource lifecycle, and genuinely different Fast3D formulas remain
