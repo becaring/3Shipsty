@@ -175,5 +175,5 @@ def build(names):
     if any(r['exit'] for r in records):raise SystemExit(1)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--build',action='store_true');p.add_argument('--units',nargs='+',default=['Menu','SohMenu','SohModals']);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--build',action='store_true');p.add_argument('--units',nargs='+',default=['Menu','SohMenu','SohModals','SohMenuSettings','SohMenuEnhancements','SohMenuDevTools']);a=p.parse_args()
     build(a.units) if a.build else prepare()

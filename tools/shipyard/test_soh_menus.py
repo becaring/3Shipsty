@@ -15,6 +15,11 @@ def select(text,name):
     return matches[0].text.decode()
 
 def main():
+    # The original host MenuTypes.h is a test-only projection owned by the UI
+    # contract. Build and verify that provider instead of relying on an older
+    # scratch copy or an external test order.
+    from test_soh_ui import main as verify_ui_contract
+    verify_ui_contract()
     prepare();env=runpy.run_path(str(ROOT/'tools/shipyard/tests/test_binary.py'));compiler,environment=env['host_environment']();results=[]
     for name in ['Menu','SohMenu','SohModals','SohMenuSettings','SohMenuEnhancements','SohMenuDevTools']:
         original=(ROOT/(BASE+name+'.cpp')).read_text(encoding='utf-8-sig');projected=(OUT/'generated'/(BASE+name+'.cpp')).read_text()

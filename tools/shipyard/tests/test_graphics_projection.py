@@ -24,7 +24,9 @@ class GraphicsProjectionTests(unittest.TestCase):
             decoder = (out / 'cc_features.cpp').read_text()
             original = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text()
             self.assertIn(graphics.decoder_function(original), decoder)
-            self.assertNotIn('Smash360_', (out / 'shader_lower.cpp').read_text())
+            shared = graphics.resolve_platform_base(ROOT) / report['source_lock']['donor']['platform_base']
+            self.assertNotIn('Smash360_', shared.read_text())
+            self.assertFalse((out / 'shader_lower.cpp').exists())
 
     def test_rejects_source_drift(self):
         with self.assertRaisesRegex(ValueError, 'source drift'):
