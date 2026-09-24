@@ -30,6 +30,24 @@ recreates every selected compiler recipe through its owning script and records
 each exit and log hash under `scratch/final-regeneration/`. It leaves dependency
 snapshots and historical checkpoints intact.
 
+For a local source correction, keep the generated outputs and PPC objects.
+Update the affected source locks, run the owning `prepare_*.py` generator and
+any consumers of its projected headers, then run `test_xdk_project.py`,
+`build_xdk_project.py --jobs 8`, and `link_xdk_application.py`. The project
+generator writes unchanged project bytes only once, so MSBuild can reuse
+objects whose source and header inputs have not changed. For example, a change
+to `soh/soh/SohGui/UIWidgets.hpp` affects the `soh-ui`, `soh-menus`,
+`soh-input-editor`, `gameplay-features`, and `application-extras` projections;
+run those owners and their focused tests before the incremental application
+build. Do the empty-output command above once after the source is stable for
+the final reproducibility proof, not after each edit.
+
+If a generation run is interrupted with the same source revision, use
+`regenerate_all.py --resume`. It verifies the completed stage order, options,
+and log hashes, then continues without deleting generated outputs. It rejects
+a changed source revision; after a source correction, use the affected owner
+generators as described above.
+
 `build_xdk_project.py` records the source, header, PPC object, and shard proof
 in `scratch/project-xdk/complete-application-verification.json`. The link
 driver refuses stale inputs and records archive/link/ImageXex commands and the
