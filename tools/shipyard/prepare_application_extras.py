@@ -159,6 +159,55 @@ def preproject(name,text):
     return edits_apply(raw,edits)
 
 def postproject(name,text):
+    if name.endswith('/Presets.cpp'):
+        begin=text.index('            for (auto item = section.begin(); item != section.end(); ++item) {',text.index('void applyPreset('))
+        end=text.index('            if (i == PRESET_SECTION_RANDOMIZER) {',begin)
+        original=text[begin:end]
+        if original.count('GetNestedJson()')!=1 or original.count('SetBlock(')!=1 or original.count('->Load();')!=1:
+            raise ValueError('Preset application boundary drift')
+        # Only object blocks with simple names and an existing object CVars
+        # root can be grouped. Keep the original sequence for erase, dotted
+        # names, primitive merge inputs, and one-block sections.
+        batch='''            auto presetConfig = Ship::Context::GetInstance()->GetConfig();
+            bool batchable = section.is_object() && section.size() > 1;
+            if (batchable) {
+                for (auto item = section.begin(); item != section.end(); ++item) {
+                    if (item.key().find('.') != std::string::npos || !item.value().is_object()) {
+                        batchable = false;
+                        break;
+                    }
+                }
+            }
+            nlohmann::json currentJson;
+            if (batchable) {
+                currentJson = presetConfig->GetNestedJson();
+                batchable = currentJson.contains("CVars") && currentJson["CVars"].is_object();
+                if (batchable && sectionStrategy == "merge") {
+                    for (auto item = section.begin(); item != section.end(); ++item) {
+                        if (currentJson["CVars"].contains(item.key()) &&
+                            !currentJson["CVars"][item.key()].is_object()) {
+                            batchable = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (batchable) {
+                nlohmann::json blocks = currentJson["CVars"];
+                for (auto item = section.begin(); item != section.end(); ++item) {
+                    nlohmann::json block = item.value();
+                    if (sectionStrategy == "merge" && blocks.contains(item.key())) {
+                        block = blocks[item.key()];
+                        block.update(item.value(), true);
+                    }
+                    blocks[item.key()] = block;
+                }
+                presetConfig->SetBlock("CVars", blocks);
+                Ship::Context::GetInstance()->GetConsoleVariables()->Load();
+            } else {
+''' + original + '''            }
+'''
+        text=text[:begin]+batch+text[end:]
     text=text.replace('fileList = {};','fileList.clear();')
     text=text.replace(', PRESET_SECTION_MAX,', ', static_cast<size_t>(PRESET_SECTION_MAX),')
     text=text.replace('result["splitTimeStatus"]=SPLIT_STATUS_INACTIVE;', 'result["splitTimeStatus"]=static_cast<int>(SPLIT_STATUS_INACTIVE);')

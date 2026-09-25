@@ -43,6 +43,7 @@ def header(text):
     text=once(text,'    GfxTextureCache mTextureCache{};',
               '    GfxTextureCache mTextureCache{};\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
+              '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
               '    XboxTrianglePipelineResult mXboxPipelineResult;')
     text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
@@ -205,6 +206,13 @@ def prepare():
     light='include/fast/resource/type/Light.h'
     pending[light]=once(sources[light],'using Resource::Resource;','Light(std::shared_ptr<Ship::ResourceInitData> initData) : Resource<LightEntry>(initData) {}').replace(' final :',' :')
     text=sources['src/fast/interpreter.cpp']
+    # CreateShader passes only the path to LoadFile. The upstream local
+    # ResourceInitData is never observed by that call or any later branch.
+    text=once(text,
+              '    std::shared_ptr<Ship::ResourceInitData> initData = std::make_shared<Ship::ResourceInitData>();\n'
+              '    initData->Path = path;\n'
+              '    initData->IsCustom = false;\n'
+              '    initData->ByteOrder = Ship::Endianness::Native;\n', '')
     text=once(text,'#include <any>','#include "fast3d/value_init.h"\n#include "fast3d/math.h"\n#include <array>')
     text=text.replace('#include <stdbool.h>','')
     text=once(text,'Interpreter::Interpreter() {','Interpreter::Interpreter() : '+', '.join(defaults)+' {\n'+'\n'.join(arrays))
@@ -251,6 +259,11 @@ def prepare():
     text=triangle_split(text)
     text=texture_bindings(text)
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['transform'](text)
+    text=once(text, '    mRapi->Init();\n    for (std::map<ColorCombinerKey, ColorCombiner>::iterator entry',
+              '    mRapi->Init();\n    mXboxClipParameters = mRapi->GetClipParameters();\n'
+              '    for (std::map<ColorCombinerKey, ColorCombiner>::iterator entry')
+    text=once(text, '    struct GfxClipParameters clip_parameters = mRapi->GetClipParameters();',
+              '    struct GfxClipParameters clip_parameters = mXboxClipParameters;')
     text=combiner_lookup.transform(text)
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
     pending['src/fast/interpreter.cpp']=text

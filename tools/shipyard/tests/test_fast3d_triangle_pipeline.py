@@ -51,6 +51,15 @@ class TrianglePipelineTests(unittest.TestCase):
         self.assertEqual(original[end:original.index(next_method, end)],
                          changed[changed.index(projection['END']):changed.index(next_method, changed.index(projection['END']))])
 
+    def test_clip_snapshot_refreshes_after_every_backend_init(self):
+        source = INTERPRETER.read_text()
+        init = source[source.index('void Interpreter::Init('):source.index('\nvoid Interpreter::',source.index('void Interpreter::Init(')+1)]
+        self.assertLess(init.index('mRapi->Init()'),init.index('mXboxClipParameters = mRapi->GetClipParameters()'))
+        self.assertEqual(init.count('mXboxClipParameters = mRapi->GetClipParameters()'),1)
+        cold = source[source.index('void Interpreter::XboxPrepareTrianglePipeline('):source.index('\nvoid Interpreter::',source.index('void Interpreter::XboxPrepareTrianglePipeline(')+1)]
+        self.assertIn('clip_parameters = mXboxClipParameters;',cold)
+        self.assertNotIn('mRapi->GetClipParameters()',cold)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -54,6 +54,39 @@ def inherited_window(text,classname):
     return once(text,'    using GuiWindow::GuiWindow;','\n'.join(decls))
 
 
+def cache_viewport_interpreter_locks(text):
+    counts={'ApplyResolutionChanges':7,'GetIntegerScaleFactor':20,
+            'CalculateGameViewport':16,'DrawGame':8}
+    for method,expected in counts.items():
+        start=text.index('Gui::'+method+'(')
+        end=text.index('\n}\n',start)+2
+        body=text[start:end]
+        if body.count('mInterpreter.lock()')!=expected or 'mInterpreter =' in body:
+            raise ValueError('GUI interpreter lifetime boundary drift: '+method)
+        if method=='DrawGame':
+            anchor='    GetGameOverlay()->Draw();'
+            if body.index(anchor)>body.index('mInterpreter.lock()'):
+                raise ValueError('DrawGame interpreter used before overlay callback')
+            body=once(body,anchor,anchor+'\n    auto interpreter = mInterpreter.lock();')
+        elif method=='GetIntegerScaleFactor':
+            body=once(body,'            // Screen bounds take priority over whatever Factor is set to.',
+                      '            auto interpreter = mInterpreter.lock();\n'
+                      '            // Screen bounds take priority over whatever Factor is set to.')
+            body=once(body,'        // Compare aspect ratios of game framebuffer and GUI',
+                      '        auto interpreter = mInterpreter.lock();\n'
+                      '        // Compare aspect ratios of game framebuffer and GUI')
+        else:
+            first=body.index('mInterpreter.lock()')
+            line=body.rfind('\n',0,first)+1
+            body=body[:line]+'    auto interpreter = mInterpreter.lock();\n'+body[line:]
+        # Only references after the declaration are replaced. The two
+        # integer-scale branches each own an independent local lifetime.
+        marker='auto interpreter = mInterpreter.lock();'
+        body=body.replace('mInterpreter.lock()', 'interpreter')
+        body=body.replace('auto interpreter = interpreter;',marker)
+        text=text[:start]+body+text[end:]
+    return text
+
 def transform(name,text):
     if name.endswith('/Fonts.h'):
         # XDK's concatenated string limit is 65535 bytes. Keep the exact same
@@ -111,6 +144,7 @@ def transform(name,text):
         text=re.sub(r'(?<!::)\bdynamic_pointer_cast<','std::dynamic_pointer_cast<',text)
         text=once(text,'switch (res.Type)','switch (res.Type.GetValue())')
         text=re.sub(r'\b0b([01]+)\b',lambda m:str(int(m[1],2)),text)
+        text=cache_viewport_interpreter_locks(text)
     elif name.endswith('/StatsWindow.cpp'):
         text=once(text,'#if defined(_WIN32)','#if defined(_XBOX)\n    ImGui::Text("Platform: Xbox 360");\n#elif defined(_WIN32)')
     elif name.endswith('/ConsoleWindow.cpp'):

@@ -277,8 +277,17 @@ def project(name,text):
         text='#include "soh/Enhancements/randomizer/fishsanity.h"\n#include "thread-pool/native_support.h"\n'+text
         text=once(text,'std::thread randoThread;','Shipyard::Async::joining_thread randoThread;')
         text=once(text,'std::thread(&GenerateRandomizerImgui, seed)','Shipyard::Async::make_thread([seed]() { GenerateRandomizerImgui(seed); })')
+        text=once(text,'u8 generated;','volatile LONG generated = 0;')
+        text=once(text,'    generated = 1;\n\n    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnGenerationCompletion>();',
+                  '    InterlockedExchange(&generated, 1);\n\n    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnGenerationCompletion>();')
+        text=once(text,'bool GenerateRandomizer(std::string seed /*= ""*/) {\n    if (generated) {\n        generated = 0;\n        randoThread.join();\n    }',
+                  'bool GenerateRandomizer(std::string seed /*= ""*/) {\n    if (InterlockedCompareExchange(&generated, 0, 0)) {\n        InterlockedExchange(&generated, 0);\n        randoThread.join();\n    }')
         text=once(text,'void JoinRandoGenerationThread() {\n    if (generated) {\n        generated = 0;\n        randoThread.join();\n    }\n}',
-                  'void JoinRandoGenerationThread() {\n    if (randoThread.joinable()) {\n        randoThread.join();\n        generated = 0;\n    }\n}')
+                  'void JoinRandoGenerationThread() {\n    if (randoThread.joinable()) {\n        randoThread.join();\n        InterlockedExchange(&generated, 0);\n    }\n}\n\nvoid PollRandoGenerationThread() {\n    if (InterlockedCompareExchange(&generated, 0, 0)) {\n        JoinRandoGenerationThread();\n    }\n}')
+    if name.endswith('/randomizer.h'):
+        text=once(text,'void JoinRandoGenerationThread();','void JoinRandoGenerationThread();\nvoid PollRandoGenerationThread();')
+    if name.endswith('/SohMenuRandomizer.cpp'):
+        text=once(text,'            JoinRandoGenerationThread();','            PollRandoGenerationThread();')
     if name.endswith('/Plandomizer.cpp'):
         text=re.sub(r'for \(auto& \[key, value\] : (hints|locations)\.items\(\)\) \{',lambda m:'for (auto jsonCursor='+m[1]+'.begin();jsonCursor!='+m[1]+'.end();++jsonCursor){ const std::string key=jsonCursor.key(); auto& value=jsonCursor.value();',text)
         text=once(text,'[](const auto& a, const auto& b)','[](const std::pair<Rando::Item,int32_t>& a, const std::pair<Rando::Item,int32_t>& b) -> bool')

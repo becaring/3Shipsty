@@ -123,24 +123,36 @@ def worker_contract():
     folder=OUT/'worker-contract';folder.mkdir(exist_ok=True)
     source=(OUT/'generated'/BASE/'randomizer.cpp').read_text()
     join=next(n.text.decode() for n in functions(source) if name(n)=='JoinRandoGenerationThread')
+    poll=next(n.text.decode() for n in functions(source) if name(n)=='PollRandoGenerationThread')
+    assert 'InterlockedExchange(&generated, 1);' in source
+    assert 'PollRandoGenerationThread();' in (OUT/'generated/soh/soh/SohGui/SohMenuRandomizer.cpp').read_text()
     text='''#include "thread-pool/native_support.h"
 #include <cassert>
 #include <cstdio>
 Shipyard::Async::joining_thread randoThread;
-int generated=0;
+volatile LONG generated=0;
 volatile LONG completed=0;
-'''+join+'''
+'''+join+'\n'+poll+'''
 int main(){
-    JoinRandoGenerationThread();
-    randoThread=Shipyard::Async::make_thread([](){Sleep(50);generated=1;InterlockedExchange(&completed,1);});
+    PollRandoGenerationThread();
+    HANDLE gate=CreateEvent(NULL,TRUE,FALSE,NULL);
+    HANDLE started=CreateEvent(NULL,TRUE,FALSE,NULL);
+    randoThread=Shipyard::Async::make_thread([&](){SetEvent(started);WaitForSingleObject(gate,INFINITE);InterlockedExchange(&generated,1);});
+    assert(WaitForSingleObject(started,2000)==WAIT_OBJECT_0);
+    for(int i=0;i<64;++i){PollRandoGenerationThread();assert(randoThread.joinable());}
+    SetEvent(gate);
+    for(int i=0;i<2000 && !InterlockedCompareExchange(&generated,0,0);++i)Sleep(1);
+    assert(InterlockedCompareExchange(&generated,0,0)==1);
+    PollRandoGenerationThread();
+    assert(!randoThread.joinable() && generated==0);
+    PollRandoGenerationThread();
+    CloseHandle(gate);CloseHandle(started);
+    randoThread=Shipyard::Async::make_thread([](){Sleep(20);InterlockedExchange(&completed,1);InterlockedExchange(&generated,1);});
     JoinRandoGenerationThread();
     assert(InterlockedCompareExchange(&completed,0,0)==1);
     assert(!randoThread.joinable() && generated==0);
-    JoinRandoGenerationThread();
-    randoThread=Shipyard::Async::make_thread([](){generated=1;});
-    JoinRandoGenerationThread();
-    assert(!randoThread.joinable() && generated==0);
-    puts("actual generation join: idle, unfinished, completed, repeated shutdown passed");
+    PollRandoGenerationThread();
+    puts("actual generation join: repeated active poll, completion, second worker shutdown passed");
 }
 '''
     stable(folder/'contract.cpp',text)

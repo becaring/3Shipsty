@@ -6,7 +6,9 @@ using namespace Fast;
 
 struct TestBackend {
     GfxClipParameters clip;
-    GfxClipParameters GetClipParameters() const { return clip; }
+    mutable unsigned clipReads;
+    TestBackend() : clip(), clipReads(0) {}
+    GfxClipParameters GetClipParameters() const { ++clipReads; return clip; }
 };
 
 struct TestOwner {
@@ -18,10 +20,13 @@ struct TestOwner {
     RSP* mRsp;
     RenderingState& mRenderingState;
     TestBackend* mRapi;
+    GfxClipParameters mXboxClipParameters;
+    void Init(TestBackend* next) { mRapi = next; mXboxClipParameters = mRapi->GetClipParameters(); }
     TestOwner() : rdp(), rsp(), rendering(), backend(), mRdp(&rdp), mRsp(&rsp),
                   mRenderingState(rendering), mRapi(&backend) {
         backend.clip.z_is_from_0_to_1 = true;
         backend.clip.invertY = false;
+        Init(&backend);
     }
 };
 
@@ -39,6 +44,8 @@ int main() {
     XboxTrianglePipelineKey key;
     key.Capture(owner, result);
     require(key.Matches(owner), "unchanged modern state did not certify");
+    for (int i=0; i<100; ++i) require(key.Matches(owner), "cached clip changed");
+    require(owner.backend.clipReads==1, "clip lookup repeated on key hit");
 #define CHANGE(field, value) { auto prior=(field); (field)=(value); require(!key.Matches(owner), #field " missed"); (field)=prior; require(key.Matches(owner), #field " restore missed"); }
     for (unsigned bit=0; bit<64; ++bit) CHANGE(owner.rdp.combine_mode, uint64_t(1)<<bit);
     for (unsigned bit=0; bit<32; ++bit) {
@@ -71,9 +78,15 @@ int main() {
     owner.rdp.current_shader.type = 2;
     require(!key.Matches(owner), "modern shader type missed");
     owner.rdp.current_shader.type = 0;
-    owner.backend.clip.invertY = true;
-    require(!key.Matches(owner), "modern backend clip missed");
-    owner.backend.clip.invertY = false;
+    TestBackend replacement;
+    replacement.clip.z_is_from_0_to_1 = true;
+    replacement.clip.invertY = true;
+    owner.Init(&replacement);
+    require(!key.Matches(owner), "replacement backend clip missed");
+    require(replacement.clipReads==1, "replacement clip not sampled once");
+    owner.Init(&owner.backend);
+    require(key.Matches(owner), "original backend clip not restored after reinit");
+    require(owner.backend.clipReads==2, "reinit did not refresh clip");
     owner.rdp.textures_changed[0] = true;
     require(!key.Matches(owner), "used dirty texture reused");
     owner.rdp.textures_changed[0] = false;

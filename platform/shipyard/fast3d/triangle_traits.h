@@ -12,7 +12,7 @@ struct XboxTrianglePipelineTraits {
         return false;
     }
     template<class Owner> static GfxClipParameters Clip(const Owner& owner) {
-        return owner.mRapi->GetClipParameters();
+        return owner.mXboxClipParameters;
     }
     template<class Owner> static unsigned EffectiveTile(const Owner& owner, unsigned slot) {
         return unsigned(owner.mRdp->first_tile_index) + slot;

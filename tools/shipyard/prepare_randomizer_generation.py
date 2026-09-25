@@ -123,6 +123,7 @@ class Lists:
 
 def header(name,text):
     text=normalize_includes(text)
+    text=seed_set_references(name,text)
     if name=='hints':
         raw=text.encode();edits=[]
         for n in walk(PARSER.parse(raw).root_node):
@@ -147,8 +148,18 @@ def header(name,text):
         text=text.replace('begin(vector)','vector.begin()').replace('end(vector)','vector.end()').replace('std::cbegin(fromPool)','Shipyard::Resources::begin(fromPool)').replace('std::cend(fromPool)','Shipyard::Resources::end(fromPool)').replace('std::vector<T> filteredPool = {};','std::vector<T> filteredPool;')
     return '#include "resources/runtime_support.h"\n'+SYNTAX(default_arguments(text),set())
 
+def seed_set_references(name,text):
+    expected={'menu':1,'playthrough':2,'rando_main':1}.get(name,0)
+    if not expected:return text
+    for value in ('RandomizerCheck> excludedLocations','RandomizerTrick> enabledTricks'):
+        old='std::set<'+value
+        if text.count(old)!=expected:raise ValueError('Seed set signature drift: '+name)
+        text=text.replace(old,'const std::set<'+value.replace('> ', '>& ',1))
+    return text
+
 def project(name,text):
     text=normalize_includes(text);lists=Lists();audit={}
+    text=seed_set_references(name,text)
     raw=text.encode();edits=[]
     for n in walk(PARSER.parse(raw).root_node):
         if n.type!='lambda_expression':continue

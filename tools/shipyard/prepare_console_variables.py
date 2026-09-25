@@ -28,12 +28,17 @@ def transform(name,text):
         text=once(text,'char* String = nullptr;','char* String;')
         text='#include "binary/compat.h"\n'+text
     elif name.endswith('/ConsoleVariable.cpp'):
+        # Load clears defaults installed at GUI startup. Restore the Xbox
+        # controller-navigation default after persisted and legacy values load;
+        # RegisterInteger leaves an explicit saved zero untouched.
+        text=once(text,'    LoadLegacy();\n}',
+                  '    LoadLegacy();\n    RegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);\n}')
         text=once(text,'switch (variableTo->Type)', 'switch (variableTo->Type.GetValue())')
         text=once(text,'for (const auto& item : items) {',
                   'for (auto cursor=items.begin(), finish=items.end(); cursor!=finish; ++cursor) {\n        const auto& item=*cursor;')
         lower=runpy.run_path(str(ROOT/'platform/shipyard/imgui/projection.py'))['lower_ranges']
         text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
-        text='#include "resources/runtime_support.h"\n#include <spdlog/spdlog.h>\n'+text
+        text='#include "compile_definitions.h"\n#include "resources/runtime_support.h"\n#include <spdlog/spdlog.h>\n'+text
     elif name.endswith('/Path.h'):
         text=runtime_transform(name,text)
         text=once(text,'#include "../StringHelper.h"','#include "ship/utils/StringHelper.h"')

@@ -20,11 +20,24 @@ def functions(text):
 def main():
     prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
     manifest=(OUT/'manifest.json').read_bytes();prepare();assert manifest==(OUT/'manifest.json').read_bytes()
-    unchanged=['StartDraw','EndDraw','ApplyResolutionChanges','GetIntegerScaleFactor','CalculateGameViewport','DrawGame',
+    unchanged=['StartDraw','EndDraw',
                'GamepadNavigationEnabled','BlockGamepadNavigation','UnblockGamepadNavigation','CheckSaveCvars']
     original=(ROOT/'libultraship/src/ship/window/gui/Gui.cpp').read_text()
     current=functions(original);projected=functions((OUT/'generated/src/ship/window/gui/Gui.cpp').read_text())
     for name in unchanged:assert current['Gui::'+name]==projected['Gui::'+name],name
+    reduced={'ApplyResolutionChanges':7,'GetIntegerScaleFactor':20,
+             'CalculateGameViewport':16,'DrawGame':8}
+    for name,original_locks in reduced.items():
+        old=current['Gui::'+name];new=projected['Gui::'+name]
+        assert old.count('mInterpreter.lock()')==original_locks,name
+        expected_locals=2 if name=='GetIntegerScaleFactor' else 1
+        assert new.count('auto interpreter = mInterpreter.lock();')==expected_locals,name
+        assert new.count('mInterpreter.lock()')==expected_locals,name
+        restored=re.sub(r'(?m)^[ \t]*auto interpreter = mInterpreter\.lock\(\);\n','',new)
+        restored=restored.replace('interpreter->','mInterpreter.lock()->')
+        assert restored==old,name
+    draw=projected['Gui::DrawGame']
+    assert draw.index('GetGameOverlay()->Draw();') < draw.index('auto interpreter = mInterpreter.lock();')
     # Every production method remains, including all complete concrete windows.
     for name in json.loads((OWN/'sources.lock.json').read_text())['sources']:
         if not name.endswith('.cpp'):continue
