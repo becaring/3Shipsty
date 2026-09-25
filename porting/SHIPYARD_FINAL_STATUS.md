@@ -1,4 +1,4 @@
-# Shipyard queue-completion successor and ownership status
+# Shipyard maintained-source successor and ownership status
 
 This records the verified post-freeze technical successor. The original
 checkpoints and XEXs remain preserved. The ownership decisions in
@@ -12,17 +12,20 @@ distribute the game, SDK, or asset package.
 
 | Checkout | Technical successor source authority | Rebuild entry point |
 | --- | --- | --- |
-| Shipyard | Branch `codex/shipyard-queue-completion`, commit `7ab5420bee2ae28e4c5b65813c0fc374150b3915`, API 6; `baseline.json` SHA-256 `6f4df44e0e52602ffc95b2e88d5bb0e05f6066fa162a600c434776426cf19327` | `README.md`, Test environments |
-| Modern 3Shipsty | Branch `codex/shipyard-hardening`, selected build-input commit `159dddf03c78069741625d0c0fc3e65899556b9b` | `platform/shipyard/build/BUILD_FROM_SOURCE.md` |
-| Smash360 | Branch `codex/shipyard-hardening`, selected build-input commit `52b1a825fb33ecce9b3b60c7d7aaef34a0961f6d` | `README.md`, Xbox from-source section |
+| Shipyard | Private checkout `D:\Projects\becaring\shipyard`, branch `codex/shipyard-deslop`, commit `d4684981fd7b703cb600e09c94be5ec97cd8be29`, API 6; `baseline.json` SHA-256 `89042b5b0bd575525004751173792ef3f9063d7711dd72f186c0c81a7fd17e77` | `README.md`, Test environments |
+| Modern 3Shipsty | Private worktree branch `codex/shipyard-deslop`, selected build-input commit `62e075cb02eda64e6b97d54abe35827833242a11` | `platform/shipyard/build/BUILD_FROM_SOURCE.md` |
+| Smash360 | Private worktree branch `codex/shipyard-deslop`, selected build-input commit `8d910ff86ec59072f44ad12e0342da344744e91e` | `README.md`, Xbox from-source section |
 
 Both `platform-base.lock.json` files resolve to that same exact Shipyard commit,
 API and baseline digest. Modern also pins 16 external Git archives; Smash pins
 11. Their setup scripts verify those inputs before generating source. The
-builds do not read SoH 4.0.5. The original freeze `e1e71554...`, hardening
-`b5f33d8b...`, and publication-notice `53b5dd93...` remain preserved history.
+builds do not read SoH 4.0.5. The queue-completion candidate `7ab5420...`,
+original freeze `e1e71554...`, hardening `b5f33d8b...`, and
+publication-notice `53b5dd93...` remain preserved history.
 The selected successor contains the hardened production files and the corrected
-notices and closed R1 trace from the publication-notice revision.
+notices and closed R1 trace from the publication-notice revision. The intended
+repository identity is `becaring/shipyard`; the source and repository remain
+private until a coordinated release with 3Shipsty/OoT is explicitly authorized.
 
 ## Canonical ownership
 
@@ -66,7 +69,56 @@ manifests and full PPC compile receipts establish direct source and header
 ownership. The source-generation/project suites check the shadow and rewrite
 paths; exact hashes alone are not a semantic derivation test.
 
-## Verification and exact artifacts
+## Maintained-source cleanup verification
+
+The selected Shipyard source has one private checkout at
+`D:\Projects\becaring\shipyard`. Five local cleanup commits after `7ab5420...`
+make the renderer, platform services, Fast3D helpers, speech boundary and
+source projectors easier to maintain. The API remains version 6. Dead private
+renderer `Replace`, the overwritten vertex declaration token calculation,
+unread profiling scopes and write-only framebuffer state were removed after
+caller and configuration checks. Required compatibility and diagnostic hooks
+remain. `README.md` maps component ownership, consumer hooks, instrumentation,
+and Python/Git, Windows/MSVC and XDK test prerequisites.
+
+The selected Shipyard test suite passed 48/48 on Windows. Modern's selected
+adapter/project tests passed 101/101 and 18/18, including its 864-case Fast3D
+differential. Smash's 45 test scripts passed 100 unittest cases. Modern's
+96-stage regeneration started from empty owned generated outputs in this
+isolated worktree, with a preservation receipt at
+`scratch/final-regeneration/receipt.json`; it ran before the final speech-only
+source change. The speech owner was regenerated afterward, with 6/6 speech
+tests and six PPC speech units compiled. Smash staged its owners with 485
+direct game objects after compiling 486 game C units. Generator differentials
+found byte-identical logging and Prism outputs and whitespace-token-identical
+value-type output. The cleanup did not change the supported public contract.
+
+Modern compiled all 1,844 selected PPC units fresh in eight successful shards.
+Its compile verification records 1,005 actual headers and 26 direct Shipyard
+sources at `scratch/project-xdk/complete-application-verification.json`. The
+fresh archive, application link and `imagexex` all exited 0; the link used
+1,094 application objects and 750 archive objects. The exact manifest and
+link inputs are in `scratch/project-xdk/manifest.json` and
+`scratch/link-integration/link-verification.json`.
+
+Smash freshly compiled 140 LibUltraShip and 112 application/platform PPC
+units in eight successful shards each. Its direct game C receipt contains
+486 freshly compiled units; 485 are selected as direct game objects by the
+application project. The selected project compiles Shipyard renderer and
+diagnostic queue sources directly. Its native compile/link receipts are under
+`scratch/application-xdk/native/parallel/`, and static executable/symbol
+verification is at `scratch/application-xdk/native/build/native-link-verification.json`.
+
+| Maintained-source build output | SHA-256 | Bytes |
+| --- | --- | ---: |
+| Modern `scratch/link-integration/3Shipsty.xex` | `09ab8d97f346237812a8ef45863486c342d303323c5c43fbda4c04d4f16f949c` | 43,245,568 |
+| Smash `scratch/application-xdk/native/build/Smash360.xex` | `bb9dcd0ab71ce1bd5c9f0638136e7d7fb2566de64fbc04d53a51790c77609ea5` | 8,728,576 |
+
+Both are newly linked outputs in private isolated worktrees. The old candidate
+artifacts remain untouched. No Xenia or physical-hardware execution is claimed
+for these maintained-source outputs; functional acceptance is a separate task.
+
+## Preserved queue-completion verification (historical)
 
 The diagnostics overlap was reproduced with a real Windows event/barrier test:
 the second external `shutdown()` returned while `worker_stopped` was blocked.
@@ -115,7 +167,7 @@ with no local diagnostics implementation shadow. The new XEX, resource archives,
 project items, object receipts and link verification are together in
 `scratch/queue-followup-candidates` in the Smash successor.
 
-| Current local candidate | SHA-256 | Bytes | Manifest |
+| Historical queue-completion candidate | SHA-256 | Bytes | Manifest |
 | --- | --- | ---: | --- |
 | Modern `scratch/queue-followup-candidates/3Shipsty.xex` | `86504a1422d36a3c0a9d98849cb13315d63f06cc919ad0f8355ce9db3eaac272` | 43,311,104 | Modern `scratch/queue-followup-candidates/manifest.json` |
 | Smash `scratch/queue-followup-candidates/Smash360.xex` | `4c14a42f4d4118f7d7a626c01ba4c35572cff92eb3fdc2a19b11d34db7b325cd` | 8,728,576 | Smash `scratch/queue-followup-candidates/manifest.json` |
