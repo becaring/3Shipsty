@@ -1,6 +1,6 @@
 {
-  "base": "../../../LibUltraShip+Fast3D360/scratch/queue-completion-worktree",
-  "git_revision": "7ab5420bee2ae28e4c5b65813c0fc374150b3915",
+  "base": "../../../becaring/shipyard",
+  "git_revision": "d4684981fd7b703cb600e09c94be5ec97cd8be29",
   "api_version": 6,
-  "baseline_sha256": "6f4df44e0e52602ffc95b2e88d5bb0e05f6066fa162a600c434776426cf19327"
+  "baseline_sha256": "89042b5b0bd575525004751173792ef3f9063d7711dd72f186c0c81a7fd17e77"
 }
