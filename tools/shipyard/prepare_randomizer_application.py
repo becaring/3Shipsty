@@ -284,10 +284,12 @@ def project(name,text):
                   'bool GenerateRandomizer(std::string seed /*= ""*/) {\n    if (InterlockedCompareExchange(&generated, 0, 0)) {\n        InterlockedExchange(&generated, 0);\n        randoThread.join();\n    }')
         text=once(text,'void JoinRandoGenerationThread() {\n    if (generated) {\n        generated = 0;\n        randoThread.join();\n    }\n}',
                   'void JoinRandoGenerationThread() {\n    if (randoThread.joinable()) {\n        randoThread.join();\n        InterlockedExchange(&generated, 0);\n    }\n}\n\nvoid PollRandoGenerationThread() {\n    if (InterlockedCompareExchange(&generated, 0, 0)) {\n        JoinRandoGenerationThread();\n    }\n}')
-    if name.endswith('/randomizer.h'):
-        text=once(text,'void JoinRandoGenerationThread();','void JoinRandoGenerationThread();\nvoid PollRandoGenerationThread();')
     if name.endswith('/SohMenuRandomizer.cpp'):
         text=once(text,'            JoinRandoGenerationThread();','            PollRandoGenerationThread();')
+        # randomizer.h is an upstream header, not a projected lock input. Give
+        # this selected caller its narrow declaration instead of depending on
+        # the include order of a separately staged header.
+        text='void PollRandoGenerationThread();\n'+text
     if name.endswith('/Plandomizer.cpp'):
         text=re.sub(r'for \(auto& \[key, value\] : (hints|locations)\.items\(\)\) \{',lambda m:'for (auto jsonCursor='+m[1]+'.begin();jsonCursor!='+m[1]+'.end();++jsonCursor){ const std::string key=jsonCursor.key(); auto& value=jsonCursor.value();',text)
         text=once(text,'[](const auto& a, const auto& b)','[](const std::pair<Rando::Item,int32_t>& a, const std::pair<Rando::Item,int32_t>& b) -> bool')

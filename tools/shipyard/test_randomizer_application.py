@@ -125,7 +125,9 @@ def worker_contract():
     join=next(n.text.decode() for n in functions(source) if name(n)=='JoinRandoGenerationThread')
     poll=next(n.text.decode() for n in functions(source) if name(n)=='PollRandoGenerationThread')
     assert 'InterlockedExchange(&generated, 1);' in source
-    assert 'PollRandoGenerationThread();' in (OUT/'generated/soh/soh/SohGui/SohMenuRandomizer.cpp').read_text()
+    menu=(OUT/'generated/soh/soh/SohGui/SohMenuRandomizer.cpp').read_text()
+    assert menu.count('void PollRandoGenerationThread();')==1
+    assert menu.index('void PollRandoGenerationThread();')<menu.index('            PollRandoGenerationThread();')
     text='''#include "thread-pool/native_support.h"
 #include <cassert>
 #include <cstdio>
