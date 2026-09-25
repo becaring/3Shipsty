@@ -131,6 +131,20 @@ def platform_source(source):
                 '    Shipyard::Platform::RecordBootStage("factories-ready", false);\n    gSaveStateMgr = std::make_shared<SaveStateMgr>();')
     source=once(source,'    gRandomizer = std::make_shared<Randomizer>();',
                 '    gRandomizer = std::make_shared<Randomizer>();\n    Shipyard::Platform::RecordBootStage("randomizer-ready", false);')
+    # The startup log previously stopped before the first presentation/audio wait.
+    # Record each boundary once on the game thread; never log ongoing frame work.
+    source=once(source,'extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {',
+                '''extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
+    static bool firstFrame = true;
+    const bool traceFirstFrame = firstFrame;
+    firstFrame = false;''')
+    source=once(source,'    RunCommands(commands, mtx_replacements);',
+                '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-begin", false);
+    RunCommands(commands, mtx_replacements);
+    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-returned", false);''')
+    source=once(source,'    bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);',
+                '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-audio-complete", false);
+    bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);''')
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
 // failure escape through the C game entry before its crash handler exists.
