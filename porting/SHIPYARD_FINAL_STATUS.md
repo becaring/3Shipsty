@@ -1,4 +1,4 @@
-# Shipyard technical successor and ownership status
+# Shipyard queue-completion successor and ownership status
 
 This records the verified post-freeze technical successor. The original
 checkpoints and XEXs remain preserved. The ownership decisions in
@@ -12,17 +12,17 @@ distribute the game, SDK, or asset package.
 
 | Checkout | Technical successor source authority | Rebuild entry point |
 | --- | --- | --- |
-| Shipyard | `b5f33d8bc3108c7934f07e3cc630c1c49534bff9`; `baseline.json` SHA-256 `612aa6370d1de554408a6ac23245a182006d39c8164d0d75142e199544eefd08` | `python -m unittest discover -s tests -v` |
-| Modern 3Shipsty | `21cf7af7625506a7a8c9bc3f5c208b0d499adf19` for all selected build inputs | `platform/shipyard/build/BUILD_FROM_SOURCE.md` |
-| Smash360 | `e565b7e0ac63c41a0f7572e05c165f0d9f79e8fd` for all selected build inputs | `README.md`, Xbox from-source section |
+| Shipyard | Branch `codex/shipyard-queue-completion`, commit `7ab5420bee2ae28e4c5b65813c0fc374150b3915`, API 6; `baseline.json` SHA-256 `6f4df44e0e52602ffc95b2e88d5bb0e05f6066fa162a600c434776426cf19327` | `README.md`, Test environments |
+| Modern 3Shipsty | Branch `codex/shipyard-hardening`, selected build-input commit `159dddf03c78069741625d0c0fc3e65899556b9b` | `platform/shipyard/build/BUILD_FROM_SOURCE.md` |
+| Smash360 | Branch `codex/shipyard-hardening`, selected build-input commit `52b1a825fb33ecce9b3b60c7d7aaef34a0961f6d` | `README.md`, Xbox from-source section |
 
-The consumers lock the exact technical Shipyard revision and manifest. Modern
-also pins 16 external Git archives; Smash pins 11. Their setup scripts verify
-those inputs before generating source. The builds do not read SoH 4.0.5. A
-separate documentation-only Shipyard publication-notice candidate,
-`53b5dd93de9128b492ad30418848c48371538ebb`, carries the corrected notices
-and R1 trace. Its `baseline.json` is byte-identical to the technical successor;
-it has not been published or substituted into the consumer binary locks.
+Both `platform-base.lock.json` files resolve to that same exact Shipyard commit,
+API and baseline digest. Modern also pins 16 external Git archives; Smash pins
+11. Their setup scripts verify those inputs before generating source. The
+builds do not read SoH 4.0.5. The original freeze `e1e71554...`, hardening
+`b5f33d8b...`, and publication-notice `53b5dd93...` remain preserved history.
+The selected successor contains the hardened production files and the corrected
+notices and closed R1 trace from the publication-notice revision.
 
 ## Canonical ownership
 
@@ -68,98 +68,83 @@ paths; exact hashes alone are not a semantic derivation test.
 
 ## Verification and exact artifacts
 
-Shipyard's post-freeze hardening contains the diagnostics callback/payload
-contracts and optional shader-cache allocation containment. Its 42 package
-tests passed (`scratch/hardening-tests-final.log` in the Shipyard successor).
-The three source-review findings are fixed in this identified successor, not
-retroactively in the frozen baseline.
+The diagnostics overlap was reproduced with a real Windows event/barrier test:
+the second external `shutdown()` returned while `worker_stopped` was blocked.
+That test failed before the source change and passes afterward. Every supported
+external shutdown now waits for worker completion, including the final callback.
+A worker callback may request shutdown without self-joining; an external
+shutdown must complete before the callback context or queue is destroyed.
+Concurrent destruction of the Queue object is not part of this contract.
+Existing callback-exception and immutable-payload tests remain in the suite.
+Shipyard's full Windows suite passed 43/43. Its `README.md` now separates
+Python/Git-only checks, Windows/MSVC host C++ tests with `vswhere` discovery,
+and the coordinate test requiring the Xbox compiler/XDK. Missing prerequisites
+mean that coverage was not run; the Python/Git-only subset was 29/29 on this
+Windows host. The review's Linux run covered 27 portable checks and did not
+execute the Windows/XDK tests.
 
-Modern's menu-exception successor regenerated from empty owned output (72
-generated directories emptied, one non-owned item preserved), passed all 96
-generation stages, and freshly compiled all 696 selected game C units. The
-receipts are
-`scratch/final-regeneration/receipt.json` and
-`scratch/game-xdk/full/compile-report.json`. Its project tests passed 18/18,
-its unit suite 101/101, the 864-case full-RSP Fast3D differential passed, and
-the original-versus-projected real menu checks passed. Logs are
-the earlier `scratch/hardening-project-tests.log`, `scratch/hardening-unit-tests.log`,
-and `scratch/hardening-menu-tests.log` plus this successor's verification
-command output. All eight object-clean XDK shards exited 0;
-`scratch/project-xdk/complete-application-verification.json` verifies 1,844
-fresh PPC objects, source/header hashes and machine type. The new link used
-1,094 application objects and a 750-object archive; archive, linker and
-`imagexex` exits are 0 in `scratch/link-integration/link-verification.json`.
+Modern's prior whole-tree empty-owned-output receipt is preserved at
+`scratch/queue-followup-candidates/prior-empty-regeneration-receipt.json`
+(SHA-256 `d7e7802e0e31acdac12c8e5a24bd589ed76aa2e793f7bcef58d5a0cee256f655`).
+This pass did **not** rerun an empty-output regeneration. A broad regeneration
+was stopped at stage 86 because its `--build` stages were unnecessary for the
+queue-only lock change. Targeted owner scripts refreshed the remaining selected
+recipes. The project gate passed 18/18 and the Modern unit suite 101/101;
+the latter includes the 864-case full-RSP Fast3D differential. The selected
+1,844-unit project contains no diagnostics queue source and no old Shipyard
+absolute include option.
 
-Smash's successor empty-output receipt is
-`scratch/final-preclean/20260924T085948Z/emptied.json` in the Smash successor
-(39 owned outputs). Its 45 scripts/100 unittest cases passed in
-`scratch/hardening-tests.log`. The fresh build compiled 486 game C units,
-140 LibUltraShip C++ units and 112 application/platform C++ units, all PPC;
-the archive and new XEX link passed in
-`scratch/application-xdk/native/build/native-link-verification.json`.
+Modern's `scratch/queue-followup-candidates/reuse-verification.json` binds the
+prior full PPC compile receipt to the new manifest: 1,843 unchanged PPC objects
+were rehashed and one projected eSpeak object was compiled fresh. Its source
+diff consists of two `#line` worktree paths. The 1,005-header closure was
+rechecked; two generated JSON headers changed only a `#line` worktree path,
+with the previous hashes reproduced by reversing that path. This is a verified
+reuse/relink receipt, **not** a new full 1,844-object compile. The fresh archive,
+link and `imagexex` steps all exited 0, using 1,094 application objects and
+750 archive objects. `scratch/queue-followup-candidates/runtime-integrity.json`
+checks 406 copied resource files with zero mismatches and an identical staged
+XEX hash.
 
-| Exact successor XEX | SHA-256 | Bytes | Local candidate manifest |
+Smash's earlier 39-output empty-owned-state regeneration remains preserved as
+historical evidence; this pass reran the affected runtime/application owners.
+Its 45 scripts passed 100 unittest cases. The fresh PPC build compiled 486
+game C units, 140 LibUltraShip units and 112 application/platform units. Its
+project manifest selects Shipyard `sources/diagnostics/queue.cpp` directly,
+with no local diagnostics implementation shadow. The new XEX, resource archives,
+project items, object receipts and link verification are together in
+`scratch/queue-followup-candidates` in the Smash successor.
+
+| Current local candidate | SHA-256 | Bytes | Manifest |
 | --- | --- | ---: | --- |
-| Modern `scratch/hardening-candidates/3Shipsty.xex` | `4270f9eba1a53b3d8980b07938d71d3cb99f71be914bac241f4b453d7368b8f7` | 43,311,104 | `scratch/hardening-candidates/manifest.json` in Modern |
-| Modern menu-exception successor `scratch/menu-exception-fix-candidates/3Shipsty.xex` | `b1fdc4c83aa878703f5723eda34c6ea099d41d70f3e618f38918c48bc825e00a` | 43,311,104 | `scratch/menu-exception-fix-candidates/manifest.json` in Modern |
-| Smash `scratch/hardening-candidates/Smash360.xex` | `d8447f9fb103a312366aa51bcb2027b0dc36ea91068f929d882a31d94f8ed891` | 8,728,576 | `scratch/hardening-candidates/manifest.json` in Smash |
+| Modern `scratch/queue-followup-candidates/3Shipsty.xex` | `86504a1422d36a3c0a9d98849cb13315d63f06cc919ad0f8355ce9db3eaac272` | 43,311,104 | Modern `scratch/queue-followup-candidates/manifest.json` |
+| Smash `scratch/queue-followup-candidates/Smash360.xex` | `4c14a42f4d4118f7d7a626c01ba4c35572cff92eb3fdc2a19b11d34db7b325cd` | 8,728,576 | Smash `scratch/queue-followup-candidates/manifest.json` |
 
-The earlier Modern manifest binds its clean-regeneration, compile, link,
-resource, Xenia and exact-copy receipts. The new Modern manifest binds the
-fresh regeneration, compile/link and Xenia receipts for source revision
-`21cf7af` and records the inherited exact-copy audit as earlier ownership
-evidence. All 406 inventoried Modern runtime resource files were rehashed
-after the new Xenia run with zero mismatches; the staged XEX hash equals the
-new candidate hash. Smash's candidate manifest binds its newly linked XEX and
-two named resource archives. These local runtime staging directories are not
-cleared distribution packages.
+The earlier `scratch/hardening-candidates` XEXs and Modern's
+`scratch/menu-exception-fix-candidates` XEX are preserved, not overwritten or
+retroactively relabeled. Exact-candidate Xenia functional acceptance is still
+unverified in this tool session. The new Smash XEX and its known-good frozen
+control both reached only Xenia's configuration log; neither reached memory
+setup. A visible launch opened no window on the maintainer's desktop. The new
+Modern XEX was not observed in Xenia in an interactive desktop session.
+Earlier Xenia observations apply only to their manifest-identified older XEXs.
+No exact new candidate has run on a physical Xbox from this environment.
 
-The earlier Modern `scratch/hardening-xenia/result.json` identifies its exact
-XEX, emulator and runtime-log hashes. The maintainer reports OoT ran and worked
-in that predecessor Xenia candidate. Its guest C++ exception warning also
-appears in the frozen baseline log. The menu-exception successor fixes a
-`WidgetOptions`/`ButtonOptions` fluent-return type mismatch: the Xbox-only
-disabled button in `SohMenu::AddMenuSettings()` was stored as the wrong variant
-alternative and `std::get<ButtonOptions>` threw. The exact source contract test
-failed before the fix and passed afterward. The final candidate's fresh-profile
-Xenia receipt is `scratch/menu-exception-fix-candidates/xenia-result.json`:
-it reached `gui-ready`, `speech-ready` and `init-complete` with zero guest C++
-throw events, connected a controller, created graphics pipelines and a global
-save file. Visible gameplay, specific input actions, audible output and
-save/reload were not independently observed for this new XEX. Smash
-`scratch/hardening-xenia/result.json` records visible intro/tutorial and
-attract-mode fighting render, audio stream initialization, a controller
-connection, and 131 shader-cache entries reloaded; the maintainer confirmed
-the successor Smash XEX worked in Xenia. Specific input actions, audible
-output, save/reload and title shutdown are not claimed without observation.
-
-Physical Xbox execution is the remaining technical acceptance boundary. Run
-the new Modern menu-exception successor and the preserved Smash successor with
-their manifest-identified local resource sets on a real Xbox; record startup
-without Watson, menu navigation, controller response, visible gameplay/rendering,
-audible audio, save/reload and shutdown for each artifact. Preserve the
-candidate hashes before and after transfer. The screenshot of the earlier
-`b24272` hardware build shows a first-chance exception after
-`gui-windows-ready`; it does not establish whether this new XEX fixes real
-hardware. Xenia results do not establish hardware behavior.
-
-The Modern build driver now preflights all 675 local source-lock entries before
-deleting generated outputs, checks scoped Git trust, and resumes interrupted
-stages only when the source revision, stage options and prior log hashes match.
-The documented edit cycle keeps generated outputs and existing PPC objects,
-runs affected owner projections, and lets MSBuild rebuild changed source/header
-dependents. The final object-clean compile above was one uninterrupted run
-from the required empty-output state; the prior candidates and their XEXs were
-not overwritten.
+For functional/hardware acceptance, verify each manifest hash before and after
+transfer, then exercise boot without Watson, visible rendering, menu navigation,
+controller input, gameplay, audible audio, save/reload and title shutdown on
+both exact XEXs with their manifest-identified resources. Record any first-
+chance exception on the new Modern XEX separately from the older hardware
+screenshot. Xenia cannot establish physical hardware behavior.
 
 ## Release gate and scope
 
-The separate Shipyard publication-notice revision corrects `NOTICE.md` and
-keeps the maintainer-scoped `LICENSE` plus all upstream notices. The maintainer
+The selected Shipyard successor retains the corrected `NOTICE.md`, the
+maintainer-scoped `LICENSE`, and all upstream notices. The maintainer
 owns their original SoH360, 3Shipsty, Smash360 and Shipyard Xbox contributions
 and confirms that becaring is their account; donor-tree movement alone is not
 evidence of another author. R1 is closed for selected source/build inputs by
-`provenance/FAST3D_R1_LINEAGE.md` in that notice revision. The historical
+`provenance/FAST3D_R1_LINEAGE.md` in the selected Shipyard revision. The historical
 Re60 commit `23eb15e6bee171d6c1c2bd38350d222bedff0d4c` carries the full
 asset-exception notice. The older SoH360 source-only notice, that later
 conditional notice, and the active consumers' pinned MIT Fast3D notices remain
