@@ -28,6 +28,10 @@ def invoke(tool,arguments,name):
 
 def main():
     OUT.mkdir(exist_ok=True)
+    metadata=json.loads((gen.ROOT/'scratch/build-metadata-xdk/manifest.json').read_text())
+    revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=gen.ROOT,text=True).strip()
+    if metadata['port_commit']!=revision or sha(gen.ROOT/'scratch/build-metadata-xdk/build.c')!=metadata['generated_sha256']:
+        raise ValueError('Build metadata is stale; regenerate and compile only build.c before linking')
     manifest=json.loads((gen.OUT/'manifest.json').read_text())
     proof=json.loads((gen.OUT/'complete-application-verification.json').read_text())
     if proof['build_exit'] or proof['manifest_sha256']!=sha(gen.OUT/'manifest.json'):
