@@ -107,6 +107,9 @@ def transform(name,text):
             text=once(text,'struct ConsoleLine {','struct ConsoleLine {\n        ConsoleLine(const std::string& text,spdlog::level::level_enum priority) : Text(text),Priority(priority),Channel("Console") {}')
             text=text.replace('static constexpr size_t','static const size_t')
     elif name.endswith('/Gui.cpp'):
+        # Retain ImGui's native window settings persistence beside application config.
+        text=once(text,'GetPathRelativeToAppDirectory("imgui.ini")','GetPathRelativeToAppDirectory("config/imgui.ini")')
+        text=once(text,'GetPathRelativeToAppDirectory("imgui_log.txt")','GetPathRelativeToAppDirectory("logs/imgui_log.txt")')
         headers=['ship/window/gui/'+n+'.h' for n in ('ConsoleWindow','InputEditorWindow','StatsWindow','GameOverlay','GuiWindow','GuiMenuBar','IconsFontAwesome4')]
         headers+=['ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h','ship/resource/ResourceLoader.h']
         text='\n'.join('#include "'+h+'"' for h in headers)+'\n#include "native_gui.h"\n'+text

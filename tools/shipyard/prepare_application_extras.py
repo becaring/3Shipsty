@@ -34,6 +34,18 @@ def project(name,text):
 def preproject(name,text):
     if name.endswith('Mouse.h'):return text.replace('#include <libultraship/libultraship.h>','#include <libultraship/bridge.h>')
     if name.endswith('Presets.h'):return text.replace('= {}','= std::vector<PresetSection>()')
+    if name.endswith('/InputViewer.cpp'):
+        text='#include "imgui_internal.h"\n'+text
+        anchor='        if (pads != nullptr && ImGui::Begin("Input Viewer", nullptr, windowFlags)) {'
+        # The Xbox pointer exists while the menu is open. Keep the draggable
+        # overlay reachable above that menu without stealing navigation focus.
+        text=once(text,anchor,anchor+'''
+            if (Ship::Context::GetInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible() &&
+                CVarGetInteger(CVAR_INPUT_VIEWER("EnableDragging"), 1) &&
+                ImGui::GetTopMostPopupModal() == nullptr) {
+                ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
+            }
+''')
     text=text.replace('std::filesystem','xbox_compat::filesystem')
     text=text.replace('std::reinterpret_pointer_cast<','Shipyard::GuiCompat::ReinterpretPointerCast<')
     text=re.sub(r'\bconstexpr\b','const',text)
