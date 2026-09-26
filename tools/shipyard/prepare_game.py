@@ -252,6 +252,18 @@ static const char* sShipyardGameStateNames[] = {
 };''',
             'Gamestate runtime trace declaration')
         replace_projected_once(
+            'void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {',
+            '''extern void Shipyard_FrameProfileGameUpdateBegin(void);
+extern void Shipyard_FrameProfileGameUpdateEnd(void);
+void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
+            'Game update profiling declarations')
+        replace_projected_once(
+            '    GameState_Update(gameState);',
+            '''    Shipyard_FrameProfileGameUpdateBegin();
+    GameState_Update(gameState);
+    Shipyard_FrameProfileGameUpdateEnd();''',
+            'Game update profiling boundary')
+        replace_projected_once(
             '        GameState_Init(gGameState, runFrameContext.ovl->init, &runFrameContext.gfxCtx);',
             '''        Shipyard_RuntimeTrace("GAMESTATE init begin name=%s index=%d size=%u",
                               sShipyardGameStateNames[runFrameContext.ovl - gGameStateOverlayTable],

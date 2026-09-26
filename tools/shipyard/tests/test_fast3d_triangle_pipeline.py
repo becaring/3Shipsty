@@ -60,6 +60,16 @@ class TrianglePipelineTests(unittest.TestCase):
         self.assertIn('clip_parameters = mXboxClipParameters;',cold)
         self.assertNotIn('mRapi->GetClipParameters()',cold)
 
+    def test_profile_counts_pipeline_certificate_outcome_without_timing_each_triangle(self):
+        projection = runpy.run_path(str(PROJECTION))
+        original = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
+        original = runpy.run_path(str(ROOT / 'platform/shipyard/fast3d/vertex_packing.py'))['transform'](original)
+        original = prepare_fast3d.triangle_split(original)
+        original = prepare_fast3d.texture_bindings(original)
+        changed = projection['transform'](original)
+        self.assertTrue('ModernFrameProfile::ObserveTrianglePipeline(xboxPipelineHit)' in changed)
+        self.assertEqual(changed.count('mXboxPipelineKey.Matches(*this)'), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,18 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 
 class GameProjectionTests(unittest.TestCase):
+    def test_game_update_profile_wraps_only_the_update_call(self):
+        module = self.module()
+        name = 'soh/src/code/graph.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertEqual(output.count(b'Shipyard_FrameProfileGameUpdateBegin();'), 1)
+        self.assertEqual(output.count(b'Shipyard_FrameProfileGameUpdateEnd();'), 1)
+        begin = output.index(b'Shipyard_FrameProfileGameUpdateBegin();')
+        update = output.index(b'GameState_Update(gameState);', begin)
+        end = output.index(b'Shipyard_FrameProfileGameUpdateEnd();', update)
+        self.assertLess(begin, update)
+        self.assertLess(update, end)
+
     def module(self):
         path = ROOT / 'tools/shipyard/prepare_game.py'
         self.assertTrue(path.is_file(), 'game compiler projection missing')

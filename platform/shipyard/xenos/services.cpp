@@ -19,6 +19,8 @@ void Shipyard_Log(const char* format,...) {
 // Legacy bounded bring-up call sites remain linkable, but release builds do
 // not format or emit their high-volume diagnostic events.
 extern "C" void Shipyard_RuntimeTrace(const char*,...) {}
+extern "C" void Shipyard_FrameProfileGameUpdateBegin(void);
+extern "C" void Shipyard_FrameProfileGameUpdateEnd(void);
 void Shipyard_Fatal(const char* operation,HRESULT result){
     Shipyard::Platform::RecordStartupFatal(operation,static_cast<unsigned long>(result));
     try{spdlog::critical("Xenos failure: {} ({:08x})",operation,static_cast<unsigned>(result));spdlog::default_logger()->flush();}
@@ -49,12 +51,14 @@ float multiplier = 0;
 bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
-    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate"};
+    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update"};
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
 struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes, textureHits, textureMisses, pathHits, pathMisses; };
 ResourceLookupCounters resourceLookups = {};
+struct TrianglePipelineCounters { unsigned hits, misses; };
+TrianglePipelineCounters trianglePipeline = {};
 struct ThreadCpu {
     uint64_t start, ticks;
     unsigned samples, failures, processorMask, threadId, lastError;
@@ -94,6 +98,7 @@ void ResetMetadata() {
     memset(&renderCpu,0,sizeof(renderCpu));
     memset(&audioCpu,0,sizeof(audioCpu));
     memset(&resourceLookups,0,sizeof(resourceLookups));
+    memset(&trianglePipeline,0,sizeof(trianglePipeline));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
@@ -156,6 +161,11 @@ void ObserveTextureHashCache(bool hit) {
 void ObserveTexturePathCache(bool hit) {
     if (hit) ++resourceLookups.pathHits;
     else ++resourceLookups.pathMisses;
+}
+bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
+void ObserveTrianglePipeline(bool hit) {
+    if (hit) ++trianglePipeline.hits;
+    else ++trianglePipeline.misses;
 }
 void ObserveResourceWorker() {
     if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
@@ -225,6 +235,8 @@ void EndFrame() {
         resourceLookups.textureHits,resourceLookups.textureMisses);
     Shipyard_Log("frame-profile texture_path_cache hits=%u misses=%u scope=interpreter",
         resourceLookups.pathHits,resourceLookups.pathMisses);
+    Shipyard_Log("frame-profile triangle_pipeline hits=%u misses=%u scope=surviving_triangles",
+        trianglePipeline.hits,trianglePipeline.misses);
     unsigned totalCommands=0,totalSamples=0;
     double estimates[256];
     for (unsigned i=0;i<256;++i) {
@@ -276,4 +288,10 @@ void EndFrame() {
     ResetMetadata();
     previousReportTicks = Clock() - reportBegin;
 }
+}
+extern "C" void Shipyard_FrameProfileGameUpdateBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::GameUpdate);
+}
+extern "C" void Shipyard_FrameProfileGameUpdateEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::GameUpdate);
 }

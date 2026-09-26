@@ -51,7 +51,10 @@ def transform(text):
     mXboxPipelineKey.valid=false;
 // SHIPYARD ORIGINAL RECONCILIATION BEGIN
 ''' + cold + '// SHIPYARD ORIGINAL RECONCILIATION END\n' + publish
-    warm = '''    if(!mXboxPipelineKey.Matches(*this))XboxPrepareTrianglePipeline();
+    warm = '''    const bool xboxPipelineHit=mXboxPipelineKey.Matches(*this);
+    if (ModernFrameProfile::CaptureTrianglePipeline())
+        ModernFrameProfile::ObserveTrianglePipeline(xboxPipelineHit);
+    if(!xboxPipelineHit)XboxPrepareTrianglePipeline();
     const XboxTrianglePipelineResult& p=mXboxPipelineResult;
     ColorCombiner* comb=p.comb;
     const bool use_alpha=p.alpha;

@@ -6,7 +6,8 @@ namespace ModernFrameProfile {
 enum Phase {
     Graph, Interpolation, Graphics, Readiness, GuiStart, Framebuffer,
     Interpreter, GuiEnd, Present, AudioWait, AudioGenerate, AudioSubmit,
-    InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, RecordingRotate, PhaseCount
+    InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, RecordingRotate,
+    GameUpdate, PhaseCount
 };
 struct PhaseStats { uint64_t ticks, maximum; unsigned calls; };
 
@@ -88,6 +89,8 @@ bool CaptureResourceLookups();
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes);
 void ObserveTextureHashCache(bool hit);
 void ObserveTexturePathCache(bool hit);
+bool CaptureTrianglePipeline();
+void ObserveTrianglePipeline(bool hit);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }
