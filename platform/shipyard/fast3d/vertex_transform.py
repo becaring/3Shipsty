@@ -72,4 +72,20 @@ def transform(source):
 }
 
 '''
-    return '#include "fast3d/clip_quantize.h"\n#include "fast3d/vertex_transform.h"\n' + once(source, original, adapted)
+    from xbox360_platform.vertex_invariants import aspect_denominator, normal_components, light_colors
+    source = once(source, original, adapted)
+    source = aspect_denominator(source, start=START, end=END, loop=loop,
+        eligible='shipyardTransformBatch', framebuffer='mFbActive',
+        denominator='(float)mCurDimensions.width / (float)mCurDimensions.height',
+        original_statement='        x = AdjXForAspectRatio(x);',
+        numerator='x * (4.0f / 3.0f)')
+    source = normal_components(source, start=START, end=END,
+        lighting='        if (mRsp->geometry_mode & G_LIGHTING) {',
+        eligible='shipyardTransformBatch',
+        needed='mRsp->current_num_lights > 1 || (mRsp->geometry_mode & G_TEXTURE_GEN)',
+        components=('vn->n[0]', 'vn->n[1]', 'vn->n[2]'))
+    source = light_colors(source, start=START, end=END, loop=loop,
+        positive='                if (intensity > 0.0f) {',
+        eligible='shipyardTransformBatch && mRsp->current_num_lights > 0 && mRsp->current_num_lights <= MAX_LIGHTS + 1',
+        capacity='MAX_LIGHTS', components=tuple('mRsp->current_lights[i].l.col[%d]' % axis for axis in range(3)))
+    return '#include "fast3d/clip_quantize.h"\n#include "fast3d/vertex_transform.h"\n' + source

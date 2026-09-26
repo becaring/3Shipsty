@@ -11,6 +11,8 @@ from prepare_archives import stable
 from prepare_configuration import once
 from prepare_resource_manager import transform as runtime_transform
 from cpp_ast import PARSER, walk
+from xbox360_platform.console_variable_lookup import transform as borrow_typed_cvars
+from xbox360_platform.console_variable_lookup import header as borrow_cvar_names
 
 OUT=ROOT/'scratch/console-variables-xdk'
 OWN=ROOT/'platform/shipyard/console-variables'
@@ -18,6 +20,7 @@ OWN=ROOT/'platform/shipyard/console-variables'
 
 def transform(name,text):
     if name.endswith('/ConsoleVariable.h'):
+        text=borrow_cvar_names(text)
         text=once(text,'typedef enum class ConsoleVariableType { Integer, Float, String, Color, Color24 } ConsoleVariableType;',
                   'struct ConsoleVariableType : Shipyard::Binary::ScopedEnum<ConsoleVariableType> {\n'
                   'enum Value { Integer, Float, String, Color, Color24 };\nConsoleVariableType() {}\n'
@@ -28,6 +31,7 @@ def transform(name,text):
         text=once(text,'char* String = nullptr;','char* String;')
         text='#include "binary/compat.h"\n'+text
     elif name.endswith('/ConsoleVariable.cpp'):
+        text=borrow_typed_cvars(text)
         # Load clears defaults installed at GUI startup. Restore the Xbox
         # controller-navigation default after persisted and legacy values load;
         # RegisterInteger leaves an explicit saved zero untouched.

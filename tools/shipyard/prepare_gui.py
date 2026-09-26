@@ -18,6 +18,7 @@ from platform_base import resolve as resolve_platform_base
 OWN=ROOT/'platform/shipyard/gui'
 OUT=ROOT/'scratch/gui-xdk'
 PLATFORM_BASE=resolve_platform_base(ROOT)
+from xbox360_platform.gui_mouse_capture import transform as snapshot_mouse_capture
 
 
 def inherited_window(text,classname):
@@ -107,6 +108,7 @@ def transform(name,text):
             text=once(text,'struct ConsoleLine {','struct ConsoleLine {\n        ConsoleLine(const std::string& text,spdlog::level::level_enum priority) : Text(text),Priority(priority),Channel("Console") {}')
             text=text.replace('static constexpr size_t','static const size_t')
     elif name.endswith('/Gui.cpp'):
+        text=snapshot_mouse_capture(text)
         # Retain ImGui's native window settings persistence beside application config.
         text=once(text,'GetPathRelativeToAppDirectory("imgui.ini")','GetPathRelativeToAppDirectory("config/imgui.ini")')
         text=once(text,'GetPathRelativeToAppDirectory("imgui_log.txt")','GetPathRelativeToAppDirectory("logs/imgui_log.txt")')

@@ -10,6 +10,17 @@
 #include <limits>
 
 unsigned shipyard_test_vector_stores = 0;
+static unsigned aspectCalls;
+static unsigned normalCalls;
+static float CountNormal(int8_t value) { ++normalCalls; return (float)value; }
+static unsigned lightColorCalls[MAX_LIGHTS];
+static float CountLightColor(unsigned light, uint8_t value) {
+    ++lightColorCalls[light]; return (float)value;
+}
+static float CountAspect(uint32_t width, uint32_t height) {
+    ++aspectCalls;
+    return (float)width / (float)height;
+}
 
 namespace Ship { namespace Math {
 // EXTRACTED_CLAMP
@@ -69,6 +80,38 @@ static unsigned runCase(unsigned variant, unsigned seed) {
     if (variant == 13) a.MP_matrix[3][2] = 64.0f; // far clip
     if (variant == 25) a.MP_matrix[3][2] = -64.0f; // non-nearest rounding and near plane
     if (variant == 26) a.MP_matrix[3][0] = 64.0f; // opposite non-nearest mode
+    if (variant >= 31) {
+        a.geometry_mode |= G_LIGHTING;
+        a.current_num_lights = 2 + seed % 4;
+        a.current_lights[0].l.col[0] = (uint8_t)seed;
+        a.current_lights[0].l.col[1] = (uint8_t)(seed * 7);
+        a.current_lights[0].l.col[2] = (uint8_t)(255 - seed);
+        a.current_lights_coeffs[0][0] = 0.5f;
+        a.current_lights_coeffs[0][1] = -0.25f;
+        a.current_lights_coeffs[0][2] = 0.75f;
+        for (unsigned light = 1; light < a.current_num_lights - 1; ++light) {
+            a.current_lights[light] = a.current_lights[0];
+            a.current_lights_coeffs[light][light % 3] = 0.5f;
+        }
+        if (variant == 32) {
+            a.geometry_mode |= G_LIGHTING_POSITIONAL;
+            a.current_lights[0].p.unk3 = 1;
+            a.current_lights[0].p.pos[0] = 20;
+        }
+        if (variant >= 33) {
+            a.geometry_mode |= G_TEXTURE_GEN;
+            a.current_lookat_coeffs[0][0] = 1.0f;
+            a.current_lookat_coeffs[1][1] = 1.0f;
+            if (variant == 34) a.geometry_mode |= G_TEXTURE_GEN_LINEAR;
+        }
+        if (variant == 36) { a.current_num_lights = 1; a.geometry_mode &= ~G_TEXTURE_GEN; }
+        if (variant == 37) a.current_num_lights = 1;
+        if (variant == 39) {
+            a.lights_changed = true;
+            for (unsigned light=0; light<a.current_num_lights-1; ++light) a.current_lights[light].l.dir[0] = 127;
+            a.lookat[0].dir[0] = 127; a.lookat[1].dir[1] = 127;
+        }
+    }
     Fast::RSP b = a;
     Fast::F3DVtx av[68] = {}, bv[68] = {};
     for (unsigned i=0;i<68;++i) {
@@ -103,17 +146,48 @@ static unsigned runCase(unsigned variant, unsigned seed) {
     if (variant == 23) { left = (const Fast::F3DVtx*)(unevenA+2);
                          right = (const Fast::F3DVtx*)(unevenB+2); } // aligned for shorts, not VMX
     if (variant == 24) { count = 1; dest = 64; }
+    if (variant == 35) { left = (const Fast::F3DVtx*)a.loaded_vertices;
+                         right = (const Fast::F3DVtx*)b.loaded_vertices; }
+    if (variant == 38) { count = 65; dest = 0; }
     std::memset(a.loaded_vertices, 0xa5, sizeof(a.loaded_vertices));
     std::memset(b.loaded_vertices, 0xa5, sizeof(b.loaded_vertices));
     // Rebind aliases after poisoning the same source bytes in each RSP.
     Fast::Original original = {&a, (seed & 2) != 0, {1280, 720}};
+    if (variant == 27) original.mCurDimensions.width = 0;
+    if (variant == 28) original.mCurDimensions.height = 0;
+    if (variant == 29) original.mCurDimensions.width = original.mCurDimensions.height = 0;
+    if (variant == 30) { original.mCurDimensions.width = 1921; original.mCurDimensions.height = 1087; }
     Fast::Projected projected = {&b, original.mFbActive, original.mCurDimensions};
     unsigned previousRound = _controlfp(0, 0) & _MCW_RC;
     if (variant == 25 || variant == 26)
         _controlfp(variant == 25 ? _RC_UP : _RC_DOWN, _MCW_RC);
+    aspectCalls = 0;
+    normalCalls = 0;
+    std::memset(lightColorCalls, 0, sizeof(lightColorCalls));
     original.GfxSpVertex(count, dest, left);
+    unsigned originalNormalCalls = normalCalls;
+    unsigned originalLightColorCalls[MAX_LIGHTS];
+    std::memcpy(originalLightColorCalls, lightColorCalls, sizeof(lightColorCalls));
+    require(aspectCalls == (original.mFbActive ? 0 : count), "original aspect evaluation count changed");
     unsigned storesBefore = shipyard_test_vector_stores;
+    aspectCalls = 0;
+    normalCalls = 0;
+    std::memset(lightColorCalls, 0, sizeof(lightColorCalls));
     projected.GfxSpVertex(count, dest, right);
+    const bool aspectBatch = right != nullptr && count > 0 && count <= MAX_VERTICES &&
+        dest <= MAX_VERTICES && count <= MAX_VERTICES - dest &&
+        Shipyard::Fast3D::VertexSourceDisjoint(right, count * sizeof(Fast::F3DVtx), &b, sizeof(b));
+    require(aspectCalls == (original.mFbActive ? 0 : (aspectBatch ? 1 : count)),
+            "projected aspect denominator must evaluate once per eligible packet");
+    if (aspectBatch && (b.geometry_mode & G_LIGHTING) &&
+        (b.current_num_lights > 1 || (b.geometry_mode & G_TEXTURE_GEN)))
+        require(normalCalls == 3 * count, "normal conversion must occur once per vertex component");
+    else
+        require(normalCalls == originalNormalCalls, "normal fallback evaluation changed");
+    for (unsigned light=0; light<MAX_LIGHTS; ++light) {
+        unsigned expected = aspectBatch ? (originalLightColorCalls[light] ? 3 : 0) : originalLightColorCalls[light];
+        require(lightColorCalls[light] == expected, "light color conversions must be lazy and once per light/packet");
+    }
     _controlfp(previousRound, _MCW_RC);
     if (variant == 0 && seed == 0)
         require(shipyard_test_vector_stores > storesBefore, "eligible Modern batch must execute the shared VMX kernel");
@@ -137,8 +211,8 @@ static unsigned runCase(unsigned variant, unsigned seed) {
 
 int main() {
     unsigned cases = 0;
-    for (unsigned seed=0; seed<32; ++seed)
-        for (unsigned variant=0; variant<=26; ++variant)
+    for (unsigned seed=0; seed<256; ++seed)
+        for (unsigned variant=0; variant<=39; ++variant)
             cases += runCase(variant, seed);
     std::printf("PASS Modern GfxSpVertex differential: %u full-RSP cases\n", cases);
 }

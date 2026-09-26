@@ -1,5 +1,6 @@
 #include "xenos_backend.h"
 #include "xenos/core.h"
+#include "xenos/shader_variant.h"
 #include "native_display.h"
 
 namespace Fast {
@@ -13,8 +14,8 @@ ShaderProgram* CurrentVariant(ShaderProgram* program) {
     if(!program)return NULL;
     const ShaderProgramKey original=ShipyardXenos::ShaderKey(program);
     const ShaderProgramKey key=CurrentKey(original.shaderId0,original.shaderId1);
-    ShaderProgram* found=ShipyardXenos::LookupShader(key);
-    return found?found:ShipyardXenos::CreateShader(key);
+    return Shipyard::Xenos::ResolveShaderVariant(program,original,key,
+        ShipyardXenos::LookupShader,ShipyardXenos::CreateShader);
 }
 }
 void InitializeNativeDisplay(){ShipyardXenos::InitializeDisplay();}

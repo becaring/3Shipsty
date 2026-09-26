@@ -178,11 +178,16 @@ def transform(name, original):
                 r'Shipyard::Resources::contains(\1, \2)',text)
     lower_ranges=runpy.run_path(str(ROOT / 'platform/shipyard/imgui/projection.py'))['lower_ranges']
     text=lower_ranges(text.encode(), 'Shipyard::Resources::begin', 'Shipyard::Resources::end').decode()
+    if name.endswith('/ResourceManager.h'):
+        from platform_base import resolve
+        resolve(ROOT)
+        from xbox360_platform.resource_lookup import borrowed_cache_header
+        text=borrowed_cache_header(text)
     if name.endswith('/ResourceManager.cpp'):
         from platform_base import resolve
         resolve(ROOT)
-        from xbox360_platform.resource_lookup import path_hash
-        text=path_hash(text)
+        from xbox360_platform.resource_lookup import path_hash, borrowed_cache_source
+        text=borrowed_cache_source(path_hash(text))
         text='#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n'+text
         text=once(text,'            return LoadResourceProcess(identifier, loadExact, initData);',
                   '''#ifdef _XBOX

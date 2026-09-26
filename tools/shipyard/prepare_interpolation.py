@@ -16,7 +16,20 @@ from cpp_ast import PARSER,walk
 OWN=ROOT/'platform/shipyard/interpolation'
 OUT=ROOT/'scratch/interpolation-xdk'
 
+def reuse_child_lookup(text):
+    expression='&new_path->children.find(new_op.open_child.key)->second[new_op.open_child.idx]'
+    start=text.index('    void interpolate_branch(')
+    end=text.index('            if (auto it = old_path->ops.find',start)
+    body=text[start:end]
+    if body.count(expression)!=3:
+        raise ValueError('Interpolation child lookup inventory drift')
+    body=body.replace(expression,'new_child')
+    anchor='            if (item.first == Op::OpenChild) {'
+    body=once(body,anchor,anchor+'\n                Path* new_child = '+expression+';')
+    return text[:start]+body+text[end:]
+
 def transform(text):
+    text=reuse_child_lookup(text)
     # The context dies on return; transfer its replacement nodes to the caller.
     text=once(text,'return ctx.mtx_replacements;','return std::move(ctx.mtx_replacements);')
     text=once(text,'#include <libultraship/bridge.h>','// No LUS bridge symbols are used by this translation unit.')

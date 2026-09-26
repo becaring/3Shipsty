@@ -33,6 +33,11 @@ def main():
         restored = restored[:clamp_begin] + restored[clamp_end:]
     restored = restored.replace('shipyardClampS[t]', '(tex_width2[t] - 0.5f) / tex_width[t]')
     restored = restored.replace('shipyardClampT[t]', '(tex_height2[t] - 0.5f) / tex_height[t]')
+    restored = re.sub(r'                // Begin shared invariant material reuse\.\n.*?                // End shared invariant material reuse\.\n', '', restored, flags=re.S)
+    for name, field, channels in [('shipyardFog', 'fog_color', 'rgb'), ('shipyardGrayscale', 'grayscale_color', 'rgba')]:
+        for index, channel in enumerate(channels):
+            restored = restored.replace('%s[%d]' % (name, index),
+                'Shipyard::Fast3D::UnitColor(mRdp->%s.%s)' % (field, channel))
     restored = restored.replace('    mBufVboLen = (size_t)(shipyardVertexOutput - mBufVbo);\n\n', '')
     restored = restored.replace('*shipyardVertexOutput++', 'mBufVbo[mBufVboLen++]')
     restored = re.sub(r'Shipyard::Fast3D::UnitColor\(([^()]*)\)', r'\1 / 255.0f', restored)
@@ -58,6 +63,9 @@ def main():
         raise AssertionError('Generated coordinate header shadows Shipyard')
     template = pathlib.Path(__file__).with_name('test_vertex_packing_contract.cpp').read_text(encoding='utf-8')
     def counted(body):
+        body = body.replace('switch (comb->shader_input_mapping[k][j])', 'switch (CountSelector(comb->shader_input_mapping[k][j]))')
+        body = re.sub(r'(Shipyard::Fast3D::UnitColor\(mRdp->(?:fog_color|grayscale_color)\.[rgba]\))', r'CountMaterial(\1)', body)
+        body = re.sub(r'(mRdp->(?:fog_color|grayscale_color)\.[rgba] / 255\.0f)', r'CountMaterial(\1)', body)
         return body.replace('(tex_width2[t] - 0.5f) / tex_width[t]',
                             'CountBound(tex_width2[t], tex_width[t])').replace(
                             '(tex_height2[t] - 0.5f) / tex_height[t]',

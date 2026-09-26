@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/shipyard'))
 from platform_base import resolve
 BASE = resolve(ROOT)
-from xbox360_platform.vertex_stream import lower, hoist_clamp_bounds
+from xbox360_platform.vertex_stream import lower, hoist_clamp_bounds, hoist_colors, reuse_material_inputs
 
 
 START = '    for (int i = 0; i < 3; i++) {\n        float z = v_arr[i]->z, w = v_arr[i]->w;'
@@ -48,7 +48,13 @@ def transform(source: str) -> str:
         raise ValueError('Modern UV arithmetic changed; re-audit coordinate helper')
     projected = ('#include "fast3d/coordinate.h"\n' + projected[:begin] +
                  UV_REPLACEMENT + projected[finish:])
-    return hoist_clamp_bounds(projected, start=START, end=END,
+    projected = hoist_clamp_bounds(projected, start=START, end=END,
         cursor='shipyardVertexOutput', used_textures='usedTextures', axes=(
             ('shipyardClampS', 'tm & (1 << 2 * t)', '(tex_width2[t] - 0.5f) / tex_width[t]'),
             ('shipyardClampT', 'tm & (1 << 2 * t + 1)', '(tex_height2[t] - 0.5f) / tex_height[t]')))
+    projected = hoist_colors(projected, start=START, end=END,
+        cursor='shipyardVertexOutput', namespace='Shipyard::Fast3D', groups=(
+            ('shipyardFog', 'use_fog', tuple('mRdp->fog_color.' + c for c in 'rgb')),
+            ('shipyardGrayscale', 'use_grayscale', tuple('mRdp->grayscale_color.' + c for c in 'rgba'))))
+    return reuse_material_inputs(projected, start=START, end=END,
+        cursor='shipyardVertexOutput', mapping='comb->shader_input_mapping', shade='G_CCMUX_SHADE')

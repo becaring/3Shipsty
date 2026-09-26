@@ -15,7 +15,8 @@ from cpp_ast import PARSER,walk
 from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
 from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
-from xbox360_platform.resource_lookup import texture_hash_lookup
+from xbox360_platform.resource_lookup import texture_hash_lookup, stateless_signature, texture_command_manager
+from xbox360_platform import texture_state
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -35,6 +36,7 @@ def member_defaults(text,classname):
 
 
 def header(text):
+    text=texture_state.metadata_reference(text)
     text='#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
     text=fast3d_triangle_split.header(text)
@@ -267,6 +269,9 @@ def prepare():
               '    struct GfxClipParameters clip_parameters = mXboxClipParameters;')
     text=combiner_lookup.transform(text)
     text=texture_hash_lookup(text)
+    text=texture_command_manager(text)
+    text=stateless_signature(text)
+    text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)

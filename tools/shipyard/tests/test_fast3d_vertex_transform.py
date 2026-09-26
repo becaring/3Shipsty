@@ -49,7 +49,14 @@ def contract_source(original, projected):
     functions = []
     for name, source in (('Original', original), ('Projected', projected)):
         for signature in signatures:
-            functions.append(method(source, signature).replace('Interpreter::', name + '::'))
+            extracted = method(source, signature).replace('Interpreter::', name + '::')
+            extracted = extracted.replace('(float)mCurDimensions.width / (float)mCurDimensions.height',
+                                          'CountAspect(mCurDimensions.width, mCurDimensions.height)')
+            for axis in range(3):
+                extracted = extracted.replace('vn->n[%d]' % axis, 'CountNormal(vn->n[%d])' % axis)
+                color = 'mRsp->current_lights[i].l.col[%d]' % axis
+                extracted = extracted.replace(color, 'CountLightColor(i, %s)' % color)
+            functions.append(extracted)
     clamp = method((ROOT / 'libultraship/src/ship/utils/Utils.cpp').read_text(encoding='utf-8-sig'),
                    'float clamp(')
     template = (HERE / 'test_fast3d_vertex_transform.cpp').read_text()
@@ -112,7 +119,7 @@ class ModernVertexTransformProof(unittest.TestCase):
                          json.loads((ROOT / 'platform/shipyard/fast3d/sources.lock.json').read_text())
                          ['sources']['src/fast/interpreter.cpp'])
         OUT.mkdir(parents=True, exist_ok=True)
-        flags = ['/nologo', '/c', '/TP', '/EHsc', '/GR', '/MT', '/D_XBOX',
+        flags = ['/nologo', '/c', '/TP', '/O2', '/fp:precise', '/EHsc', '/GR', '/MT', '/D_XBOX',
                  '/D_XBOX_VER=200', '/DNOMINMAX', '/DSPDLOG_ACTIVE_LEVEL=0',
                  '/Dnssv_CONFIG_SELECT_STRING_VIEW=1',
                  '/FI' + str(ROOT / 'scratch/configuration-xdk/generated/include/compile_definitions.h'),
