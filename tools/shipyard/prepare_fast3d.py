@@ -19,6 +19,7 @@ from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_sig
                                                texture_command_manager, texture_hash_cache_handler)
 from xbox360_platform import texture_state
 import deferred_lit_fog
+import tri2_pair_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -79,6 +80,7 @@ def header(text):
     text=once(text,'bool enabled = false;','bool enabled;\n    ShaderMod(bool enabledValue=false, int16_t idValue=0, uint8_t typeValue=0) : enabled(enabledValue), id(idValue), type(typeValue) {}')
     text,defaults,arrays=member_defaults(text,'Interpreter')
     text=deferred_lit_fog.header(text)
+    text=tri2_pair_projection.header(text)
     text=text.replace('constexpr size_t','const size_t').replace(' noexcept',' throw()').replace('#include <stdbool.h>','')
     text=once(text,'#include "backends/gfx_rendering_api.h"','#include "fast/backends/gfx_rendering_api.h"')
     return text,defaults,arrays
@@ -300,6 +302,7 @@ def prepare():
     text=once(text,'#define NOMINMAX\n','#define NOMINMAX\n#include "xenos/depth_discard.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
+    text=tri2_pair_projection.transform(text)
     pending['src/fast/interpreter.cpp']=text
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
     stale_color=OUT/'generated/include/fast3d/unit_color.h'
