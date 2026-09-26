@@ -276,10 +276,11 @@ def prepare():
     text=texture_hash_lookup(text)
     text=texture_command_manager(text)
     text=texture_hash_cache_handler(text)
-    for signature in ('void Interpreter::SpReset() {',
-                      'void Interpreter::TextureCacheClear() {',
+    for signature in ('void Interpreter::TextureCacheClear() {',
                       'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {'):
         text=once(text,signature,signature+'\n    mXboxTextureHashCache.Clear();')
+    text=once(text,'void Interpreter::RunGuiOnly() {',
+              'void Interpreter::RunGuiOnly() {\n    mXboxTextureHashCache.Clear();')
     text=stateless_signature(text)
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
@@ -293,6 +294,9 @@ def prepare():
               '        mXboxDiscardGameDepth = false;\n'
               '        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));')
     text=text[:start]+body+text[end:]
+    text=once(text,'void Interpreter::EndFrame() {',
+              'void Interpreter::EndFrame() {\n'
+              '    if (mRendersToFb) Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();')
     text=once(text,'#define NOMINMAX\n','#define NOMINMAX\n#include "xenos/depth_discard.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
