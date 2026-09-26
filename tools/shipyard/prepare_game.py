@@ -314,6 +314,21 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             'Do not cast the tiny TitleSetup allocation to PlayState on Xbox')
         changes.append('Add bounded central gamestate boundary trace adapted from the proven 4.0.5 Xbox loop')
         changes.append('Move Xbox skybox priming out of the TitleSetup allocation')
+    if name == 'soh/src/overlays/effects/ovl_Effect_Ss_Dust/z_eff_ss_dust.c':
+        replace_projected_once(
+            '#include "objects/gameplay_keep/gameplay_keep.h"\n',
+            '#include "objects/gameplay_keep/gameplay_keep.h"\n'
+            'extern void Shipyard_FrameProfileDustDraw(float posX, float posY, float posZ, '
+            'float eyeX, float eyeY, float eyeZ, float scale, unsigned flags);\n',
+            'Soft-dust draw profile declaration')
+        replace_projected_once(
+            '        gSPDisplayList(POLY_XLU_DISP++, this->gfx);\n',
+            '        gSPDisplayList(POLY_XLU_DISP++, this->gfx);\n'
+            '        Shipyard_FrameProfileDustDraw(this->pos.x, this->pos.y, this->pos.z,\n'
+            '                                      play->view.eye.x, play->view.eye.y, play->view.eye.z,\n'
+            '                                      scale, (unsigned)this->rDrawFlags);\n',
+            'Count emitted soft-dust draws in the frame profile')
+        changes.append('Count emitted soft-dust draws with position, eye, scale, and draw flags')
     if name == 'soh/src/code/z_play.c':
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
