@@ -250,6 +250,9 @@ void EndFrame() {
         native.framebufferClearCalls, native.uploadBytes, native.preparationRebuilt, native.preparationReused,
         native.activeWidth, native.activeHeight, native.activeSamples, native.activeTiles,
         native.presentationWidth, native.presentationHeight, native.buffer2Frames, native.presentationInterval);
+    Shipyard_Log("frame-profile depth_read_ms total=%.3f lock=%.3f calls=%u lock_calls=%u samples=%u",
+        native.depthReadTicks * nativeMs, native.depthLockTicks * nativeMs,
+        native.depthReadCalls, native.depthLockCalls, native.depthSamples);
     Shipyard_Log("frame-profile native_counts sampler_attempted=%u written=%u suppressed=%u constants_attempted=%u written=%u suppressed=%u binding_attempted=%u written=%u suppressed=%u uploads=%u reused=%u saved_bytes=%u clears=%u restores_avoided=%u depth_restores_avoided=%u",
         counters.samplerAttempted, counters.samplerWritten, counters.samplerSuppressed,
         counters.constantsAttempted, counters.constantsWritten, counters.constantsSuppressed,

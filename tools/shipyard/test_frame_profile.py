@@ -53,8 +53,8 @@ void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart
 void Shipyard_Log(const char*, ...) { ++logCalls; }
 namespace Fast { namespace ShipyardXenos {
 struct NativeTimingCounters {
-uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,uploadBytes,frequency;
-unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,preparationRebuilt,preparationReused;
+uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,depthReadTicks,depthLockTicks,uploadBytes,frequency;
+unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,depthReadCalls,depthLockCalls,depthSamples,preparationRebuilt,preparationReused;
 unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,presentationHeight,buffer2Frames,presentationInterval;
 };
 struct NativeCounters {
@@ -112,7 +112,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==12+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==13+PhaseCount);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);
