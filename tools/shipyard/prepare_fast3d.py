@@ -15,7 +15,8 @@ from cpp_ast import PARSER,walk
 from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
 from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
-from xbox360_platform.resource_lookup import texture_hash_lookup, stateless_signature, texture_command_manager
+from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_signature,
+                                               texture_command_manager, texture_hash_cache_handler)
 from xbox360_platform import texture_state
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
@@ -37,7 +38,7 @@ def member_defaults(text,classname):
 
 def header(text):
     text=texture_state.metadata_reference(text)
-    text='#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
+    text='#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
     text=fast3d_triangle_split.header(text)
     text=combiner_lookup.header(text)
@@ -45,6 +46,7 @@ def header(text):
               '#include "fast3d/triangle_traits.h"\n#include "fast3d/triangle_pipeline.h"\n\nclass Interpreter {')
     text=once(text,'    GfxTextureCache mTextureCache{};',
               '    GfxTextureCache mTextureCache{};\n'
+              '    Shipyard::Resources::TextureHashCache<Fast::Texture> mXboxTextureHashCache;\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
@@ -270,6 +272,11 @@ def prepare():
     text=combiner_lookup.transform(text)
     text=texture_hash_lookup(text)
     text=texture_command_manager(text)
+    text=texture_hash_cache_handler(text)
+    for signature in ('void Interpreter::SpReset() {',
+                      'void Interpreter::TextureCacheClear() {',
+                      'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {'):
+        text=once(text,signature,signature+'\n    mXboxTextureHashCache.Clear();')
     text=stateless_signature(text)
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)

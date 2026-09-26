@@ -90,6 +90,11 @@ def presentation(source):
 
 def interpreter(source):
     source='#include "application/frame_profile.h"\n#include "application/command_profile.h"\n'+source
+    source=once(source,
+        '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);',
+        '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);\n'
+        '    if (ModernFrameProfile::CaptureResourceLookups())\n'
+        '        ModernFrameProfile::ObserveTextureHashCache(texture != nullptr);')
     start=source.index('void Interpreter::Run(Gfx* commands,')
     end=source.index('\nvoid Interpreter::EndFrame()',start)
     body=source[start:end]

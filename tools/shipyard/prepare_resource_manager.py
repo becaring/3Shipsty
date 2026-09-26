@@ -181,13 +181,13 @@ def transform(name, original):
     if name.endswith('/ResourceManager.h'):
         from platform_base import resolve
         resolve(ROOT)
-        from xbox360_platform.resource_lookup import borrowed_cache_header
-        text=borrowed_cache_header(text)
+        from xbox360_platform.resource_lookup import borrowed_cache_header, lookup_generation_header
+        text=lookup_generation_header(borrowed_cache_header(text))
     if name.endswith('/ResourceManager.cpp'):
         from platform_base import resolve
         resolve(ROOT)
-        from xbox360_platform.resource_lookup import path_hash, borrowed_cache_source
-        text=borrowed_cache_source(path_hash(text))
+        from xbox360_platform.resource_lookup import path_hash, borrowed_cache_source, lookup_generation_source
+        text=lookup_generation_source(borrowed_cache_source(path_hash(text)))
         from frame_profile_projection import resource_lookup as profile_resource_lookup
         text=profile_resource_lookup(text)
         text='#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n'+text
