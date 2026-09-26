@@ -9,14 +9,13 @@ units; it does not replace their game rules, hooks, callbacks or registration.
 ## Reproduction and integration
 
 ```powershell
-C:/Python313/python.exe -B tools/shipyard/prepare_gameplay_features.py --build
-C:/Python313/python.exe -B tools/shipyard/test_gameplay_features.py
+python -B tools/shipyard/prepare_gameplay_features.py --build
+python -B tools/shipyard/test_gameplay_features.py
 ```
 
 `--build --failed` rebuilds failed units and any unit whose generated source no
 longer matches its prior compilation. It preserves successful unchanged records.
-Compilation uses two compiler processes and never starts another agent or
-regenerates a dependency. `--only <path-fragment>` is available for diagnosis.
+Compilation uses two compiler processes without regenerating dependencies. `--only <path-fragment>` is available for diagnosis.
 
 Use all 89 source/object records in `scratch/gameplay-features-xdk/xdk/build.json`
 with their exact native command lines. Prepend `prepare_gameplay_features.includes()`

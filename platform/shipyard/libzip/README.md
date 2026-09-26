@@ -23,12 +23,10 @@ and deflate (the verified modern archives' formats); optional bzip2/LZMA/Zstd
 and encryption providers remain explicit integration work if required by mods.
 MPQ is a separate modern archive provider and is not removed by this work.
 
-Reproduce from the owned root:
+Generate and verify from the repository root:
 
 ```powershell
-python -B tools/shipyard/snapshot_dependency.py D:/Projects/Smash360/upstream/dependencies/zlib zlib 51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
-python -B tools/shipyard/snapshot_dependency.py D:/Projects/Smash360/upstream/dependencies/libzip libzip 6f8a0cdd24a0dc6cce9dac4a7679da784ab124ea
-python -B tools/shipyard/snapshot_dependency.py D:/Projects/Smash360/upstream/dependencies/tinyxml2 tinyxml2 9148bdf719e997d1f474be6bcc7943881046dba1
+python -B tools/shipyard/setup_dependencies.py
 python -B tools/shipyard/prepare_archives.py --build
 python -B tools/shipyard/prepare_archives.py --build --host
 python -B tools/shipyard/tests/test_archive_generation.py
@@ -41,9 +39,9 @@ same recipe accepts a clean clone at the exact commit from each recorded
 official source URL. Every archived byte is verified against a committed
 receipt hash before projection/build. Receipt/source drift fails closed.
 
-Evidence under scratch/libzip-xdk: 131 host objects, 131 PowerPC BE objects,
-three libraries per target, reproducibility/source-drift tests, and host
-execution of the actual projected libzip/filesystem/async boundary against
-both real 9.2.3 archives. All 36,925 entries and their CRCs pass. Tests also
-cover missing entries/archives and ZIP create, UTF-8 member name, overwrite
-and reopen. This is not Xbox execution or resource-factory validation.
+Contracts cover host and PowerPC compilation, source drift, deterministic
+outputs, and projected libzip/filesystem/async behavior against configured
+9.2.3 archive fixtures. They check member lengths and CRCs, missing entries,
+ZIP creation, UTF-8 member names, overwrite, and reopen. Receipts are written
+to `scratch/libzip-xdk`; these checks are separate from Xbox execution and
+resource-factory validation.

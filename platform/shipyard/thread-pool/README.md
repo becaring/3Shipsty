@@ -5,15 +5,11 @@ v4.1.0 commit `097aa718f25d44315cadb80b407144ad455ee4f9`. The original MIT licen
 is retained in `upstream/LICENSE.txt`. Upstream project:
 https://github.com/bshoshany/thread-pool
 
-The read-only reference's actual `HEAD` and `v4.1.0` tag were both resolved with
-per-command `git -c safe.directory=...`; both equal the commit above. Its raw
-header SHA-256 was
+The upstream header's raw SHA-256 is
 `fed5f7da0bc89fa747e65a8b3896344dc10f57c30d171b51e4fbde820b6d7c03`.
-The owned LF-normalized copy is locked to
+The LF-normalized copy is locked to
 `1da8bb1562433cb0759d774182d0d6fa3b87a04c26f64c6886f640445bf68efe`.
-`source-provenance.json` records those inputs, the donor generator and helper
-hashes, and the exact git verification commands. No reference files were
-changed and no reference generator was executed.
+`source-provenance.json` retains the source and helper hashes.
 
 ## Exact current consumers
 
@@ -40,8 +36,8 @@ owned SoH `cb71e22a79bc5d1f688fa881795bbd93094895fc` and LUS
   joined `std::thread`, **not a BS pool**. Its seed argument is copied into the
   thread. `Shipyard::Async::make_thread(std::bind(function, seed))` plus an
   owned `joining_thread` preserves that callable/argument/explicit-join shape.
-  Current randomizer source is unchanged; application lifecycle integration
-  and the native destructor's additional join remain work to review there.
+  Application lifecycle integration and the native destructor's additional join
+  are covered by the application provider.
 
 ## Projection boundaries
 
@@ -73,9 +69,9 @@ source mappings. Output is restricted to owned `scratch/async-xdk`.
 `generated/provenance.json` records source/helper/generator/output hashes,
 mapping operations, corrections and unsupported APIs.
 
-## Commands and results
+## Verification
 
-Run from `D:/Projects/3Shipsty9.x`:
+Run from the repository root:
 
 ```powershell
 python -B tools/shipyard/prepare_async.py
@@ -83,7 +79,7 @@ python -B tools/shipyard/tests/test_async_generation.py
 python -B tools/shipyard/tests/test_async.py
 ```
 
-Executed successfully on 2026-09-20. The generator suite passed five tests:
+The generator contracts cover:
 repeat determinism and LF/CRLF equivalence, changed source without overwriting
 valid output, changed helper before output, owned destination restriction,
 and manifest/source authority.
@@ -104,8 +100,7 @@ BattleShip consumers. The XDK test avoids a nested inline-lambda expression
 unsupported by the older parser by submitting a named callable; actual modern
 LUS performs the analogous inner submission through another method.
 
-The native compiler is
-`C:/Program Files (x86)/Microsoft Xbox 360 SDK/bin/win32/cl.exe`, using
+Native compilation uses the installed XDK compiler with
 `/nologo /c /EHsc /D_XBOX /D_XBOX_VER=200`, real SDK headers, the generated pool
 include root and `platform/shipyard`. It compiled the actual
 `async/native.cpp` and the full contract's pool/future instantiations; both
@@ -118,7 +113,7 @@ outputs and native object hashes with `target_runtime_executed: false`.
 
 For integration, put `scratch/async-xdk/generated` before any upstream BS
 include root, include `platform/shipyard`, and compile
-`platform/shipyard/async/native.cpp` once. Explicitly project reached standard
+the selected shared async backend once. Explicitly project reached standard
 future/mutex/condition-variable types to `Shipyard::Async` and map the
 extraction duration/status spellings. No upstream consumers were edited or
 whole game/resource manager translation units compiled by this slice.

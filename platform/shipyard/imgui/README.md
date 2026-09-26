@@ -18,12 +18,12 @@ No modern SoH GUI source or menu has been replaced. Disabling ImGui's desktop
 Win32 clipboard/IME and shell functions on Xbox is a platform boundary; the
 real native platform backend must supply available clipboard/keyboard/link
 behavior. Core widgets, tables, navigation, docking and demo remain compiled.
-Native renderer/input/window integration remains work in progress.
+Native renderer, input, and window integration are separate provider contracts.
 
-Reproduce:
+Generate and verify from the repository root:
 
 ```powershell
-python -B tools/shipyard/snapshot_dependency.py D:/Projects/Smash360/upstream/dependencies/imgui imgui 4806a1924ff6181180bf5e4b8b79ab4394118875
+python -B tools/shipyard/setup_dependencies.py
 python -B tools/shipyard/prepare_imgui.py --raw-probe
 python -B tools/shipyard/prepare_imgui.py --compile
 python -B tools/shipyard/tests/test_imgui_generation.py

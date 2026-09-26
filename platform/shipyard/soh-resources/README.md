@@ -46,7 +46,7 @@ Fast3D generated headers are prerequisites and must precede upstream headers.
 ## Serialization and endian boundary
 
 The existing archive-marker evidence is documented in
-`porting/ASSET_BASELINE.md` and reproduced by `tools/shipyard/verify_assets.py`.
+[asset format reference](../../../docs/ASSETS.md) and reproduced by `tools/shipyard/verify_assets.py`.
 The supplied PC archives have little-endian resource records and big-endian
 version metadata. These are separate markers, not a global archive byte order:
 

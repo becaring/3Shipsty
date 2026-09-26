@@ -7,10 +7,9 @@ the owned `Shipyard::Async` primitives. No modern feature source is changed.
 
 ## Provenance and generation
 
-Two generic adapter source files were read and adapted from
-`D:/Projects/Smash360/platform/xbox360/cpp-compat/filesystem`. Raw donor SHA-256
-values are in `donor-provenance.json`. Donor tests and generators were not run.
-No SoH360 application, save model, storage identity or assets were imported.
+The adapter provenance is recorded in `donor-provenance.json`, including raw
+reference source hashes. Application save schemas, storage identity, and assets
+remain consumer-owned.
 
 `sources.lock.json` locks 21 current application/LUS files and both owned
 adapter files using UTF-8 text with BOM removed and CRLF normalized to LF.
@@ -94,9 +93,9 @@ whose mount roots are not directory links. The same option remains present in
 the projected mod code and traverses all actual Xbox directories. Unknown option
 values fail explicitly. No symlink creation API or no-op stub is added.
 
-## Reached integration limits
+## Module integration boundaries
 
-| Current consumer | Supported boundary / remaining work |
+| Consumer | Boundary and separate verification |
 | --- | --- |
 | SaveManager.cpp/.h | Required path/create_directory/exists/remove/rename/default copy_file operations supported. SaveManager itself is not projected or compiled here; JSON, task binding, snapshot lifecycle, write error handling, metadata/hooks and persistence remain integration gates. |
 | Config.cpp, ConsoleVariable.cpp, Context.cpp, ArchiveManager.cpp | Reached existence/type/remove/enumeration/absolute/path methods supported. Full classes and app-root selection are not compiled here. |
@@ -105,7 +104,7 @@ values fail explicitly. No symlink creation API or no-op stub is added.
 | Presets.cpp, 3drando/spoiler_log.cpp, Plandomizer.cpp, AudioCollection.cpp | Reached basic path/create/list/remove operations supported; full feature compilation and save content validation still required. |
 | randomizer.cpp:170–231 | `file_time_type` and `last_write_time` cache contracts supported and tested; namespace projection hook preserves both cache maps and validation code. Full randomizer/JSON compilation remains outside this boundary. |
 | mod_menu.cpp:139–140 | `directory_options::follow_directory_symlink` supported with explicit platform capability; hook preserves the option and traversal. Full menu/language projection remains outside this boundary. |
-| OTRGlobals.cpp extraction/install branches | `relative`, `canonical`, path::native used by IsSubpath are absent. Preserve host extraction with actual host std::filesystem; target selection/routing still needs explicit review. Basic runtime archive/path operations are available. |
+| OTRGlobals.cpp extraction/install branches | `relative`, `canonical`, path::native used by IsSubpath are absent. Preserve host extraction with actual host std::filesystem; target selection/routing belongs to the application provider. Basic runtime archive/path operations are available. |
 | Extractor/Extract.cpp | `temp_directory_path`, recursive/update/overwrite `copy`, symlink creation and `remove_all` stay host-tool contracts here. No extraction implementation or UI was removed. |
 | SohMenuSettings.cpp | Absolute filesystem paths supported; SDL_OpenURL folder opening requires a separate Xbox UI/platform decision. |
 
@@ -116,9 +115,9 @@ Read-only game assets and writable saves/config must receive distinct mounted
 roots through Context/storage integration. The adapter does not invent or
 select a user's storage device.
 
-## Fresh verification
+## Verification
 
-Run from this owned checkout:
+Run from the repository root:
 
 ```powershell
 python -B tools/shipyard/prepare_filesystem.py
@@ -128,8 +127,7 @@ python -B tools/shipyard/tests/test_filesystem.py
 
 Eight generation tests verify determinism, source/helper drift rejection, output
 containment, current consumer coverage, exact projection spans, preservation of
-comments/literals and explicit host routing. A recorded initial
-baseline exposed absent create_directory/copy_file before implementation.
+comments/literals and explicit host routing.
 
 The host suite compares standard Windows std::filesystem with the adapter and
 also executes the Xbox logical-cwd branch. It covers save replacement, missing

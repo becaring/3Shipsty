@@ -9,7 +9,7 @@ Tricks and CustomMessage classes are unchanged.
 
 ## Generate and verify
 
-From `D:\Projects\3Shipsty9.x`:
+From the repository root:
 
 ```powershell
 python -B tools/shipyard/prepare_randomizer_content.py --build
