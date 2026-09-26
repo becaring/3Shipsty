@@ -17,7 +17,7 @@ def main():
     prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
     sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
     native=(resolve_platform_base(ROOT)/'sources/imgui/imgui_xenos.cpp').read_text()
-    begin=native.index('    static const char* source =');end=native.index('\n    ID3DXBuffer* code=',begin)
+    begin=native.index('    static const char* source =');end=native.index('\n    ID3DXBuffer* code =',begin)
     shader=''.join(ast.literal_eval(m[0]) for m in re.finditer(r'"(?:[^"\\]|\\.)*"',native[begin:end]))
     shaderpath=folder/'gui.hlsl';stable(shaderpath,shader)
     for profile,entry in [('vs_3_0','VSMain'),('ps_3_0','PSMain')]:
@@ -30,6 +30,7 @@ def main():
     masks='\n'.join(m[0] for m in re.finditer(r'^#define XINPUT_GAMEPAD_\w+\s+0x[0-9A-Fa-f]+',defines,re.M))
     base=resolve_platform_base(ROOT)
     platform=(base/'sources/imgui/platform_frame.cpp').read_text()
+    platform=platform.replace('#ifdef _XBOX','#if 1').replace('#include <xtl.h>','')
     adapter=(OWN/'platform_adapter.cpp').read_text().replace('#include "imgui_xenos.h"','')
     assert not (OWN/'platform_frame.cpp').exists()
     text='''#include "imgui.h"
@@ -40,6 +41,24 @@ def main():
 #include <cstring>
 #include <stdexcept>
 typedef uint16_t WORD;
+typedef unsigned DWORD;
+#define ERROR_SUCCESS 0
+#define ERROR_IO_PENDING 997
+#define FALSE 0
+#define TRUE 1
+#define VKBD_DEFAULT 0
+#define VKBD_LATIN_NUMERIC 0x20
+#define VKBD_LATIN_PASSWORD 0x80
+struct XOVERLAPPED { unsigned status; };
+static unsigned nativeStarts, nativeResult=ERROR_IO_PENDING, nativeLaunch=ERROR_IO_PENDING;
+static wchar_t* nativeOutput;
+unsigned XShowKeyboardUI(unsigned, unsigned, const wchar_t*, const wchar_t*, const wchar_t*, wchar_t* output, unsigned, XOVERLAPPED*) {
+    ++nativeStarts;nativeOutput=output;return nativeLaunch;
+}
+bool XHasOverlappedIoCompleted(XOVERLAPPED*){return nativeResult!=ERROR_IO_PENDING;}
+unsigned XGetOverlappedResult(XOVERLAPPED*,void*,int){return nativeResult;}
+unsigned XCancelOverlapped(XOVERLAPPED*){nativeResult=1223;return 0;}
+
 #define CHECK(c) do{if(!(c)){std::fprintf(stderr,"failed: %s line %d\\n",#c,__LINE__);throw std::runtime_error(#c);}}while(0)
 static double seconds=1;
 double Shipyard_Time(){return seconds;}
@@ -50,7 +69,7 @@ void ShipyardInput_BeginGamepadPresentation(){++presentations;}
 bool ShipyardInput_ReadCachedGamepad(unsigned slot,ShipyardInputRawPad* out){
     if(slot==physicalSlot){*out=physicalPad;return true;}std::memset(out,0,sizeof(*out));return false;
 }
-'''+masks+'\n'+platform+'\n'+adapter+'''
+'''+masks+'\n'+platform+'\n'+adapter+'\n'+(base/'tests/imgui_keyboard_contract.inc').read_text()+'''
 static unsigned fontRebuilds=0;
 static void RebuildFonts(){
     ++fontRebuilds;unsigned char* pixels;int width,height;
@@ -108,6 +127,7 @@ int main(){
     physicalPad.buttons=0;frame(true);
     physicalPad.buttons=XINPUT_GAMEPAD_A;frame(true);CHECK(ImGui::IsMouseDown(0));
     physicalPad.buttons=0;frame(false);
+    RunKeyboardContract();
     const int policy=io.ConfigFlags;Shipyard_ImGuiPlatformNewFrame(640,480,false);
     CHECK(io.DeltaTime==0.000001f);CHECK(io.DisplaySize.x==640 && io.DisplaySize.y==480);
     physicalPad.buttons=0;seconds+=1.0/60;
