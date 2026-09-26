@@ -42,6 +42,11 @@ int main() {
     XboxTrianglePipelineResult result = {};
     result.comb = &comb;
     XboxTrianglePipelineKey key;
+    require((reinterpret_cast<uintptr_t>(key.rendering) & 3) == 0,
+            "rendering certificate bytes are not word aligned");
+    require((reinterpret_cast<uintptr_t>(key.tiles[0]) & 3) == 0 &&
+            (reinterpret_cast<uintptr_t>(key.tiles[1]) & 3) == 0,
+            "tile certificate bytes are not word aligned");
     key.Capture(owner, result);
     require(key.Matches(owner), "unchanged modern state did not certify");
     for (int i=0; i<100; ++i) require(key.Matches(owner), "cached clip changed");

@@ -27,6 +27,12 @@ def main():
     # Preserve complete output expressions and branch structure. Only the
     # intended writes/conversions may differ between these extracted methods.
     restored = projected_body.replace('    float* shipyardVertexOutput = mBufVbo + mBufVboLen;\n', '')
+    if '    float shipyardClampS[2];' in restored:
+        clamp_begin = restored.index('    float shipyardClampS[2];')
+        clamp_end = restored.index(begin, clamp_begin)
+        restored = restored[:clamp_begin] + restored[clamp_end:]
+    restored = restored.replace('shipyardClampS[t]', '(tex_width2[t] - 0.5f) / tex_width[t]')
+    restored = restored.replace('shipyardClampT[t]', '(tex_height2[t] - 0.5f) / tex_height[t]')
     restored = restored.replace('    mBufVboLen = (size_t)(shipyardVertexOutput - mBufVbo);\n\n', '')
     restored = restored.replace('*shipyardVertexOutput++', 'mBufVbo[mBufVboLen++]')
     restored = re.sub(r'Shipyard::Fast3D::UnitColor\(([^()]*)\)', r'\1 / 255.0f', restored)
@@ -51,7 +57,12 @@ def main():
     if (ROOT / 'scratch/fast3d-xdk/generated/include/fast3d/coordinate.h').exists():
         raise AssertionError('Generated coordinate header shadows Shipyard')
     template = pathlib.Path(__file__).with_name('test_vertex_packing_contract.cpp').read_text(encoding='utf-8')
-    code = template.replace('// ORIGINAL_LOOP', original_body).replace('// PROJECTED_LOOP', projected_body)
+    def counted(body):
+        return body.replace('(tex_width2[t] - 0.5f) / tex_width[t]',
+                            'CountBound(tex_width2[t], tex_width[t])').replace(
+                            '(tex_height2[t] - 0.5f) / tex_height[t]',
+                            'CountBound(tex_height2[t], tex_height[t])')
+    code = template.replace('// ORIGINAL_LOOP', counted(original_body)).replace('// PROJECTED_LOOP', counted(projected_body))
     contract = folder / 'contract.cpp'
     contract.write_text(code, encoding='utf-8')
     environment = runpy.run_path(str(pathlib.Path(__file__).with_name('test_binary.py')))

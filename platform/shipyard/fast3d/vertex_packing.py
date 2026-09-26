@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/shipyard'))
 from platform_base import resolve
 BASE = resolve(ROOT)
-from xbox360_platform.vertex_stream import lower
+from xbox360_platform.vertex_stream import lower, hoist_clamp_bounds
 
 
 START = '    for (int i = 0; i < 3; i++) {\n        float z = v_arr[i]->z, w = v_arr[i]->w;'
@@ -46,5 +46,9 @@ def transform(source: str) -> str:
     finish = projected.index(UV_END, begin)
     if hashlib.sha256(projected[begin:finish].encode()).hexdigest() != UV_SHA256:
         raise ValueError('Modern UV arithmetic changed; re-audit coordinate helper')
-    return ('#include "fast3d/coordinate.h"\n' + projected[:begin] +
-            UV_REPLACEMENT + projected[finish:])
+    projected = ('#include "fast3d/coordinate.h"\n' + projected[:begin] +
+                 UV_REPLACEMENT + projected[finish:])
+    return hoist_clamp_bounds(projected, start=START, end=END,
+        cursor='shipyardVertexOutput', used_textures='usedTextures', axes=(
+            ('shipyardClampS', 'tm & (1 << 2 * t)', '(tex_width2[t] - 0.5f) / tex_width[t]'),
+            ('shipyardClampT', 'tm & (1 << 2 * t + 1)', '(tex_height2[t] - 0.5f) / tex_height[t]')))

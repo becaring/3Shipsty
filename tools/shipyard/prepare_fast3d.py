@@ -15,6 +15,7 @@ from cpp_ast import PARSER,walk
 from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
 from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
+from xbox360_platform.resource_lookup import texture_hash_lookup
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -265,6 +266,7 @@ def prepare():
     text=once(text, '    struct GfxClipParameters clip_parameters = mRapi->GetClipParameters();',
               '    struct GfxClipParameters clip_parameters = mXboxClipParameters;')
     text=combiner_lookup.transform(text)
+    text=texture_hash_lookup(text)
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
