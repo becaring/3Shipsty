@@ -256,6 +256,8 @@ void EndFrame() {
         counters.bindingAttempted, counters.bindingWritten, counters.bindingSuppressed,
         counters.uploadRequests, counters.uploadReused, counters.uploadSavedBytes, counters.clears,
         counters.restoresAvoided, counters.depthRestoresAvoided);
+    Shipyard_Log("frame-profile depth_resolves retained=%u skipped=%u",
+        counters.depthResolves, counters.depthResolvesSkipped);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
         Milliseconds(previousReportTicks));
     // Reporting lies outside Graph and appears in the next outside_graph

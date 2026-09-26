@@ -152,6 +152,11 @@ def platform_source(source):
     if (original_fps > 0 && time + original_fps <= next_original_frame) {
         mtx_replacements.reserve((next_original_frame - time) / original_fps);
     }''')
+    source=once(source,'        wnd->DrawAndRunGraphicsCommands(Commands, m);',
+                '''        // Only the final render supplies depth to the next game update.
+        intp->mXboxDiscardGameDepth =
+            static_cast<size_t>(intp->mInterpolationIndex + 1) < mtx_replacements.size();
+        wnd->DrawAndRunGraphicsCommands(Commands, m);''')
     from frame_profile_projection import application as profile_application
     source = profile_application(source)
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')

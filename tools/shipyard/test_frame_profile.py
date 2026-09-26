@@ -60,6 +60,7 @@ unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,pr
 struct NativeCounters {
 unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
 unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
+unsigned depthResolves,depthResolvesSkipped;
 };
 unsigned timingTransitions=0,captures=0;
 void SetTimingEnabled(bool) { ++timingTransitions; }
@@ -111,7 +112,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==11+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==12+PhaseCount);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);

@@ -47,6 +47,7 @@ def header(text):
     text=once(text,'    GfxTextureCache mTextureCache{};',
               '    GfxTextureCache mTextureCache{};\n'
               '    Shipyard::Resources::TextureHashCache<Fast::Texture> mXboxTextureHashCache;\n'
+              '    bool mXboxDiscardGameDepth = false;\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
@@ -280,6 +281,16 @@ def prepare():
     text=stateless_signature(text)
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    start=text.index('void Interpreter::Run(Gfx* commands,')
+    end=text.index('\nvoid Interpreter::EndFrame()',start)
+    body=text[start:end]
+    body=once(body,'    if (mRendersToFb) {\n        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));',
+              '    if (mRendersToFb) {\n'
+              '        if (mXboxDiscardGameDepth) Fast::ShipyardXenos::DiscardFramebufferDepth(mGameFb);\n'
+              '        mXboxDiscardGameDepth = false;\n'
+              '        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));')
+    text=text[:start]+body+text[end:]
+    text=once(text,'#define NOMINMAX\n','#define NOMINMAX\n#include "xenos/depth_discard.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
     pending['src/fast/interpreter.cpp']=text
