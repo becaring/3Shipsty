@@ -59,6 +59,12 @@ struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, p
 ResourceLookupCounters resourceLookups = {};
 struct TrianglePipelineCounters { unsigned hits, misses; };
 TrianglePipelineCounters trianglePipeline = {};
+struct DustCounters {
+    unsigned draws, current, updatesWithDust, maxDrawsPerUpdate, near100, near250;
+    float minDistanceSquared, maxScale;
+    bool updateActive;
+};
+DustCounters dust = {};
 struct ThreadCpu {
     uint64_t start, ticks;
     unsigned samples, failures, processorMask, threadId, lastError;
@@ -99,6 +105,7 @@ void ResetMetadata() {
     memset(&audioCpu,0,sizeof(audioCpu));
     memset(&resourceLookups,0,sizeof(resourceLookups));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
+    memset(&dust,0,sizeof(dust));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
@@ -166,6 +173,34 @@ bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
 void ObserveTrianglePipeline(bool hit) {
     if (hit) ++trianglePipeline.hits;
     else ++trianglePipeline.misses;
+}
+void DustUpdateBegin() {
+    if (!accumulator.enabled) return;
+    dust.current = 0;
+    dust.updateActive = true;
+}
+void DustUpdateEnd() {
+    if (!dust.updateActive) return;
+    dust.updateActive = false;
+    if (dust.current) {
+        ++dust.updatesWithDust;
+        if (dust.current > dust.maxDrawsPerUpdate)
+            dust.maxDrawsPerUpdate = dust.current;
+    }
+}
+void ObserveDustDraw(float px, float py, float pz, float ex, float ey, float ez,
+                     float scale, unsigned flags) {
+    if (!accumulator.enabled || !dust.updateActive) return;
+    (void)flags;
+    const float dx = px - ex, dy = py - ey, dz = pz - ez;
+    const float distanceSquared = dx * dx + dy * dy + dz * dz;
+    if (!dust.draws || distanceSquared < dust.minDistanceSquared)
+        dust.minDistanceSquared = distanceSquared;
+    if (!dust.draws || scale > dust.maxScale) dust.maxScale = scale;
+    if (distanceSquared < 10000.0f) ++dust.near100;
+    if (distanceSquared < 62500.0f) ++dust.near250;
+    ++dust.draws;
+    ++dust.current;
 }
 void ObserveResourceWorker() {
     if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
@@ -237,6 +272,9 @@ void EndFrame() {
         resourceLookups.pathHits,resourceLookups.pathMisses);
     Shipyard_Log("frame-profile triangle_pipeline hits=%u misses=%u scope=surviving_triangles",
         trianglePipeline.hits,trianglePipeline.misses);
+    Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
+        dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
+        dust.minDistanceSquared,dust.maxScale);
     unsigned totalCommands=0,totalSamples=0;
     double estimates[256];
     for (unsigned i=0;i<256;++i) {
@@ -277,8 +315,8 @@ void EndFrame() {
         counters.bindingAttempted, counters.bindingWritten, counters.bindingSuppressed,
         counters.uploadRequests, counters.uploadReused, counters.uploadSavedBytes, counters.clears,
         counters.restoresAvoided, counters.depthRestoresAvoided);
-    Shipyard_Log("frame-profile depth_resolves retained=%u skipped=%u",
-        counters.depthResolves, counters.depthResolvesSkipped);
+    Shipyard_Log("frame-profile depth_resolves retained=%u skipped=%u early_fences=%u",
+        counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
         Milliseconds(previousReportTicks));
     // Reporting lies outside Graph and appears in the next outside_graph
@@ -290,8 +328,15 @@ void EndFrame() {
 }
 }
 extern "C" void Shipyard_FrameProfileGameUpdateBegin(void) {
+    ModernFrameProfile::DustUpdateBegin();
     ModernFrameProfile::Begin(ModernFrameProfile::GameUpdate);
 }
 extern "C" void Shipyard_FrameProfileGameUpdateEnd(void) {
     ModernFrameProfile::End(ModernFrameProfile::GameUpdate);
+    ModernFrameProfile::DustUpdateEnd();
+}
+extern "C" void Shipyard_FrameProfileDustDraw(float px, float py, float pz,
+                                                float ex, float ey, float ez,
+                                                float scale, unsigned flags) {
+    ModernFrameProfile::ObserveDustDraw(px,py,pz,ex,ey,ez,scale,flags);
 }

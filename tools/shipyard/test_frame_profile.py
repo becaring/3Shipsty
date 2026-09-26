@@ -60,7 +60,7 @@ unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,pr
 struct NativeCounters {
 unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
 unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
-unsigned depthResolves,depthResolvesSkipped;
+unsigned depthResolves,depthResolvesSkipped,earlyDepthFences;
 };
 unsigned timingTransitions=0,captures=0;
 void SetTimingEnabled(bool) { ++timingTransitions; }
@@ -84,6 +84,10 @@ int main() {
     assert(resourceLookups.calls==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(!CaptureTrianglePipeline() && trianglePipeline.hits==0 && trianglePipeline.misses==0);
+    Shipyard_FrameProfileGameUpdateBegin();
+    Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
+    Shipyard_FrameProfileGameUpdateEnd();
+    assert(dust.draws==0);
     assert(Fast::ShipyardXenos::captures==0 && Fast::ShipyardXenos::timingTransitions==0);
     for(unsigned i=0;i<119;++i) { BeginFrame(true); Begin(Interpreter); End(Interpreter); EndFrame(); }
     assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
@@ -102,6 +106,12 @@ int main() {
     assert(resourceLookups.calls==2 && resourceLookups.alternate==1 && resourceLookups.resolved==1);
     assert(resourceLookups.fallback==1 && resourceLookups.probes==3 && clockReads==lookupClockReads);
     assert(resourceLookups.textureHits==1 && resourceLookups.textureMisses==1);
+    Shipyard_FrameProfileGameUpdateBegin();
+    Shipyard_FrameProfileDustDraw(5,0,0,0,0,0,1,0);
+    Shipyard_FrameProfileDustDraw(200,0,0,0,0,0,2,0);
+    Shipyard_FrameProfileGameUpdateEnd();
+    assert(dust.draws==2 && dust.updatesWithDust==1 && dust.maxDrawsPerUpdate==2);
+    assert(dust.near100==1 && dust.near250==2 && dust.minDistanceSquared==25 && dust.maxScale==2);
     { ResourceWaitScope wait; }
     assert(accumulator.phases[ResourceWait].calls==waits+1);
     End(Interpreter);
@@ -115,7 +125,8 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==15+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==16+PhaseCount);
+    assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
