@@ -33,6 +33,24 @@ def call_sites(text,name):
     return raw.decode()
 
 def header(text,max_arity):
+    # A dispatch miss must not allocate a permanent empty outer group. The
+    # registry never erases outer groups; a reference to its mapped group also
+    # survives outer-table rehash when a callback registers another key.
+    for suffix, key, key_type in [('ID', 'id', 'int32_t'), ('Ptr', 'ptr', 'uintptr_t')]:
+        signature = ('    template <typename H, typename... Args> void ExecuteHooksFor' + suffix +
+                     '(' + key_type + ' ' + key + ', Args&&... args) {')
+        start = text.index(signature)
+        end = text.index('\n    }', start) + len('\n    }')
+        body = text[start:end]
+        access = 'RegisteredGameHooks<H>::functionsFor' + suffix + '[' + key + ']'
+        if body.count(access) != 5:
+            raise ValueError('Keyed hook dispatch access inventory changed: ' + suffix)
+        body = body.replace(access, 'group')
+        entry = signature + '\n        auto& groups = RegisteredGameHooks<H>::functionsFor' + suffix + ';'
+        entry += '\n        auto found = groups.find(' + key + ');\n        if (found == groups.end()) return;'
+        entry += '\n        auto& group = found->second;'
+        body = once(body, signature, entry)
+        text = text[:start] + body + text[end:]
     text=once(text,'#include "libultraship/libultraship.h"','#include <libultraship/bridge.h>\n#include <string>')
     text=once(text,'#include <version>','#include "game-interactor/source_location.h"\n#define __cpp_lib_source_location 201907L')
     text=once(text,'#include <source_location>','// Source locations are supplied by the deterministic call-site projection.')
