@@ -16,6 +16,36 @@ from cpp_ast import PARSER,walk
 OWN=ROOT/'platform/shipyard/interpolation'
 OUT=ROOT/'scratch/interpolation-xdk'
 
+def recording_ownership(text):
+    # XDK does not synthesize aggregate moves. Keep copies available, but move
+    # recording containers rather than recursively copying populated subtrees.
+    text=once(text,'struct Path {','struct RecordingInPlace {};\nstruct Path {')
+    text=once(text,'    vector<pair<Op, size_t>> items;','''    vector<pair<Op, size_t>> items;
+    Path() {}
+    explicit Path(RecordingInPlace) {}
+    Path(const Path& other) : children(other.children), ops(other.ops), items(other.items) {}
+    void swap(Path& other) { children.swap(other.children); ops.swap(other.ops); items.swap(other.items); }
+    Path& operator=(const Path& other) {
+        if (this != &other) { Path copy(other); swap(copy); }
+        return *this;
+    }
+    Path(Path&& other) { swap(other); }
+    Path& operator=(Path&& other) {
+        if (this != &other) {
+            swap(other);
+            other.children.clear(); other.ops.clear(); other.items.clear();
+        }
+        return *this;
+    }''')
+    text=once(text,'    previous_recording = std::move(current_recording);\n    current_recording = {};',
+        '    previous_recording.root_path.swap(current_recording.root_path);\n'
+        '    current_recording.root_path.children.clear();\n'
+        '    current_recording.root_path.ops.clear();\n'
+        '    current_recording.root_path.items.clear();')
+    text=once(text,'current_path.push_back(&m.emplace_back());',
+        'm.emplace_back(RecordingInPlace());\n    current_path.push_back(&m.back());')
+    return text
+
 def reuse_child_lookup(text):
     expression='&new_path->children.find(new_op.open_child.key)->second[new_op.open_child.idx]'
     start=text.index('    void interpolate_branch(')
@@ -30,6 +60,10 @@ def reuse_child_lookup(text):
 
 def transform(text):
     text=reuse_child_lookup(text)
+    text=recording_ownership(text)
+    text=once(text,'void FrameInterpolation_StartRecord(void) {',
+        'void FrameInterpolation_StartRecord(void) {\n#ifdef _XBOX\n'
+        '    ModernFrameProfile::PhaseScope recordingRotate(ModernFrameProfile::RecordingRotate);\n#endif')
     # The context dies on return; transfer its replacement nodes to the caller.
     text=once(text,'return ctx.mtx_replacements;','return std::move(ctx.mtx_replacements);')
     text=once(text,'#include <libultraship/bridge.h>','// No LUS bridge symbols are used by this translation unit.')
@@ -38,12 +72,10 @@ def transform(text):
     match=re.search(r'enum class Op \{(.*?)\n\};',text,re.S)
     text=once(text,match[0],strong_enum('Op',match[1]))
     text=once(text,'switch (item.first)','switch (item.first.GetValue())')
-    text=once(text,'current_recording = {};','current_recording = Recording();')
     text=once(text,'typedef pair<const void*, int> label;',
               'struct label { const void* first; int second;\n'
               'bool operator<(const label& rhs) const { return first < rhs.first || (!(rhs.first < first) && second < rhs.second); }\n};')
     text=once(text,'return m.emplace_back();','m.push_back(Data());\n    return m.back();')
-    text=once(text,'current_path.push_back(&m.emplace_back());','m.push_back(Path());\n    current_path.push_back(&m.back());')
     text=once(text,'current_path.back()->items.emplace_back(op, m.size());','current_path.back()->items.push_back(std::make_pair(op, m.size()));')
     # Give anonymous recording payloads names without changing their layout.
     start=text.index('union Data {')
@@ -112,7 +144,7 @@ def transform(text):
         source=source[:a]+v+source[b:]
     text=source.decode()
     lower=runpy.run_path(str(ROOT/'platform/shipyard/imgui/projection.py'))['lower_ranges']
-    return '#include "resources/runtime_support.h"\n#include "binary/compat.h"\n'+lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
+    return '#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n#include "resources/runtime_support.h"\n#include "binary/compat.h"\n'+lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
 
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text())
