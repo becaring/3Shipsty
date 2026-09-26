@@ -145,6 +145,12 @@ def platform_source(source):
     source=once(source,'    bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);',
                 '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-audio-complete", false);
     bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);''')
+    source=once(source,'    int next_original_frame = fps;',
+                '''    int next_original_frame = fps;
+    // The loop emits this many maps before any presentation consumes them.
+    if (original_fps > 0 && time + original_fps <= next_original_frame) {
+        mtx_replacements.reserve((next_original_frame - time) / original_fps);
+    }''')
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
 // failure escape through the C game entry before its crash handler exists.
