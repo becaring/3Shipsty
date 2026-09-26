@@ -266,6 +266,8 @@ def prepare():
               '    struct GfxClipParameters clip_parameters = mXboxClipParameters;')
     text=combiner_lookup.transform(text)
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    from frame_profile_projection import interpreter as profile_interpreter
+    text=profile_interpreter(text)
     pending['src/fast/interpreter.cpp']=text
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
     stale_color=OUT/'generated/include/fast3d/unit_color.h'

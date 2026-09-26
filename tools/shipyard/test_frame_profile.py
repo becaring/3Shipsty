@@ -23,8 +23,29 @@ def main():
     print(result.stdout)
     runtime = (ROOT / 'platform/shipyard/xenos/services.cpp').read_text().split('namespace ModernFrameProfile {', 1)[1]
     harness = '''#include "application/frame_profile.h"
+#include "application/command_profile.h"
 #include <cassert>
 #include <cstdarg>
+#include <thread>
+struct FILETIME { unsigned dwLowDateTime,dwHighDateTime; };
+unsigned cpuReads=0, processor=0;
+bool failCpu=false;
+typedef long LONG;
+LONG InterlockedExchange(volatile LONG* p,LONG value){LONG old=*p;*p=value;return old;}
+LONG InterlockedCompareExchange(volatile LONG* p,LONG value,LONG expected){LONG old=*p;if(old==expected)*p=value;return old;}
+LONG InterlockedOr(volatile LONG* p,LONG value){LONG old=*p;*p=old|value;return old;}
+LONG InterlockedIncrement(volatile LONG* p){LONG value=*p+1;*p=value;return value;}
+void* GetCurrentThread(){return 0;}
+unsigned GetCurrentThreadId(){return 42;}
+unsigned GetCurrentProcessorNumber(){return processor;}
+unsigned GetLastError(){return 5;}
+bool GetThreadTimes(void*,FILETIME*,FILETIME*,FILETIME* kernel,FILETIME* user){
+    ++cpuReads;
+    if(failCpu)return false;
+    kernel->dwHighDateTime=user->dwHighDateTime=0;
+    kernel->dwLowDateTime=cpuReads*1000;user->dwLowDateTime=0;
+    return true;
+}
 struct LARGE_INTEGER { long long QuadPart; };
 unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
@@ -50,15 +71,32 @@ namespace ModernFrameProfile {
 int main() {
     using namespace ModernFrameProfile;
     for(unsigned i=0;i<240;++i) {
-        BeginFrame(false); Begin(Graphics); End(Graphics);
+        BeginFrame(false); Begin(Graphics); End(Graphics); Begin(Interpreter); End(Interpreter);
         Settings(60,60,20,3,60,0,0,1); Batch(3,2,10);
         Dimensions(1280,720,1280,720,1280,720,1,1); EndFrame();
     }
-    assert(clockReads==0 && frequencyReads==0 && logCalls==0);
+    assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0);
+    ObserveResourceWorker(); assert(workerJobs==0 && workerProcessorMask==0);
     assert(Fast::ShipyardXenos::captures==0 && Fast::ShipyardXenos::timingTransitions==0);
-    for(unsigned i=0;i<119;++i) { BeginFrame(true); EndFrame(); }
+    for(unsigned i=0;i<119;++i) { BeginFrame(true); Begin(Interpreter); End(Interpreter); EndFrame(); }
+    assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
+    assert(!BeginResourceWait());
+    Begin(Interpreter);
+    unsigned waits=accumulator.phases[ResourceWait].calls;
+    std::thread worker([](){ assert(!BeginResourceWait()); }); worker.join();
+    { ResourceWaitScope wait; }
+    assert(accumulator.phases[ResourceWait].calls==waits+1);
+    End(Interpreter);
+    assert(!BeginResourceWait());
+    processor=2; Begin(AudioGenerate); End(AudioGenerate);
+    ObserveResourceWorker(); processor=4; ObserveResourceWorker();
+    assert(workerJobs==2 && workerProcessorMask==20);
+    assert(audioCpu.samples==1 && audioCpu.ticks==1000 && audioCpu.processorMask==4);
+    failCpu=true; Begin(AudioGenerate); End(AudioGenerate); failCpu=false;
+    assert(audioCpu.failures==1 && audioCpu.lastError==5 && audioCpu.samples==1);
     assert(logCalls==0 && frequencyReads==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==5+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==9+PhaseCount);
+    assert(workerJobs==0 && workerProcessorMask==0);
     unsigned reads=clockReads, logs=logCalls;
     BeginFrame(false); Begin(Graphics); End(Graphics); EndFrame();
     assert(clockReads==reads && logCalls==logs);

@@ -178,6 +178,21 @@ def transform(name, original):
                 r'Shipyard::Resources::contains(\1, \2)',text)
     lower_ranges=runpy.run_path(str(ROOT / 'platform/shipyard/imgui/projection.py'))['lower_ranges']
     text=lower_ranges(text.encode(), 'Shipyard::Resources::begin', 'Shipyard::Resources::end').decode()
+    if name.endswith('/ResourceManager.cpp'):
+        text='#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n'+text
+        text=once(text,'            return LoadResourceProcess(identifier, loadExact, initData);',
+                  '''#ifdef _XBOX
+            ModernFrameProfile::ObserveResourceWorker();
+#endif
+            return LoadResourceProcess(identifier, loadExact, initData);''')
+        text=once(text,'    auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();',
+                  '''    std::shared_ptr<IResource> resource;
+    {
+#ifdef _XBOX
+        ModernFrameProfile::ResourceWaitScope resourceWait;
+#endif
+        resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();
+    }''')
     return '#include "resources/runtime_support.h"\n'+text
 
 

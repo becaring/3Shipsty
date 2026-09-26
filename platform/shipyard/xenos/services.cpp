@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "application/frame_profile.h"
+#include "application/command_profile.h"
 static bool verifyReuse=false;
 void Shipyard_SetGraphicsVerification(bool enabled){verifyReuse=enabled;}
 bool Shipyard_VerifyFast3DReuse(){return verifyReuse;}
@@ -48,23 +49,66 @@ float multiplier = 0;
 bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
-    "audio_generate", "audio_submit"};
+    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait"};
+// Resource workers must never write the interpreter thread's profiling buckets.
+__declspec(thread) bool inInterpreter=false;
+volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
+struct ThreadCpu {
+    uint64_t start, ticks;
+    unsigned samples, failures, processorMask, threadId, lastError;
+    bool active;
+};
+ThreadCpu renderCpu = {}, audioCpu = {};
+uint64_t FileTicks(const FILETIME& value) {
+    return (static_cast<uint64_t>(value.dwHighDateTime) << 32) | value.dwLowDateTime;
+}
+bool ReadCpu(uint64_t& ticks, unsigned& error) {
+    FILETIME created, exited, kernel, user;
+    if (!GetThreadTimes(GetCurrentThread(), &created, &exited, &kernel, &user)) {
+        error=GetLastError();
+        return false;
+    }
+    ticks=FileTicks(kernel)+FileTicks(user);
+    return true;
+}
+void BeginCpu(ThreadCpu& cpu) {
+    cpu.threadId=GetCurrentThreadId();
+    const unsigned processor=GetCurrentProcessorNumber();
+    if (processor<32) cpu.processorMask|=1u<<processor;
+    cpu.active=ReadCpu(cpu.start,cpu.lastError);
+    if (!cpu.active) ++cpu.failures;
+}
+void EndCpu(ThreadCpu& cpu) {
+    if (!cpu.active) return;
+    uint64_t now;
+    cpu.active=false;
+    if (!ReadCpu(now,cpu.lastError) || now<cpu.start) { ++cpu.failures; return; }
+    cpu.ticks+=now-cpu.start;
+    ++cpu.samples;
+}
 void ResetMetadata() {
     maps = nonemptyMaps = replacements = 0;
     haveSettings = haveDimensions = changed = false;
+    memset(&renderCpu,0,sizeof(renderCpu));
+    memset(&audioCpu,0,sizeof(audioCpu));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
 }
 }
+CommandSampler commandSampler(Clock);
 void BeginFrame(bool enabled) {
     if (enabled != accumulator.enabled) {
+        InterlockedExchange(&observeWorkers,enabled ? 1 : 0);
+        InterlockedExchange(&workerProcessorMask,0);
+        InterlockedExchange(&workerJobs,0);
         Fast::ShipyardXenos::SetTimingEnabled(enabled);
         if (enabled) {
             Fast::ShipyardXenos::NativeCounters discarded;
             Fast::ShipyardXenos::CaptureAndResetCounters(&discarded);
         }
         ResetMetadata();
+        commandSampler.Reset();
         previousReportTicks = 0;
     }
     if (enabled && !frequency) {
@@ -73,9 +117,33 @@ void BeginFrame(bool enabled) {
         frequency = static_cast<uint64_t>(value.QuadPart);
     }
     accumulator.BeginFrame(enabled);
+    commandSampler.enabled=enabled;
 }
-void Begin(Phase phase) { accumulator.Begin(phase); }
-void End(Phase phase) { accumulator.End(phase); }
+void Begin(Phase phase) {
+    accumulator.Begin(phase);
+    if (!accumulator.enabled) return;
+    if (phase==Interpreter) { inInterpreter=true; BeginCpu(renderCpu); }
+    else if (phase==AudioGenerate) BeginCpu(audioCpu);
+}
+void End(Phase phase) {
+    if (accumulator.enabled) {
+        if (phase==Interpreter) { EndCpu(renderCpu); inInterpreter=false; }
+        else if (phase==AudioGenerate) EndCpu(audioCpu);
+    }
+    accumulator.End(phase);
+}
+bool BeginResourceWait() {
+    if (!inInterpreter || !accumulator.enabled) return false;
+    accumulator.Begin(ResourceWait);
+    return true;
+}
+void EndResourceWait() { accumulator.End(ResourceWait); }
+void ObserveResourceWorker() {
+    if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
+    const unsigned processor=GetCurrentProcessorNumber();
+    if (processor<32) InterlockedOr(&workerProcessorMask,1u<<processor);
+    InterlockedIncrement(&workerJobs);
+}
 void Settings(int requestedFps, int targetFps, int originalFps, int updateRate,
               unsigned refresh, int lowRes, int advanced, int vsync) {
     if (!accumulator.enabled) return;
@@ -120,6 +188,37 @@ void EndFrame() {
             Milliseconds(p.ticks), Milliseconds(p.ticks) / accumulator.frames,
             p.calls ? Milliseconds(p.ticks) / p.calls : 0.0, Milliseconds(p.maximum));
     }
+    const ThreadCpu* cpus[2]={&renderCpu,&audioCpu};
+    const Phase cpuPhases[2]={Interpreter,AudioGenerate};
+    for (unsigned i=0;i<2;++i) {
+        const ThreadCpu& cpu=*cpus[i];
+        Shipyard_Log("frame-profile thread=%s id=%u processor_mask=%x cpu_ms=%.3f wall_ms=%.3f samples=%u failures=%u last_error=%u cpu_clock=GetThreadTimes",
+            i ? "audio" : "interpreter", cpu.threadId,cpu.processorMask,double(cpu.ticks)/10000.0,
+            Milliseconds(accumulator.phases[cpuPhases[i]].ticks),cpu.samples,cpu.failures,cpu.lastError);
+    }
+    const unsigned observedJobs=InterlockedExchange(&workerJobs,0);
+    const unsigned observedProcessors=InterlockedExchange(&workerProcessorMask,0);
+    Shipyard_Log("frame-profile resource_workers jobs_started=%u processor_mask=%x window=observed_between_reports",
+                observedJobs,observedProcessors);
+    unsigned totalCommands=0,totalSamples=0;
+    double estimates[256];
+    for (unsigned i=0;i<256;++i) {
+        const CommandStats& command=commandSampler.commands[i];
+        totalCommands+=command.calls; totalSamples+=command.samples;
+        estimates[i]=command.samples ? Milliseconds(command.ticks)*command.calls/command.samples : 0;
+    }
+    Shipyard_Log("frame-profile commands=%u timed_samples=%u sample_probability=1/64 detail=top12_estimated_wall_cost",
+                totalCommands,totalSamples);
+    for (unsigned rank=0;rank<12;++rank) {
+        unsigned best=256;
+        for (unsigned i=0;i<256;++i)
+            if (estimates[i]>0 && (best==256 || estimates[i]>estimates[best])) best=i;
+        if (best==256) break;
+        const CommandStats& command=commandSampler.commands[best];
+        Shipyard_Log("frame-profile opcode=%02x ucode_mask=%x calls=%u samples=%u sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
+            best,command.ucodes,command.calls,command.samples,Milliseconds(command.ticks),estimates[best],Milliseconds(command.maximum));
+        estimates[best]=-1;
+    }
     const double gameHz = accumulator.periodTicks ? double(accumulator.periods) * frequency / accumulator.periodTicks : 0.0;
     const double presentsPerGame = double(accumulator.phases[Present].calls) / accumulator.frames;
     Shipyard_Log("frame-profile game_hz=%.3f presents_per_game=%.3f estimated_present_hz=%.3f",
@@ -143,6 +242,7 @@ void EndFrame() {
     // Reporting lies outside Graph and appears in the next outside_graph
     // interval. QPC/scope overhead remains inside measured parent scopes.
     accumulator.ResetWindow();
+    commandSampler.Reset();
     ResetMetadata();
     previousReportTicks = Clock() - reportBegin;
 }

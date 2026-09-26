@@ -1,4 +1,5 @@
 #include "application/frame_profile.h"
+#include "application/command_profile.h"
 #include <cassert>
 #include <cstdio>
 
@@ -6,6 +7,37 @@ static unsigned reads;
 static uint64_t tick;
 static uint64_t Clock() { ++reads; return tick; }
 int main() {
+    ModernFrameProfile::CommandSampler sampler(Clock);
+    for (unsigned i=0;i<256;++i) sampler.End(sampler.Begin(1,2));
+    assert(reads==0 && sampler.commands[1].calls==0);
+    sampler.enabled=true;
+    for (unsigned i=0;i<65536;++i) {
+        ModernFrameProfile::CommandSampler::Token token=sampler.Begin(1,2);
+        tick+=7;
+        sampler.End(token);
+    }
+    const unsigned samples=sampler.commands[1].samples;
+    assert(sampler.commands[1].calls==65536 && samples>850 && samples<1200);
+    assert(sampler.commands[1].ticks==samples*7 && sampler.commands[1].maximum==7);
+    assert(sampler.commands[1].ucodes==4 && reads==samples*2);
+    unsigned positions[47]={};
+    for (unsigned walk=0;walk<512;++walk) {
+        for (unsigned j=0;j<47;++j) {
+            ModernFrameProfile::CommandSampler::Token token=sampler.Begin(2,2);
+            if (token.sampled) ++positions[j];
+            sampler.End(token);
+        }
+    }
+    for (unsigned j=0;j<47;++j) assert(positions[j]>0);
+    sampler.Begin(1,3);
+    assert(sampler.commands[1].ucodes==12);
+    sampler.Reset();
+    assert(sampler.commands[1].calls==0 && sampler.commands[1].ticks==0);
+    sampler.enabled=false;
+    const unsigned priorReads=reads;
+    sampler.End(sampler.Begin(2,1));
+    assert(reads==priorReads);
+    reads=0;tick=0;
     ModernFrameProfile::Accumulator profile(Clock);
     for (int i = 0; i < 200; ++i) {
         profile.BeginFrame(false);

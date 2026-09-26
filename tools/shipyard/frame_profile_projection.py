@@ -61,3 +61,30 @@ def presentation(source):
         mInterpreter->mMsaaLevel, mInterpreter->mCurDimensions.internal_mul);
     // Execute the games gfx commands''')
     return prefix + source + suffix
+
+
+def interpreter(source):
+    source='#include "application/frame_profile.h"\n#include "application/command_profile.h"\n'+source
+    start=source.index('void Interpreter::Run(Gfx* commands,')
+    end=source.index('\nvoid Interpreter::EndFrame()',start)
+    body=source[start:end]
+    body=once(body,'    SpReset();','    ModernFrameProfile::Begin(ModernFrameProfile::InterpreterSetup);\n    SpReset();')
+    body=once(body,'    g_exec_stack.start((F3DGfx*)commands);', '''    g_exec_stack.start((F3DGfx*)commands);
+    ModernFrameProfile::End(ModernFrameProfile::InterpreterSetup);
+    ModernFrameProfile::Begin(ModernFrameProfile::CommandWalk);''')
+    body=once(body,'        gfx_step();', '''        if (ModernFrameProfile::commandSampler.enabled) {
+            const ModernFrameProfile::CommandSampler::Token sample =
+                ModernFrameProfile::commandSampler.Begin(static_cast<unsigned>(cmd->words.w0 >> 24),
+                                                          static_cast<unsigned>(ucode_handler_index));
+            gfx_step();
+            ModernFrameProfile::commandSampler.End(sample);
+        } else {
+            gfx_step();
+        }''')
+    body=once(body,'    Flush();', '''    ModernFrameProfile::End(ModernFrameProfile::CommandWalk);
+    ModernFrameProfile::Begin(ModernFrameProfile::InterpreterFinish);
+    Flush();''')
+    # Match the function's final brace, preserving both framebuffer completion paths.
+    position=body.rfind('\n}')
+    body=body[:position]+'\n    ModernFrameProfile::End(ModernFrameProfile::InterpreterFinish);'+body[position:]
+    return source[:start]+body+source[end:]

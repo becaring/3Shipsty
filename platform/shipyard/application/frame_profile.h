@@ -5,7 +5,8 @@
 namespace ModernFrameProfile {
 enum Phase {
     Graph, Interpolation, Graphics, Readiness, GuiStart, Framebuffer,
-    Interpreter, GuiEnd, Present, AudioWait, AudioGenerate, AudioSubmit, PhaseCount
+    Interpreter, GuiEnd, Present, AudioWait, AudioGenerate, AudioSubmit,
+    InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, PhaseCount
 };
 struct PhaseStats { uint64_t ticks, maximum; unsigned calls; };
 
@@ -80,4 +81,16 @@ void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
                 unsigned viewportHeight, unsigned windowWidth, unsigned windowHeight,
                 unsigned samples, float multiplier);
 void EndFrame();
+bool BeginResourceWait();
+void EndResourceWait();
+void ObserveResourceWorker();
+class ResourceWaitScope {
+  public:
+    ResourceWaitScope() : active(BeginResourceWait()) {}
+    ~ResourceWaitScope() { if (active) EndResourceWait(); }
+  private:
+    bool active;
+    ResourceWaitScope(const ResourceWaitScope&);
+    ResourceWaitScope& operator=(const ResourceWaitScope&);
+};
 }
