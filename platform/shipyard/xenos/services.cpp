@@ -6,6 +6,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include "application/frame_profile.h"
 static bool verifyReuse=false;
 void Shipyard_SetGraphicsVerification(bool enabled){verifyReuse=enabled;}
 bool Shipyard_VerifyFast3DReuse(){return verifyReuse;}
@@ -26,4 +27,94 @@ double Shipyard_Time(){LARGE_INTEGER tick,freq;QueryPerformanceCounter(&tick);Qu
 bool Shipyard_WriteFile(const char* relative,const void* bytes,size_t size){
     try {Shipyard::Storage::WriteAtomicRelativeFile("game:\\",relative,bytes,size);return true;}
     catch(...) {return false;}
+}
+
+namespace ModernFrameProfile {
+namespace {
+uint64_t Clock() {
+    LARGE_INTEGER value;
+    QueryPerformanceCounter(&value);
+    return static_cast<uint64_t>(value.QuadPart);
+}
+Accumulator accumulator(Clock);
+uint64_t frequency = 0;
+uint64_t previousReportTicks = 0;
+unsigned maps = 0, nonemptyMaps = 0, replacements = 0;
+// Last values plus a change flag make mixed-settings windows identifiable.
+int settings[8] = {};
+unsigned dimensions[7] = {};
+float multiplier = 0;
+bool haveSettings = false, haveDimensions = false, changed = false;
+const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
+    "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
+    "audio_generate", "audio_submit"};
+void ResetMetadata() {
+    maps = nonemptyMaps = replacements = 0;
+    haveSettings = haveDimensions = changed = false;
+}
+double Milliseconds(uint64_t ticks) {
+    return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
+}
+}
+void BeginFrame(bool enabled) {
+    if (enabled != accumulator.enabled) {
+        ResetMetadata();
+        previousReportTicks = 0;
+    }
+    if (enabled && !frequency) {
+        LARGE_INTEGER value;
+        QueryPerformanceFrequency(&value);
+        frequency = static_cast<uint64_t>(value.QuadPart);
+    }
+    accumulator.BeginFrame(enabled);
+}
+void Begin(Phase phase) { accumulator.Begin(phase); }
+void End(Phase phase) { accumulator.End(phase); }
+void Settings(int requestedFps, int targetFps, int originalFps, int updateRate,
+              unsigned refresh, int lowRes, int advanced, int vsync) {
+    if (!accumulator.enabled) return;
+    const int values[8] = {requestedFps, targetFps, originalFps, updateRate,
+        static_cast<int>(refresh), lowRes, advanced, vsync};
+    if (haveSettings && memcmp(settings, values, sizeof(values))) changed = true;
+    memcpy(settings, values, sizeof(values));
+    haveSettings = true;
+}
+void Batch(unsigned count, unsigned nonempty, unsigned size) {
+    if (!accumulator.enabled) return;
+    maps += count; nonemptyMaps += nonempty; replacements += size;
+}
+void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
+                unsigned viewportHeight, unsigned windowWidth, unsigned windowHeight,
+                unsigned samples, float scale) {
+    if (!accumulator.enabled) return;
+    const unsigned values[7] = {width, height, viewportWidth, viewportHeight,
+        windowWidth, windowHeight, samples};
+    if (haveDimensions && (memcmp(dimensions, values, sizeof(values)) || multiplier != scale)) changed = true;
+    memcpy(dimensions, values, sizeof(values));
+    multiplier = scale;
+    haveDimensions = true;
+}
+void EndFrame() {
+    if (!accumulator.EndFrame()) return;
+    const uint64_t reportBegin = Clock();
+    // This runs after the audio rendezvous. Scopes are inclusive wall time,
+    // not CPU utilization or GPU duration; their totals must not be added.
+    Shipyard_Log("frame-profile frames=%u periods=%u period_ms=%.3f outside_graph_ms=%.3f mixed=%u requested=%d effective=%d original=%d update_rate=%d refresh=%d lowres=%d advanced=%d vsync=%d internal=%ux%u viewport=%ux%u window=%ux%u msaa=%u scale=%.3f maps=%u nonempty_maps=%u replacements=%u",
+        accumulator.frames, accumulator.periods, Milliseconds(accumulator.periodTicks), Milliseconds(accumulator.outsideTicks),
+        changed ? 1u : 0u, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5], settings[6], settings[7],
+        dimensions[0], dimensions[1], dimensions[2], dimensions[3], dimensions[4], dimensions[5], dimensions[6], multiplier,
+        maps, nonemptyMaps, replacements);
+    for (unsigned i = 0; i < PhaseCount; ++i) {
+        const PhaseStats& p = accumulator.phases[i];
+        Shipyard_Log("frame-profile phase=%s calls=%u inclusive_ms=%.3f max_ms=%.3f", names[i], p.calls,
+            Milliseconds(p.ticks), Milliseconds(p.maximum));
+    }
+    Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
+        Milliseconds(previousReportTicks));
+    // Reporting lies outside Graph and appears in the next outside_graph
+    // interval. QPC/scope overhead remains inside measured parent scopes.
+    accumulator.ResetWindow();
+    ResetMetadata();
+    previousReportTicks = Clock() - reportBegin;
+}
 }

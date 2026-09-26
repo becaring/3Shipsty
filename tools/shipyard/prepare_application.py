@@ -151,6 +151,8 @@ def platform_source(source):
     if (original_fps > 0 && time + original_fps <= next_original_frame) {
         mtx_replacements.reserve((next_original_frame - time) / original_fps);
     }''')
+    from frame_profile_projection import application as profile_application
+    source = profile_application(source)
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
 // failure escape through the C game entry before its crash handler exists.
@@ -272,6 +274,7 @@ def boundary_probe():
     if version is None:raise ValueError('Version record inventory changed')
     names=['CheckAndCreateModFolder','ReadPortVersionFromOTR','DetectOTRVersion','VerifyArchiveVersion','OTRGlobals::RunExtract','OTRAudio_Thread','OTRAudio_Init','OTRAudio_Exit']
     prelude='''#include "soh/OTRGlobals.h"
+#include "application/frame_profile.h"
 #include "soh/OTRAudio.h"
 #include "soh/Enhancements/savestates.h"
 #include <ship/resource/archive/O2rArchive.h>
