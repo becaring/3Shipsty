@@ -6,7 +6,7 @@ namespace ModernFrameProfile {
 enum Phase {
     Graph, Interpolation, Graphics, Readiness, GuiStart, Framebuffer,
     Interpreter, GuiEnd, Present, AudioWait, AudioGenerate, AudioSubmit,
-    InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, PhaseCount
+    InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, RecordingRotate, PhaseCount
 };
 struct PhaseStats { uint64_t ticks, maximum; unsigned calls; };
 
@@ -84,6 +84,30 @@ void EndFrame();
 bool BeginResourceWait();
 void EndResourceWait();
 void ObserveResourceWorker();
+bool CaptureResourceLookups();
+void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes);
+class PhaseScope {
+  public:
+    explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }
+    ~PhaseScope() { End(phase); }
+  private:
+    Phase phase;
+    PhaseScope(const PhaseScope&);
+    PhaseScope& operator=(const PhaseScope&);
+};
+class ResourceLookupScope {
+  public:
+    explicit ResourceLookupScope(bool alternateMode) : active(CaptureResourceLookups()),
+        alternate(alternateMode), resolved(false), probes(0) {}
+    ~ResourceLookupScope() { if (active) ObserveResourceLookup(alternate, resolved, probes); }
+    void Probe() { if (active) ++probes; }
+    void Resolved() { resolved = true; }
+  private:
+    bool active, alternate, resolved;
+    unsigned probes;
+    ResourceLookupScope(const ResourceLookupScope&);
+    ResourceLookupScope& operator=(const ResourceLookupScope&);
+};
 class ResourceWaitScope {
   public:
     ResourceWaitScope() : active(BeginResourceWait()) {}

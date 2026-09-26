@@ -74,9 +74,12 @@ int main() {
         BeginFrame(false); Begin(Graphics); End(Graphics); Begin(Interpreter); End(Interpreter);
         Settings(60,60,20,3,60,0,0,1); Batch(3,2,10);
         Dimensions(1280,720,1280,720,1280,720,1,1); EndFrame();
+        { ResourceLookupScope lookup(true); lookup.Probe(); lookup.Resolved(); }
+        { PhaseScope recording(RecordingRotate); }
     }
     assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0);
     ObserveResourceWorker(); assert(workerJobs==0 && workerProcessorMask==0);
+    assert(resourceLookups.calls==0);
     assert(Fast::ShipyardXenos::captures==0 && Fast::ShipyardXenos::timingTransitions==0);
     for(unsigned i=0;i<119;++i) { BeginFrame(true); Begin(Interpreter); End(Interpreter); EndFrame(); }
     assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
@@ -84,6 +87,13 @@ int main() {
     Begin(Interpreter);
     unsigned waits=accumulator.phases[ResourceWait].calls;
     std::thread worker([](){ assert(!BeginResourceWait()); }); worker.join();
+    std::thread lookupWorker([](){ ResourceLookupScope lookup(true); lookup.Probe(); lookup.Resolved(); }); lookupWorker.join();
+    assert(resourceLookups.calls==0);
+    unsigned lookupClockReads=clockReads;
+    { ResourceLookupScope lookup(true); lookup.Probe(); lookup.Probe(); lookup.Resolved(); }
+    { ResourceLookupScope lookup(false); lookup.Probe(); }
+    assert(resourceLookups.calls==2 && resourceLookups.alternate==1 && resourceLookups.resolved==1);
+    assert(resourceLookups.fallback==1 && resourceLookups.probes==3 && clockReads==lookupClockReads);
     { ResourceWaitScope wait; }
     assert(accumulator.phases[ResourceWait].calls==waits+1);
     End(Interpreter);
@@ -95,7 +105,10 @@ int main() {
     failCpu=true; Begin(AudioGenerate); End(AudioGenerate); failCpu=false;
     assert(audioCpu.failures==1 && audioCpu.lastError==5 && audioCpu.samples==1);
     assert(logCalls==0 && frequencyReads==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==9+PhaseCount);
+    { PhaseScope recording(RecordingRotate); }
+    assert(accumulator.phases[RecordingRotate].calls==1);
+    BeginFrame(true); EndFrame(); assert(logCalls==10+PhaseCount);
+    assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(workerJobs==0 && workerProcessorMask==0);
     unsigned reads=clockReads, logs=logCalls;
     BeginFrame(false); Begin(Graphics); End(Graphics); EndFrame();

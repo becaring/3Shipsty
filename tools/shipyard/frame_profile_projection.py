@@ -1,5 +1,30 @@
 """Consumer-owned, opt-in frame boundaries; no changes to upstream scheduling."""
 from prepare_configuration import once
+import re
+
+
+def resource_lookup(source):
+    signature='std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const char* filePath'
+    start=source.index(signature)
+    end=source.index('\n}',start)+2
+    body=source[start:end]
+    brace=body.index('{')+1
+    body=body[:brace]+'''\n#ifdef _XBOX
+    ModernFrameProfile::ResourceLookupScope lookupProfile(mAltAssetsEnabled);
+#endif'''+body[brace:]
+    pattern=r'(?m)^( +)const auto (altFound|found) = mResourceCache.find\((alternate|key)\);$'
+    def probe(match):
+        return '#ifdef _XBOX\n'+match[1]+'lookupProfile.Probe();\n#endif\n'+match[0]
+    body,count=re.subn(pattern,probe,body)
+    if count!=2 or body.count('return resource;')!=2:
+        raise ValueError('Resource cache profiling boundary changed')
+    body=body.replace('return resource;', '''{
+#ifdef _XBOX
+                    lookupProfile.Resolved();
+#endif
+                    return resource;
+                }''')
+    return source[:start]+body+source[end:]
 
 
 def application(source):

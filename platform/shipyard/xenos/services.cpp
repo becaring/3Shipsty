@@ -49,10 +49,12 @@ float multiplier = 0;
 bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
-    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait"};
+    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate"};
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
+struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes; };
+ResourceLookupCounters resourceLookups = {};
 struct ThreadCpu {
     uint64_t start, ticks;
     unsigned samples, failures, processorMask, threadId, lastError;
@@ -91,6 +93,7 @@ void ResetMetadata() {
     haveSettings = haveDimensions = changed = false;
     memset(&renderCpu,0,sizeof(renderCpu));
     memset(&audioCpu,0,sizeof(audioCpu));
+    memset(&resourceLookups,0,sizeof(resourceLookups));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
@@ -138,6 +141,14 @@ bool BeginResourceWait() {
     return true;
 }
 void EndResourceWait() { accumulator.End(ResourceWait); }
+bool CaptureResourceLookups() { return inInterpreter && accumulator.enabled; }
+void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes) {
+    ++resourceLookups.calls;
+    if (alternate) ++resourceLookups.alternate;
+    if (resolved) ++resourceLookups.resolved;
+    else ++resourceLookups.fallback;
+    resourceLookups.probes += probes;
+}
 void ObserveResourceWorker() {
     if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
     const unsigned processor=GetCurrentProcessorNumber();
@@ -200,6 +211,8 @@ void EndFrame() {
     const unsigned observedProcessors=InterlockedExchange(&workerProcessorMask,0);
     Shipyard_Log("frame-profile resource_workers jobs_started=%u processor_mask=%x window=observed_between_reports",
                 observedJobs,observedProcessors);
+    Shipyard_Log("frame-profile resource_lookup calls=%u alt_enabled=%u cached=%u fallback=%u cache_probes=%u scope=interpreter",
+        resourceLookups.calls,resourceLookups.alternate,resourceLookups.resolved,resourceLookups.fallback,resourceLookups.probes);
     unsigned totalCommands=0,totalSamples=0;
     double estimates[256];
     for (unsigned i=0;i<256;++i) {
