@@ -17,6 +17,8 @@ OWN=ROOT/'platform/shipyard/interpolation'
 OUT=ROOT/'scratch/interpolation-xdk'
 
 def transform(text):
+    # The context dies on return; transfer its replacement nodes to the caller.
+    text=once(text,'return ctx.mtx_replacements;','return std::move(ctx.mtx_replacements);')
     text=once(text,'#include <libultraship/bridge.h>','// No LUS bridge symbols are used by this translation unit.')
     text=once(text,'#include "soh/OTRGlobals.h"','extern "C" uint32_t Ship_GetInterpolationFPS();')
     text=once(text,'OTRGlobals::Instance->GetInterpolationFPS()','Ship_GetInterpolationFPS()')
