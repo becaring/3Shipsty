@@ -127,6 +127,10 @@ def project(name,text):
         text='#include "soh/Enhancements/randomizer/SeedContext.h"\n#include "macros.h"\n#include "ship/window/gui/IconsFontAwesome4.h"\n#include "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n'+text
         text=text.replace('std::reinterpret_pointer_cast<','Shipyard::GuiCompat::ReinterpretPointerCast<')
     if name=='SohMenuSettings.cpp':
+        # Use the existing float widget's one-percent decrement/increment controls.
+        start=text.index('    AddWidget(path, "Internal Resolution",')
+        end=text.index('\n#ifndef __WIIU__',start)
+        text=text[:start]+once(text[start:end],'.ShowButtons(false)','.ShowButtons(true)')+text[end:]
         text='#include "ship/controller/controldeck/ControlDeck.h"\n'+text
         a=text.index('        .Callback([](WidgetInfo& info) {\n            std::string filesPath');b=text.index('\n        .Options(',a)
         text=text[:a]+'#if !defined(_XBOX)\n'+text[a:b]+'\n#endif'+text[b:]
