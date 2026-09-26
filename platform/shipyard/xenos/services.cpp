@@ -53,7 +53,7 @@ const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readines
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
-struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes, textureHits, textureMisses; };
+struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes, textureHits, textureMisses, pathHits, pathMisses; };
 ResourceLookupCounters resourceLookups = {};
 struct ThreadCpu {
     uint64_t start, ticks;
@@ -153,6 +153,10 @@ void ObserveTextureHashCache(bool hit) {
     if (hit) ++resourceLookups.textureHits;
     else ++resourceLookups.textureMisses;
 }
+void ObserveTexturePathCache(bool hit) {
+    if (hit) ++resourceLookups.pathHits;
+    else ++resourceLookups.pathMisses;
+}
 void ObserveResourceWorker() {
     if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
     const unsigned processor=GetCurrentProcessorNumber();
@@ -219,6 +223,8 @@ void EndFrame() {
         resourceLookups.calls,resourceLookups.alternate,resourceLookups.resolved,resourceLookups.fallback,resourceLookups.probes);
     Shipyard_Log("frame-profile texture_hash_cache hits=%u misses=%u scope=interpreter",
         resourceLookups.textureHits,resourceLookups.textureMisses);
+    Shipyard_Log("frame-profile texture_path_cache hits=%u misses=%u scope=interpreter",
+        resourceLookups.pathHits,resourceLookups.pathMisses);
     unsigned totalCommands=0,totalSamples=0;
     double estimates[256];
     for (unsigned i=0;i<256;++i) {

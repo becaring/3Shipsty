@@ -95,6 +95,11 @@ def interpreter(source):
         '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);\n'
         '    if (ModernFrameProfile::CaptureResourceLookups())\n'
         '        ModernFrameProfile::ObserveTextureHashCache(texture != nullptr);')
+    source=once(source,
+        '                gfx->mXboxTextureHashCache.Lookup(cacheKey, imgData, lookupGeneration);',
+        '                gfx->mXboxTextureHashCache.Lookup(cacheKey, imgData, lookupGeneration);\n'
+        '            if (ModernFrameProfile::CaptureResourceLookups())\n'
+        '                ModernFrameProfile::ObserveTexturePathCache(tex != nullptr);')
     start=source.index('void Interpreter::Run(Gfx* commands,')
     end=source.index('\nvoid Interpreter::EndFrame()',start)
     body=source[start:end]

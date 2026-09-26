@@ -112,7 +112,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==13+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==14+PhaseCount);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);

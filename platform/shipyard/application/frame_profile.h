@@ -87,6 +87,7 @@ void ObserveResourceWorker();
 bool CaptureResourceLookups();
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes);
 void ObserveTextureHashCache(bool hit);
+void ObserveTexturePathCache(bool hit);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }
