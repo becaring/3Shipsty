@@ -1,6 +1,6 @@
 {
-  "base": "../../../becaring/shipyard",
-  "git_revision": "7666d5e5aa16f708281f9fb139a926375f1627b8",
+  "base": "../../../LibUltraShip+Fast3D360/scratch/canonical-optimization",
+  "git_revision": "9ca61d7a6b9f78073a9ff113e8e56a174c5cde32",
   "api_version": 6,
-  "baseline_sha256": "b2112e1e255a8eb1a26d6ed8fcfcd9065e511b3dfb11344d607e302389c531e4"
+  "baseline_sha256": "3f1a3c7b74d4921f7c604340010a18e00adcd828c4c7b1e2b1e8dee969539d34"
 }
