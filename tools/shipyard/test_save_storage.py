@@ -70,7 +70,9 @@ def main():
         command=[str(compiler),'/nologo','/std:c++20','/EHsc','/GR','/MD','/O2','/Gy','/DNOMINMAX']
         if not projected:command+=['/DSHIPYARD_COMPARE_ORIGINAL','/I'+str(ROOT/'platform/shipyard/json/upstream/include')]
         command+=['/I'+str(p) for p in [PLATFORM_BASE]+includes()]
-        command+=list(map(str,[OWN/'atomic_contract.cpp',PLATFORM_BASE/'sources/storage/atomic_file.cpp']))
+        command+=list(map(str,[OWN/'atomic_contract.cpp',PLATFORM_BASE/'sources/storage/atomic_file.cpp',
+                              PLATFORM_BASE/'sources/filesystem/filesystem.cpp',
+                              PLATFORM_BASE/'sources/async/native.cpp']))
         if projected:command+=[str(PLATFORM_BASE/'sources/json/json.cpp')]
         command+=['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe'),'/link','/OPT:REF']
         result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True);stable(folder/'build.log',result.stdout+result.stderr)

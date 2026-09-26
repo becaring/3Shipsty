@@ -59,6 +59,7 @@ def function(text, name):
     return matches[0]
 
 def platform_source(source):
+    source=once(source,'"shipofharkinian.json"','"config/shipofharkinian.json"')
     # Retain the desktop extraction body behind the explicit PC boundary.
     node=function(source,'OTRGlobals::RunExtract');body=node.child_by_field_name('body')
     raw=source.encode();start=body.start_byte+1;end=body.end_byte-1
@@ -122,7 +123,7 @@ def platform_source(source):
                 '    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();\n    Shipyard::Platform::RecordBootStage("init-complete", false);')
     source=once(source,'    context->InitLogging(logLevel, logLevel);',
                 '''    if (!context->InitLogging(logLevel, logLevel)) {
-        throw std::runtime_error("Xbox save-container log initialization failed");
+        throw std::runtime_error("Xbox log directory initialization failed");
     }
     Shipyard::Platform::RecordBootStage("logging-ready", false);''')
     source=once(source,'    context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });',

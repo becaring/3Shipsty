@@ -40,6 +40,20 @@ int main(int argc,char** argv) {
     config.Reload();assert(config.GetString("Features.Name","empty")=="empty");
     config.Save();std::cout << config.GetNestedJson().dump() << '\n';
 #ifdef SHIPYARD_PROJECTED_CONFIG_TEST
+    // New configurations must accept a preset before any CVars exist.
+    config.SetBlock("CVars.gEnhancements", nlohmann::json::parse("{\"InterpolationFPS\":60}"));
+    Ship::Config restarted(path);
+    assert(restarted.GetInt("CVars.gEnhancements.InterpolationFPS",20)==60);
+    restarted.SetInt("CVars.gEnhancements.InterpolationFPS",40);
+    restarted.Save();
+    config.Reload();
+    assert(config.GetInt("CVars.gEnhancements.InterpolationFPS",20)==40);
+    // A failed write must be reported, rather than pretending it persisted.
+    Ship::Config unwritable(path+"/missing/settings.json");
+    unwritable.SetInt("Value",1);
+    bool reported=false;
+    try { unwritable.Save(); } catch (const std::exception&) { reported=true; }
+    assert(reported);
     config.SetString("Window.AudioBackend","wasapi");
     assert(config.GetCurrentAudioBackend()==Ship::AudioBackend::XAUDIO2);
     config.SetCurrentAudioBackend(Ship::AudioBackend::XAUDIO2);

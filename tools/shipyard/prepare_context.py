@@ -49,7 +49,17 @@ def transform(name,text):
         # Actual startup can fail before publishing these owners. Preserve
         # cleanup order while allowing that existing failure path to unwind.
         text=once(text,'    GetWindow()->SaveWindowToConfig();','    if (GetWindow()) GetWindow()->SaveWindowToConfig();')
-        text=once(text,'    GetConfig()->Save();','    if (GetConfig()) GetConfig()->Save();')
+        text=once(text,'    GetConfig()->Save();','''    // Config::Save reports I/O failures by throwing. Destruction must still
+    // release the config and shut down logging, including during startup unwind.
+    try {
+        if (GetConfig()) GetConfig()->Save();
+    } catch (const std::exception& error) {
+        Shipyard::Platform::RecordStartupFailure(error.what());
+    } catch (...) {
+        Shipyard::Platform::RecordStartupFailure("Configuration save failed during shutdown");
+    }''')
+        text=once(text,'    return GetAppDirectoryPath(appName) + "/" + path;',
+                  '    return xbox_compat::filesystem::path(GetAppDirectoryPath(appName) + "/" + path).make_preferred().string();')
         text=once(text,'    GetWindow()->Init();','    try {\n        GetWindow()->Init();\n    } catch (...) {\n        mWindow.reset();\n        throw;\n    }')
         source=text.encode();edits=[]
         for node in walk(PARSER.parse(source).root_node):

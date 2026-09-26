@@ -42,6 +42,7 @@ def host(projected):
                   PLATFORM_BASE,PLATFORM_BASE/'sources']+env['includes'](True)
         sources=[audit,ROOT/'scratch/resource-manager-xdk/generated/src/ship/utils/StringHelper.cpp',
                  PLATFORM_BASE/'sources/json/json.cpp',PLATFORM_BASE/'sources/filesystem/filesystem.cpp',
+                 PLATFORM_BASE/'sources/storage/atomic_file.cpp',
                  PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',
                  ROOT/'platform/shipyard/logging/environment.cpp']
     else:

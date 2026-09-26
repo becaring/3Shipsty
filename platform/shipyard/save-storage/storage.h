@@ -2,8 +2,7 @@
 #include <string>
 #include "filesystem/filesystem.h"
 namespace Shipyard { namespace Storage {
-// Call on the application thread before SaveManager::Init; errors and user
-// cancellation propagate. The application owns retry/abort policy.
+// Create the install-side config, logs and Save directories before Context/SaveManager.
 void Mount(unsigned userIndex = 0);
 // Call only after SaveManager::ThreadPoolWait and all other writers joined.
 void Shutdown();

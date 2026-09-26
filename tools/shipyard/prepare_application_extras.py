@@ -172,6 +172,10 @@ def preproject(name,text):
 
 def postproject(name,text):
     if name.endswith('/Presets.cpp'):
+        # Load() reloads from disk and clears all live CVars. Flush pending
+        # menu/settings edits before applying only the selected preset blocks.
+        text=once(text,'void applyPreset(std::string presetName, std::vector<PresetSection> includeSections) {',
+                  'void applyPreset(std::string presetName, std::vector<PresetSection> includeSections) {\n    CVarSave();')
         begin=text.index('            for (auto item = section.begin(); item != section.end(); ++item) {',text.index('void applyPreset('))
         end=text.index('            if (i == PRESET_SECTION_RANDOMIZER) {',begin)
         original=text[begin:end]
