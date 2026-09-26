@@ -18,6 +18,7 @@ from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_spl
 from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_signature,
                                                texture_command_manager, texture_hash_cache_handler)
 from xbox360_platform import texture_state
+import deferred_lit_fog
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -77,6 +78,7 @@ def header(text):
               'float h_byte_scale, v_pixel_scale;\n    RawTexMetadata() : width(0), height(0), h_byte_scale(1), v_pixel_scale(1), type(TextureType::Error) {}')
     text=once(text,'bool enabled = false;','bool enabled;\n    ShaderMod(bool enabledValue=false, int16_t idValue=0, uint8_t typeValue=0) : enabled(enabledValue), id(idValue), type(typeValue) {}')
     text,defaults,arrays=member_defaults(text,'Interpreter')
+    text=deferred_lit_fog.header(text)
     text=text.replace('constexpr size_t','const size_t').replace(' noexcept',' throw()').replace('#include <stdbool.h>','')
     text=once(text,'#include "backends/gfx_rendering_api.h"','#include "fast/backends/gfx_rendering_api.h"')
     return text,defaults,arrays
@@ -281,6 +283,7 @@ def prepare():
     text=stateless_signature(text)
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    text=deferred_lit_fog.transform(text)
     start=text.index('void Interpreter::Run(Gfx* commands,')
     end=text.index('\nvoid Interpreter::EndFrame()',start)
     body=text[start:end]
