@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cassert>
 #include "resources/path_hash.h"
+#include "resources/path_span.h"
 namespace Shipyard { namespace Async { using std::mutex; using std::lock_guard; } }
 static size_t allocations;
 void* operator new(size_t n) { ++allocations; if(void* p=std::malloc(n))return p; throw std::bad_alloc(); }
@@ -20,7 +21,9 @@ namespace Ship {
 struct Archive { std::string path; const std::string& GetPath()const{return path;} };
 struct ResourceInitData {};
 struct IResource { bool dirty; std::weak_ptr<IResource> self; long observedOwners;
+    static const std::string gAltAssetPrefix;
     IResource():dirty(false),observedOwners(0){} bool IsDirty(){observedOwners=self.use_count();return dirty;} };
+const std::string IResource::gAltAssetPrefix="alt/";
 // SELECTED KEY
 class ResourceManager {
 public:
@@ -45,6 +48,11 @@ public:
     // CACHE DECLARATION
     void InsertBorrowed(const char* p, const std::shared_ptr<IResource>& resource) {
         ResourceIdentifier key(p,mDefaultCacheOwner,mDefaultCacheArchive,ResourceIdentifier::BorrowedLookup());
+        mResourceCache.emplace(key,resource);
+    }
+    void InsertAlternateBorrowed(const char* p, const std::shared_ptr<IResource>& resource) {
+        ResourceIdentifier key(p,mDefaultCacheOwner,mDefaultCacheArchive,ResourceIdentifier::BorrowedLookup(),
+                               IResource::gAltAssetPrefix.data(),IResource::gAltAssetPrefix.size());
         mResourceCache.emplace(key,resource);
     }
 };
@@ -83,6 +91,12 @@ int main() {
     assert(manager.LoadResourceProcess(path.c_str())==manager.fallback && manager.slowLoads==2);
     assert(manager.LoadResourceProcess(path.c_str(),true)==resource && manager.slowLoads==2);
     assert(manager.LoadResourceProcess(tagged.c_str(),true)==manager.fallback && !manager.lastExact);
+    manager.mResourceCache[ResourceIdentifier(IResource::gAltAssetPrefix+path,0,{})]=ResourceManager::ResourceLoadError::NotFound;
+    before=allocations;
+    assert(manager.LoadResourceProcess(path.c_str())==resource && allocations==before);
+    manager.mResourceCache[ResourceIdentifier(IResource::gAltAssetPrefix+path,0,{})]=manager.fallback;
+    before=allocations;
+    assert(manager.LoadResourceProcess(path.c_str())==manager.fallback && allocations==before);
     manager.mAltAssetsEnabled=false;
     manager.mResourceCache.erase(ResourceIdentifier(path,0,{}));
     assert(manager.LoadResourceProcess(path.c_str())==manager.fallback);
@@ -109,6 +123,14 @@ int main() {
     auto stored=manager.mResourceCache.find(ResourceIdentifier(retained,7,parent));
     assert(stored!=manager.mResourceCache.end() && stored->first.Path==retained);
     assert(manager.LoadResourceProcess(retained.c_str())==resource);
+    transient=retained+"_alternate";
+    const std::string retainedAlternate=IResource::gAltAssetPrefix+transient;
+    manager.InsertAlternateBorrowed(transient.c_str(),resource);
+    transient.assign(transient.size(),'!');
+    stored=manager.mResourceCache.find(ResourceIdentifier(retainedAlternate,7,parent));
+    assert(stored!=manager.mResourceCache.end() && stored->first.Path==retainedAlternate);
+    ResourceIdentifier alternateCopy(stored->first);
+    assert(alternateCopy==stored->first && alternateCopy.Path==retainedAlternate);
     std::string binary("abc\0def",7);
     ResourceIdentifier binaryKey(binary,7,parent), shortKey("abc",7,parent);
     assert(!(binaryKey==shortKey));

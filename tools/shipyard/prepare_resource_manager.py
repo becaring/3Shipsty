@@ -188,6 +188,8 @@ def transform(name, original):
         resolve(ROOT)
         from xbox360_platform.resource_lookup import path_hash, borrowed_cache_source
         text=borrowed_cache_source(path_hash(text))
+        from frame_profile_projection import resource_lookup as profile_resource_lookup
+        text=profile_resource_lookup(text)
         text='#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n'+text
         text=once(text,'            return LoadResourceProcess(identifier, loadExact, initData);',
                   '''#ifdef _XBOX

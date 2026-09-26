@@ -44,6 +44,42 @@ def main():
     (OUT/'run.log').write_text(result.stdout+result.stderr)
     assert result.returncode==0,result.stdout+result.stderr
     print(result.stdout)
+    # Exercise the complete selected loader and cache methods, with only file I/O
+    # and resource decoding replaced by deterministic boundary fixtures.
+    signatures = [
+        'std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const char* filePath',
+        'std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const std::string& filePath',
+        'std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const ResourceIdentifier& identifier',
+        'ResourceManager::CheckCache(const ResourceIdentifier& identifier',
+        'std::shared_ptr<IResource> ResourceManager::GetCachedResource(const ResourceIdentifier& identifier',
+    ]
+    bodies=[]
+    for signature in signatures:
+        start=source.index(signature)
+        end=source.index('\n}',start)+2
+        body=source[start:end]
+        if signature.startswith('ResourceManager::CheckCache'):
+            body='xbox_compat::variant<ResourceManager::ResourceLoadError, std::shared_ptr<IResource>>\n'+body
+        bodies.append(body)
+    bodies.append(cache_body)
+    declarations=[]
+    for body in bodies:
+        declaration=body[:body.index('{')].replace('ResourceManager::','')
+        if 'LoadResourceProcess(' in declaration:
+            declaration=declaration.replace('bool loadExact,','bool loadExact = false,').replace('initData)','initData = nullptr)')
+        declarations.append(declaration+';')
+    alt=Path(__file__).with_name('test_resource_alt_contract.cpp').read_text()
+    alt=alt.replace('// SELECTED KEY',key).replace('// ACTUAL DECLARATIONS','\n'.join(declarations))
+    alt=alt.replace('// ACTUAL METHODS',methods+'\n'+'\n'.join(bodies))
+    (OUT/'alt_contract.cpp').write_text(alt)
+    alt_command=[part.replace('contract.cpp','alt_contract.cpp').replace('contract.exe','alt_contract.exe') for part in command]
+    built=subprocess.run(alt_command,cwd=OUT,env=env,capture_output=True,text=True)
+    (OUT/'alt_build.log').write_text(built.stdout+built.stderr)
+    assert built.returncode==0,built.stdout+built.stderr
+    result=subprocess.run([str(OUT/'alt_contract.exe')],cwd=OUT,capture_output=True,text=True)
+    (OUT/'alt_run.log').write_text(result.stdout+result.stderr)
+    assert result.returncode==0,result.stdout+result.stderr
+    print(result.stdout)
 
 
 if __name__=='__main__':main()
