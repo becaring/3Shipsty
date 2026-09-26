@@ -30,6 +30,21 @@ unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
 void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart=1000; }
 void Shipyard_Log(const char*, ...) { ++logCalls; }
+namespace Fast { namespace ShipyardXenos {
+struct NativeTimingCounters {
+uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,uploadBytes,frequency;
+unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,preparationRebuilt,preparationReused;
+unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,presentationHeight,buffer2Frames,presentationInterval;
+};
+struct NativeCounters {
+unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
+unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
+};
+unsigned timingTransitions=0,captures=0;
+void SetTimingEnabled(bool) { ++timingTransitions; }
+void CaptureAndResetCounters(NativeCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
+void CaptureAndResetTimingCounters(NativeTimingCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
+}}
 namespace ModernFrameProfile {
 ''' + runtime + '''
 int main() {
@@ -40,9 +55,10 @@ int main() {
         Dimensions(1280,720,1280,720,1280,720,1,1); EndFrame();
     }
     assert(clockReads==0 && frequencyReads==0 && logCalls==0);
+    assert(Fast::ShipyardXenos::captures==0 && Fast::ShipyardXenos::timingTransitions==0);
     for(unsigned i=0;i<119;++i) { BeginFrame(true); EndFrame(); }
     assert(logCalls==0 && frequencyReads==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==2+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==5+PhaseCount);
     unsigned reads=clockReads, logs=logCalls;
     BeginFrame(false); Begin(Graphics); End(Graphics); EndFrame();
     assert(clockReads==reads && logCalls==logs);
