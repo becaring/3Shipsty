@@ -299,6 +299,8 @@ def prepare():
     body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->StartFrame());',
               '    Fast::ShipyardXenos::SetTilingGuardTrialEnabled(\n'
               '        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0) != 0);\n'
+              '    Fast::ShipyardXenos::SetTile1PredicationTrialEnabled(\n'
+              '        CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0) != 0);\n'
               '    (mXboxPipelineKey.valid=false, mRapi->StartFrame());')
     body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(false, true));',
               '    const bool xboxFullColorClear =\n'
@@ -319,6 +321,7 @@ def prepare():
     text=once(text,'#define NOMINMAX\n',
               '#define NOMINMAX\n#include "xenos/depth_discard.h"\n'
               '#include "xenos/tiling_guard_trial.h"\n'
+              '#include "xenos/tile1_predication_trial.h"\n'
               '#include "libultraship/bridge/consolevariablebridge.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)

@@ -73,6 +73,15 @@ const char* pipelineNames[PipelinePreparationPhaseCount] = {
     "state_combiner", "texture_imports", "geometry_sampler",
     "shader_transitions", "final_capture"
 };
+struct TextureHashCounters {
+    uint64_t ticks[TextureHashPhaseCount], maximum[TextureHashPhaseCount];
+    unsigned calls, samples;
+};
+TextureHashCounters textureHash = {};
+uint32_t textureHashRandomState = 0xa24920cdu;
+const char* textureHashNames[TextureHashPhaseCount] = {
+    "map_lookup", "owning_cache", "loader_fallback", "final_metadata"
+};
 struct DustCounters {
     unsigned draws, current, updatesWithDust, maxDrawsPerUpdate, near100, near250;
     float minDistanceSquared, maxScale;
@@ -121,12 +130,19 @@ void ResetMetadata() {
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
     memset(&contextSearch,0,sizeof(contextSearch));
     memset(&pipelinePrep,0,sizeof(pipelinePrep));
+    memset(&textureHash,0,sizeof(textureHash));
     memset(&dust,0,sizeof(dust));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
 }
 void RecordPipelinePreparationPhase(PipelinePreparationSample& sample) {
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
+    sample.lastTick=now;
+}
+void RecordTextureHashPhase(TextureHashSample& sample) {
     if (!sample.sampled) return;
     const uint64_t now=Clock();
     sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
@@ -234,6 +250,35 @@ void EndPipelinePreparation(PipelinePreparationSample& sample) {
             pipelinePrep.maximum[i] = sample.ticks[i];
     }
     ++pipelinePrep.samples;
+    sample.sampled=false;
+}
+void BeginTextureHash(TextureHashSample& sample) {
+    sample.sampled=false;
+    if (!inInterpreter || !accumulator.enabled) return;
+    ++textureHash.calls;
+    textureHashRandomState^=textureHashRandomState<<13;
+    textureHashRandomState^=textureHashRandomState>>17;
+    textureHashRandomState^=textureHashRandomState<<5;
+    if ((textureHashRandomState & 63u) != 0) return;
+    sample.sampled=true;
+    sample.currentPhase=TextureHashMapLookup;
+    memset(sample.ticks,0,sizeof(sample.ticks));
+    sample.lastTick=Clock();
+}
+void AdvanceTextureHash(TextureHashSample& sample, TextureHashPhase next) {
+    if (!sample.sampled) return;
+    RecordTextureHashPhase(sample);
+    sample.currentPhase=next;
+}
+void EndTextureHash(TextureHashSample& sample) {
+    if (!sample.sampled) return;
+    RecordTextureHashPhase(sample);
+    for(unsigned i=0;i<TextureHashPhaseCount;++i) {
+        textureHash.ticks[i] += sample.ticks[i];
+        if (sample.ticks[i] > textureHash.maximum[i])
+            textureHash.maximum[i] = sample.ticks[i];
+    }
+    ++textureHash.samples;
     sample.sampled=false;
 }
 void DustUpdateBegin() {
@@ -367,6 +412,14 @@ void EndFrame() {
         Shipyard_Log("frame-profile pipeline_prep_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
             pipelineNames[i],sampled,estimated,Milliseconds(pipelinePrep.maximum[i]));
     }
+    Shipyard_Log("frame-profile texture_hash_route calls=%u samples=%u sample_probability=1/64 scope=opcode_20_interpreter",
+        textureHash.calls,textureHash.samples);
+    for(unsigned i=0;i<TextureHashPhaseCount;++i) {
+        const double sampled=Milliseconds(textureHash.ticks[i]);
+        const double estimated=textureHash.samples ? sampled*textureHash.calls/textureHash.samples : 0.0;
+        Shipyard_Log("frame-profile texture_hash_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
+            textureHashNames[i],sampled,estimated,Milliseconds(textureHash.maximum[i]));
+    }
     Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
         dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
         dust.minDistanceSquared,dust.maxScale);
@@ -445,6 +498,11 @@ void EndFrame() {
         counters.tiling1080Batches, counters.tiling1080Tile1Batches,
         counters.tiling1080Vertices, counters.tiling1080Tile1Vertices,
         counters.tiling1080OversizeBatches);
+    const Fast::ShipyardXenos::Tile1PredicationTrialCounters& tile1 = counters.tile1PredicationTrial;
+    Shipyard_Log("frame-profile tile1_predication_trial enabled=%d candidates=%u eligible=%u applied=%u target_rejected=%u viewport_rejected=%u geometry_rejected=%u",
+        CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0),
+        tile1.candidates,tile1.eligible,tile1.applied,
+        tile1.targetRejected,tile1.viewportRejected,tile1.geometryRejected);
     Shipyard_Log("frame-profile presentation_color resolves_skipped=%u discard_blocked=%u",
         counters.presentationColorResolvesSkipped, counters.presentationColorDiscardBlocked);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",

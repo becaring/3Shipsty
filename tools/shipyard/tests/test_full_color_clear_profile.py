@@ -41,6 +41,10 @@ class FullColorClearProfileTests(unittest.TestCase):
         self.assertIn('Fast::ShipyardXenos::SetTilingGuardTrialEnabled(', run)
         self.assertLess(run.index('SetTilingGuardTrialEnabled('), run.index('mRapi->StartFrame()'))
         self.assertNotIn('SetTilingGuardTrialEnabled', gui)
+        self.assertEqual(source.count('CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0)'), 1)
+        self.assertIn('Fast::ShipyardXenos::SetTile1PredicationTrialEnabled(', run)
+        self.assertLess(run.index('SetTile1PredicationTrialEnabled('), run.index('mRapi->StartFrame()'))
+        self.assertNotIn('SetTile1PredicationTrialEnabled', gui)
 
 
 if __name__ == '__main__':

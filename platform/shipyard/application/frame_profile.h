@@ -132,6 +132,18 @@ void AdvancePipelinePreparation(PipelinePreparationSample& sample, PipelinePrepa
 void EnterPipelineTextureImport(PipelinePreparationSample& sample);
 void ExitPipelineTextureImport(PipelinePreparationSample& sample);
 void EndPipelinePreparation(PipelinePreparationSample& sample);
+enum TextureHashPhase {
+    TextureHashMapLookup, TextureHashOwningCache, TextureHashLoader,
+    TextureHashFinal, TextureHashPhaseCount
+};
+struct TextureHashSample {
+    uint64_t lastTick, ticks[TextureHashPhaseCount];
+    unsigned currentPhase;
+    bool sampled;
+};
+void BeginTextureHash(TextureHashSample& sample);
+void AdvanceTextureHash(TextureHashSample& sample, TextureHashPhase next);
+void EndTextureHash(TextureHashSample& sample);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }

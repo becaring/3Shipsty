@@ -52,7 +52,17 @@ unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
 void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart=1000; }
 void Shipyard_Log(const char*, ...) { ++logCalls; }
+int CVarGetInteger(const char*,int fallback) { return fallback; }
 namespace Fast { namespace ShipyardXenos {
+struct TilingGuardTrialStats {
+unsigned beginCapacityRejected,candidates,continued,ineligibleFallbacks,oversizeFallbacks;
+unsigned capacityFallbacks,cursorFallbacks,spaceFallbacks,postQueries,postFallbacks;
+unsigned postCapacityChanges,postCursorRegressions,maxDrawBytes,maxUsed;
+uint64_t totalDrawBytes;
+};
+struct Tile1PredicationTrialCounters {
+unsigned candidates,eligible,applied,targetRejected,viewportRejected,geometryRejected;
+};
 struct NativeTimingCounters {
 uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,depthReadTicks,depthLockTicks,uploadBytes,frequency;
 uint64_t tilingSpaceQueryTicks;
@@ -72,6 +82,8 @@ uint64_t ringSameSegmentBytes,ringSameSegmentEstimatedBytes;
 struct { unsigned brackets,guardFinishes,normalFinishes,querySamples,capacityChanges;
 unsigned usedRegressions;
 unsigned maxUsed[4],minRemaining[4],phaseSamples[4],maxSetupBytes,maxFinishBytes; } tilingSpace;
+TilingGuardTrialStats tilingGuardTrial;
+Tile1PredicationTrialCounters tile1PredicationTrial;
 unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 };
 unsigned timingTransitions=0,captures=0;
@@ -103,6 +115,11 @@ int main() {
     ExitPipelineTextureImport(disabledPrep);
     EndPipelinePreparation(disabledPrep);
     assert(clockReads==0 && pipelinePrep.calls==0 && pipelinePrep.samples==0);
+    TextureHashSample disabledHash;
+    BeginTextureHash(disabledHash);
+    AdvanceTextureHash(disabledHash,TextureHashOwningCache);
+    EndTextureHash(disabledHash);
+    assert(clockReads==0 && textureHash.calls==0 && textureHash.samples==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
@@ -116,6 +133,7 @@ int main() {
     unsigned waits=accumulator.phases[ResourceWait].calls;
     std::thread worker([](){ assert(!BeginResourceWait()); }); worker.join();
     std::thread lookupWorker([](){ ResourceLookupScope lookup(true); lookup.Probe(); lookup.Resolved(); }); lookupWorker.join();
+    std::thread hashWorker([](){ TextureHashSample sample; BeginTextureHash(sample); EndTextureHash(sample); assert(!sample.sampled); }); hashWorker.join();
     assert(resourceLookups.calls==0);
     unsigned lookupClockReads=clockReads;
     { ResourceLookupScope lookup(true); lookup.Probe(); lookup.Probe(); lookup.Resolved(); }
@@ -153,6 +171,28 @@ int main() {
     assert(pipelinePrep.ticks[PipelineGeometrySampler]==expectedSamples*2);
     assert(pipelinePrep.ticks[PipelineShaderTransitions]==expectedSamples);
     assert(pipelinePrep.ticks[PipelineFinalCapture]==expectedSamples);
+    textureHashRandomState=1;
+    memset(&textureHash,0,sizeof(textureHash));
+    const unsigned hashClockBefore=clockReads;
+    unsigned expectedHashSamples=0,hashState=1;
+    for(unsigned i=0;i<6400;++i) {
+        hashState^=hashState<<13;hashState^=hashState>>17;hashState^=hashState<<5;
+        expectedHashSamples+=(hashState&63u)==0;
+        TextureHashSample sample;
+        BeginTextureHash(sample);
+        AdvanceTextureHash(sample,TextureHashFinal);
+        AdvanceTextureHash(sample,TextureHashOwningCache);
+        AdvanceTextureHash(sample,TextureHashLoader);
+        AdvanceTextureHash(sample,TextureHashFinal);
+        EndTextureHash(sample);
+    }
+    assert(expectedHashSamples>50 && expectedHashSamples<150);
+    assert(textureHash.calls==6400 && textureHash.samples==expectedHashSamples);
+    assert(clockReads-hashClockBefore==expectedHashSamples*6);
+    assert(textureHash.ticks[TextureHashMapLookup]==expectedHashSamples);
+    assert(textureHash.ticks[TextureHashOwningCache]==expectedHashSamples);
+    assert(textureHash.ticks[TextureHashLoader]==expectedHashSamples);
+    assert(textureHash.ticks[TextureHashFinal]==expectedHashSamples*2);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(5,0,0,0,0,0,1,0);
     Shipyard_FrameProfileDustDraw(200,0,0,0,0,0,2,0);
@@ -172,11 +212,12 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==30+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==37+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
     assert(pipelinePrep.calls==0 && pipelinePrep.samples==0);
+    assert(textureHash.calls==0 && textureHash.samples==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);
