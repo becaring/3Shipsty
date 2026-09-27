@@ -179,9 +179,9 @@ int main() {
         hashState^=hashState<<13;hashState^=hashState>>17;hashState^=hashState<<5;
         expectedHashSamples+=(hashState&63u)==0;
         TextureHashSample sample;
-        BeginTextureHash(sample);
+        BeginTextureHash(sample,TextureHashOwningCache);
+        AdvanceTextureHash(sample,TextureHashMapLookup);
         AdvanceTextureHash(sample,TextureHashFinal);
-        AdvanceTextureHash(sample,TextureHashOwningCache);
         AdvanceTextureHash(sample,TextureHashLoader);
         AdvanceTextureHash(sample,TextureHashFinal);
         EndTextureHash(sample);

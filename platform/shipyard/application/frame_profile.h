@@ -141,7 +141,8 @@ struct TextureHashSample {
     unsigned currentPhase;
     bool sampled;
 };
-void BeginTextureHash(TextureHashSample& sample);
+void BeginTextureHash(TextureHashSample& sample,
+                      TextureHashPhase initialPhase = TextureHashMapLookup);
 void AdvanceTextureHash(TextureHashSample& sample, TextureHashPhase next);
 void EndTextureHash(TextureHashSample& sample);
 class PhaseScope {

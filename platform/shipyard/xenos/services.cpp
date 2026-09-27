@@ -252,7 +252,7 @@ void EndPipelinePreparation(PipelinePreparationSample& sample) {
     ++pipelinePrep.samples;
     sample.sampled=false;
 }
-void BeginTextureHash(TextureHashSample& sample) {
+void BeginTextureHash(TextureHashSample& sample, TextureHashPhase initialPhase) {
     sample.sampled=false;
     if (!inInterpreter || !accumulator.enabled) return;
     ++textureHash.calls;
@@ -261,7 +261,7 @@ void BeginTextureHash(TextureHashSample& sample) {
     textureHashRandomState^=textureHashRandomState<<5;
     if ((textureHashRandomState & 63u) != 0) return;
     sample.sampled=true;
-    sample.currentPhase=TextureHashMapLookup;
+    sample.currentPhase=initialPhase;
     memset(sample.ticks,0,sizeof(sample.ticks));
     sample.lastTick=Clock();
 }
