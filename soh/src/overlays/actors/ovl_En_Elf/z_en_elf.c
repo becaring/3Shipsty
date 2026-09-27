@@ -10,6 +10,10 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/ResourceManagerHelpers.h"
 
+#ifdef _XBOX
+extern void Shipyard_FrameProfileKokiriFairy(unsigned culled);
+#endif
+
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
 
 #define FAIRY_FLAG_TIMED (1 << 8)
@@ -1505,6 +1509,20 @@ void EnElf_Draw(Actor* thisx, PlayState* play) {
     s32 pad1;
     Gfx* dListHead;
     Player* player = GET_PLAYER(play);
+
+#ifdef _XBOX
+    // Kokiri fairies disable the actor's normal draw culling. Keep a generous
+    // margin for their glow while avoiding skeleton work well outside the view.
+    if (thisx->params == FAIRY_KOKIRI) {
+        const bool culled = thisx->projectedW > 1.0f &&
+            (fabsf(thisx->projectedPos.x) > thisx->projectedW * 1.5f ||
+             fabsf(thisx->projectedPos.y) > thisx->projectedW * 1.5f);
+        Shipyard_FrameProfileKokiriFairy(culled);
+        if (culled) {
+            return;
+        }
+    }
+#endif
 
     if ((this->unk_2A8 != 8) && !(this->fairyFlags & 8)) {
         if (!(player->stateFlags1 & PLAYER_STATE1_FIRST_PERSON) || (kREG(90) < this->actor.projectedPos.z)) {

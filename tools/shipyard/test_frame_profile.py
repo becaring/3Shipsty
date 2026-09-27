@@ -123,6 +123,10 @@ int main() {
     Shipyard_FrameProfileEffectBegin(); Shipyard_FrameProfileEffectEnd();
     Shipyard_FrameProfileEffectSsBegin(); Shipyard_FrameProfileEffectSsEnd();
     Shipyard_FrameProfileLightsGlowBegin(); Shipyard_FrameProfileLightsGlowEnd();
+    Shipyard_FrameProfileKokiriMotes(2,3,4);
+    Shipyard_FrameProfileKokiriFairy(1);
+    assert(kokiriMotes.invisible==0 && kokiriMotes.outside==0 && kokiriMotes.emitted==0);
+    assert(kokiriFairiesCulled==0 && kokiriFairiesVisible==0);
     assert(disabledActor==0 && clockReads==0);
     ObserveResourceWorker(); assert(workerJobs==0 && workerProcessorMask==0);
     assert(resourceLookups.calls==0);
@@ -339,6 +343,11 @@ int main() {
     Shipyard_FrameProfileGameUpdateEnd();
     assert(dust.draws==2 && dust.updatesWithDust==1 && dust.maxDrawsPerUpdate==2);
     assert(dust.near100==1 && dust.near250==2 && dust.minDistanceSquared==25 && dust.maxScale==2);
+    Shipyard_FrameProfileKokiriMotes(32,8,24);
+    Shipyard_FrameProfileKokiriFairy(1);
+    Shipyard_FrameProfileKokiriFairy(0);
+    assert(kokiriMotes.invisible==32 && kokiriMotes.outside==8 && kokiriMotes.emitted==24);
+    assert(kokiriFairiesCulled==1 && kokiriFairiesVisible==1);
     { ResourceWaitScope wait; }
     assert(accumulator.phases[ResourceWait].calls==waits+1);
     End(Interpreter);
@@ -364,9 +373,11 @@ int main() {
     assert(accumulator.phases[ActorLightsGlow].calls==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==53+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==55+PhaseCount);
     assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
     assert(dust.draws==0 && dust.updatesWithDust==0);
+    assert(kokiriMotes.invisible==0 && kokiriMotes.outside==0 && kokiriMotes.emitted==0);
+    assert(kokiriFairiesCulled==0 && kokiriFairiesVisible==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
     assert(pipelinePrep.calls==0 && pipelinePrep.samples==0);

@@ -246,13 +246,34 @@ void Matrix_RotateZ(f32 z, u8 mode) {
     f32 cos;
     f32 temp1;
     f32 temp2;
+#ifdef _XBOX
+    static f32 cachedZ;
+    static f32 cachedSin;
+    static f32 cachedCos;
+    static s32 cachedValid;
+
+    // Particle batches rotate every billboard by the same angle. Preserve
+    // the recorded operation while calculating its trig only once per angle.
+    if (z != 0.0f) {
+        if (!cachedValid || z != cachedZ) {
+            cachedZ = z;
+            cachedSin = sinf(z);
+            cachedCos = cosf(z);
+            cachedValid = true;
+        }
+        sin = cachedSin;
+        cos = cachedCos;
+    }
+#endif
 
     if (mode == MTXMODE_APPLY) {
         if (z != 0) {
             cmf = sCurrentMatrix;
 
+#ifndef _XBOX
             sin = sinf(z);
             cos = cosf(z);
+#endif
 
             temp1 = cmf->xx;
             temp2 = cmf->xy;
@@ -278,8 +299,10 @@ void Matrix_RotateZ(f32 z, u8 mode) {
         cmf = sCurrentMatrix;
 
         if (z != 0) {
+#ifndef _XBOX
             sin = sinf(z);
             cos = cosf(z);
+#endif
         } else {
             sin = 0.0f;
             cos = 1.0f;

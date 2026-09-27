@@ -127,6 +127,9 @@ struct DustCounters {
     bool updateActive;
 };
 DustCounters dust = {};
+struct KokiriMoteCounters { unsigned invisible, outside, emitted; };
+KokiriMoteCounters kokiriMotes = {};
+unsigned kokiriFairiesCulled = 0, kokiriFairiesVisible = 0;
 enum { ActorProfileCapacity = 512, ActorProfileTopCount = 8 };
 struct ActorDrawCounters { uint64_t ticks; unsigned calls, samples; };
 ActorDrawCounters actorDraw[ActorProfileCapacity] = {};
@@ -178,6 +181,8 @@ void ResetMetadata() {
     memset(&vtxHash,0,sizeof(vtxHash));
     memset(&textureHash,0,sizeof(textureHash));
     memset(&dust,0,sizeof(dust));
+    memset(&kokiriMotes,0,sizeof(kokiriMotes));
+    kokiriFairiesCulled = kokiriFairiesVisible = 0;
     memset(actorDraw,0,sizeof(actorDraw));
     actorRandomState = 0x9827b18du;
 }
@@ -501,6 +506,17 @@ void ObserveDustDraw(float px, float py, float pz, float ex, float ey, float ez,
     ++dust.draws;
     ++dust.current;
 }
+void ObserveKokiriMotes(unsigned invisible, unsigned outside, unsigned emitted) {
+    if (!accumulator.enabled) return;
+    kokiriMotes.invisible += invisible;
+    kokiriMotes.outside += outside;
+    kokiriMotes.emitted += emitted;
+}
+void ObserveKokiriFairy(unsigned culled) {
+    if (!accumulator.enabled) return;
+    if (culled) ++kokiriFairiesCulled;
+    else ++kokiriFairiesVisible;
+}
 void ObserveResourceWorker() {
     if (!InterlockedCompareExchange(&observeWorkers,0,0)) return;
     const unsigned processor=GetCurrentProcessorNumber();
@@ -703,6 +719,10 @@ void EndFrame() {
     Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
         dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
         dust.minDistanceSquared,dust.maxScale);
+    Shipyard_Log("frame-profile kokiri_motes invisible=%u outside=%u emitted=%u scope=draw_record",
+        kokiriMotes.invisible,kokiriMotes.outside,kokiriMotes.emitted);
+    Shipyard_Log("frame-profile kokiri_fairies culled=%u visible=%u scope=draw_record",
+        kokiriFairiesCulled,kokiriFairiesVisible);
     unsigned totalCommands=0,totalSamples=0;
     double estimates[256];
     for (unsigned i=0;i<256;++i) {
@@ -861,4 +881,10 @@ extern "C" void Shipyard_FrameProfileDustDraw(float px, float py, float pz,
                                                 float ex, float ey, float ez,
                                                 float scale, unsigned flags) {
     ModernFrameProfile::ObserveDustDraw(px,py,pz,ex,ey,ez,scale,flags);
+}
+extern "C" void Shipyard_FrameProfileKokiriMotes(unsigned invisible, unsigned outside, unsigned emitted) {
+    ModernFrameProfile::ObserveKokiriMotes(invisible,outside,emitted);
+}
+extern "C" void Shipyard_FrameProfileKokiriFairy(unsigned culled) {
+    ModernFrameProfile::ObserveKokiriFairy(culled);
 }
