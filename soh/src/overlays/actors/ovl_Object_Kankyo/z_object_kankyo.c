@@ -182,9 +182,6 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
     f32 dx;
     f32 dy;
     f32 dz;
-    f32 viewForwardsX;
-    f32 viewForwardsY;
-    f32 viewForwardsZ;
     f32 maxDist;
     f32 baseX;
     f32 baseY;
@@ -234,26 +231,28 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
         play->envCtx.unk_EE[3] += 16;
     }
 
-    for (i = 0; i < play->envCtx.unk_EE[3]; i++) {
-        // spawn in front of the camera
+    // The view is constant throughout this actor update. The motes share its
+    // normalized direction and the point 80 units in front of the camera.
+    if (play->envCtx.unk_EE[3] != 0) {
         dx = play->view.lookAt.x - play->view.eye.x;
         dy = play->view.lookAt.y - play->view.eye.y;
         dz = play->view.lookAt.z - play->view.eye.z;
         dist = sqrtf(SQ(dx) + SQ(dy) + SQ(dz));
-
         viewForwards.x = dx / dist;
         viewForwards.y = dy / dist;
         viewForwards.z = dz / dist;
+        baseX = play->view.eye.x + viewForwards.x * 80.0f;
+        baseY = play->view.eye.y + viewForwards.y * 80.0f;
+        baseZ = play->view.eye.z + viewForwards.z * 80.0f;
+    }
 
-        viewForwardsX = viewForwards.x;
-        viewForwardsY = viewForwards.y;
-        viewForwardsZ = viewForwards.z;
+    for (i = 0; i < play->envCtx.unk_EE[3]; i++) {
 
         switch (this->effects[i].state) {
             case 0: // init
-                this->effects[i].base.x = play->view.eye.x + viewForwardsX * 80.0f;
-                this->effects[i].base.y = play->view.eye.y + viewForwardsY * 80.0f;
-                this->effects[i].base.z = play->view.eye.z + viewForwardsZ * 80.0f;
+                this->effects[i].base.x = baseX;
+                this->effects[i].base.y = baseY;
+                this->effects[i].base.z = baseZ;
 
                 this->effects[i].pos.x = (Rand_ZeroOne() - 0.5f) * 160.0f;
                 this->effects[i].pos.y = 30.0f;
@@ -273,10 +272,6 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
             case 1: // blinking fairies / inactive fairy trails
             case 2: // fairy trails
                 this->effects[i].alphaTimer++;
-                baseX = play->view.eye.x + viewForwards.x * 80.0f;
-                baseY = play->view.eye.y + viewForwards.y * 80.0f;
-                baseZ = play->view.eye.z + viewForwards.z * 80.0f;
-
                 this->effects[i].prevPos.x = this->effects[i].pos.x;
                 this->effects[i].prevPos.y = this->effects[i].pos.y;
                 this->effects[i].prevPos.z = this->effects[i].pos.z;
