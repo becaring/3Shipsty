@@ -16,7 +16,7 @@ static void checkIndex(const Path& path) {
 #endif
 static Mtx destinations[40];
 static int nodeIdentity;
-static void record(float base,int count,int key=7) {
+static void record(float base,int count,int key=7,bool extraOperation=false) {
     FrameInterpolation_StartRecord();
     for(int i=0;i<count;++i) {
         FrameInterpolation_RecordOpenChild(&nodeIdentity,key);
@@ -24,6 +24,7 @@ static void record(float base,int count,int key=7) {
         MtxF matrix={};
         for(int r=0;r<4;++r)for(int c=0;c<4;++c)matrix.mf[r][c]=base+i+r*4+c;
         FrameInterpolation_RecordMatrixMtxFToMtx(&matrix,&destinations[i]);
+        if(i==0 && extraOperation)FrameInterpolation_RecordMatrixPush();
         FrameInterpolation_RecordCloseChild();
         FrameInterpolation_RecordCloseChild();
     }
@@ -62,9 +63,17 @@ int main() {
     record(42,12,8);sum+=check(.5f,36,12);
     record(0,0);require(FrameInterpolation_Interpolate(.5f).empty());
     record(5,32);sum+=check(.5f,5,32);
+    // The same child can gain an operation absent from the previous recording.
+    // The missing-old operation must be skipped; the matching matrix still lerps.
+    record(70,3);record(80,3,7,true);sum+=check(.5f,75,3);
+    record(5,32);
     Path original=current_recording.root_path;
     Path copied(original);Path assigned;assigned=original;
     require(copied.children.size()==original.children.size());
+    InterpolateCtx copiedReplay;
+    copiedReplay.step=copiedReplay.w=.5f;
+    copiedReplay.interpolate_branch(&copied,&assigned);
+    require(copiedReplay.mtx_replacements.size()==32);
 #if PROJECTED_OP_INDEX
     checkIndex(original);checkIndex(copied);checkIndex(assigned);
 #endif

@@ -82,6 +82,32 @@ def recording_op_index(text):
         'auto& m = current_path.back()->AppendOperations(op);')
     return text
 
+def replay_op_index(text):
+    # Every item is appended after its operation vector exists. RebindIndex
+    # restores these addresses whenever ownership of a Path changes.
+    start=text.index('    void interpolate_branch(')
+    end=text.index('\n};',start)
+    body=text[start:end]
+    body=once(body,'            Data& new_op = new_path->ops[item.first][item.second];',
+              '            const unsigned op_index = static_cast<unsigned>(item.first.GetValue());\n'
+              '            Data& new_op = (*new_path->opIndex[op_index])[item.second];')
+    body=once(body,'''            if (auto it = old_path->ops.find(item.first); it != old_path->ops.end()) {
+                if (item.second < it->second.size()) {
+                    Data& old_op = it->second[item.second];''',
+              '''            Path::Operations* old_operations = old_path->opIndex[op_index];
+            if (old_operations && item.second < old_operations->size()) {
+                    Data& old_op = (*old_operations)[item.second];''')
+    body=once(body,'''                    }
+                }
+            }
+        }
+    }''','''                    }
+            }
+        }
+    }''')
+    return text[:start]+body+text[end:]
+
+
 def reuse_child_lookup(text):
     expression='&new_path->children.find(new_op.open_child.key)->second[new_op.open_child.idx]'
     start=text.index('    void interpolate_branch(')
@@ -108,6 +134,7 @@ def transform(text):
     match=re.search(r'enum class Op \{(.*?)\n\};',text,re.S)
     text=once(text,match[0],strong_enum('Op',match[1]))
     text=recording_op_index(text)
+    text=replay_op_index(text)
     text=once(text,'switch (item.first)','switch (item.first.GetValue())')
     text=once(text,'typedef pair<const void*, int> label;',
               'struct label { const void* first; int second;\n'
