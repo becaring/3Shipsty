@@ -140,6 +140,20 @@ def transform(name,text):
             text=text[:pos]+'\n        case WindowBackend::FAST3D_XENOS: '+call+' break;'+text[pos:]
         text=once(text,'    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());',
                   '    Shipyard_ImGuiPlatformDrawCursor();\n    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());')
+        # These calls account for the whole GuiStart scope. Keep anchors in
+        # StartDraw so an identical call in another method cannot be timed.
+        begin=text.index('void Gui::StartDraw() {')
+        end=text.index('\n}\n',begin)+2
+        start_draw=text[begin:end]
+        for statement,phase in [
+                ('StartFrame();', 'GuiStartFrame'),
+                ('DrawMenu();', 'GuiDrawMenu'),
+                ('CalculateGameViewport();', 'GuiViewport')]:
+            start_draw=once(start_draw,'    '+statement,
+                            '    ModernFrameProfile::Begin(ModernFrameProfile::'+phase+');\n'
+                            '    '+statement+'\n'
+                            '    ModernFrameProfile::End(ModernFrameProfile::'+phase+');')
+        text=text[:begin]+start_draw+text[end:]
         # Split the GUI and device-present wall time only while the existing
         # frame profiler is enabled. Begin/End skip the clock when disabled.
         for statement,phase in [

@@ -23,6 +23,12 @@ void Shipyard_Log(const char* format,...) {
 extern "C" void Shipyard_RuntimeTrace(const char*,...) {}
 extern "C" void Shipyard_FrameProfileGameUpdateBegin(void);
 extern "C" void Shipyard_FrameProfileGameUpdateEnd(void);
+extern "C" void Shipyard_FrameProfilePlayUpdateBegin(void);
+extern "C" void Shipyard_FrameProfilePlayUpdateEnd(void);
+extern "C" void Shipyard_FrameProfilePlayDrawRecordBegin(void);
+extern "C" void Shipyard_FrameProfilePlayDrawRecordEnd(void);
+extern "C" void Shipyard_FrameProfileGameStateDrawBegin(void);
+extern "C" void Shipyard_FrameProfileGameStateDrawEnd(void);
 void Shipyard_Fatal(const char* operation,HRESULT result){
     Shipyard::Platform::RecordStartupFatal(operation,static_cast<unsigned long>(result));
     try{spdlog::critical("Xenos failure: {} ({:08x})",operation,static_cast<unsigned>(result));spdlog::default_logger()->flush();}
@@ -57,6 +63,7 @@ bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
     "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update",
+    "play_update", "play_draw_record", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
     "gui_draw_game", "gui_render", "gui_draw_data", "gui_floating", "gui_save_cvars",
     "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end"};
 // Resource workers must never write the interpreter thread's profiling buckets.
@@ -735,6 +742,24 @@ extern "C" void Shipyard_FrameProfileGameUpdateBegin(void) {
 extern "C" void Shipyard_FrameProfileGameUpdateEnd(void) {
     ModernFrameProfile::End(ModernFrameProfile::GameUpdate);
     ModernFrameProfile::DustUpdateEnd();
+}
+extern "C" void Shipyard_FrameProfilePlayUpdateBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::PlayUpdate);
+}
+extern "C" void Shipyard_FrameProfilePlayUpdateEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::PlayUpdate);
+}
+extern "C" void Shipyard_FrameProfilePlayDrawRecordBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::PlayDrawRecord);
+}
+extern "C" void Shipyard_FrameProfilePlayDrawRecordEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::PlayDrawRecord);
+}
+extern "C" void Shipyard_FrameProfileGameStateDrawBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::GameStateDraw);
+}
+extern "C" void Shipyard_FrameProfileGameStateDrawEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::GameStateDraw);
 }
 extern "C" void Shipyard_FrameProfileDustDraw(float px, float py, float pz,
                                                 float ex, float ey, float ez,

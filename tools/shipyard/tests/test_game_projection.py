@@ -17,6 +17,27 @@ class GameProjectionTests(unittest.TestCase):
         self.assertLess(begin, update)
         self.assertLess(update, end)
 
+    def test_game_update_subphases_wrap_the_real_calls(self):
+        module = self.module()
+        cases = (
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayUpdate', b'Play_Update(play);'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayDrawRecord', b'FrameInterpolation_StartRecord();',
+             b'Play_Draw(play);', b'FrameInterpolation_StopRecord();'),
+            ('soh/src/code/game.c', b'Shipyard_FrameProfileGameStateDraw', b'GameState_Draw(gameState, gfxCtx);'),
+        )
+        for name, prefix, *calls in cases:
+            with self.subTest(phase=prefix):
+                output, _ = module.project_header(name, (ROOT / name).read_bytes())
+                begin = prefix + b'Begin();'
+                end = prefix + b'End();'
+                self.assertEqual(output.count(begin), 1)
+                self.assertEqual(output.count(end), 1)
+                begin_at = output.index(begin)
+                end_at = output.index(end, begin_at)
+                call_positions = [output.index(call, begin_at) for call in calls]
+                self.assertEqual(call_positions, sorted(call_positions))
+                self.assertTrue(all(begin_at < pos < end_at for pos in call_positions))
+
     def module(self):
         path = ROOT / 'tools/shipyard/prepare_game.py'
         self.assertTrue(path.is_file(), 'game compiler projection missing')

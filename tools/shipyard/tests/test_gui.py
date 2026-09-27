@@ -20,8 +20,7 @@ def functions(text):
 def main():
     prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
     manifest=(OUT/'manifest.json').read_bytes();prepare();assert manifest==(OUT/'manifest.json').read_bytes()
-    unchanged=['StartDraw','EndDraw',
-               'GamepadNavigationEnabled','BlockGamepadNavigation','UnblockGamepadNavigation','CheckSaveCvars']
+    unchanged=['GamepadNavigationEnabled','BlockGamepadNavigation','UnblockGamepadNavigation','CheckSaveCvars']
     original=(ROOT/'libultraship/src/ship/window/gui/Gui.cpp').read_text()
     current=functions(original);projected=functions((OUT/'generated/src/ship/window/gui/Gui.cpp').read_text())
     for name in unchanged:assert current['Gui::'+name]==projected['Gui::'+name],name

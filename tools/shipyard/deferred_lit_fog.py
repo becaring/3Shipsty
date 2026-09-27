@@ -190,9 +190,42 @@ def header(source):
     return source
 
 
+def _position_only_replay(source):
+    marker = '// MODERN DEFERRED POSITION REPLAY BEGIN'
+    if marker in source:
+        return source
+    start = source.index('void Interpreter::GfxSpVertex(')
+    end = source.index('void Interpreter::GfxSpModifyVertex(', start)
+    vertex = source[start:end]
+    vertex = _once(vertex, '        float world_pos[3] = { 0.0 };', '''        // MODERN DEFERRED POSITION REPLAY BEGIN
+        // This path is reached only after a disjoint source and a successful
+        // VMX transform. Pending vertices get their UV and color from the
+        // captured source/context at materialization; only position and clip
+        // may be observed before then.
+        if (mXboxDeferredReplay && shipyardVectorPositions) {
+            if (shipyardTransformBatch && !mFbActive) {
+                if (!shipyardAspectReady) {
+                    shipyardAspectDenominator = (float)mCurDimensions.width / (float)mCurDimensions.height;
+                    shipyardAspectReady = true;
+                }
+                x = x * (4.0f / 3.0f) / shipyardAspectDenominator;
+            } else {
+                x = AdjXForAspectRatio(x);
+            }
+            d->x = x;
+            d->y = y;
+            d->z = z;
+            d->w = w;
+            continue;
+        }
+        // MODERN DEFERRED POSITION REPLAY END
+        float world_pos[3] = { 0.0 };''')
+    return source[:start] + vertex + source[end:]
+
+
 def transform(source):
     if '// MODERN DEFERRED LIT FOG BEGIN' in source:
-        return source
+        return _position_only_replay(source)
     source = _once(source, 'void Interpreter::GfxSpVertex(size_t n_vertices, size_t dest_index, const F3DVtx* vertices) {',
                    SOURCE_METHODS + '\nvoid Interpreter::GfxSpVertex(size_t n_vertices, size_t dest_index, const F3DVtx* vertices) {\n'
                    '    if (XboxTryDeferVertices(n_vertices, dest_index, vertices)) return;')
@@ -215,4 +248,4 @@ def transform(source):
     run_brace = source.index('{', run)
     source = source[:run_brace + 1] + '\n    mXboxContextProbeCapture = ModernFrameProfile::CaptureTrianglePipeline();\n' + \
              '    mXboxContextSearchAttempts = mXboxContextSlotsScanned = mXboxContextMaxScan = 0;' + source[run_brace + 1:]
-    return source
+    return _position_only_replay(source)

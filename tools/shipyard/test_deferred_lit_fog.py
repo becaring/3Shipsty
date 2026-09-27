@@ -101,8 +101,42 @@ class DeferredLitFogProjection(unittest.TestCase):
         source = transform(source)
         vertex = 'void Interpreter::GfxSpVertex(' + source.split('void Interpreter::GfxSpVertex(', 1)[1].split(
             'void Interpreter::GfxSpModifyVertex(', 1)[0]
+        begin = vertex.index('    Shipyard::Fast3D::TransformPhaseHook shipyardPhaseHook;')
+        end = vertex.index('    bool shipyardAspectReady = false;', begin)
+        vertex = vertex[:begin] + '''    const bool shipyardVectorPositions = shipyardVectorEligible &&
+        Shipyard::Fast3D::TransformPositions(vertices, n_vertices, mRsp->MP_matrix, shipyardTransformed);
+''' + vertex[end:]
+        vertex = vertex.replace('    if (sModernVtxHashSample && !mXboxDeferredReplay)\n'
+                                '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashDeferred);\n', '')
+        vertex = vertex.replace('    if (sModernVtxHashSample && !mXboxDeferredReplay)\n'
+                                '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashTransform);\n', '')
         fixture = FULL_VERTEX_FIXTURE.replace('/* PROJECTED TYPES */', HEADER_TYPES).replace(
             '/* PROJECTED METHODS */', SOURCE_METHODS + vertex)
+        fixture = fixture.replace('bool NearestRounding() { return false; }',
+                                  'static bool nearest = true, transformAvailable = true;\n'
+                                  'bool NearestRounding() { return nearest; }')
+        fixture = fixture.replace(
+            'bool TransformPositions(const F3DVtx*,size_t,const float [4][4],float [MAX_VERTICES][4]) { return false; }',
+            '''bool TransformPositions(const F3DVtx* source,size_t count,const float m[4][4],float out[MAX_VERTICES][4]) {
+        if(!transformAvailable) return false;
+        for(size_t i=0;i<count;++i) for(int c=0;c<4;++c) {
+            const short* v=source[i].v.ob;
+            out[i][c]=v[0]*m[0][c]+v[1]*m[1][c]+v[2]*m[2][c]+m[3][c];
+        }
+        return true;
+    }''')
+        fixture = fixture.replace('void ClipVertices(LoadedVertex*,size_t,bool) {}',
+                                  '''void ClipVertices(LoadedVertex* v,size_t count,bool) {
+        for(size_t i=0;i<count;++i) {
+            unsigned flags=0;
+            if(v[i].x < -v[i].w) flags|=1;
+            if(v[i].x > v[i].w) flags|=2;
+            if(v[i].y < -v[i].w) flags|=4;
+            if(v[i].y > v[i].w) flags|=8;
+            if(v[i].z > v[i].w) flags|=32;
+            v[i].clip_rej=(uint8_t)flags;
+        }
+    }''')
         with tempfile.TemporaryDirectory(prefix='modern-vertex-') as temp:
             cpp = Path(temp) / 'fixture.cpp'
             exe = Path(temp) / 'fixture.exe'
@@ -114,10 +148,6 @@ class DeferredLitFogProjection(unittest.TestCase):
             self.assertEqual(0, built.returncode, (built.stdout + built.stderr)[-3000:])
             result = subprocess.run([str(exe)], capture_output=True, text=True)
             self.assertEqual(0, result.returncode, (result.stdout + result.stderr)[-3000:])
-
-
-if __name__ == '__main__':
-    unittest.main()
 
 
 HOST_FIXTURE = r'''
@@ -336,6 +366,8 @@ static void initialize(Interpreter& p,RSP& rsp) {
 int main() {
     Interpreter deferred,eager; RSP deferredRsp,eagerRsp;
     for(int trial=0;trial<4000;++trial) {
+        Shipyard::Fast3D::nearest=(trial%3)!=0;
+        Shipyard::Fast3D::transformAvailable=(trial%3)==2;
         initialize(deferred,deferredRsp);
         initialize(eager,eagerRsp);
         // Both command streams must start with exactly the same state.
@@ -350,7 +382,8 @@ int main() {
             for(int c=0;c<3;++c) input[i].n.n[c]=(signed char)next();
         }
         const size_t dest=trial%60;
-        eager.mXboxDeferredReplay=true; eager.GfxSpVertex(4,dest,input);
+        for(int c=0;c<MAX_VERTICES;++c) eager.mXboxDeferredContexts[c].references=1;
+        eager.GfxSpVertex(4,dest,input);
         deferred.GfxSpVertex(4,dest,input);
         if(deferredRsp.geometry_mode!=eagerRsp.geometry_mode) return 1;
         for(int i=0;i<4;++i) {
@@ -359,6 +392,11 @@ int main() {
             if(a.x!=b.x || a.y!=b.y || a.z!=b.z || a.w!=b.w || a.clip_rej!=b.clip_rej) {
                 printf("position/clip trial %d vertex %d\n",trial,i); return 2;
             }
+            // The deferred VMX replay must leave attributes untouched until
+            // the pending snapshot is materialized below.
+            if(Shipyard::Fast3D::nearest && Shipyard::Fast3D::transformAvailable &&
+               (b.u!=0 || b.v!=0 || b.color.r!=0 || b.color.g!=0 ||
+                b.color.b!=0 || b.color.a!=0)) return 11;
             // BranchZ and cull may read these eagerly without materializing.
             bool branch=b.z<=4, cull=(b.clip_rej&0x20)!=0;
             if(branch!=(a.z<=4) || cull!=((a.clip_rej&0x20)!=0) ||
@@ -374,7 +412,12 @@ int main() {
         for(int i=0;i<4;++i) {
             deferred.XboxMaterializeVertex(dest+i);
             if(memcmp(&eagerRsp.loaded_vertices[dest+i],&deferredRsp.loaded_vertices[dest+i],sizeof(LoadedVertex))) {
-                printf("attributes trial %d vertex %d\n",trial,i); return 4;
+                const LoadedVertex& a=eagerRsp.loaded_vertices[dest+i];
+                const LoadedVertex& b=deferredRsp.loaded_vertices[dest+i];
+                printf("attributes trial %d vertex %d uv %.3f/%.3f %.3f/%.3f rgba %u,%u,%u,%u/%u,%u,%u,%u pos %.3f/%.3f clip %u/%u\n",
+                    trial,i,a.u,a.v,b.u,b.v,a.color.r,a.color.g,a.color.b,a.color.a,
+                    b.color.r,b.color.g,b.color.b,b.color.a,a.x,b.x,a.clip_rej,b.clip_rej);
+                return 4;
             }
         }
     }
@@ -384,7 +427,8 @@ int main() {
     source.v.ob[0]=1; source.v.ob[1]=2; source.v.ob[2]=3;
     source.v.tc[0]=1234; source.v.tc[1]=-5678;
     source.n.n[0]=100; source.n.n[1]=-50; source.n.n[2]=20;
-    eager.mXboxDeferredReplay=true; eager.GfxSpVertex(1,0,&source);
+    for(int c=0;c<MAX_VERTICES;++c) eager.mXboxDeferredContexts[c].references=1;
+    eager.GfxSpVertex(1,0,&source);
     deferred.GfxSpVertex(1,0,&source);
     if(!deferred.mXboxDeferredVertices[0].context) return 5;
     // A later command reads packed bytes inside an earlier loaded vertex.
@@ -418,3 +462,7 @@ int main() {
     return 0;
 }
 '''
+
+
+if __name__ == '__main__':
+    unittest.main()

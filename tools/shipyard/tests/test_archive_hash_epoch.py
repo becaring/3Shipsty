@@ -53,6 +53,14 @@ class ArchiveHashEpoch(unittest.TestCase):
         self.assertIn('unsigned ArchiveManager::GetXboxHashEpoch() const', source)
         self.assertEqual(source.count('InterlockedIncrement(&mXboxHashEpoch);'), 3)
 
+    def test_fast3d_uses_epoch_only_after_existing_owner_and_profile_projection(self):
+        projector = (ROOT / 'tools/shipyard/prepare_fast3d.py').read_text()
+        self.assertIn('texture_hash_epoch_handler)', projector)
+        self.assertLess(projector.index('    text=profile_interpreter(text)'),
+                        projector.index('    text=texture_hash_borrowed_handler(text)'))
+        self.assertLess(projector.index('    text=texture_hash_borrowed_handler(text)'),
+                        projector.index('    text=texture_hash_epoch_handler(text)'))
+
 
 if __name__ == '__main__':
     unittest.main()

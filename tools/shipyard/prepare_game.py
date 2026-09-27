@@ -329,7 +329,44 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             '                                      scale, (unsigned)this->rDrawFlags);\n',
             'Count emitted soft-dust draws in the frame profile')
         changes.append('Count emitted soft-dust draws with position, eye, scale, and draw flags')
+    if name == 'soh/src/code/game.c':
+        replace_projected_once(
+            'void GameState_Update(GameState* gameState) {',
+            'extern void Shipyard_FrameProfileGameStateDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileGameStateDrawEnd(void);\n'
+            'void GameState_Update(GameState* gameState) {',
+            'Gamestate draw profile declarations')
+        replace_projected_once(
+            '        GameState_Draw(gameState, gfxCtx);',
+            '        Shipyard_FrameProfileGameStateDrawBegin();\n'
+            '        GameState_Draw(gameState, gfxCtx);\n'
+            '        Shipyard_FrameProfileGameStateDrawEnd();',
+            'Gamestate draw profile boundary')
     if name == 'soh/src/code/z_play.c':
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void Shipyard_FrameProfilePlayUpdateBegin(void);\n'
+            'extern void Shipyard_FrameProfilePlayUpdateEnd(void);\n'
+            'extern void Shipyard_FrameProfilePlayDrawRecordBegin(void);\n'
+            'extern void Shipyard_FrameProfilePlayDrawRecordEnd(void);\n'
+            'void Play_Init(GameState* thisx) {',
+            'Gameplay update and recorder-wrapped draw profile declarations')
+        replace_projected_once(
+            '        Play_Update(play);',
+            '        Shipyard_FrameProfilePlayUpdateBegin();\n'
+            '        Play_Update(play);\n'
+            '        Shipyard_FrameProfilePlayUpdateEnd();',
+            'Gameplay update profile boundary')
+        replace_projected_once(
+            '    FrameInterpolation_StartRecord();\n'
+            '    Play_Draw(play);\n'
+            '    FrameInterpolation_StopRecord();',
+            '    Shipyard_FrameProfilePlayDrawRecordBegin();\n'
+            '    FrameInterpolation_StartRecord();\n'
+            '    Play_Draw(play);\n'
+            '    FrameInterpolation_StopRecord();\n'
+            '    Shipyard_FrameProfilePlayDrawRecordEnd();',
+            'Recorder-wrapped gameplay draw profile boundary')
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
             'extern void Shipyard_RuntimeTrace(const char* format, ...);\n'

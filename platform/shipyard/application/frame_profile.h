@@ -7,7 +7,9 @@ enum Phase {
     Graph, Interpolation, Graphics, Readiness, GuiStart, Framebuffer,
     Interpreter, GuiEnd, Present, AudioWait, AudioGenerate, AudioSubmit,
     InterpreterSetup, CommandWalk, InterpreterFinish, ResourceWait, RecordingRotate,
-    GameUpdate, GuiDrawGame, GuiRender, GuiDrawData, GuiFloating, GuiSaveCvars,
+    GameUpdate, PlayUpdate, PlayDrawRecord, GameStateDraw,
+    GuiStartFrame, GuiDrawMenu, GuiViewport,
+    GuiDrawGame, GuiRender, GuiDrawData, GuiFloating, GuiSaveCvars,
     PresentEndFrame, PresentSwapBegin, PresentFinishRender, PresentSwapEnd,
     PhaseCount
 };
