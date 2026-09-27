@@ -151,12 +151,17 @@ enum VtxHashPhase {
 enum VtxHashRoute { VtxHashPointer, VtxHashResolved, VtxHashMissing, VtxHashRouteCount };
 struct VtxHashSample {
     uint64_t lastTick, ticks[VtxHashPhaseCount];
+    uint64_t vmxStartTick, vmxLoopStartTick, vmxSetupTicks, vmxLoopTicks;
     unsigned currentPhase, route;
-    bool sampled, deferred, vmx;
+    unsigned vmxAttempts, vmxAccepted, vmxVertices, vmxPendingVertices;
+    bool sampled, deferred, vmx, vmxLoopEntered;
 };
 void BeginVtxHash(VtxHashSample& sample);
 void AdvanceVtxHash(VtxHashSample& sample, VtxHashPhase next);
 void EndVtxHash(VtxHashSample& sample);
+void BeginVtxTransform(VtxHashSample& sample, unsigned vertices);
+void EnterVtxTransformLoop(void* sample);
+void EndVtxTransform(VtxHashSample& sample, bool accepted);
 enum TextureHashPhase {
     TextureHashMapLookup, TextureHashOwningCache, TextureHashLoader,
     TextureHashFinal, TextureHashPhaseCount

@@ -92,7 +92,9 @@ const char* tri2Names[Tri2PhaseCount] = {
 };
 struct VtxHashCounters {
     uint64_t ticks[VtxHashPhaseCount], maximum[VtxHashPhaseCount];
+    uint64_t vmxSetupTicks, vmxLoopTicks, vmxSetupMaximum, vmxLoopMaximum;
     unsigned calls, samples, routes[VtxHashRouteCount], deferred, vmx;
+    unsigned vmxAttempts, vmxAccepted, vmxVertices;
 };
 VtxHashCounters vtxHash = {};
 uint32_t vtxHashRandomState = 0x3a9e176du;
@@ -348,7 +350,38 @@ void BeginVtxHash(VtxHashSample& sample) {
     sample.route=VtxHashMissing;
     sample.deferred=sample.vmx=false;
     memset(sample.ticks,0,sizeof(sample.ticks));
+    sample.vmxStartTick=sample.vmxLoopStartTick=0;
+    sample.vmxSetupTicks=sample.vmxLoopTicks=0;
+    sample.vmxAttempts=sample.vmxAccepted=sample.vmxVertices=sample.vmxPendingVertices=0;
+    sample.vmxLoopEntered=false;
     sample.lastTick=Clock();
+}
+void BeginVtxTransform(VtxHashSample& sample, unsigned vertices) {
+    if (!sample.sampled) return;
+    ++sample.vmxAttempts;
+    sample.vmxPendingVertices=vertices;
+    sample.vmxLoopEntered=false;
+    sample.vmxStartTick=Clock();
+}
+void EnterVtxTransformLoop(void* context) {
+    VtxHashSample& sample=*static_cast<VtxHashSample*>(context);
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    sample.vmxSetupTicks += now-sample.vmxStartTick;
+    sample.vmxLoopStartTick=now;
+    sample.vmxLoopEntered=true;
+}
+void EndVtxTransform(VtxHashSample& sample, bool accepted) {
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    if (accepted && sample.vmxLoopEntered) {
+        sample.vmxLoopTicks += now-sample.vmxLoopStartTick;
+        ++sample.vmxAccepted;
+        sample.vmxVertices += sample.vmxPendingVertices;
+    } else {
+        sample.vmxSetupTicks += now-sample.vmxStartTick;
+    }
+    sample.vmxPendingVertices=0;
 }
 void AdvanceVtxHash(VtxHashSample& sample, VtxHashPhase next) {
     if (!sample.sampled) return;
@@ -367,6 +400,15 @@ void EndVtxHash(VtxHashSample& sample) {
     ++vtxHash.routes[sample.route];
     if (sample.deferred) ++vtxHash.deferred;
     if (sample.vmx) ++vtxHash.vmx;
+    vtxHash.vmxSetupTicks += sample.vmxSetupTicks;
+    vtxHash.vmxLoopTicks += sample.vmxLoopTicks;
+    if (sample.vmxSetupTicks > vtxHash.vmxSetupMaximum)
+        vtxHash.vmxSetupMaximum=sample.vmxSetupTicks;
+    if (sample.vmxLoopTicks > vtxHash.vmxLoopMaximum)
+        vtxHash.vmxLoopMaximum=sample.vmxLoopTicks;
+    vtxHash.vmxAttempts += sample.vmxAttempts;
+    vtxHash.vmxAccepted += sample.vmxAccepted;
+    vtxHash.vmxVertices += sample.vmxVertices;
     sample.sampled=false;
 }
 void BeginTextureHash(TextureHashSample& sample, TextureHashPhase initialPhase) {
@@ -574,6 +616,12 @@ void EndFrame() {
             Shipyard_Log("frame-profile vtx_hash_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
                 vtxHashNames[i],sampled,estimated,Milliseconds(vtxHash.maximum[i]));
         }
+        const double vmxScale=vtxHash.samples ? double(vtxHash.calls)/vtxHash.samples : 0.0;
+        Shipyard_Log("frame-profile vtx_vmx_split attempts=%u accepted=%u sampled_vertices=%u sampled_setup_ms=%.3f estimated_setup_ms=%.3f sampled_loop_ms=%.3f estimated_loop_ms=%.3f setup_max_ms=%.3f loop_max_ms=%.3f scope=opcode_32_sampled_transform",
+            vtxHash.vmxAttempts,vtxHash.vmxAccepted,vtxHash.vmxVertices,
+            Milliseconds(vtxHash.vmxSetupTicks),Milliseconds(vtxHash.vmxSetupTicks)*vmxScale,
+            Milliseconds(vtxHash.vmxLoopTicks),Milliseconds(vtxHash.vmxLoopTicks)*vmxScale,
+            Milliseconds(vtxHash.vmxSetupMaximum),Milliseconds(vtxHash.vmxLoopMaximum));
     }
     Shipyard_Log("frame-profile texture_hash_route calls=%u samples=%u sample_probability=1/64 scope=opcode_20_interpreter",
         textureHash.calls,textureHash.samples);

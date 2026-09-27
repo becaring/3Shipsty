@@ -209,7 +209,35 @@ static unsigned runCase(unsigned variant, unsigned seed) {
     return 1;
 }
 
+static void countTransformLoop(void* value) { ++*static_cast<unsigned*>(value); }
+
+static void testTransformPhaseBoundary() {
+    alignas(16) Fast::F3DVtx input[8] = {};
+    alignas(16) float matrix[4][4] = {};
+    alignas(16) float plain[8][4] = {};
+    alignas(16) float observed[8][4] = {};
+    for (unsigned i = 0; i < 4; ++i) matrix[i][i] = 1.0f;
+    for (unsigned i = 0; i < 8; ++i) input[i].v.ob[0] = (short)(i * 19 - 47);
+    unsigned transitions = 0;
+    Shipyard::Fast3D::TransformPhaseHook hook = {countTransformLoop, &transitions};
+    require(Shipyard::Fast3D::TransformPositions(input, 8, matrix, plain), "plain transform rejected");
+    require(Shipyard::Fast3D::TransformPositionsProfiled(input, 8, matrix, observed, false, 16, &hook),
+            "probed transform rejected");
+    require(transitions == 1, "loop boundary must fire once after valid setup");
+    require(std::memcmp(plain, observed, sizeof(plain)) == 0, "probe changed vertex output");
+    matrix[0][0] = fromBits(0x7fc01234);
+    transitions = 0;
+    std::memset(observed, 0xa5, sizeof(observed));
+    require(!Shipyard::Fast3D::TransformPositionsProfiled(input, 8, matrix, observed, false, 16, &hook),
+            "invalid matrix accepted");
+    require(transitions == 0, "rejected setup must not enter vertex loop");
+    for (unsigned i = 0; i < sizeof(observed); ++i)
+        require(reinterpret_cast<const unsigned char*>(observed)[i] == 0xa5,
+                "rejected setup changed vertex output");
+}
+
 int main() {
+    testTransformPhaseBoundary();
     unsigned cases = 0;
     for (unsigned seed=0; seed<256; ++seed)
         for (unsigned variant=0; variant<=39; ++variant)

@@ -71,6 +71,26 @@ def transform(source):
          '    for (size_t i = 0; i < n_vertices; ++i) {\n        XboxDeferredVertex& pending = mXboxDeferredVertices[dest_index + i];'),
     ])
     source = _method(source, 'void Interpreter::GfxSpVertex(', [
+        ('    const bool shipyardVectorPositions = shipyardTransformBatch &&\n'
+         '        Shipyard::Fast3D::NearestRounding() &&\n'
+         '        Shipyard::Fast3D::TransformPositions(vertices, n_vertices, mRsp->MP_matrix, shipyardTransformed);',
+         '''    const bool shipyardVectorEligible = shipyardTransformBatch &&
+        Shipyard::Fast3D::NearestRounding();
+    Shipyard::Fast3D::TransformPhaseHook shipyardPhaseHook;
+    if (shipyardVectorEligible && sModernVtxHashSample) {
+        shipyardPhaseHook.enterVertices = ModernFrameProfile::EnterVtxTransformLoop;
+        shipyardPhaseHook.context = sModernVtxHashSample;
+        ModernFrameProfile::BeginVtxTransform(*sModernVtxHashSample, (unsigned)n_vertices);
+    }
+    const bool shipyardVectorPositions = shipyardVectorEligible &&
+        (sModernVtxHashSample
+             ? Shipyard::Fast3D::TransformPositionsProfiled(
+                   vertices, n_vertices, mRsp->MP_matrix, shipyardTransformed,
+                   false, 16, &shipyardPhaseHook)
+             : Shipyard::Fast3D::TransformPositions(
+                   vertices, n_vertices, mRsp->MP_matrix, shipyardTransformed));
+    if (shipyardVectorEligible && sModernVtxHashSample)
+        ModernFrameProfile::EndVtxTransform(*sModernVtxHashSample, shipyardVectorPositions);'''),
         ('    if (XboxTryDeferVertices(n_vertices, dest_index, vertices)) return;',
          '    if (sModernVtxHashSample && !mXboxDeferredReplay)\n'
          '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashDeferred);\n'

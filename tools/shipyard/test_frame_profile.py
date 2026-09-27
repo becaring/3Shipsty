@@ -143,6 +143,9 @@ int main() {
     BeginVtxHash(disabledVtx);
     AdvanceVtxHash(disabledVtx,VtxHashLookup);
     EndVtxHash(disabledVtx);
+    BeginVtxTransform(disabledVtx,3);
+    EnterVtxTransformLoop(&disabledVtx);
+    EndVtxTransform(disabledVtx,false);
     assert(clockReads==0 && vtxHash.calls==0 && vtxHash.samples==0 && vtxCVarReads==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0);
     Shipyard_FrameProfileGameUpdateBegin();
@@ -248,15 +251,34 @@ int main() {
         AdvanceVtxHash(sample,VtxHashLookup);
         AdvanceVtxHash(sample,VtxHashDeferred);
         AdvanceVtxHash(sample,VtxHashTransform);
+        BeginVtxTransform(sample,3);
+        if (sample.sampled) EnterVtxTransformLoop(&sample);
+        EndVtxTransform(sample,true);
         AdvanceVtxHash(sample,VtxHashInsert);
         AdvanceVtxHash(sample,VtxHashFinish);
         EndVtxHash(sample);
     }
     assert(vtxHash.calls==6400 && vtxHash.samples==expectedVtxSamples);
-    assert(clockReads-vtxClockBefore==expectedVtxSamples*7);
+    assert(clockReads-vtxClockBefore==expectedVtxSamples*10);
     assert(vtxHash.routes[VtxHashPointer]==expectedVtxSamples);
     assert(vtxHash.deferred==expectedVtxSamples && vtxHash.vmx==expectedVtxSamples);
-    for(unsigned i=0;i<VtxHashPhaseCount;++i) assert(vtxHash.ticks[i]==expectedVtxSamples);
+    assert(vtxHash.vmxAttempts==expectedVtxSamples && vtxHash.vmxAccepted==expectedVtxSamples);
+    assert(vtxHash.vmxVertices==expectedVtxSamples*3);
+    assert(vtxHash.vmxSetupTicks==expectedVtxSamples);
+    assert(vtxHash.vmxLoopTicks==expectedVtxSamples);
+    for(unsigned i=0;i<VtxHashPhaseCount;++i)
+        assert(vtxHash.ticks[i]==expectedVtxSamples*(i==VtxHashTransform ? 4 : 1));
+    VtxHashSample rejected = {};
+    rejected.sampled=true;
+    const unsigned rejectedClockBefore=clockReads;
+    BeginVtxTransform(rejected,2);
+    EnterVtxTransformLoop(&rejected);
+    EndVtxTransform(rejected,true);
+    BeginVtxTransform(rejected,5);
+    EndVtxTransform(rejected,false);
+    assert(clockReads-rejectedClockBefore==5 && rejected.vmxAttempts==2);
+    assert(rejected.vmxAccepted==1 && rejected.vmxVertices==2);
+    assert(rejected.vmxSetupTicks==2 && rejected.vmxLoopTicks==1);
     textureHashRandomState=1;
     memset(&textureHash,0,sizeof(textureHash));
     const unsigned hashClockBefore=clockReads;
@@ -298,7 +320,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==50+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==51+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
