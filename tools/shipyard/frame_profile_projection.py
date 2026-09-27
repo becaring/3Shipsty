@@ -97,6 +97,7 @@ def presentation(source):
 
 
 def interpreter(source):
+    import vtx_hash_phase_projection
     source='#include "application/frame_profile.h"\n#include "application/command_profile.h"\n'+source
     source=once(source,
         '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);',
@@ -130,4 +131,4 @@ def interpreter(source):
     # Match the function's final brace, preserving both framebuffer completion paths.
     position=body.rfind('\n}')
     body=body[:position]+'\n    ModernFrameProfile::End(ModernFrameProfile::InterpreterFinish);'+body[position:]
-    return source[:start]+body+source[end:]
+    return vtx_hash_phase_projection.transform(source[:start]+body+source[end:])

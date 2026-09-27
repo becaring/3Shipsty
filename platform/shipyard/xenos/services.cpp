@@ -83,6 +83,16 @@ bool tri2ProfileEnabled = false;
 const char* tri2Names[Tri2PhaseCount] = {
     "cull", "materialize", "pipeline", "pack", "flush"
 };
+struct VtxHashCounters {
+    uint64_t ticks[VtxHashPhaseCount], maximum[VtxHashPhaseCount];
+    unsigned calls, samples, routes[VtxHashRouteCount], deferred, vmx;
+};
+VtxHashCounters vtxHash = {};
+uint32_t vtxHashRandomState = 0x3a9e176du;
+bool vtxHashProfileEnabled = false;
+const char* vtxHashNames[VtxHashPhaseCount] = {
+    "dispatch", "resource_lookup", "deferred_setup", "transform", "pending_insert", "finish"
+};
 struct TextureHashCounters {
     uint64_t ticks[TextureHashPhaseCount], maximum[TextureHashPhaseCount];
     unsigned calls, samples;
@@ -141,6 +151,7 @@ void ResetMetadata() {
     memset(&contextSearch,0,sizeof(contextSearch));
     memset(&pipelinePrep,0,sizeof(pipelinePrep));
     memset(&tri2,0,sizeof(tri2));
+    memset(&vtxHash,0,sizeof(vtxHash));
     memset(&textureHash,0,sizeof(textureHash));
     memset(&dust,0,sizeof(dust));
 }
@@ -154,6 +165,12 @@ void RecordPipelinePreparationPhase(PipelinePreparationSample& sample) {
     sample.lastTick=now;
 }
 void RecordTri2Phase(Tri2Sample& sample) {
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
+    sample.lastTick=now;
+}
+void RecordVtxHashPhase(VtxHashSample& sample) {
     if (!sample.sampled) return;
     const uint64_t now=Clock();
     sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
@@ -173,6 +190,8 @@ void BeginFrame(bool enabled) {
         // frame profile enabled incurs no TRI2 timing or per-command counts.
         tri2ProfileEnabled = enabled &&
             CVarGetInteger("gSettings.XboxTri2PhaseProfile", 0) != 0;
+        vtxHashProfileEnabled = enabled &&
+            CVarGetInteger("gSettings.XboxVtxHashPhaseProfile", 0) != 0;
         InterlockedExchange(&observeWorkers,enabled ? 1 : 0);
         InterlockedExchange(&workerProcessorMask,0);
         InterlockedExchange(&workerJobs,0);
@@ -300,6 +319,40 @@ void EndTri2(Tri2Sample& sample) {
             tri2.maximum[i] = sample.ticks[i];
     }
     ++tri2.samples;
+    sample.sampled=false;
+}
+void BeginVtxHash(VtxHashSample& sample) {
+    sample.sampled=false;
+    if (!inInterpreter || !vtxHashProfileEnabled) return;
+    ++vtxHash.calls;
+    vtxHashRandomState^=vtxHashRandomState<<13;
+    vtxHashRandomState^=vtxHashRandomState>>17;
+    vtxHashRandomState^=vtxHashRandomState<<5;
+    if ((vtxHashRandomState & 63u) != 0) return;
+    sample.sampled=true;
+    sample.currentPhase=VtxHashDispatch;
+    sample.route=VtxHashMissing;
+    sample.deferred=sample.vmx=false;
+    memset(sample.ticks,0,sizeof(sample.ticks));
+    sample.lastTick=Clock();
+}
+void AdvanceVtxHash(VtxHashSample& sample, VtxHashPhase next) {
+    if (!sample.sampled) return;
+    RecordVtxHashPhase(sample);
+    sample.currentPhase=next;
+}
+void EndVtxHash(VtxHashSample& sample) {
+    if (!sample.sampled) return;
+    RecordVtxHashPhase(sample);
+    for(unsigned i=0;i<VtxHashPhaseCount;++i) {
+        vtxHash.ticks[i] += sample.ticks[i];
+        if (sample.ticks[i] > vtxHash.maximum[i])
+            vtxHash.maximum[i] = sample.ticks[i];
+    }
+    ++vtxHash.samples;
+    ++vtxHash.routes[sample.route];
+    if (sample.deferred) ++vtxHash.deferred;
+    if (sample.vmx) ++vtxHash.vmx;
     sample.sampled=false;
 }
 void BeginTextureHash(TextureHashSample& sample, TextureHashPhase initialPhase) {
@@ -470,6 +523,18 @@ void EndFrame() {
             const double estimated=tri2.samples ? sampled*tri2.calls/tri2.samples : 0.0;
             Shipyard_Log("frame-profile tri2_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
                 tri2Names[i],sampled,estimated,Milliseconds(tri2.maximum[i]));
+        }
+    }
+    if (vtxHashProfileEnabled) {
+        Shipyard_Log("frame-profile vtx_hash_route calls=%u samples=%u pointer=%u hash_resolved=%u hash_missing=%u deferred=%u vmx=%u sample_probability=1/64 scope=opcode_32_interpreter route_counts=sampled",
+            vtxHash.calls,vtxHash.samples,vtxHash.routes[VtxHashPointer],
+            vtxHash.routes[VtxHashResolved],vtxHash.routes[VtxHashMissing],
+            vtxHash.deferred,vtxHash.vmx);
+        for(unsigned i=0;i<VtxHashPhaseCount;++i) {
+            const double sampled=Milliseconds(vtxHash.ticks[i]);
+            const double estimated=vtxHash.samples ? sampled*vtxHash.calls/vtxHash.samples : 0.0;
+            Shipyard_Log("frame-profile vtx_hash_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
+                vtxHashNames[i],sampled,estimated,Milliseconds(vtxHash.maximum[i]));
         }
     }
     Shipyard_Log("frame-profile texture_hash_route calls=%u samples=%u sample_probability=1/64 scope=opcode_20_interpreter",

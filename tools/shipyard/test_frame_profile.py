@@ -54,10 +54,16 @@ void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart
 void Shipyard_Log(const char*, ...) { ++logCalls; }
 bool tri2CVarOn=false;
 unsigned tri2CVarReads=0;
+bool vtxCVarOn=false;
+unsigned vtxCVarReads=0;
 int CVarGetInteger(const char* name,int fallback) {
     if (strcmp(name,"gSettings.XboxTri2PhaseProfile")==0) {
         ++tri2CVarReads;
         return tri2CVarOn ? 1 : 0;
+    }
+    if (strcmp(name,"gSettings.XboxVtxHashPhaseProfile")==0) {
+        ++vtxCVarReads;
+        return vtxCVarOn ? 1 : 0;
     }
     return fallback;
 }
@@ -133,6 +139,11 @@ int main() {
     AdvanceTri2(disabledTri2,Tri2Materialize);
     EndTri2(disabledTri2);
     assert(clockReads==0 && tri2.calls==0 && tri2.samples==0 && tri2CVarReads==0);
+    VtxHashSample disabledVtx;
+    BeginVtxHash(disabledVtx);
+    AdvanceVtxHash(disabledVtx,VtxHashLookup);
+    EndVtxHash(disabledVtx);
+    assert(clockReads==0 && vtxHash.calls==0 && vtxHash.samples==0 && vtxCVarReads==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
@@ -142,12 +153,16 @@ int main() {
     for(unsigned i=0;i<119;++i) { BeginFrame(true); Begin(Interpreter); End(Interpreter); EndFrame(); }
     assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
     assert(tri2CVarReads==1 && !tri2ProfileEnabled);
+    assert(vtxCVarReads==1 && !vtxHashProfileEnabled);
     assert(!BeginResourceWait());
     Begin(Interpreter);
     unsigned tri2OffClock=clockReads;
     BeginTri2(disabledTri2);
     EndTri2(disabledTri2);
     assert(tri2.calls==0 && tri2.samples==0 && clockReads==tri2OffClock);
+    BeginVtxHash(disabledVtx);
+    EndVtxHash(disabledVtx);
+    assert(vtxHash.calls==0 && vtxHash.samples==0 && clockReads==tri2OffClock);
     unsigned waits=accumulator.phases[ResourceWait].calls;
     std::thread worker([](){ assert(!BeginResourceWait()); }); worker.join();
     std::thread lookupWorker([](){ ResourceLookupScope lookup(true); lookup.Probe(); lookup.Resolved(); }); lookupWorker.join();
@@ -215,6 +230,33 @@ int main() {
     assert(tri2.ticks[Tri2Pipeline]==expectedTri2Samples);
     assert(tri2.ticks[Tri2Pack]==expectedTri2Samples*2);
     assert(tri2.ticks[Tri2Flush]==expectedTri2Samples);
+    vtxHashProfileEnabled=true;
+    vtxHashRandomState=1;
+    memset(&vtxHash,0,sizeof(vtxHash));
+    const unsigned vtxClockBefore=clockReads;
+    unsigned expectedVtxSamples=0,vtxState=1;
+    for(unsigned i=0;i<6400;++i) {
+        vtxState^=vtxState<<13;vtxState^=vtxState>>17;vtxState^=vtxState<<5;
+        expectedVtxSamples+=(vtxState&63u)==0;
+        VtxHashSample sample;
+        BeginVtxHash(sample);
+        if (sample.sampled) {
+            sample.route=VtxHashPointer;
+            sample.deferred=true;
+            sample.vmx=true;
+        }
+        AdvanceVtxHash(sample,VtxHashLookup);
+        AdvanceVtxHash(sample,VtxHashDeferred);
+        AdvanceVtxHash(sample,VtxHashTransform);
+        AdvanceVtxHash(sample,VtxHashInsert);
+        AdvanceVtxHash(sample,VtxHashFinish);
+        EndVtxHash(sample);
+    }
+    assert(vtxHash.calls==6400 && vtxHash.samples==expectedVtxSamples);
+    assert(clockReads-vtxClockBefore==expectedVtxSamples*7);
+    assert(vtxHash.routes[VtxHashPointer]==expectedVtxSamples);
+    assert(vtxHash.deferred==expectedVtxSamples && vtxHash.vmx==expectedVtxSamples);
+    for(unsigned i=0;i<VtxHashPhaseCount;++i) assert(vtxHash.ticks[i]==expectedVtxSamples);
     textureHashRandomState=1;
     memset(&textureHash,0,sizeof(textureHash));
     const unsigned hashClockBefore=clockReads;
@@ -256,22 +298,25 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==43+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==50+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
     assert(pipelinePrep.calls==0 && pipelinePrep.samples==0);
     assert(tri2.calls==0 && tri2.samples==0);
+    assert(vtxHash.calls==0 && vtxHash.samples==0);
     assert(textureHash.calls==0 && textureHash.samples==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);
     unsigned reads=clockReads, logs=logCalls;
     tri2CVarOn=true;
+    vtxCVarOn=true;
     BeginFrame(false); Begin(Graphics); End(Graphics); EndFrame();
     assert(clockReads==reads && logCalls==logs);
     BeginFrame(true); EndFrame(); assert(logCalls==logs && frequencyReads==1);
     assert(tri2ProfileEnabled && tri2CVarReads==2);
+    assert(vtxHashProfileEnabled && vtxCVarReads==2);
 }
 '''
     generated = OUT / 'runtime_contract.cpp'

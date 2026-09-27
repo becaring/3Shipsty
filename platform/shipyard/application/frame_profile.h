@@ -143,6 +143,19 @@ struct Tri2Sample {
 void BeginTri2(Tri2Sample& sample);
 void AdvanceTri2(Tri2Sample& sample, Tri2Phase next);
 void EndTri2(Tri2Sample& sample);
+enum VtxHashPhase {
+    VtxHashDispatch, VtxHashLookup, VtxHashDeferred, VtxHashTransform,
+    VtxHashInsert, VtxHashFinish, VtxHashPhaseCount
+};
+enum VtxHashRoute { VtxHashPointer, VtxHashResolved, VtxHashMissing, VtxHashRouteCount };
+struct VtxHashSample {
+    uint64_t lastTick, ticks[VtxHashPhaseCount];
+    unsigned currentPhase, route;
+    bool sampled, deferred, vmx;
+};
+void BeginVtxHash(VtxHashSample& sample);
+void AdvanceVtxHash(VtxHashSample& sample, VtxHashPhase next);
+void EndVtxHash(VtxHashSample& sample);
 enum TextureHashPhase {
     TextureHashMapLookup, TextureHashOwningCache, TextureHashLoader,
     TextureHashFinal, TextureHashPhaseCount
