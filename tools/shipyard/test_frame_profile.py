@@ -65,6 +65,8 @@ unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,upload
 unsigned depthResolves,depthResolvesSkipped,earlyDepthFences,tilingDrawRestarts,tilingPeakBytes;
 unsigned tiling1080Batches,tiling1080Tile1Batches,tiling1080Vertices,tiling1080Tile1Vertices;
 unsigned tiling1080OversizeBatches;
+unsigned ringSameSegmentDraws,ringAmbiguousDraws,ringSegmentChangedDraws,ringMaxSameSegmentBytes;
+uint64_t ringSameSegmentBytes,ringSameSegmentEstimatedBytes;
 unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 };
 unsigned timingTransitions=0,captures=0;
@@ -165,7 +167,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==27+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==28+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);

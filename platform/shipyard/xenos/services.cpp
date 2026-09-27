@@ -415,6 +415,12 @@ void EndFrame() {
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
         counters.tilingDrawRestarts,counters.tilingPeakBytes);
+    Shipyard_Log("frame-profile ring_draw_probe same_segment=%u ambiguous=%u segment_changed=%u actual_bytes=%.0f estimated_bytes=%.0f max_actual_bytes=%u segment_bytes=262144",
+        counters.ringSameSegmentDraws, counters.ringAmbiguousDraws,
+        counters.ringSegmentChangedDraws,
+        (double)counters.ringSameSegmentBytes,
+        (double)counters.ringSameSegmentEstimatedBytes,
+        counters.ringMaxSameSegmentBytes);
     Shipyard_Log("frame-profile tiled_1080_batches total=%u tile1_only=%u vertices=%u tile1_only_vertices=%u oversize=%u",
         counters.tiling1080Batches, counters.tiling1080Tile1Batches,
         counters.tiling1080Vertices, counters.tiling1080Tile1Vertices,
