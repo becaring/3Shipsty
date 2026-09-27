@@ -24,6 +24,39 @@ def once(text, old, new):
     return text.replace(old, new)
 
 
+def archive_hash_epoch_header(source):
+    source = once(source, '    const char* HashToCString(uint64_t hash) const;',
+                  '    const char* HashToCString(uint64_t hash) const;\n'
+                  '    unsigned GetXboxHashEpoch() const;')
+    return once(source, '    std::unordered_map<uint64_t, std::string> mHashes;',
+                '    volatile long mXboxHashEpoch;\n'
+                '    std::unordered_map<uint64_t, std::string> mHashes;')
+
+
+def archive_hash_epoch_source(source):
+    # Keep the pinned archive sources intact. Fail when a new hash-map write
+    # appears so the epoch cannot silently miss an invalidation path.
+    if source.count('mHashes[') != 2 or source.count('mHashes.clear();') != 1:
+        raise ValueError('Archive hash map mutation inventory changed')
+    source = once(source, 'ArchiveManager::ArchiveManager() {',
+                  'ArchiveManager::ArchiveManager() : mXboxHashEpoch(1) {')
+    source = once(source, '    mHashes.clear();',
+                  '    InterlockedIncrement(&mXboxHashEpoch);\n    mHashes.clear();')
+    source = once(source, '            mHashes[hash] = filePath;',
+                  '            InterlockedIncrement(&mXboxHashEpoch);\n'
+                  '            mHashes[hash] = filePath;')
+    source = once(source, '    for (auto& [hash, filename] : *fileList.get()) {',
+                  '    InterlockedIncrement(&mXboxHashEpoch);\n'
+                  '    for (auto& [hash, filename] : *fileList.get()) {')
+    source = once(source, 'const std::string* ArchiveManager::HashToString(uint64_t hash) const {',
+                  'unsigned ArchiveManager::GetXboxHashEpoch() const {\n'
+                  '    return static_cast<unsigned>(InterlockedCompareExchange(\n'
+                  '        const_cast<volatile long*>(&mXboxHashEpoch), 0, 0));\n'
+                  '}\n\n'
+                  'const std::string* ArchiveManager::HashToString(uint64_t hash) const {')
+    return '#ifdef _XBOX\n#include <xtl.h>\n#else\n#include <windows.h>\n#endif\n' + source
+
+
 def syntax(text):
     # These are contextual specifiers, also legal identifiers. A textual
     # replacement corrupts e.g. EntranceHints' overrideIndex and data.override.
@@ -49,6 +82,8 @@ def transform(name, original):
     text = syntax(original)
     if '<filesystem>' in original or '__has_include' in original:
         text = syntax(project_boundary('libultraship/' + name, original))
+    if name.endswith('/ArchiveManager.h'): text = archive_hash_epoch_header(text)
+    if name.endswith('/ArchiveManager.cpp'): text = archive_hash_epoch_source(text)
     if name.endswith('/Context.h'):
         text = once(text, '#include "ship/audio/Audio.h"', '#include "ship/audio/AudioSettings.h"')
         text = once(text, 'class Console;', 'class Audio;\nclass Console;')
