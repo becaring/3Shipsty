@@ -298,7 +298,10 @@ def prepare():
     text=text[:start]+body+text[end:]
     text=once(text,'void Interpreter::EndFrame() {',
               'void Interpreter::EndFrame() {\n'
-              '    if (mRendersToFb) Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();')
+              '    if (mRendersToFb) {\n'
+              '        Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();\n'
+              '        Fast::ShipyardXenos::DiscardPresentationColorOnEnd();\n'
+              '    }')
     text=once(text,'#define NOMINMAX\n','#define NOMINMAX\n#include "xenos/depth_discard.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)

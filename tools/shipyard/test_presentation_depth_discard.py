@@ -14,7 +14,9 @@ class ModernPresentationDepthTests(unittest.TestCase):
         end = source.split('void Interpreter::EndFrame() {', 1)[1].split('\nvoid Interpreter::', 1)[0]
         self.assertIn('if (mRendersToFb)', end)
         self.assertIn('Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();', end)
+        self.assertIn('Fast::ShipyardXenos::DiscardPresentationColorOnEnd();', end)
         self.assertLess(end.index('DiscardPresentationDepthOnEnd();'), end.index('mRapi->EndFrame()'))
+        self.assertLess(end.index('DiscardPresentationColorOnEnd();'), end.index('mRapi->EndFrame()'))
 
 
 if __name__ == '__main__':
