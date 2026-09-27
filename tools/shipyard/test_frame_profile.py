@@ -87,6 +87,7 @@ int main() {
     assert(resourceLookups.calls==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(!CaptureTrianglePipeline() && trianglePipeline.hits==0 && trianglePipeline.misses==0);
+    assert(contextSearch.attempts==0 && contextSearch.slots==0);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
     Shipyard_FrameProfileGameUpdateEnd();
@@ -105,6 +106,9 @@ int main() {
     { ResourceLookupScope lookup(false); lookup.Probe(); }
     if (CaptureResourceLookups()) { ObserveTextureHashCache(true); ObserveTextureHashCache(false); }
     if (CaptureTrianglePipeline()) { ObserveTrianglePipeline(true); ObserveTrianglePipeline(false); }
+    ObserveContextSearch(2,9,7);
+    ObserveContextSearch(1,4,4);
+    assert(contextSearch.attempts==3 && contextSearch.slots==13 && contextSearch.maximum==7);
     assert(trianglePipeline.hits==1 && trianglePipeline.misses==1);
     assert(resourceLookups.calls==2 && resourceLookups.alternate==1 && resourceLookups.resolved==1);
     assert(resourceLookups.fallback==1 && resourceLookups.probes==3 && clockReads==lookupClockReads);
@@ -128,9 +132,10 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==19+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==20+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
+    assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);

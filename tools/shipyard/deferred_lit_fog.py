@@ -59,6 +59,13 @@ bool Interpreter::XboxTryDeferVertices(size_t n_vertices, size_t dest_index, con
             break;
         }
     }
+    if (mXboxContextProbeCapture) {
+        // Include exhausted searches; no counter work occurs inside the scan.
+        const unsigned scanned = context ? (unsigned)(context - mXboxDeferredContexts) + 1 : MAX_VERTICES;
+        ++mXboxContextSearchAttempts;
+        mXboxContextSlotsScanned += scanned;
+        if (scanned > mXboxContextMaxScan) mXboxContextMaxScan = scanned;
+    }
     if (!context) return false;
 
     // The eager path refreshes these on its first lit vertex.
@@ -146,6 +153,13 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
     d->color.a = fog_z;
     XboxDiscardVertex(index);
 }
+
+void Interpreter::XboxTakeContextSearchCounts(unsigned* attempts, unsigned* slots, unsigned* maximum) {
+    *attempts = mXboxContextSearchAttempts;
+    *slots = mXboxContextSlotsScanned;
+    *maximum = mXboxContextMaxScan;
+    mXboxContextSearchAttempts = mXboxContextSlotsScanned = mXboxContextMaxScan = 0;
+}
 // MODERN DEFERRED LIT FOG END
 '''
 
@@ -164,12 +178,15 @@ def header(source):
                    '    bool XboxTryDeferVertices(size_t n_vertices, size_t dest_index, const F3DVtx* vertices);\n'
                    '    void XboxDiscardVertex(size_t index);\n'
                    '    void XboxMaterializeVertex(size_t index);\n'
+                   '    void XboxTakeContextSearchCounts(unsigned* attempts, unsigned* slots, unsigned* maximum);\n'
                    '    void GfxSpVertex(size_t numVertices, size_t destIndex, const F3DVtx* vertices);')
     source = _once(source, '    GfxTextureCache mTextureCache;',
                    '    GfxTextureCache mTextureCache;\n'
                    '    XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];\n'
                    '    XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];\n'
-                   '    bool mXboxDeferredReplay;')
+                   '    bool mXboxDeferredReplay;\n'
+                   '    bool mXboxContextProbeCapture;\n'
+                   '    unsigned mXboxContextSearchAttempts, mXboxContextSlotsScanned, mXboxContextMaxScan;')
     return source
 
 
@@ -191,5 +208,11 @@ def transform(source):
     brace = source.index('{', constructor)
     source = source[:brace + 1] + '\n    memset(mXboxDeferredVertices, 0, sizeof(mXboxDeferredVertices));\n' + \
              '    memset(mXboxDeferredContexts, 0, sizeof(mXboxDeferredContexts));\n' + \
-             '    mXboxDeferredReplay = false;' + source[brace + 1:]
+             '    mXboxDeferredReplay = false;\n' + \
+             '    mXboxContextProbeCapture = false;\n' + \
+             '    mXboxContextSearchAttempts = mXboxContextSlotsScanned = mXboxContextMaxScan = 0;' + source[brace + 1:]
+    run = source.index('void Interpreter::Run(Gfx* commands,')
+    run_brace = source.index('{', run)
+    source = source[:run_brace + 1] + '\n    mXboxContextProbeCapture = ModernFrameProfile::CaptureTrianglePipeline();\n' + \
+             '    mXboxContextSearchAttempts = mXboxContextSlotsScanned = mXboxContextMaxScan = 0;' + source[run_brace + 1:]
     return source

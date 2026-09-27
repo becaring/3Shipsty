@@ -1,6 +1,7 @@
 """Contracts for the Modern-only deferred lit/fog vertex projection."""
 
 import sys
+import inspect
 import subprocess
 import tempfile
 import unittest
@@ -39,6 +40,18 @@ class DeferredLitFogProjection(unittest.TestCase):
         projected = header(source)
         self.assertIn('XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];', projected)
         self.assertIn('XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];', projected)
+
+    def test_context_search_probe_is_opt_in_and_noniterative(self):
+        self.assertIn('void XboxTakeContextSearchCounts(unsigned* attempts, unsigned* slots, unsigned* maximum);',
+                      inspect.getsource(header))
+        self.assertIn('mXboxContextProbeCapture = ModernFrameProfile::CaptureTrianglePipeline();',
+                      inspect.getsource(transform))
+        scan = SOURCE_METHODS.split('XboxDeferredContext* context = NULL;', 1)[1].split('if (!context) return false;', 1)[0]
+        self.assertIn('for (size_t i = 0; i < MAX_VERTICES; ++i)', scan)
+        self.assertEqual(scan.count('mXboxContextProbeCapture'), 1)
+        self.assertLess(scan.index('for (size_t i = 0; i < MAX_VERTICES; ++i)'),
+                        scan.index('mXboxContextProbeCapture'))
+        self.assertIn('context ? (unsigned)(context - mXboxDeferredContexts) + 1 : MAX_VERTICES', scan)
 
     def test_branch_and_reset_keep_pending_attributes(self):
         source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
@@ -129,8 +142,11 @@ public:
     RSP* mRsp;
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
+    bool mXboxContextProbeCapture;
+    unsigned mXboxContextSearchAttempts, mXboxContextSlotsScanned, mXboxContextMaxScan;
     void XboxDiscardVertex(size_t index);
     void XboxMaterializeVertex(size_t index);
+    void XboxTakeContextSearchCounts(unsigned*, unsigned*, unsigned*);
 };
 /* PROJECTED METHODS */
 static unsigned seed = 0x23ab45cd;
@@ -282,6 +298,8 @@ public:
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
     bool mXboxDeferredReplay, mFbActive;
+    bool mXboxContextProbeCapture;
+    unsigned mXboxContextSearchAttempts, mXboxContextSlotsScanned, mXboxContextMaxScan;
     struct { int width,height; } mCurDimensions;
     float AdjXForAspectRatio(float x) { return x; }
     void CalculateNormalDir(const F3DLight_t* light,float coeff[3]) {
@@ -291,6 +309,7 @@ public:
     void XboxDiscardVertex(size_t);
     bool XboxTryDeferVertices(size_t,size_t,const F3DVtx*);
     void XboxMaterializeVertex(size_t);
+    void XboxTakeContextSearchCounts(unsigned*, unsigned*, unsigned*);
     void GfxSpVertex(size_t,size_t,const F3DVtx*);
 };
 /* PROJECTED METHODS */
@@ -375,6 +394,27 @@ int main() {
     if(deferred.mXboxDeferredVertices[0].context ||
        memcmp(&eagerRsp.loaded_vertices[0],&deferredRsp.loaded_vertices[0],sizeof(LoadedVertex)) ||
        memcmp(&eagerRsp.loaded_vertices[1],&deferredRsp.loaded_vertices[1],sizeof(LoadedVertex))) return 6;
+    // Count one successful search at slot 7, a fully occupied search, and
+    // verify the accessor drains all counters. No per-iteration counter work.
+    initialize(deferred,deferredRsp);
+    deferred.mXboxContextProbeCapture=true;
+    for(int i=0;i<6;++i) deferred.mXboxDeferredContexts[i].references=1;
+    deferred.GfxSpVertex(1,0,&source);
+    unsigned attempts=0,slots=0,maximum=0;
+    deferred.XboxTakeContextSearchCounts(&attempts,&slots,&maximum);
+    if(attempts!=1 || slots!=7 || maximum!=7) return 7;
+    deferred.XboxTakeContextSearchCounts(&attempts,&slots,&maximum);
+    if(attempts || slots || maximum) return 8;
+    initialize(deferred,deferredRsp);
+    deferred.mXboxContextProbeCapture=true;
+    for(int i=0;i<MAX_VERTICES;++i) deferred.mXboxDeferredContexts[i].references=1;
+    deferred.GfxSpVertex(1,0,&source);
+    deferred.XboxTakeContextSearchCounts(&attempts,&slots,&maximum);
+    if(attempts!=1 || slots!=MAX_VERTICES || maximum!=MAX_VERTICES) return 9;
+    initialize(deferred,deferredRsp);
+    deferred.GfxSpVertex(1,0,&source);
+    deferred.XboxTakeContextSearchCounts(&attempts,&slots,&maximum);
+    if(attempts || slots || maximum) return 10;
     return 0;
 }
 '''

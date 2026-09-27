@@ -75,6 +75,7 @@ int main() {
     tick += 1; profile.End(ModernFrameProfile::Present);
     tick += 25; profile.Begin(ModernFrameProfile::Present);
     assert(profile.presentIntervalCount == 1 && profile.presentIntervals[0] == 26);
+    assert(profile.presentIntervalLanes[0] == 1);
     profile.End(ModernFrameProfile::Present);
     for (unsigned i = 0; i < ModernFrameProfile::Accumulator::PresentIntervalCapacity + 1; ++i) {
         ++tick; profile.Begin(ModernFrameProfile::Present);

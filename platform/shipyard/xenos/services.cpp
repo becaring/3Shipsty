@@ -60,6 +60,8 @@ struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, p
 ResourceLookupCounters resourceLookups = {};
 struct TrianglePipelineCounters { unsigned hits, misses; };
 TrianglePipelineCounters trianglePipeline = {};
+struct ContextSearchCounters { unsigned attempts, slots, maximum; };
+ContextSearchCounters contextSearch = {};
 struct DustCounters {
     unsigned draws, current, updatesWithDust, maxDrawsPerUpdate, near100, near250;
     float minDistanceSquared, maxScale;
@@ -106,6 +108,7 @@ void ResetMetadata() {
     memset(&audioCpu,0,sizeof(audioCpu));
     memset(&resourceLookups,0,sizeof(resourceLookups));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
+    memset(&contextSearch,0,sizeof(contextSearch));
     memset(&dust,0,sizeof(dust));
 }
 double Milliseconds(uint64_t ticks) {
@@ -174,6 +177,11 @@ bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
 void ObserveTrianglePipeline(bool hit) {
     if (hit) ++trianglePipeline.hits;
     else ++trianglePipeline.misses;
+}
+void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum) {
+    contextSearch.attempts += attempts;
+    contextSearch.slots += slots;
+    if (maximum > contextSearch.maximum) contextSearch.maximum = maximum;
 }
 void DustUpdateBegin() {
     if (!accumulator.enabled) return;
@@ -249,19 +257,27 @@ void EndFrame() {
         maps, nonemptyMaps, replacements);
     const unsigned intervalCount = accumulator.presentIntervalCount;
     unsigned over20 = 0, over33 = 0, over50 = 0;
+    unsigned laneSamples[3] = {}, laneOver20[3] = {};
     for (unsigned i = 0; i < intervalCount; ++i) {
         const double ms = Milliseconds(accumulator.presentIntervals[i]);
         over20 += ms > 20.0;
         over33 += ms > 33.0;
         over50 += ms > 50.0;
+        const unsigned lane = accumulator.presentIntervalLanes[i];
+        if (lane < 3) {
+            ++laneSamples[lane];
+            laneOver20[lane] += ms > 20.0;
+        }
     }
     std::sort(accumulator.presentIntervals, accumulator.presentIntervals + intervalCount);
-    Shipyard_Log("frame-profile present_intervals samples=%u overflow=%u median_ms=%.3f p95_ms=%.3f max_ms=%.3f over20=%u over33=%u over50=%u scope=present_begin_to_begin",
+    Shipyard_Log("frame-profile present_intervals samples=%u overflow=%u median_ms=%.3f p95_ms=%.3f max_ms=%.3f over20=%u over33=%u over50=%u lane_samples=%u/%u/%u lane_over20=%u/%u/%u scope=present_begin_to_begin",
         intervalCount, accumulator.presentIntervalDropped,
         intervalCount ? Milliseconds(accumulator.presentIntervals[(intervalCount - 1) / 2]) : 0.0,
         intervalCount ? Milliseconds(accumulator.presentIntervals[(intervalCount * 95 - 1) / 100]) : 0.0,
         intervalCount ? Milliseconds(accumulator.presentIntervals[intervalCount - 1]) : 0.0,
-        over20, over33, over50);
+        over20, over33, over50,
+        laneSamples[0], laneSamples[1], laneSamples[2],
+        laneOver20[0], laneOver20[1], laneOver20[2]);
     for (unsigned i = 0; i < PhaseCount; ++i) {
         const PhaseStats& p = accumulator.phases[i];
         Shipyard_Log("frame-profile phase=%s calls=%u inclusive_ms=%.3f ms_per_game=%.3f ms_per_call=%.3f max_ms=%.3f", names[i], p.calls,
@@ -288,6 +304,8 @@ void EndFrame() {
         resourceLookups.pathHits,resourceLookups.pathMisses);
     Shipyard_Log("frame-profile triangle_pipeline hits=%u misses=%u scope=surviving_triangles",
         trianglePipeline.hits,trianglePipeline.misses);
+    Shipyard_Log("frame-profile context_search attempts=%u slots=%u max_scan=%u scope=deferred_vertex_contexts",
+        contextSearch.attempts,contextSearch.slots,contextSearch.maximum);
     Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
         dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
         dust.minDistanceSquared,dust.maxScale);

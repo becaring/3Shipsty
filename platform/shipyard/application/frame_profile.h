@@ -24,6 +24,7 @@ class Accumulator {
         frames = periods = 0;
         periodTicks = outsideTicks = 0;
         presentIntervalCount = presentIntervalDropped = 0;
+        presentIndexInGame = 0;
     }
     void BeginFrame(bool requested) {
         if (requested != enabled) {
@@ -42,6 +43,7 @@ class Accumulator {
         }
         previousBegin = now;
         havePrevious = true;
+        presentIndexInGame = 0;
         starts[Graph] = now;
         active[Graph] = true;
     }
@@ -51,12 +53,17 @@ class Accumulator {
         if (phase == Present) {
             if (havePreviousPresent && now >= previousPresentBegin) {
                 if (presentIntervalCount < PresentIntervalCapacity)
-                    presentIntervals[presentIntervalCount++] = now - previousPresentBegin;
+                {
+                    presentIntervals[presentIntervalCount] = now - previousPresentBegin;
+                    presentIntervalLanes[presentIntervalCount++] =
+                        static_cast<uint8_t>(presentIndexInGame < 255 ? presentIndexInGame : 255);
+                }
                 else
                     ++presentIntervalDropped;
             }
             previousPresentBegin = now;
             havePreviousPresent = true;
+            ++presentIndexInGame;
         }
         starts[phase] = now;
         active[phase] = true;
@@ -82,10 +89,12 @@ class Accumulator {
     unsigned frames, periods;
     uint64_t periodTicks, outsideTicks;
     uint64_t presentIntervals[PresentIntervalCapacity];
+    uint8_t presentIntervalLanes[PresentIntervalCapacity];
     unsigned presentIntervalCount, presentIntervalDropped;
   private:
     uint64_t (*readClock)();
     uint64_t starts[PhaseCount], previousBegin, previousGraph, previousPresentBegin;
+    unsigned presentIndexInGame;
     bool active[PhaseCount], havePrevious, havePreviousPresent;
 };
 
@@ -108,6 +117,7 @@ void ObserveTextureHashCache(bool hit);
 void ObserveTexturePathCache(bool hit);
 bool CaptureTrianglePipeline();
 void ObserveTrianglePipeline(bool hit);
+void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }
