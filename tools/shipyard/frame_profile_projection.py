@@ -131,4 +131,17 @@ def interpreter(source):
     # Match the function's final brace, preserving both framebuffer completion paths.
     position=body.rfind('\n}')
     body=body[:position]+'\n    ModernFrameProfile::End(ModernFrameProfile::InterpreterFinish);'+body[position:]
+    source=source[:start]+body+source[end:]
+    start=source.index('void Interpreter::EndFrame()')
+    end=source.index('\n}',start)+2
+    body=source[start:end]
+    for statement,phase in [
+            ('(mXboxPipelineKey.valid=false, mRapi->EndFrame());', 'PresentEndFrame'),
+            ('mWapi->SwapBuffersBegin();', 'PresentSwapBegin'),
+            ('(mXboxPipelineKey.valid=false, mRapi->FinishRender());', 'PresentFinishRender'),
+            ('mWapi->SwapBuffersEnd();', 'PresentSwapEnd')]:
+        body=once(body,'    '+statement,
+                  '    ModernFrameProfile::Begin(ModernFrameProfile::'+phase+');\n'
+                  '    '+statement+'\n'
+                  '    ModernFrameProfile::End(ModernFrameProfile::'+phase+');')
     return vtx_hash_phase_projection.transform(source[:start]+body+source[end:])

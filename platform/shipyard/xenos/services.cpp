@@ -56,7 +56,9 @@ float multiplier = 0;
 bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
-    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update"};
+    "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update",
+    "gui_draw_game", "gui_render", "gui_draw_data", "gui_floating", "gui_save_cvars",
+    "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end"};
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;

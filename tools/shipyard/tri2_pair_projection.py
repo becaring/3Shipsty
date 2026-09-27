@@ -10,10 +10,14 @@ def _once(source, old, new):
 def header(source):
     if 'mXboxTrianglePairActive' in source:
         return source
+    source = _once(source, '#include "fast/lus_gbi.h"',
+                   '#include "fast/lus_gbi.h"\n'
+                   '#include "fast3d/tri2_packed_reuse.h"')
     return _once(source, '    XboxTrianglePipelineResult mXboxPipelineResult;',
                  '    XboxTrianglePipelineResult mXboxPipelineResult;\n'
                  '    bool mXboxTrianglePairActive;\n'
-                 '    bool mXboxTrianglePairPrepared;')
+                 '    bool mXboxTrianglePairPrepared;\n'
+                 '    ModernTri2PackedReuse mXboxPairPacked;')
 
 
 def _pair_transform(source):
@@ -34,10 +38,12 @@ def _pair_transform(source):
         explicit PairScope(Interpreter* p) : owner(p) {
             owner->mXboxTrianglePairActive = true;
             owner->mXboxTrianglePairPrepared = false;
+            owner->mXboxPairPacked.Reset();
         }
         ~PairScope() {
             owner->mXboxTrianglePairActive = false;
             owner->mXboxTrianglePairPrepared = false;
+            owner->mXboxPairPacked.Reset();
         }
     } scope(gfx);
     // MODERN TRI2 PAIR CERTIFICATE END''')
@@ -53,6 +59,60 @@ def _pair_transform(source):
                     '    mXboxTrianglePairPrepared = mXboxTrianglePairActive && mXboxPipelineKey.valid;')
     emitter = _once(emitter, '        Flush();\n    }',
                     '        Flush();\n        mXboxTrianglePairPrepared = false;\n    }')
+    return source[:emitter_start] + emitter + source[emitter_end:]
+
+
+def _packed_reuse(source):
+    marker = '// MODERN TRI2 PACKED REUSE BEGIN'
+    if marker in source:
+        return source
+    emitter_start = source.index('__declspec(noinline) void Interpreter::XboxEmitTriangle(')
+    emitter_end = source.index('\n}', emitter_start)
+    emitter = source[emitter_start:emitter_end]
+    emitter = _once(emitter,
+                    '    const bool xboxPipelineHit=(mXboxTrianglePairActive',
+                    '    const bool xboxPairPackSecond = mXboxTrianglePairActive && '\
+                    'mXboxTrianglePairPrepared && mXboxPipelineKey.valid && '\
+                    'mXboxPairPacked.valid;\n'
+                    '    const bool xboxPipelineHit=(mXboxTrianglePairActive')
+    emitter = _once(emitter,
+                    '    mXboxTrianglePairPrepared = mXboxTrianglePairActive && mXboxPipelineKey.valid;',
+                    '    mXboxTrianglePairPrepared = mXboxTrianglePairActive && mXboxPipelineKey.valid;\n'
+                    '    // MODERN TRI2 PACKED REUSE BEGIN\n'
+                    '    const bool xboxPairPackFirst = mXboxTrianglePairActive && '\
+                    '!mXboxPairPacked.valid && mXboxPipelineKey.valid;\n'
+                    '    uint32_t xboxPairFirstWBits;\n'
+                    '    memcpy(&xboxPairFirstWBits, &v1->w, sizeof(xboxPairFirstWBits));\n'
+                    '    const bool xboxPairPackReuse = xboxPairPackSecond && '\
+                    'mXboxPairPacked.CanReuse(mBufVboLen, xboxPipelineHit,\n'
+                    '        (mRdp->other_mode_l & G_TL_LOD) != 0, xboxPairFirstWBits);\n'
+                    '    const uint8_t xboxPairIndices[3] = {vtx1_idx, vtx2_idx, vtx3_idx};\n'
+                    '    size_t xboxPairStarts[3];\n'
+                    '    // MODERN TRI2 PACKED REUSE END')
+    emitter = _once(emitter,
+                    '    for (int i = 0; i < 3; i++) {\n        float z = v_arr[i]->z, w = v_arr[i]->w;',
+                    '    for (int i = 0; i < 3; i++) {\n'
+                    '        if (xboxPairPackFirst) xboxPairStarts[i] = '\
+                    'size_t(shipyardVertexOutput - mBufVbo);\n'
+                    '        if (xboxPairPackReuse && mXboxPairPacked.CopyVertex('\
+                    'xboxPairIndices[i], shipyardVertexOutput, mBufVbo)) {\n'
+                    '            if (i == 0) mXboxPairPacked.RestoreMaterials('\
+                    'shipyardMaterialInputs, mBufVbo, numInputs, use_alpha);\n'
+                    '            continue;\n'
+                    '        }\n'
+                    '        float z = v_arr[i]->z, w = v_arr[i]->w;')
+    emitter = _once(emitter,
+                    '    mBufVboLen = (size_t)(shipyardVertexOutput - mBufVbo);',
+                    '    mBufVboLen = (size_t)(shipyardVertexOutput - mBufVbo);\n'
+                    '    if (xboxPairPackFirst) {\n'
+                    '        mXboxPairPacked.Capture(xboxPairIndices, xboxPairStarts, '\
+                    'mBufVboLen, xboxPairFirstWBits);\n'
+                    '        mXboxPairPacked.CaptureMaterials(shipyardMaterialInputs, '\
+                    'mBufVbo, numInputs, use_alpha);\n'
+                    '    }')
+    emitter = _once(emitter, '        mXboxTrianglePairPrepared = false;',
+                    '        mXboxTrianglePairPrepared = false;\n'
+                    '        mXboxPairPacked.Reset();')
     return source[:emitter_start] + emitter + source[emitter_end:]
 
 
@@ -115,4 +175,4 @@ def _phase_profile(source):
 
 
 def transform(source):
-    return _phase_profile(_pair_transform(source))
+    return _phase_profile(_packed_reuse(_pair_transform(source)))

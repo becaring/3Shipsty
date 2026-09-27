@@ -16,7 +16,8 @@ from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
 from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
 from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_signature,
-                                               texture_command_manager, texture_hash_cache_handler)
+                                               texture_command_manager, texture_hash_cache_handler,
+                                               texture_hash_borrowed_handler)
 from xbox360_platform import texture_state
 import deferred_lit_fog
 import pipeline_phase_profile_projection
@@ -98,6 +99,18 @@ def triangle_split(text):
 
 
 def texture_bindings(text):
+    # The selected binding is an ownership certificate for its cache node:
+    # every path that can erase a node invalidates bindings first. A repeated
+    # exact key can therefore recover the map iterator from that node's LRU
+    # entry without hashing the key or traversing the unordered_map bucket.
+    text=once(text,'    TextureCacheMap::iterator it = mTextureCache.map.find(key);\n'
+              '    TextureCacheNode** n = &mRenderingState.mTextures[i];',
+              '    TextureCacheNode* xboxBoundNode = mXboxTextureBindings.Bound<TextureCacheNode>(i);\n'
+              '    TextureCacheMap::iterator it =\n'
+              '        xboxBoundNode && xboxBoundNode->first == key\n'
+              '            ? xboxBoundNode->second.lru_location->it\n'
+              '            : mTextureCache.map.find(key);\n'
+              '    TextureCacheNode** n = &mRenderingState.mTextures[i];')
     text=once(text,'void Interpreter::TextureCacheClear() {',
               'void Interpreter::TextureCacheClear() {\n    Flush();\n    mXboxTextureBindings.Invalidate();')
     text=once(text,'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {',
@@ -335,6 +348,7 @@ def prepare():
               '#include "libultraship/bridge/consolevariablebridge.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
+    text=texture_hash_borrowed_handler(text)
     text=tri2_pair_projection.transform(text)
     pending['src/fast/interpreter.cpp']=text
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'

@@ -114,7 +114,7 @@ def transform(name,text):
         text=once(text,'GetPathRelativeToAppDirectory("imgui_log.txt")','GetPathRelativeToAppDirectory("logs/imgui_log.txt")')
         headers=['ship/window/gui/'+n+'.h' for n in ('ConsoleWindow','InputEditorWindow','StatsWindow','GameOverlay','GuiWindow','GuiMenuBar','IconsFontAwesome4')]
         headers+=['ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h','ship/resource/ResourceLoader.h']
-        text='\n'.join('#include "'+h+'"' for h in headers)+'\n#include "native_gui.h"\n'+text
+        text='\n'.join('#include "'+h+'"' for h in headers)+'\n#include "native_gui.h"\n#include "application/frame_profile.h"\n'+text
         text=once(text,'#else\n#include <SDL2/SDL_hints.h>','#elif !defined(_XBOX)\n#include <SDL2/SDL_hints.h>')
         # Desktop branches require no runtime substitute on a native backend.
         for method,endpattern in [('ImGuiWMInit','\n#if __APPLE__'),('HandleWindowEvents','\n#ifdef ENABLE_DX11'),('ImGuiWMNewFrame','\n#ifdef ENABLE_DX11')]:
@@ -140,6 +140,18 @@ def transform(name,text):
             text=text[:pos]+'\n        case WindowBackend::FAST3D_XENOS: '+call+' break;'+text[pos:]
         text=once(text,'    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());',
                   '    Shipyard_ImGuiPlatformDrawCursor();\n    ImGui::Render();\n    ImGuiRenderDrawData(ImGui::GetDrawData());')
+        # Split the GUI and device-present wall time only while the existing
+        # frame profiler is enabled. Begin/End skip the clock when disabled.
+        for statement,phase in [
+                ('DrawGame();', 'GuiDrawGame'),
+                ('ImGui::Render();', 'GuiRender'),
+                ('ImGuiRenderDrawData(ImGui::GetDrawData());', 'GuiDrawData'),
+                ('DrawFloatingWindows();', 'GuiFloating'),
+                ('CheckSaveCvars();', 'GuiSaveCvars')]:
+            text=once(text,'    '+statement,
+                      '    ModernFrameProfile::Begin(ModernFrameProfile::'+phase+');\n'
+                      '    '+statement+'\n'
+                      '    ModernFrameProfile::End(ModernFrameProfile::'+phase+');')
         # The renderer NewFrame hook rebuilds the atlas only when modern SoH
         # adds fonts after backend initialization and invalidates it.
         text=text.replace('mGuiTextures.contains(name)','Shipyard::Resources::contains(mGuiTextures,name)')
