@@ -61,6 +61,7 @@ struct NativeCounters {
 unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
 unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
 unsigned depthResolves,depthResolvesSkipped,earlyDepthFences,tilingDrawRestarts,tilingPeakBytes;
+unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 };
 unsigned timingTransitions=0,captures=0;
 void SetTimingEnabled(bool) { ++timingTransitions; }
@@ -125,7 +126,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==17+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==18+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
