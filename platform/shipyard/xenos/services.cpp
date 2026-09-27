@@ -415,6 +415,17 @@ void EndFrame() {
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
         counters.tilingDrawRestarts,counters.tilingPeakBytes);
+    Shipyard_Log("frame-profile tiling_space_1080 brackets=%u guard_finishes=%u normal_finishes=%u queries=%u query_calls=%u query_ms=%.3f capacity_changes=%u used_regressions=%u max_setup_bytes=%u max_finish_bytes=%u",
+        counters.tilingSpace.brackets,counters.tilingSpace.guardFinishes,
+        counters.tilingSpace.normalFinishes,counters.tilingSpace.querySamples,
+        native.tilingSpaceQueryCalls,native.tilingSpaceQueryTicks*nativeMs,
+        counters.tilingSpace.capacityChanges,counters.tilingSpace.usedRegressions,
+        counters.tilingSpace.maxSetupBytes,counters.tilingSpace.maxFinishBytes);
+    Shipyard_Log("frame-profile tiling_space_1080_phase max_used=%u/%u/%u/%u min_remaining=%u/%u/%u/%u phases=begin/setup/pre_resolve/pre_end",
+        counters.tilingSpace.maxUsed[0],counters.tilingSpace.maxUsed[1],
+        counters.tilingSpace.maxUsed[2],counters.tilingSpace.maxUsed[3],
+        counters.tilingSpace.minRemaining[0],counters.tilingSpace.minRemaining[1],
+        counters.tilingSpace.minRemaining[2],counters.tilingSpace.minRemaining[3]);
     Shipyard_Log("frame-profile ring_draw_probe same_segment=%u ambiguous=%u segment_changed=%u actual_bytes=%.0f estimated_bytes=%.0f max_actual_bytes=%u segment_bytes=262144",
         counters.ringSameSegmentDraws, counters.ringAmbiguousDraws,
         counters.ringSegmentChangedDraws,

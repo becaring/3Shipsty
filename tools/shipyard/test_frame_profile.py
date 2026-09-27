@@ -55,6 +55,8 @@ void Shipyard_Log(const char*, ...) { ++logCalls; }
 namespace Fast { namespace ShipyardXenos {
 struct NativeTimingCounters {
 uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,depthReadTicks,depthLockTicks,uploadBytes,frequency;
+uint64_t tilingSpaceQueryTicks;
+unsigned tilingSpaceQueryCalls;
 unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,depthReadCalls,depthLockCalls,depthSamples;
 unsigned depthBusyCalls,depthIdleCalls,depthBusy1080Calls,depthIdle1080Calls,preparationRebuilt,preparationReused;
 unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,presentationHeight,buffer2Frames,presentationInterval;
@@ -67,6 +69,9 @@ unsigned tiling1080Batches,tiling1080Tile1Batches,tiling1080Vertices,tiling1080T
 unsigned tiling1080OversizeBatches;
 unsigned ringSameSegmentDraws,ringAmbiguousDraws,ringSegmentChangedDraws,ringMaxSameSegmentBytes;
 uint64_t ringSameSegmentBytes,ringSameSegmentEstimatedBytes;
+struct { unsigned brackets,guardFinishes,normalFinishes,querySamples,capacityChanges;
+unsigned usedRegressions;
+unsigned maxUsed[4],minRemaining[4],phaseSamples[4],maxSetupBytes,maxFinishBytes; } tilingSpace;
 unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 };
 unsigned timingTransitions=0,captures=0;
@@ -167,7 +172,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==28+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==30+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
