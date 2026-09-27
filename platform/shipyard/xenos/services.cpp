@@ -59,6 +59,10 @@ __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
 struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes, textureHits, textureMisses, pathHits, pathMisses; };
 ResourceLookupCounters resourceLookups = {};
+struct TileStateCounters {
+    unsigned calls[2], same[2], avoidable[2];
+};
+TileStateCounters tileState = {};
 struct TrianglePipelineCounters { unsigned hits, misses; };
 TrianglePipelineCounters trianglePipeline = {};
 struct ContextSearchCounters { unsigned attempts, slots, maximum; };
@@ -147,6 +151,7 @@ void ResetMetadata() {
     memset(&renderCpu,0,sizeof(renderCpu));
     memset(&audioCpu,0,sizeof(audioCpu));
     memset(&resourceLookups,0,sizeof(resourceLookups));
+    memset(&tileState,0,sizeof(tileState));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
     memset(&contextSearch,0,sizeof(contextSearch));
     memset(&pipelinePrep,0,sizeof(pipelinePrep));
@@ -246,6 +251,12 @@ void ObserveTextureHashCache(bool hit) {
 void ObserveTexturePathCache(bool hit) {
     if (hit) ++resourceLookups.pathHits;
     else ++resourceLookups.pathMisses;
+}
+void ObserveTileState(unsigned kind, bool same, bool avoidable) {
+    if (kind >= 2) return;
+    ++tileState.calls[kind];
+    if (same) ++tileState.same[kind];
+    if (avoidable) ++tileState.avoidable[kind];
 }
 bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
 void ObserveTrianglePipeline(bool hit) {
@@ -503,6 +514,10 @@ void EndFrame() {
         resourceLookups.textureHits,resourceLookups.textureMisses);
     Shipyard_Log("frame-profile texture_path_cache hits=%u misses=%u scope=interpreter",
         resourceLookups.pathHits,resourceLookups.pathMisses);
+    if (tileState.calls[0] || tileState.calls[1])
+        Shipyard_Log("frame-profile tile_state calls=%u/%u same=%u/%u avoidable=%u/%u scope=tile/size",
+            tileState.calls[0], tileState.calls[1], tileState.same[0], tileState.same[1],
+            tileState.avoidable[0], tileState.avoidable[1]);
     Shipyard_Log("frame-profile triangle_pipeline hits=%u misses=%u scope=surviving_triangles",
         trianglePipeline.hits,trianglePipeline.misses);
     Shipyard_Log("frame-profile context_search attempts=%u slots=%u max_scan=%u scope=deferred_vertex_contexts",

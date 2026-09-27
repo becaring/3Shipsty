@@ -115,6 +115,7 @@ bool CaptureResourceLookups();
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes);
 void ObserveTextureHashCache(bool hit);
 void ObserveTexturePathCache(bool hit);
+void ObserveTileState(unsigned kind, bool same, bool avoidable);
 bool CaptureTrianglePipeline();
 void ObserveTrianglePipeline(bool hit);
 void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum);

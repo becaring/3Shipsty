@@ -50,6 +50,8 @@ def header(text):
     text=once(text,'    GfxTextureCache mTextureCache{};',
               '    GfxTextureCache mTextureCache{};\n'
               '    Shipyard::Resources::TextureHashCache<Fast::Texture> mXboxTextureHashCache;\n'
+              '    bool mXboxTileTrialEnabled = false;\n'
+              '    bool mXboxTileCaptureEnabled = false;\n'
               '    bool mXboxDiscardGameDepth = false;\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
@@ -285,6 +287,10 @@ def prepare():
     text=once(text,'void Interpreter::RunGuiOnly() {',
               'void Interpreter::RunGuiOnly() {\n    mXboxTextureHashCache.Clear();')
     text=stateless_signature(text)
+    text=texture_state.exact_tile_updates(
+        text, enabled_expr='mXboxTileTrialEnabled',
+        capture_expr='mXboxTileCaptureEnabled',
+        observe_expr='ModernFrameProfile::ObserveTileState')
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
     text=pipeline_phase_profile_projection.transform(text)
@@ -297,6 +303,10 @@ def prepare():
     # historical 4.0.5's fresh color/depth game draw. GUI-only and explicit
     # framebuffer transfers retain their existing contents.
     body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->StartFrame());',
+              '    mXboxTileTrialEnabled =\n'
+              '        CVarGetInteger("gSettings.XboxTileStateDedupTrialProfile", 0) != 0;\n'
+              '    mXboxTileCaptureEnabled = ModernFrameProfile::CaptureResourceLookups() &&\n'
+              '        CVarGetInteger("gSettings.XboxTileStateDedupCaptureProfile", 0) != 0;\n'
               '    Fast::ShipyardXenos::SetTilingGuardTrialEnabled(\n'
               '        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0) != 0);\n'
               '    Fast::ShipyardXenos::SetTile1PredicationTrialEnabled(\n'
