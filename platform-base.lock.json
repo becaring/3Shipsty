@@ -1,6 +1,6 @@
 {
   "base": "../../../LibUltraShip+Fast3D360/scratch/canonical-optimization",
-  "git_revision": "079febf8e62f84c900fb14570d7e3d77fe9f9e96",
+  "git_revision": "0bae5909734b50da11dc7c4dcd107464d90669d9",
   "api_version": 6,
-  "baseline_sha256": "fc2407b5f7ab4a5d63d79bfbc1b48e591b32d4c251e4fe47144644304ef09bb9"
+  "baseline_sha256": "2aa82e50b4ba05a1d7fe2642938f03d3980a343db5e8bf8783c8e3de9d3ab1e5"
 }

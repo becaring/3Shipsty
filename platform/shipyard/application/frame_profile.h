@@ -16,18 +16,21 @@ struct PhaseStats { uint64_t ticks, maximum; unsigned calls; };
 class Accumulator {
   public:
     explicit Accumulator(uint64_t (*clock)()) : enabled(false), readClock(clock),
-        previousBegin(0), previousGraph(0), havePrevious(false) { ResetWindow(); }
+        previousBegin(0), previousGraph(0), previousPresentBegin(0),
+        havePrevious(false), havePreviousPresent(false) { ResetWindow(); }
     void ResetWindow() {
         memset(phases, 0, sizeof(phases));
         memset(active, 0, sizeof(active));
         frames = periods = 0;
         periodTicks = outsideTicks = 0;
+        presentIntervalCount = presentIntervalDropped = 0;
     }
     void BeginFrame(bool requested) {
         if (requested != enabled) {
             enabled = requested;
             ResetWindow();
             havePrevious = false;
+            havePreviousPresent = false;
         }
         if (!enabled) return;
         const uint64_t now = readClock();
@@ -44,7 +47,18 @@ class Accumulator {
     }
     void Begin(Phase phase) {
         if (!enabled) return;
-        starts[phase] = readClock();
+        const uint64_t now = readClock();
+        if (phase == Present) {
+            if (havePreviousPresent && now >= previousPresentBegin) {
+                if (presentIntervalCount < PresentIntervalCapacity)
+                    presentIntervals[presentIntervalCount++] = now - previousPresentBegin;
+                else
+                    ++presentIntervalDropped;
+            }
+            previousPresentBegin = now;
+            havePreviousPresent = true;
+        }
+        starts[phase] = now;
         active[phase] = true;
     }
     void End(Phase phase) {
@@ -63,13 +77,16 @@ class Accumulator {
         return ++frames == 120;
     }
     bool enabled;
+    enum { PresentIntervalCapacity = 4096 };
     PhaseStats phases[PhaseCount];
     unsigned frames, periods;
     uint64_t periodTicks, outsideTicks;
+    uint64_t presentIntervals[PresentIntervalCapacity];
+    unsigned presentIntervalCount, presentIntervalDropped;
   private:
     uint64_t (*readClock)();
-    uint64_t starts[PhaseCount], previousBegin, previousGraph;
-    bool active[PhaseCount], havePrevious;
+    uint64_t starts[PhaseCount], previousBegin, previousGraph, previousPresentBegin;
+    bool active[PhaseCount], havePrevious, havePreviousPresent;
 };
 
 void BeginFrame(bool enabled);
@@ -91,6 +108,7 @@ void ObserveTextureHashCache(bool hit);
 void ObserveTexturePathCache(bool hit);
 bool CaptureTrianglePipeline();
 void ObserveTrianglePipeline(bool hit);
+void ObserveNormalReuse(unsigned hits, unsigned misses);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }

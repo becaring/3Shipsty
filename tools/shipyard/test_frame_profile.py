@@ -26,6 +26,7 @@ def main():
 #include "application/command_profile.h"
 #include <cassert>
 #include <cstdarg>
+#include <algorithm>
 #include <thread>
 struct FILETIME { unsigned dwLowDateTime,dwHighDateTime; };
 unsigned cpuReads=0, processor=0;
@@ -54,7 +55,8 @@ void Shipyard_Log(const char*, ...) { ++logCalls; }
 namespace Fast { namespace ShipyardXenos {
 struct NativeTimingCounters {
 uint64_t drawTicks,uploadTicks,framebufferSetupTicks,framebufferResolveTicks,framebufferClearTicks,depthReadTicks,depthLockTicks,uploadBytes,frequency;
-unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,depthReadCalls,depthLockCalls,depthSamples,preparationRebuilt,preparationReused;
+unsigned drawCalls,uploadCalls,framebufferSetupCalls,framebufferResolveCalls,framebufferClearCalls,depthReadCalls,depthLockCalls,depthSamples;
+unsigned depthBusyCalls,depthIdleCalls,depthBusy1080Calls,depthIdle1080Calls,preparationRebuilt,preparationReused;
 unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,presentationHeight,buffer2Frames,presentationInterval;
 };
 struct NativeCounters {
@@ -126,7 +128,7 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==18+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==20+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);

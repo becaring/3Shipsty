@@ -80,6 +80,16 @@ def presentation(source):
         source = once(source, '    ' + statement,
                       '    ModernFrameProfile::Begin(ModernFrameProfile::' + phase + ');\n    ' + statement +
                       '\n    ModernFrameProfile::End(ModernFrameProfile::' + phase + ');')
+    source = once(source,
+                  '    mInterpreter->Run(commands, mtxReplacements);\n'
+                  '    ModernFrameProfile::End(ModernFrameProfile::Interpreter);',
+                  '    mInterpreter->Run(commands, mtxReplacements);\n'
+                  '    if (ModernFrameProfile::CaptureTrianglePipeline()) {\n'
+                  '        unsigned normalHits = 0, normalMisses = 0;\n'
+                  '        mInterpreter->XboxTakeNormalReuseCounts(&normalHits, &normalMisses);\n'
+                  '        ModernFrameProfile::ObserveNormalReuse(normalHits, normalMisses);\n'
+                  '    }\n'
+                  '    ModernFrameProfile::End(ModernFrameProfile::Interpreter);')
     source = once(source, '    // Execute the games gfx commands', '''    ModernFrameProfile::Dimensions(mInterpreter->mCurDimensions.width, mInterpreter->mCurDimensions.height,
         mInterpreter->mGameWindowViewport.width, mInterpreter->mGameWindowViewport.height,
         mInterpreter->mGfxCurrentWindowDimensions.width, mInterpreter->mGfxCurrentWindowDimensions.height,

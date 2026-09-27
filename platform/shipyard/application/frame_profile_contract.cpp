@@ -71,12 +71,26 @@ int main() {
     assert(profile.frames == 0 && profile.periods == 0);
     tick += 100; profile.BeginFrame(true);
     assert(profile.periods == 1 && profile.outsideTicks == 100);
+    tick += 2; profile.Begin(ModernFrameProfile::Present);
+    tick += 1; profile.End(ModernFrameProfile::Present);
+    tick += 25; profile.Begin(ModernFrameProfile::Present);
+    assert(profile.presentIntervalCount == 1 && profile.presentIntervals[0] == 26);
+    profile.End(ModernFrameProfile::Present);
+    for (unsigned i = 0; i < ModernFrameProfile::Accumulator::PresentIntervalCapacity + 1; ++i) {
+        ++tick; profile.Begin(ModernFrameProfile::Present);
+        profile.End(ModernFrameProfile::Present);
+    }
+    assert(profile.presentIntervalCount == ModernFrameProfile::Accumulator::PresentIntervalCapacity);
+    assert(profile.presentIntervalDropped == 2);
     tick += 10; profile.EndFrame();
     profile.BeginFrame(false);
+    assert(profile.presentIntervalCount == 0 && profile.presentIntervalDropped == 0);
     const unsigned stopped = reads;
     profile.Begin(ModernFrameProfile::Present); profile.End(ModernFrameProfile::Present);
     assert(!profile.EndFrame() && reads == stopped);
     tick += 1000; profile.BeginFrame(true);
     assert(profile.periods == 0); // Disabled intervals never enter a later sample.
+    profile.Begin(ModernFrameProfile::Present);
+    assert(profile.presentIntervalCount == 0); // Disabled intervals never enter a later sample.
     std::puts("disabled: zero clock reads; nested scopes, frame periods, bounded reports, reset/re-enable: pass");
 }

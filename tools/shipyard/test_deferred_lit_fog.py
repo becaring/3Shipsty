@@ -1,6 +1,7 @@
 """Contracts for the Modern-only deferred lit/fog vertex projection."""
 
 import sys
+import inspect
 import subprocess
 import tempfile
 import unittest
@@ -35,10 +36,19 @@ class DeferredLitFogProjection(unittest.TestCase):
         self.assertLess(modify.index('XboxMaterializeVertex(vtx_idx)'), modify.index('v->u = s;'))
 
     def test_header_has_interpreter_owned_storage(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/include/fast/interpreter.h').read_text()
+        source = (ROOT / 'libultraship/include/fast/interpreter.h').read_text().replace(
+            'GfxTextureCache mTextureCache{};', 'GfxTextureCache mTextureCache;')
         projected = header(source)
         self.assertIn('XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];', projected)
         self.assertIn('XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];', projected)
+        self.assertIn('void XboxTakeNormalReuseCounts(unsigned* hits, unsigned* misses);', projected)
+
+    def test_normal_cache_is_context_local_and_profile_opt_in(self):
+        self.assertIn('context->normalKey = 0xffffffffu;', SOURCE_METHODS)
+        self.assertIn('if (mXboxNormalReuseCapture) ++mXboxNormalReuseHits;', SOURCE_METHODS)
+        self.assertIn('if (mXboxNormalReuseCapture) ++mXboxNormalReuseMisses;', SOURCE_METHODS)
+        self.assertIn('mXboxNormalReuseCapture = ModernFrameProfile::CaptureTrianglePipeline();',
+                      inspect.getsource(transform))
 
     def test_branch_and_reset_keep_pending_attributes(self):
         source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
@@ -129,8 +139,11 @@ public:
     RSP* mRsp;
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
+    bool mXboxNormalReuseCapture;
+    unsigned mXboxNormalReuseHits, mXboxNormalReuseMisses;
     void XboxDiscardVertex(size_t index);
     void XboxMaterializeVertex(size_t index);
+    void XboxTakeNormalReuseCounts(unsigned* hits, unsigned* misses);
 };
 /* PROJECTED METHODS */
 static unsigned seed = 0x23ab45cd;
@@ -170,6 +183,7 @@ int main() {
         int slot=trial%MAX_VERTICES;
         XboxDeferredContext* c=&p.mXboxDeferredContexts[slot];
         memset(c,0,sizeof(*c)); c->count=next()%6; c->references=1;
+        c->normalKey=0xffffffffu;
         c->ambient[0]=next()%256; c->ambient[1]=next()%256; c->ambient[2]=next()%256;
         c->scaleS=next()%65536; c->scaleT=next()%65536;
         c->fogMul=(short)(next()%30000); c->fogOffset=(short)(next()%512-256);
@@ -206,6 +220,80 @@ int main() {
         p.XboxMaterializeVertex(slot);
         if(memcmp(&expected,&rsp.loaded_vertices[slot],sizeof(expected))) return 4;
     }
+    // Two vertices sharing one captured light snapshot and normal must reuse
+    // RGB while retaining their own UV and fog. A later snapshot resets reuse.
+    XboxDeferredContext* shared=&p.mXboxDeferredContexts[2];
+    memset(shared,0,sizeof(*shared)); shared->normalKey=0xffffffffu;
+    shared->count=1;shared->references=2;shared->ambient[0]=31;
+    shared->ambient[1]=47;shared->ambient[2]=59;
+    shared->lights[0].coeff[0]=0.5f;shared->lights[0].coeff[1]=0.25f;
+    shared->lights[0].coeff[2]=0.75f;
+    shared->lights[0].color[0]=120.0f;shared->lights[0].color[1]=80.0f;
+    shared->lights[0].color[2]=45.0f;
+    shared->fogMul=300;shared->fogOffset=20;shared->scaleS=2048;shared->scaleT=4096;
+    p.mXboxNormalReuseCapture=true;
+    for(int i=0;i<2;++i) {
+        const int slot=2+i;
+        F3DVtx input;memset(&input,0,sizeof(input));
+        input.n.n[0]=7;input.n.n[1]=-11;input.n.n[2]=116;
+        input.v.tc[0]=(short)(100+i*17);input.v.tc[1]=(short)(-32+i*5);
+        LoadedVertex original;memset(&original,0,sizeof(original));
+        original.z=50.0f+i*30.0f;original.w=200.0f+i*55.0f;
+        rsp.loaded_vertices[slot]=original;
+        p.mXboxDeferredVertices[slot].source=input;
+        p.mXboxDeferredVertices[slot].context=shared;
+        eager(&original,input,*shared);
+        p.XboxMaterializeVertex(slot);
+        if(memcmp(&original,&rsp.loaded_vertices[slot],sizeof(original))) return 7;
+    }
+    unsigned hits=0,misses=0;p.XboxTakeNormalReuseCounts(&hits,&misses);
+    if(hits!=1 || misses!=1 || p.mXboxNormalReuseHits || p.mXboxNormalReuseMisses) return 8;
+    shared->normalKey=0xffffffffu;shared->references=1;
+    shared->ambient[0]=222;
+    F3DVtx input;memset(&input,0,sizeof(input));
+    input.n.n[0]=7;input.n.n[1]=-11;input.n.n[2]=116;
+    rsp.loaded_vertices[2].z=25.0f;rsp.loaded_vertices[2].w=75.0f;
+    LoadedVertex changed=rsp.loaded_vertices[2];
+    p.mXboxDeferredVertices[2].source=input;p.mXboxDeferredVertices[2].context=shared;
+    eager(&changed,input,*shared);
+    p.XboxMaterializeVertex(2);
+    if(memcmp(&changed,&rsp.loaded_vertices[2],sizeof(changed))) return 9;
+    p.XboxTakeNormalReuseCounts(&hits,&misses);
+    if(hits!=0 || misses!=1) return 10;
+    p.mXboxNormalReuseCapture=false;
+    for(int trial=0;trial<10000;++trial) {
+        memset(shared,0,sizeof(*shared));shared->normalKey=0xffffffffu;
+        shared->count=next()%6;shared->references=3;
+        for(int c=0;c<3;++c)shared->ambient[c]=(uint8_t)next();
+        shared->scaleS=(uint16_t)next();shared->scaleT=(uint16_t)next();
+        shared->fogMul=(short)next();shared->fogOffset=(short)next();
+        for(int light=0;light<shared->count;++light)for(int c=0;c<3;++c) {
+            shared->lights[light].coeff[c]=float(int(next()%255)-127)/127.0f;
+            shared->lights[light].color[c]=float(next()%255);
+        }
+        signed char normal[3]={(signed char)next(),(signed char)next(),(signed char)next()};
+        for(int i=0;i<3;++i) {
+            const int slot=20+i;
+            F3DVtx source;memset(&source,0,sizeof(source));
+            if(i==1 && trial%4==0)normal[2]=(signed char)next();
+            for(int c=0;c<3;++c)source.n.n[c]=normal[c];
+            source.v.tc[0]=(short)next();source.v.tc[1]=(short)next();
+            LoadedVertex original;memset(&original,0,sizeof(original));
+            original.z=float(int(next()%2000)-1000);
+            original.w=float(int(next()%5000)-2500);
+            rsp.loaded_vertices[slot]=original;
+            p.mXboxDeferredVertices[slot].source=source;
+            p.mXboxDeferredVertices[slot].context=shared;
+            eager(&original,source,*shared);
+            memset(&source,0x5a,sizeof(source));rsp.fog_mul=(short)next();
+            p.XboxMaterializeVertex(slot);
+            if(memcmp(&original,&rsp.loaded_vertices[slot],sizeof(original))) {
+                printf("normal repeat trial %d vertex %d\n",trial,i);return 11;
+            }
+        }
+    }
+    p.XboxTakeNormalReuseCounts(&hits,&misses);
+    if(hits || misses) return 12;
     // BranchZ and culling read eager z/w/clip without touching a pending slot.
     XboxDeferredContext* c=&p.mXboxDeferredContexts[0]; c->references=2;
     p.mXboxDeferredVertices[0].context=c;
@@ -282,6 +370,8 @@ public:
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
     bool mXboxDeferredReplay, mFbActive;
+    bool mXboxNormalReuseCapture;
+    unsigned mXboxNormalReuseHits, mXboxNormalReuseMisses;
     struct { int width,height; } mCurDimensions;
     float AdjXForAspectRatio(float x) { return x; }
     void CalculateNormalDir(const F3DLight_t* light,float coeff[3]) {
@@ -291,6 +381,7 @@ public:
     void XboxDiscardVertex(size_t);
     bool XboxTryDeferVertices(size_t,size_t,const F3DVtx*);
     void XboxMaterializeVertex(size_t);
+    void XboxTakeNormalReuseCounts(unsigned*,unsigned*);
     void GfxSpVertex(size_t,size_t,const F3DVtx*);
 };
 /* PROJECTED METHODS */
