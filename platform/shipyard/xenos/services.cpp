@@ -73,6 +73,16 @@ const char* pipelineNames[PipelinePreparationPhaseCount] = {
     "state_combiner", "texture_imports", "geometry_sampler",
     "shader_transitions", "final_capture"
 };
+struct Tri2Counters {
+    uint64_t ticks[Tri2PhaseCount], maximum[Tri2PhaseCount];
+    unsigned calls, samples;
+};
+Tri2Counters tri2 = {};
+uint32_t tri2RandomState = 0x6c83d52fu;
+bool tri2ProfileEnabled = false;
+const char* tri2Names[Tri2PhaseCount] = {
+    "cull", "materialize", "pipeline", "pack", "flush"
+};
 struct TextureHashCounters {
     uint64_t ticks[TextureHashPhaseCount], maximum[TextureHashPhaseCount];
     unsigned calls, samples;
@@ -130,6 +140,7 @@ void ResetMetadata() {
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
     memset(&contextSearch,0,sizeof(contextSearch));
     memset(&pipelinePrep,0,sizeof(pipelinePrep));
+    memset(&tri2,0,sizeof(tri2));
     memset(&textureHash,0,sizeof(textureHash));
     memset(&dust,0,sizeof(dust));
 }
@@ -137,6 +148,12 @@ double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
 }
 void RecordPipelinePreparationPhase(PipelinePreparationSample& sample) {
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
+    sample.lastTick=now;
+}
+void RecordTri2Phase(Tri2Sample& sample) {
     if (!sample.sampled) return;
     const uint64_t now=Clock();
     sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
@@ -152,6 +169,10 @@ void RecordTextureHashPhase(TextureHashSample& sample) {
 CommandSampler commandSampler(Clock);
 void BeginFrame(bool enabled) {
     if (enabled != accumulator.enabled) {
+        // Read once per profiling session. A cache A/B with only the coarse
+        // frame profile enabled incurs no TRI2 timing or per-command counts.
+        tri2ProfileEnabled = enabled &&
+            CVarGetInteger("gSettings.XboxTri2PhaseProfile", 0) != 0;
         InterlockedExchange(&observeWorkers,enabled ? 1 : 0);
         InterlockedExchange(&workerProcessorMask,0);
         InterlockedExchange(&workerJobs,0);
@@ -250,6 +271,35 @@ void EndPipelinePreparation(PipelinePreparationSample& sample) {
             pipelinePrep.maximum[i] = sample.ticks[i];
     }
     ++pipelinePrep.samples;
+    sample.sampled=false;
+}
+void BeginTri2(Tri2Sample& sample) {
+    sample.sampled=false;
+    if (!inInterpreter || !tri2ProfileEnabled) return;
+    ++tri2.calls;
+    tri2RandomState^=tri2RandomState<<13;
+    tri2RandomState^=tri2RandomState>>17;
+    tri2RandomState^=tri2RandomState<<5;
+    if ((tri2RandomState & 63u) != 0) return;
+    sample.sampled=true;
+    sample.currentPhase=Tri2Cull;
+    memset(sample.ticks,0,sizeof(sample.ticks));
+    sample.lastTick=Clock();
+}
+void AdvanceTri2(Tri2Sample& sample, Tri2Phase next) {
+    if (!sample.sampled) return;
+    RecordTri2Phase(sample);
+    sample.currentPhase=next;
+}
+void EndTri2(Tri2Sample& sample) {
+    if (!sample.sampled) return;
+    RecordTri2Phase(sample);
+    for(unsigned i=0;i<Tri2PhaseCount;++i) {
+        tri2.ticks[i] += sample.ticks[i];
+        if (sample.ticks[i] > tri2.maximum[i])
+            tri2.maximum[i] = sample.ticks[i];
+    }
+    ++tri2.samples;
     sample.sampled=false;
 }
 void BeginTextureHash(TextureHashSample& sample, TextureHashPhase initialPhase) {
@@ -411,6 +461,16 @@ void EndFrame() {
         const double estimated=pipelinePrep.samples ? sampled*pipelinePrep.calls/pipelinePrep.samples : 0.0;
         Shipyard_Log("frame-profile pipeline_prep_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
             pipelineNames[i],sampled,estimated,Milliseconds(pipelinePrep.maximum[i]));
+    }
+    if (tri2ProfileEnabled) {
+        Shipyard_Log("frame-profile tri2_route calls=%u samples=%u sample_probability=1/64 scope=opcode_06_interpreter flush_scope=buffer_full_only",
+            tri2.calls,tri2.samples);
+        for(unsigned i=0;i<Tri2PhaseCount;++i) {
+            const double sampled=Milliseconds(tri2.ticks[i]);
+            const double estimated=tri2.samples ? sampled*tri2.calls/tri2.samples : 0.0;
+            Shipyard_Log("frame-profile tri2_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
+                tri2Names[i],sampled,estimated,Milliseconds(tri2.maximum[i]));
+        }
     }
     Shipyard_Log("frame-profile texture_hash_route calls=%u samples=%u sample_probability=1/64 scope=opcode_20_interpreter",
         textureHash.calls,textureHash.samples);

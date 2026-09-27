@@ -132,6 +132,17 @@ void AdvancePipelinePreparation(PipelinePreparationSample& sample, PipelinePrepa
 void EnterPipelineTextureImport(PipelinePreparationSample& sample);
 void ExitPipelineTextureImport(PipelinePreparationSample& sample);
 void EndPipelinePreparation(PipelinePreparationSample& sample);
+enum Tri2Phase {
+    Tri2Cull, Tri2Materialize, Tri2Pipeline, Tri2Pack, Tri2Flush, Tri2PhaseCount
+};
+struct Tri2Sample {
+    uint64_t lastTick, ticks[Tri2PhaseCount];
+    unsigned currentPhase;
+    bool sampled;
+};
+void BeginTri2(Tri2Sample& sample);
+void AdvanceTri2(Tri2Sample& sample, Tri2Phase next);
+void EndTri2(Tri2Sample& sample);
 enum TextureHashPhase {
     TextureHashMapLookup, TextureHashOwningCache, TextureHashLoader,
     TextureHashFinal, TextureHashPhaseCount
