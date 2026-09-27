@@ -63,7 +63,8 @@ bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
     "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update",
-    "play_update", "play_draw_record", "scene_room_draw", "actor_draw", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
+    "play_update", "play_draw_record", "scene_room_draw", "actor_draw",
+    "actor_effect", "actor_effect_ss", "actor_lights_glow", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
     "gui_draw_game", "gui_render", "gui_draw_data", "gui_floating", "gui_save_cvars",
     "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end"};
 // Resource workers must never write the interpreter thread's profiling buckets.
@@ -126,6 +127,10 @@ struct DustCounters {
     bool updateActive;
 };
 DustCounters dust = {};
+enum { ActorProfileCapacity = 512, ActorProfileTopCount = 8 };
+struct ActorDrawCounters { uint64_t ticks; unsigned calls, samples; };
+ActorDrawCounters actorDraw[ActorProfileCapacity] = {};
+uint32_t actorRandomState = 0x9827b18du;
 struct ThreadCpu {
     uint64_t start, ticks;
     unsigned samples, failures, processorMask, threadId, lastError;
@@ -173,6 +178,8 @@ void ResetMetadata() {
     memset(&vtxHash,0,sizeof(vtxHash));
     memset(&textureHash,0,sizeof(textureHash));
     memset(&dust,0,sizeof(dust));
+    memset(actorDraw,0,sizeof(actorDraw));
+    actorRandomState = 0x9827b18du;
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
@@ -243,6 +250,23 @@ void End(Phase phase) {
         else if (phase==AudioGenerate) EndCpu(audioCpu);
     }
     accumulator.End(phase);
+}
+uint64_t BeginActorInstance(int actorId) {
+    if (!accumulator.enabled || actorId < 0 || actorId >= ActorProfileCapacity) return 0;
+    ActorDrawCounters& counter = actorDraw[actorId];
+    ++counter.calls;
+    actorRandomState ^= actorRandomState << 13;
+    actorRandomState ^= actorRandomState >> 17;
+    actorRandomState ^= actorRandomState << 5;
+    if ((actorRandomState & 3u) != 0) return 0;
+    ++counter.samples;
+    return Clock() + 1;
+}
+void EndActorInstance(int actorId, uint64_t started) {
+    if (!started || actorId < 0 || actorId >= ActorProfileCapacity) return;
+    const uint64_t now = Clock();
+    const uint64_t start = started - 1;
+    if (now >= start) actorDraw[actorId].ticks += now - start;
 }
 bool BeginResourceWait() {
     if (!inInterpreter || !accumulator.enabled) return false;
@@ -604,6 +628,42 @@ void EndFrame() {
         Shipyard_Log("frame-profile pipeline_prep_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
             pipelineNames[i],sampled,estimated,Milliseconds(pipelinePrep.maximum[i]));
     }
+    unsigned actorCalls = 0, actorSamples = 0;
+    double actorEstimatedTicks = 0;
+    int topActorIds[ActorProfileTopCount];
+    double topActorTicks[ActorProfileTopCount];
+    for (unsigned i = 0; i < ActorProfileTopCount; ++i) {
+        topActorIds[i] = -1;
+        topActorTicks[i] = 0;
+    }
+    for (unsigned id = 0; id < ActorProfileCapacity; ++id) {
+        const ActorDrawCounters& actor = actorDraw[id];
+        actorCalls += actor.calls;
+        actorSamples += actor.samples;
+        if (!actor.samples) continue;
+        const double estimate = double(actor.ticks) * actor.calls / actor.samples;
+        actorEstimatedTicks += estimate;
+        for (unsigned rank = 0; rank < ActorProfileTopCount; ++rank) {
+            if (topActorIds[rank] >= 0 && estimate <= topActorTicks[rank]) continue;
+            for (unsigned move = ActorProfileTopCount - 1; move > rank; --move) {
+                topActorIds[move] = topActorIds[move - 1];
+                topActorTicks[move] = topActorTicks[move - 1];
+            }
+            topActorIds[rank] = static_cast<int>(id);
+            topActorTicks[rank] = estimate;
+            break;
+        }
+    }
+    Shipyard_Log("frame-profile actor_instances calls=%u samples=%u estimated_ms=%.3f scope=Actor_Draw sampled_1_in_4",
+        actorCalls, actorSamples, Milliseconds(static_cast<uint64_t>(actorEstimatedTicks)));
+    for (unsigned rank = 0; rank < ActorProfileTopCount && topActorIds[rank] >= 0; ++rank) {
+        const unsigned id = static_cast<unsigned>(topActorIds[rank]);
+        const ActorDrawCounters& actor = actorDraw[id];
+        Shipyard_Log("frame-profile actor_id rank=%u id=%u calls=%u samples=%u estimated_ms=%.3f ms_per_game=%.3f",
+            rank, id, actor.calls, actor.samples,
+            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])),
+            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])) / accumulator.frames);
+    }
     if (tri2ProfileEnabled) {
         Shipyard_Log("frame-profile tri2_route calls=%u samples=%u sample_probability=1/64 scope=opcode_06_interpreter flush_scope=buffer_full_only",
             tri2.calls,tri2.samples);
@@ -766,6 +826,30 @@ extern "C" void Shipyard_FrameProfileActorDrawBegin(void) {
 }
 extern "C" void Shipyard_FrameProfileActorDrawEnd(void) {
     ModernFrameProfile::End(ModernFrameProfile::ActorDraw);
+}
+extern "C" uint64_t Shipyard_FrameProfileActorInstanceBegin(int actorId) {
+    return ModernFrameProfile::BeginActorInstance(actorId);
+}
+extern "C" void Shipyard_FrameProfileActorInstanceEnd(int actorId, uint64_t started) {
+    ModernFrameProfile::EndActorInstance(actorId, started);
+}
+extern "C" void Shipyard_FrameProfileEffectBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::ActorEffect);
+}
+extern "C" void Shipyard_FrameProfileEffectEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::ActorEffect);
+}
+extern "C" void Shipyard_FrameProfileEffectSsBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::ActorEffectSs);
+}
+extern "C" void Shipyard_FrameProfileEffectSsEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::ActorEffectSs);
+}
+extern "C" void Shipyard_FrameProfileLightsGlowBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::ActorLightsGlow);
+}
+extern "C" void Shipyard_FrameProfileLightsGlowEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::ActorLightsGlow);
 }
 extern "C" void Shipyard_FrameProfileGameStateDrawBegin(void) {
     ModernFrameProfile::Begin(ModernFrameProfile::GameStateDraw);

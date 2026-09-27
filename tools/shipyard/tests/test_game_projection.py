@@ -43,6 +43,29 @@ class GameProjectionTests(unittest.TestCase):
                 self.assertEqual(call_positions, sorted(call_positions))
                 self.assertTrue(all(begin_at < pos < end_at for pos in call_positions))
 
+    def test_actor_draw_samples_callbacks_and_separates_effects(self):
+        module = self.module()
+        name = 'soh/src/code/z_actor.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        start = output.index(b'void func_800315AC(')
+        end = output.index(b'void func_80031A28(', start)
+        body = output[start:end]
+        self.assertEqual(body.count(b'Shipyard_FrameProfileActorInstanceBegin(actor->id)'), 1)
+        self.assertEqual(body.count(b'Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart)'), 1)
+        self.assertLess(body.index(b'Shipyard_FrameProfileActorInstanceBegin(actor->id)'),
+                        body.index(b'Actor_Draw(play, actor);'))
+        self.assertLess(body.index(b'Actor_Draw(play, actor);'),
+                        body.index(b'Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart)'))
+        for phase, call in ((b'Effect', b'Effect_DrawAll(play->state.gfxCtx);'),
+                            (b'EffectSs', b'EffectSs_DrawAll(play);'),
+                            (b'LightsGlow', b'Lights_DrawGlow(play);')):
+            begin = b'Shipyard_FrameProfile' + phase + b'Begin();'
+            finish = b'Shipyard_FrameProfile' + phase + b'End();'
+            self.assertEqual(body.count(begin), 1)
+            self.assertEqual(body.count(finish), 1)
+            self.assertLess(body.index(begin), body.index(call))
+            self.assertLess(body.index(call), body.index(finish))
+
     def module(self):
         path = ROOT / 'tools/shipyard/prepare_game.py'
         self.assertTrue(path.is_file(), 'game compiler projection missing')

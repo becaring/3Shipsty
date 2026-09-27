@@ -118,6 +118,12 @@ int main() {
         { PhaseScope recording(RecordingRotate); }
     }
     assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0);
+    auto disabledActor = Shipyard_FrameProfileActorInstanceBegin(17);
+    Shipyard_FrameProfileActorInstanceEnd(17, disabledActor);
+    Shipyard_FrameProfileEffectBegin(); Shipyard_FrameProfileEffectEnd();
+    Shipyard_FrameProfileEffectSsBegin(); Shipyard_FrameProfileEffectSsEnd();
+    Shipyard_FrameProfileLightsGlowBegin(); Shipyard_FrameProfileLightsGlowEnd();
+    assert(disabledActor==0 && clockReads==0);
     ObserveResourceWorker(); assert(workerJobs==0 && workerProcessorMask==0);
     assert(resourceLookups.calls==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
@@ -344,9 +350,22 @@ int main() {
     failCpu=true; Begin(AudioGenerate); End(AudioGenerate); failCpu=false;
     assert(audioCpu.failures==1 && audioCpu.lastError==5 && audioCpu.samples==1);
     assert(logCalls==0 && frequencyReads==1);
+    for(unsigned i=0;i<128;++i) {
+        auto started=Shipyard_FrameProfileActorInstanceBegin(17);
+        Shipyard_FrameProfileActorInstanceEnd(17,started);
+    }
+    assert(actorDraw[17].calls==128 && actorDraw[17].samples>0);
+    assert(actorDraw[17].ticks>0);
+    Shipyard_FrameProfileEffectBegin(); Shipyard_FrameProfileEffectEnd();
+    Shipyard_FrameProfileEffectSsBegin(); Shipyard_FrameProfileEffectSsEnd();
+    Shipyard_FrameProfileLightsGlowBegin(); Shipyard_FrameProfileLightsGlowEnd();
+    assert(accumulator.phases[ActorEffect].calls==1);
+    assert(accumulator.phases[ActorEffectSs].calls==1);
+    assert(accumulator.phases[ActorLightsGlow].calls==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==51+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==53+PhaseCount);
+    assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);

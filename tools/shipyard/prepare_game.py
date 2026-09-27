@@ -342,6 +342,39 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             '        GameState_Draw(gameState, gfxCtx);\n'
             '        Shipyard_FrameProfileGameStateDrawEnd();',
             'Gamestate draw profile boundary')
+    if name == 'soh/src/code/z_actor.c':
+        replace_projected_once(
+            'void func_800315AC(PlayState* play, ActorContext* actorCtx) {',
+            'extern u64 Shipyard_FrameProfileActorInstanceBegin(int actorId);\n'
+            'extern void Shipyard_FrameProfileActorInstanceEnd(int actorId, u64 started);\n'
+            'extern void Shipyard_FrameProfileEffectBegin(void);\n'
+            'extern void Shipyard_FrameProfileEffectEnd(void);\n'
+            'extern void Shipyard_FrameProfileEffectSsBegin(void);\n'
+            'extern void Shipyard_FrameProfileEffectSsEnd(void);\n'
+            'extern void Shipyard_FrameProfileLightsGlowBegin(void);\n'
+            'extern void Shipyard_FrameProfileLightsGlowEnd(void);\n'
+            'void func_800315AC(PlayState* play, ActorContext* actorCtx) {',
+            'Actor callback and effect profile declarations')
+        replace_projected_once(
+            '                            Actor_Draw(play, actor);\n'
+            '                            actor->isDrawn = true;',
+            '                            u64 actorProfileStart = Shipyard_FrameProfileActorInstanceBegin(actor->id);\n'
+            '                            Actor_Draw(play, actor);\n'
+            '                            Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart);\n'
+            '                            actor->isDrawn = true;',
+            'Sample drawn actor callback time by actor ID')
+        for call, phase in (
+            ('Effect_DrawAll(play->state.gfxCtx);', 'Effect'),
+            ('EffectSs_DrawAll(play);', 'EffectSs'),
+            ('Lights_DrawGlow(play);', 'LightsGlow'),
+        ):
+            replace_projected_once(
+                '        ' + call,
+                '        Shipyard_FrameProfile' + phase + 'Begin();\n'
+                '        ' + call + '\n'
+                '        Shipyard_FrameProfile' + phase + 'End();',
+                phase + ' draw profile boundary')
+        changes.append('Sample actor callbacks by ID and separate effect draw costs')
     if name == 'soh/src/code/z_play.c':
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
