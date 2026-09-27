@@ -31,6 +31,17 @@ class FullColorClearProfileTests(unittest.TestCase):
         self.assertNotIn('xboxFullColorClear', gui + transfer)
         self.assertIn('#include "libultraship/bridge/consolevariablebridge.h"', source)
 
+    def test_tiling_guard_trial_is_opt_in_on_render_thread(self):
+        prepare()
+        source = (OUT / 'generated/src/fast/interpreter.cpp').read_text()
+        run = method(source, 'void Interpreter::Run(Gfx* commands,', '\nvoid Interpreter::EndFrame()')
+        gui = method(source, 'void Interpreter::RunGuiOnly() {', '\nvoid Interpreter::Run(Gfx* commands,')
+
+        self.assertEqual(source.count('CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0)'), 1)
+        self.assertIn('Fast::ShipyardXenos::SetTilingGuardTrialEnabled(', run)
+        self.assertLess(run.index('SetTilingGuardTrialEnabled('), run.index('mRapi->StartFrame()'))
+        self.assertNotIn('SetTilingGuardTrialEnabled', gui)
+
 
 if __name__ == '__main__':
     unittest.main()

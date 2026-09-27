@@ -3,6 +3,7 @@
 #include "xenos/core.h"
 #include "context/platform.h"
 #include "storage/atomic_file.h"
+#include "libultraship/bridge/consolevariablebridge.h"
 #include <spdlog/spdlog.h>
 #include <cstdarg>
 #include <cstdio>
@@ -426,6 +427,14 @@ void EndFrame() {
         counters.tilingSpace.maxUsed[2],counters.tilingSpace.maxUsed[3],
         counters.tilingSpace.minRemaining[0],counters.tilingSpace.minRemaining[1],
         counters.tilingSpace.minRemaining[2],counters.tilingSpace.minRemaining[3]);
+    const Fast::ShipyardXenos::TilingGuardTrialStats& guard = counters.tilingGuardTrial;
+    Shipyard_Log("frame-profile tiling_guard_trial enabled=%d begin_rejected=%u candidates=%u continued=%u fallback_ineligible=%u fallback_oversize=%u fallback_capacity=%u fallback_cursor=%u fallback_space=%u post_queries=%u post_fallbacks=%u post_capacity_changes=%u post_cursor_regressions=%u max_draw_bytes=%u max_used=%u total_draw_bytes=%I64u",
+        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0),
+        guard.beginCapacityRejected,guard.candidates,guard.continued,
+        guard.ineligibleFallbacks,guard.oversizeFallbacks,guard.capacityFallbacks,
+        guard.cursorFallbacks,guard.spaceFallbacks,guard.postQueries,
+        guard.postFallbacks,guard.postCapacityChanges,guard.postCursorRegressions,
+        guard.maxDrawBytes,guard.maxUsed,guard.totalDrawBytes);
     Shipyard_Log("frame-profile ring_draw_probe same_segment=%u ambiguous=%u segment_changed=%u actual_bytes=%.0f estimated_bytes=%.0f max_actual_bytes=%u segment_bytes=262144",
         counters.ringSameSegmentDraws, counters.ringAmbiguousDraws,
         counters.ringSegmentChangedDraws,

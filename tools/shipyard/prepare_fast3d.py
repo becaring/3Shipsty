@@ -296,6 +296,10 @@ def prepare():
     # ordinary path keeps Modern's depth-only clear, while this opt-in matches
     # historical 4.0.5's fresh color/depth game draw. GUI-only and explicit
     # framebuffer transfers retain their existing contents.
+    body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->StartFrame());',
+              '    Fast::ShipyardXenos::SetTilingGuardTrialEnabled(\n'
+              '        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0) != 0);\n'
+              '    (mXboxPipelineKey.valid=false, mRapi->StartFrame());')
     body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(false, true));',
               '    const bool xboxFullColorClear =\n'
               '        CVarGetInteger("gSettings.XboxFullColorClearProfile", 0) != 0;\n'
@@ -314,6 +318,7 @@ def prepare():
               '    }')
     text=once(text,'#define NOMINMAX\n',
               '#define NOMINMAX\n#include "xenos/depth_discard.h"\n'
+              '#include "xenos/tiling_guard_trial.h"\n'
               '#include "libultraship/bridge/consolevariablebridge.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
