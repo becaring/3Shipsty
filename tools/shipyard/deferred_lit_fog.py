@@ -13,10 +13,6 @@ struct XboxDeferredContext {
     uint16_t scaleS, scaleT;
     int16_t fogMul, fogOffset;
     uint8_t references;
-    // A context owns one immutable VTX lighting snapshot. This key is reset
-    // whenever its pool slot is reused, even if the same normal recurs.
-    uint32_t normalKey;
-    uint8_t normalRgb[3];
 };
 struct XboxDeferredVertex {
     F3DVtx source;
@@ -85,7 +81,6 @@ bool Interpreter::XboxTryDeferVertices(size_t n_vertices, size_t dest_index, con
     context->scaleT = mRsp->texture_scaling_factor.t;
     context->fogMul = mRsp->fog_mul;
     context->fogOffset = mRsp->fog_offset;
-    context->normalKey = 0xffffffffu;
 
     // Reuse the authoritative VMX/aspect/clip transform with attributes off.
     struct ReplayGuard {
@@ -125,38 +120,23 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
     short V = v->tc[1] * context->scaleT >> 16;
     d->u = U;
     d->v = V;
-    const uint32_t normalKey = (uint32_t(uint8_t(vn->n[0])) << 16) |
-                               (uint32_t(uint8_t(vn->n[1])) << 8) |
-                               uint32_t(uint8_t(vn->n[2]));
-    if (normalKey == context->normalKey) {
-        if (mXboxNormalReuseCapture) ++mXboxNormalReuseHits;
-        d->color.r = context->normalRgb[0];
-        d->color.g = context->normalRgb[1];
-        d->color.b = context->normalRgb[2];
-    } else {
-        if (mXboxNormalReuseCapture) ++mXboxNormalReuseMisses;
-        int r = context->ambient[0], g = context->ambient[1], b = context->ambient[2];
-        const float normal[3] = { (float)vn->n[0], (float)vn->n[1], (float)vn->n[2] };
-        for (int i = 0; i < context->count; ++i) {
-            float intensity = 0;
-            intensity += normal[0] * context->lights[i].coeff[0];
-            intensity += normal[1] * context->lights[i].coeff[1];
-            intensity += normal[2] * context->lights[i].coeff[2];
-            intensity /= 127.0f;
-            if (intensity > 0.0f) {
-                r += intensity * context->lights[i].color[0];
-                g += intensity * context->lights[i].color[1];
-                b += intensity * context->lights[i].color[2];
-            }
+    int r = context->ambient[0], g = context->ambient[1], b = context->ambient[2];
+    const float normal[3] = { (float)vn->n[0], (float)vn->n[1], (float)vn->n[2] };
+    for (int i = 0; i < context->count; ++i) {
+        float intensity = 0;
+        intensity += normal[0] * context->lights[i].coeff[0];
+        intensity += normal[1] * context->lights[i].coeff[1];
+        intensity += normal[2] * context->lights[i].coeff[2];
+        intensity /= 127.0f;
+        if (intensity > 0.0f) {
+            r += intensity * context->lights[i].color[0];
+            g += intensity * context->lights[i].color[1];
+            b += intensity * context->lights[i].color[2];
         }
-        d->color.r = r > 255 ? 255 : r;
-        d->color.g = g > 255 ? 255 : g;
-        d->color.b = b > 255 ? 255 : b;
-        context->normalRgb[0] = d->color.r;
-        context->normalRgb[1] = d->color.g;
-        context->normalRgb[2] = d->color.b;
-        context->normalKey = normalKey;
     }
+    d->color.r = r > 255 ? 255 : r;
+    d->color.g = g > 255 ? 255 : g;
+    d->color.b = b > 255 ? 255 : b;
     float w = d->w;
     if (fabsf(w) < 0.001f) w = 0.001f;
     float winv = 1.0f / w;
@@ -165,12 +145,6 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
     fog_z = Ship::Math::clamp(fog_z, 0.0f, 255.0f);
     d->color.a = fog_z;
     XboxDiscardVertex(index);
-}
-
-void Interpreter::XboxTakeNormalReuseCounts(unsigned* hits, unsigned* misses) {
-    *hits = mXboxNormalReuseHits;
-    *misses = mXboxNormalReuseMisses;
-    mXboxNormalReuseHits = mXboxNormalReuseMisses = 0;
 }
 // MODERN DEFERRED LIT FOG END
 '''
@@ -190,15 +164,12 @@ def header(source):
                    '    bool XboxTryDeferVertices(size_t n_vertices, size_t dest_index, const F3DVtx* vertices);\n'
                    '    void XboxDiscardVertex(size_t index);\n'
                    '    void XboxMaterializeVertex(size_t index);\n'
-                   '    void XboxTakeNormalReuseCounts(unsigned* hits, unsigned* misses);\n'
                    '    void GfxSpVertex(size_t numVertices, size_t destIndex, const F3DVtx* vertices);')
     source = _once(source, '    GfxTextureCache mTextureCache;',
                    '    GfxTextureCache mTextureCache;\n'
                    '    XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];\n'
                    '    XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];\n'
-                   '    bool mXboxDeferredReplay;\n'
-                   '    bool mXboxNormalReuseCapture;\n'
-                   '    unsigned mXboxNormalReuseHits, mXboxNormalReuseMisses;')
+                   '    bool mXboxDeferredReplay;')
     return source
 
 
@@ -220,11 +191,5 @@ def transform(source):
     brace = source.index('{', constructor)
     source = source[:brace + 1] + '\n    memset(mXboxDeferredVertices, 0, sizeof(mXboxDeferredVertices));\n' + \
              '    memset(mXboxDeferredContexts, 0, sizeof(mXboxDeferredContexts));\n' + \
-             '    mXboxDeferredReplay = false;\n' + \
-             '    mXboxNormalReuseCapture = false;\n' + \
-             '    mXboxNormalReuseHits = mXboxNormalReuseMisses = 0;' + source[brace + 1:]
-    run = source.index('void Interpreter::Run(Gfx* commands,')
-    run_brace = source.index('{', run)
-    source = source[:run_brace + 1] + '\n    mXboxNormalReuseCapture = ModernFrameProfile::CaptureTrianglePipeline();\n' + \
-             '    mXboxNormalReuseHits = mXboxNormalReuseMisses = 0;' + source[run_brace + 1:]
+             '    mXboxDeferredReplay = false;' + source[brace + 1:]
     return source

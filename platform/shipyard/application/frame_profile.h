@@ -108,7 +108,6 @@ void ObserveTextureHashCache(bool hit);
 void ObserveTexturePathCache(bool hit);
 bool CaptureTrianglePipeline();
 void ObserveTrianglePipeline(bool hit);
-void ObserveNormalReuse(unsigned hits, unsigned misses);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }

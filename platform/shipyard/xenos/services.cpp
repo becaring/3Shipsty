@@ -60,8 +60,6 @@ struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, p
 ResourceLookupCounters resourceLookups = {};
 struct TrianglePipelineCounters { unsigned hits, misses; };
 TrianglePipelineCounters trianglePipeline = {};
-struct NormalReuseCounters { unsigned hits, misses; };
-NormalReuseCounters normalReuse = {};
 struct DustCounters {
     unsigned draws, current, updatesWithDust, maxDrawsPerUpdate, near100, near250;
     float minDistanceSquared, maxScale;
@@ -108,7 +106,6 @@ void ResetMetadata() {
     memset(&audioCpu,0,sizeof(audioCpu));
     memset(&resourceLookups,0,sizeof(resourceLookups));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
-    memset(&normalReuse,0,sizeof(normalReuse));
     memset(&dust,0,sizeof(dust));
 }
 double Milliseconds(uint64_t ticks) {
@@ -177,11 +174,6 @@ bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
 void ObserveTrianglePipeline(bool hit) {
     if (hit) ++trianglePipeline.hits;
     else ++trianglePipeline.misses;
-}
-void ObserveNormalReuse(unsigned hits, unsigned misses) {
-    if (!inInterpreter || !accumulator.enabled) return;
-    normalReuse.hits += hits;
-    normalReuse.misses += misses;
 }
 void DustUpdateBegin() {
     if (!accumulator.enabled) return;
@@ -296,8 +288,6 @@ void EndFrame() {
         resourceLookups.pathHits,resourceLookups.pathMisses);
     Shipyard_Log("frame-profile triangle_pipeline hits=%u misses=%u scope=surviving_triangles",
         trianglePipeline.hits,trianglePipeline.misses);
-    Shipyard_Log("frame-profile normal_reuse hits=%u misses=%u scope=deferred_materialization",
-        normalReuse.hits,normalReuse.misses);
     Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
         dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
         dust.minDistanceSquared,dust.maxScale);
