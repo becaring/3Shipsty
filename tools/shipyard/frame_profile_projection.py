@@ -99,10 +99,10 @@ def presentation(source):
 def interpreter(source):
     source='#include "application/frame_profile.h"\n#include "application/command_profile.h"\n'+source
     source=once(source,
-        '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);',
-        '        gfx->mXboxTextureHashCache.Lookup(hash, fileName, lookupGeneration);\n'
+        '        hash, lookupGeneration, archiveEpoch, resourceManager, archiveManager);',
+        '        hash, lookupGeneration, archiveEpoch, resourceManager, archiveManager);\n'
         '    if (ModernFrameProfile::CaptureResourceLookups())\n'
-        '        ModernFrameProfile::ObserveTextureHashCache(texture != nullptr);')
+        '        ModernFrameProfile::ObserveTextureHashCache(hashHit.texture != nullptr);')
     source=once(source,
         '                gfx->mXboxTextureHashCache.Lookup(cacheKey, imgData, lookupGeneration);',
         '                gfx->mXboxTextureHashCache.Lookup(cacheKey, imgData, lookupGeneration);\n'
