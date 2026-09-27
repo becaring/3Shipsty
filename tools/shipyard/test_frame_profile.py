@@ -151,6 +151,8 @@ int main() {
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfilePlayUpdateBegin(); Shipyard_FrameProfilePlayUpdateEnd();
     Shipyard_FrameProfilePlayDrawRecordBegin(); Shipyard_FrameProfilePlayDrawRecordEnd();
+    Shipyard_FrameProfileSceneRoomDrawBegin(); Shipyard_FrameProfileSceneRoomDrawEnd();
+    Shipyard_FrameProfileActorDrawBegin(); Shipyard_FrameProfileActorDrawEnd();
     Shipyard_FrameProfileGameStateDrawBegin(); Shipyard_FrameProfileGameStateDrawEnd();
     Begin(GuiStartFrame); End(GuiStartFrame);
     Begin(GuiDrawMenu); End(GuiDrawMenu);
@@ -167,6 +169,8 @@ int main() {
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfilePlayUpdateBegin(); Shipyard_FrameProfilePlayUpdateEnd();
     Shipyard_FrameProfilePlayDrawRecordBegin(); Shipyard_FrameProfilePlayDrawRecordEnd();
+    Shipyard_FrameProfileSceneRoomDrawBegin(); Shipyard_FrameProfileSceneRoomDrawEnd();
+    Shipyard_FrameProfileActorDrawBegin(); Shipyard_FrameProfileActorDrawEnd();
     Shipyard_FrameProfileGameStateDrawBegin(); Shipyard_FrameProfileGameStateDrawEnd();
     Shipyard_FrameProfileGameUpdateEnd();
     Begin(GuiStartFrame); End(GuiStartFrame);
@@ -174,6 +178,8 @@ int main() {
     Begin(GuiViewport); End(GuiViewport);
     assert(accumulator.phases[PlayUpdate].calls==1);
     assert(accumulator.phases[PlayDrawRecord].calls==1);
+    assert(accumulator.phases[SceneRoomDraw].calls==1);
+    assert(accumulator.phases[ActorDraw].calls==1);
     assert(accumulator.phases[GameStateDraw].calls==1);
     assert(accumulator.phases[GuiStartFrame].calls==1);
     assert(accumulator.phases[GuiDrawMenu].calls==1);

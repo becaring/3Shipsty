@@ -23,6 +23,11 @@ class GameProjectionTests(unittest.TestCase):
             ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayUpdate', b'Play_Update(play);'),
             ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayDrawRecord', b'FrameInterpolation_StartRecord();',
              b'Play_Draw(play);', b'FrameInterpolation_StopRecord();'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfileSceneRoomDraw', b'Scene_Draw(play);',
+             b'Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);',
+             b'Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfileActorDraw',
+             b'func_800315AC(play, &play->actorCtx);'),
             ('soh/src/code/game.c', b'Shipyard_FrameProfileGameStateDraw', b'GameState_Draw(gameState, gfxCtx);'),
         )
         for name, prefix, *calls in cases:

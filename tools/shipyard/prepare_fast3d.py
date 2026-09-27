@@ -22,6 +22,7 @@ from xbox360_platform import texture_state
 import deferred_lit_fog
 import pipeline_phase_profile_projection
 import tri2_pair_projection
+import tri2_column_pack_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -337,8 +338,10 @@ def prepare():
     text=text[:start]+body+text[end:]
     text=once(text,'void Interpreter::EndFrame() {',
               'void Interpreter::EndFrame() {\n'
-              '    if (mRendersToFb) {\n'
+              '    // Direct 720p rendering needs depth only after the final replay.\n'
+              '    if (mRendersToFb || mXboxDiscardGameDepth)\n'
               '        Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();\n'
+              '    if (mRendersToFb) {\n'
               '        Fast::ShipyardXenos::DiscardPresentationColorOnEnd();\n'
               '    }')
     text=once(text,'#define NOMINMAX\n',
@@ -351,6 +354,7 @@ def prepare():
     text=texture_hash_borrowed_handler(text)
     text=texture_hash_epoch_handler(text)
     text=tri2_pair_projection.transform(text)
+    text=tri2_column_pack_projection.transform(text)
     pending['src/fast/interpreter.cpp']=text
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
     stale_color=OUT/'generated/include/fast3d/unit_color.h'

@@ -349,6 +349,10 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             'extern void Shipyard_FrameProfilePlayUpdateEnd(void);\n'
             'extern void Shipyard_FrameProfilePlayDrawRecordBegin(void);\n'
             'extern void Shipyard_FrameProfilePlayDrawRecordEnd(void);\n'
+            'extern void Shipyard_FrameProfileSceneRoomDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileSceneRoomDrawEnd(void);\n'
+            'extern void Shipyard_FrameProfileActorDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileActorDrawEnd(void);\n'
             'void Play_Init(GameState* thisx) {',
             'Gameplay update and recorder-wrapped draw profile declarations')
         replace_projected_once(
@@ -367,6 +371,22 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             '    FrameInterpolation_StopRecord();\n'
             '    Shipyard_FrameProfilePlayDrawRecordEnd();',
             'Recorder-wrapped gameplay draw profile boundary')
+        replace_projected_once(
+            '                Scene_Draw(play);\n'
+            '                Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);\n'
+            '                Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);',
+            '                Shipyard_FrameProfileSceneRoomDrawBegin();\n'
+            '                Scene_Draw(play);\n'
+            '                Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);\n'
+            '                Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);\n'
+            '                Shipyard_FrameProfileSceneRoomDrawEnd();',
+            'Scene and room draw profile boundary')
+        replace_projected_once(
+            '            func_800315AC(play, &play->actorCtx);',
+            '            Shipyard_FrameProfileActorDrawBegin();\n'
+            '            func_800315AC(play, &play->actorCtx);\n'
+            '            Shipyard_FrameProfileActorDrawEnd();',
+            'Actor draw profile boundary')
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
             'extern void Shipyard_RuntimeTrace(const char* format, ...);\n'

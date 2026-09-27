@@ -63,7 +63,7 @@ bool haveSettings = false, haveDimensions = false, changed = false;
 const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readiness",
     "gui_start", "framebuffer", "interpreter", "gui_end", "present", "audio_wait",
     "audio_generate", "audio_submit", "interpreter_setup", "command_walk", "interpreter_finish", "resource_handoff_wait", "recording_rotate", "game_update",
-    "play_update", "play_draw_record", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
+    "play_update", "play_draw_record", "scene_room_draw", "actor_draw", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
     "gui_draw_game", "gui_render", "gui_draw_data", "gui_floating", "gui_save_cvars",
     "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end"};
 // Resource workers must never write the interpreter thread's profiling buckets.
@@ -754,6 +754,18 @@ extern "C" void Shipyard_FrameProfilePlayDrawRecordBegin(void) {
 }
 extern "C" void Shipyard_FrameProfilePlayDrawRecordEnd(void) {
     ModernFrameProfile::End(ModernFrameProfile::PlayDrawRecord);
+}
+extern "C" void Shipyard_FrameProfileSceneRoomDrawBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::SceneRoomDraw);
+}
+extern "C" void Shipyard_FrameProfileSceneRoomDrawEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::SceneRoomDraw);
+}
+extern "C" void Shipyard_FrameProfileActorDrawBegin(void) {
+    ModernFrameProfile::Begin(ModernFrameProfile::ActorDraw);
+}
+extern "C" void Shipyard_FrameProfileActorDrawEnd(void) {
+    ModernFrameProfile::End(ModernFrameProfile::ActorDraw);
 }
 extern "C" void Shipyard_FrameProfileGameStateDrawBegin(void) {
     ModernFrameProfile::Begin(ModernFrameProfile::GameStateDraw);
