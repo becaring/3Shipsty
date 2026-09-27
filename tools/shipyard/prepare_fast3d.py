@@ -19,6 +19,7 @@ from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_sig
                                                texture_command_manager, texture_hash_cache_handler)
 from xbox360_platform import texture_state
 import deferred_lit_fog
+import pipeline_phase_profile_projection
 import tri2_pair_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
@@ -286,6 +287,7 @@ def prepare():
     text=stateless_signature(text)
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    text=pipeline_phase_profile_projection.transform(text)
     text=deferred_lit_fog.transform(text)
     start=text.index('void Interpreter::Run(Gfx* commands,')
     end=text.index('\nvoid Interpreter::EndFrame()',start)

@@ -63,6 +63,8 @@ struct NativeCounters {
 unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
 unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
 unsigned depthResolves,depthResolvesSkipped,earlyDepthFences,tilingDrawRestarts,tilingPeakBytes;
+unsigned tiling1080Batches,tiling1080Tile1Batches,tiling1080Vertices,tiling1080Tile1Vertices;
+unsigned tiling1080OversizeBatches;
 unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 };
 unsigned timingTransitions=0,captures=0;
@@ -87,6 +89,13 @@ int main() {
     assert(resourceLookups.calls==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(!CaptureTrianglePipeline() && trianglePipeline.hits==0 && trianglePipeline.misses==0);
+    PipelinePreparationSample disabledPrep;
+    BeginPipelinePreparation(disabledPrep);
+    AdvancePipelinePreparation(disabledPrep,PipelineGeometrySampler);
+    EnterPipelineTextureImport(disabledPrep);
+    ExitPipelineTextureImport(disabledPrep);
+    EndPipelinePreparation(disabledPrep);
+    assert(clockReads==0 && pipelinePrep.calls==0 && pipelinePrep.samples==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
@@ -113,6 +122,30 @@ int main() {
     assert(resourceLookups.calls==2 && resourceLookups.alternate==1 && resourceLookups.resolved==1);
     assert(resourceLookups.fallback==1 && resourceLookups.probes==3 && clockReads==lookupClockReads);
     assert(resourceLookups.textureHits==1 && resourceLookups.textureMisses==1);
+    pipelineRandomState=1;
+    memset(&pipelinePrep,0,sizeof(pipelinePrep));
+    const unsigned prepClockBefore=clockReads;
+    unsigned expectedSamples=0,state=1;
+    for(unsigned i=0;i<6400;++i) {
+        state^=state<<13;state^=state>>17;state^=state<<5;
+        expectedSamples+=(state&63u)==0;
+        PipelinePreparationSample sample;
+        BeginPipelinePreparation(sample);
+        AdvancePipelinePreparation(sample,PipelineGeometrySampler);
+        EnterPipelineTextureImport(sample);
+        ExitPipelineTextureImport(sample);
+        AdvancePipelinePreparation(sample,PipelineShaderTransitions);
+        AdvancePipelinePreparation(sample,PipelineFinalCapture);
+        EndPipelinePreparation(sample);
+    }
+    assert(expectedSamples>50 && expectedSamples<150);
+    assert(pipelinePrep.calls==6400 && pipelinePrep.samples==expectedSamples);
+    assert(clockReads-prepClockBefore==expectedSamples*7);
+    assert(pipelinePrep.ticks[PipelineStateCombiner]==expectedSamples);
+    assert(pipelinePrep.ticks[PipelineTextureImports]==expectedSamples);
+    assert(pipelinePrep.ticks[PipelineGeometrySampler]==expectedSamples*2);
+    assert(pipelinePrep.ticks[PipelineShaderTransitions]==expectedSamples);
+    assert(pipelinePrep.ticks[PipelineFinalCapture]==expectedSamples);
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfileDustDraw(5,0,0,0,0,0,1,0);
     Shipyard_FrameProfileDustDraw(200,0,0,0,0,0,2,0);
@@ -132,10 +165,11 @@ int main() {
     assert(logCalls==0 && frequencyReads==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==20+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==27+PhaseCount);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(trianglePipeline.hits==0 && trianglePipeline.misses==0);
     assert(contextSearch.attempts==0 && contextSearch.slots==0 && contextSearch.maximum==0);
+    assert(pipelinePrep.calls==0 && pipelinePrep.samples==0);
     assert(resourceLookups.calls==0 && resourceLookups.probes==0);
     assert(resourceLookups.textureHits==0 && resourceLookups.textureMisses==0);
     assert(workerJobs==0 && workerProcessorMask==0);

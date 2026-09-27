@@ -118,6 +118,20 @@ void ObserveTexturePathCache(bool hit);
 bool CaptureTrianglePipeline();
 void ObserveTrianglePipeline(bool hit);
 void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum);
+enum PipelinePreparationPhase {
+    PipelineStateCombiner, PipelineTextureImports, PipelineGeometrySampler,
+    PipelineShaderTransitions, PipelineFinalCapture, PipelinePreparationPhaseCount
+};
+struct PipelinePreparationSample {
+    uint64_t lastTick, ticks[PipelinePreparationPhaseCount];
+    unsigned currentPhase;
+    bool sampled;
+};
+void BeginPipelinePreparation(PipelinePreparationSample& sample);
+void AdvancePipelinePreparation(PipelinePreparationSample& sample, PipelinePreparationPhase next);
+void EnterPipelineTextureImport(PipelinePreparationSample& sample);
+void ExitPipelineTextureImport(PipelinePreparationSample& sample);
+void EndPipelinePreparation(PipelinePreparationSample& sample);
 class PhaseScope {
   public:
     explicit PhaseScope(Phase value) : phase(value) { Begin(phase); }

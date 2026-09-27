@@ -62,6 +62,16 @@ struct TrianglePipelineCounters { unsigned hits, misses; };
 TrianglePipelineCounters trianglePipeline = {};
 struct ContextSearchCounters { unsigned attempts, slots, maximum; };
 ContextSearchCounters contextSearch = {};
+struct PipelinePreparationCounters {
+    uint64_t ticks[PipelinePreparationPhaseCount], maximum[PipelinePreparationPhaseCount];
+    unsigned calls, samples;
+};
+PipelinePreparationCounters pipelinePrep = {};
+uint32_t pipelineRandomState = 0x23ab45cdu;
+const char* pipelineNames[PipelinePreparationPhaseCount] = {
+    "state_combiner", "texture_imports", "geometry_sampler",
+    "shader_transitions", "final_capture"
+};
 struct DustCounters {
     unsigned draws, current, updatesWithDust, maxDrawsPerUpdate, near100, near250;
     float minDistanceSquared, maxScale;
@@ -109,10 +119,17 @@ void ResetMetadata() {
     memset(&resourceLookups,0,sizeof(resourceLookups));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
     memset(&contextSearch,0,sizeof(contextSearch));
+    memset(&pipelinePrep,0,sizeof(pipelinePrep));
     memset(&dust,0,sizeof(dust));
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
+}
+void RecordPipelinePreparationPhase(PipelinePreparationSample& sample) {
+    if (!sample.sampled) return;
+    const uint64_t now=Clock();
+    sample.ticks[sample.currentPhase] += now >= sample.lastTick ? now - sample.lastTick : 0;
+    sample.lastTick=now;
 }
 }
 CommandSampler commandSampler(Clock);
@@ -182,6 +199,41 @@ void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum) {
     contextSearch.attempts += attempts;
     contextSearch.slots += slots;
     if (maximum > contextSearch.maximum) contextSearch.maximum = maximum;
+}
+void BeginPipelinePreparation(PipelinePreparationSample& sample) {
+    sample.sampled=false;
+    if (!inInterpreter || !accumulator.enabled) return;
+    ++pipelinePrep.calls;
+    pipelineRandomState^=pipelineRandomState<<13;
+    pipelineRandomState^=pipelineRandomState>>17;
+    pipelineRandomState^=pipelineRandomState<<5;
+    if ((pipelineRandomState & 63u) != 0) return;
+    sample.sampled=true;
+    sample.currentPhase=PipelineStateCombiner;
+    memset(sample.ticks,0,sizeof(sample.ticks));
+    sample.lastTick=Clock();
+}
+void AdvancePipelinePreparation(PipelinePreparationSample& sample, PipelinePreparationPhase next) {
+    if (!sample.sampled) return;
+    RecordPipelinePreparationPhase(sample);
+    sample.currentPhase=next;
+}
+void EnterPipelineTextureImport(PipelinePreparationSample& sample) {
+    AdvancePipelinePreparation(sample,PipelineTextureImports);
+}
+void ExitPipelineTextureImport(PipelinePreparationSample& sample) {
+    AdvancePipelinePreparation(sample,PipelineGeometrySampler);
+}
+void EndPipelinePreparation(PipelinePreparationSample& sample) {
+    if (!sample.sampled) return;
+    RecordPipelinePreparationPhase(sample);
+    for(unsigned i=0;i<PipelinePreparationPhaseCount;++i) {
+        pipelinePrep.ticks[i] += sample.ticks[i];
+        if (sample.ticks[i] > pipelinePrep.maximum[i])
+            pipelinePrep.maximum[i] = sample.ticks[i];
+    }
+    ++pipelinePrep.samples;
+    sample.sampled=false;
 }
 void DustUpdateBegin() {
     if (!accumulator.enabled) return;
@@ -306,6 +358,14 @@ void EndFrame() {
         trianglePipeline.hits,trianglePipeline.misses);
     Shipyard_Log("frame-profile context_search attempts=%u slots=%u max_scan=%u scope=deferred_vertex_contexts",
         contextSearch.attempts,contextSearch.slots,contextSearch.maximum);
+    Shipyard_Log("frame-profile pipeline_prep calls=%u samples=%u sample_probability=1/64 scope=cold_triangle_preparation",
+        pipelinePrep.calls,pipelinePrep.samples);
+    for(unsigned i=0;i<PipelinePreparationPhaseCount;++i) {
+        const double sampled=Milliseconds(pipelinePrep.ticks[i]);
+        const double estimated=pipelinePrep.samples ? sampled*pipelinePrep.calls/pipelinePrep.samples : 0.0;
+        Shipyard_Log("frame-profile pipeline_prep_phase=%s sampled_ms=%.3f estimated_ms=%.3f sample_max_ms=%.3f",
+            pipelineNames[i],sampled,estimated,Milliseconds(pipelinePrep.maximum[i]));
+    }
     Shipyard_Log("frame-profile dust draws=%u updates=%u max_per_update=%u near_100=%u near_250=%u min_distance_sq=%.1f max_scale=%.3f scope=game_update",
         dust.draws,dust.updatesWithDust,dust.maxDrawsPerUpdate,dust.near100,dust.near250,
         dust.minDistanceSquared,dust.maxScale);
@@ -355,6 +415,10 @@ void EndFrame() {
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
         counters.tilingDrawRestarts,counters.tilingPeakBytes);
+    Shipyard_Log("frame-profile tiled_1080_batches total=%u tile1_only=%u vertices=%u tile1_only_vertices=%u oversize=%u",
+        counters.tiling1080Batches, counters.tiling1080Tile1Batches,
+        counters.tiling1080Vertices, counters.tiling1080Tile1Vertices,
+        counters.tiling1080OversizeBatches);
     Shipyard_Log("frame-profile presentation_color resolves_skipped=%u discard_blocked=%u",
         counters.presentationColorResolvesSkipped, counters.presentationColorDiscardBlocked);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
