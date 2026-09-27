@@ -19,8 +19,16 @@ OUT=ROOT/'scratch/interpolation-xdk'
 def recording_ownership(text):
     # XDK does not synthesize aggregate moves. Keep copies available, but move
     # recording containers rather than recursively copying populated subtrees.
+    text='#include "interpolation/recording_memory.h"\n'+text
     text=once(text,'struct Path {','struct RecordingInPlace {};\nstruct Path {')
-    text=once(text,'    vector<pair<Op, size_t>> items;','''    vector<pair<Op, size_t>> items;
+    text=once(text,'''    map<label, vector<Path>> children;
+    map<Op, vector<Data>> ops;
+    vector<pair<Op, size_t>> items;''','''    typedef vector<Path, Shipyard::Interpolation::RecordingAllocator<Path>> Paths;
+    typedef vector<Data, Shipyard::Interpolation::RecordingAllocator<Data>> Operations;
+    typedef pair<Op, size_t> Item;
+    map<label, Paths, less<label>, Shipyard::Interpolation::RecordingAllocator<pair<const label, Paths>>> children;
+    map<Op, Operations, less<Op>, Shipyard::Interpolation::RecordingAllocator<pair<const Op, Operations>>> ops;
+    vector<Item, Shipyard::Interpolation::RecordingAllocator<Item>> items;
     Path() {}
     explicit Path(RecordingInPlace) {}
     Path(const Path& other) : children(other.children), ops(other.ops), items(other.items) {}
@@ -44,6 +52,34 @@ def recording_ownership(text):
         '    current_recording.root_path.items.clear();')
     text=once(text,'current_path.push_back(&m.emplace_back());',
         'm.emplace_back(RecordingInPlace());\n    current_path.push_back(&m.back());')
+    return text
+
+def recording_op_index(text):
+    # Map nodes remain stable. Cache their operation-vector addresses within
+    # each Path and rebind after every ownership transfer or copy.
+    text=once(text,'    Path() {}\n    explicit Path(RecordingInPlace) {}', '''    Operations* opIndex[Op::SkinMatrixMtxFToMtx + 1];
+    void ClearIndex() { memset(opIndex, 0, sizeof(opIndex)); }
+    void RebindIndex() {
+        ClearIndex();
+        for (auto it = ops.begin(); it != ops.end(); ++it)
+            opIndex[static_cast<unsigned>(it->first.GetValue())] = &it->second;
+    }
+    Operations& AppendOperations(Op op) {
+        Operations*& found = opIndex[static_cast<unsigned>(op.GetValue())];
+        if (!found) found = &ops[op];
+        return *found;
+    }
+    Path() { ClearIndex(); }
+    explicit Path(RecordingInPlace) { ClearIndex(); }''')
+    text=once(text,'items(other.items) {}','items(other.items) { RebindIndex(); }')
+    text=once(text,'void swap(Path& other) { children.swap(other.children); ops.swap(other.ops); items.swap(other.items); }',
+        'void swap(Path& other) { children.swap(other.children); ops.swap(other.ops); items.swap(other.items); RebindIndex(); other.RebindIndex(); }')
+    text=once(text,'            other.children.clear(); other.ops.clear(); other.items.clear();',
+        '            other.children.clear(); other.ops.clear(); other.items.clear(); other.ClearIndex();')
+    text=once(text,'    current_recording.root_path.items.clear();',
+        '    current_recording.root_path.items.clear();\n    current_recording.root_path.ClearIndex();')
+    text=once(text,'auto& m = current_path.back()->ops[op];',
+        'auto& m = current_path.back()->AppendOperations(op);')
     return text
 
 def reuse_child_lookup(text):
@@ -71,6 +107,7 @@ def transform(text):
     text=once(text,'OTRGlobals::Instance->GetInterpolationFPS()','Ship_GetInterpolationFPS()')
     match=re.search(r'enum class Op \{(.*?)\n\};',text,re.S)
     text=once(text,match[0],strong_enum('Op',match[1]))
+    text=recording_op_index(text)
     text=once(text,'switch (item.first)','switch (item.first.GetValue())')
     text=once(text,'typedef pair<const void*, int> label;',
               'struct label { const void* first; int second;\n'

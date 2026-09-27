@@ -29,6 +29,8 @@ class OwnershipTests(unittest.TestCase):
     Path(const Path& other) : children(other.children), ops(other.ops), items(other.items) { ++copies; }
     Path& operator=(const Path& other) { ++copies; children=other.children; ops=other.ops; items=other.items; return *this; }''')
             else:
+                text = text.replace('items(other.items) { RebindIndex(); }',
+                                    'items(other.items) { ++copies; RebindIndex(); }')
                 text = text.replace('items(other.items) {}', 'items(other.items) { ++copies; }')
             text = text.replace('    Path root_path;', '''    Path root_path;
     Recording() {}
@@ -58,7 +60,8 @@ void operator delete(void* p,size_t) noexcept { free(p); }
                 folder = Path(temp); source = folder / 'contract.cpp'; exe = folder / 'contract.exe'
                 source.write_text(code)
                 command = [str(compiler), '/nologo', '/std:c++20', '/EHsc', '/MD', '/O2', '/fp:precise',
-                           '/DF3DEX_GBI_2', '/DNOMINMAX', '/DIMPROVED=' + str(int(improved))]
+                           '/DF3DEX_GBI_2', '/DNOMINMAX', '/DIMPROVED=' + str(int(improved)),
+                           '/DPROJECTED_OP_INDEX=' + str(int(label == 'projected'))]
                 command += ['/I' + str(ROOT / p) for p in ('soh/soh', 'soh', 'soh/include', 'libultraship/include',
                             'platform/shipyard', 'scratch/resources-xdk/generated/include',
                             'scratch/binary-xdk/generated/include')]
