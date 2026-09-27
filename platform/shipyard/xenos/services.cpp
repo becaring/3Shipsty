@@ -43,6 +43,9 @@ uint64_t Clock() {
     return static_cast<uint64_t>(value.QuadPart);
 }
 Accumulator accumulator(Clock);
+// Frame reporting uses the already recorded intervals; no extra work is done
+// during a present. Each 120-update window can have at most 120 samples/lane.
+uint64_t presentLaneIntervals[18][120];
 uint64_t frequency = 0;
 uint64_t previousReportTicks = 0;
 unsigned maps = 0, nonemptyMaps = 0, replacements = 0;
@@ -470,12 +473,21 @@ void EndFrame() {
     const unsigned intervalCount = accumulator.presentIntervalCount;
     unsigned over20 = 0, over33 = 0, over50 = 0;
     unsigned laneSamples[3] = {}, laneOver20[3] = {};
+    unsigned laneCounts[18] = {}, laneOver8[18] = {}, laneOverflow = 0;
     for (unsigned i = 0; i < intervalCount; ++i) {
         const double ms = Milliseconds(accumulator.presentIntervals[i]);
         over20 += ms > 20.0;
         over33 += ms > 33.0;
         over50 += ms > 50.0;
         const unsigned lane = accumulator.presentIntervalLanes[i];
+        if (lane < 18) {
+            if (laneCounts[lane] < 120) {
+                presentLaneIntervals[lane][laneCounts[lane]++] = accumulator.presentIntervals[i];
+                laneOver8[lane] += ms > 8.0;
+            } else {
+                ++laneOverflow;
+            }
+        }
         if (lane < 3) {
             ++laneSamples[lane];
             laneOver20[lane] += ms > 20.0;
@@ -490,6 +502,17 @@ void EndFrame() {
         over20, over33, over50,
         laneSamples[0], laneSamples[1], laneSamples[2],
         laneOver20[0], laneOver20[1], laneOver20[2]);
+    for (unsigned lane = 0; lane < 18; ++lane) {
+        const unsigned count = laneCounts[lane];
+        if (!count) continue;
+        std::sort(presentLaneIntervals[lane], presentLaneIntervals[lane] + count);
+        Shipyard_Log("frame-profile present_lane=%u samples=%u median_ms=%.3f p95_ms=%.3f max_ms=%.3f over8=%u lane_overflow=%u scope=present_begin_to_begin",
+            lane, count,
+            Milliseconds(presentLaneIntervals[lane][(count - 1) / 2]),
+            Milliseconds(presentLaneIntervals[lane][(count * 95 - 1) / 100]),
+            Milliseconds(presentLaneIntervals[lane][count - 1]),
+            laneOver8[lane], laneOverflow);
+    }
     for (unsigned i = 0; i < PhaseCount; ++i) {
         const PhaseStats& p = accumulator.phases[i];
         Shipyard_Log("frame-profile phase=%s calls=%u inclusive_ms=%.3f ms_per_game=%.3f ms_per_call=%.3f max_ms=%.3f", names[i], p.calls,
