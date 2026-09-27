@@ -292,6 +292,14 @@ def prepare():
     start=text.index('void Interpreter::Run(Gfx* commands,')
     end=text.index('\nvoid Interpreter::EndFrame()',start)
     body=text[start:end]
+    # Profile the cost of retaining last frame's full-resolution color. The
+    # ordinary path keeps Modern's depth-only clear, while this opt-in matches
+    # historical 4.0.5's fresh color/depth game draw. GUI-only and explicit
+    # framebuffer transfers retain their existing contents.
+    body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(false, true));',
+              '    const bool xboxFullColorClear =\n'
+              '        CVarGetInteger("gSettings.XboxFullColorClearProfile", 0) != 0;\n'
+              '    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(xboxFullColorClear, true));')
     body=once(body,'    if (mRendersToFb) {\n        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));',
               '    if (mRendersToFb) {\n'
               '        if (mXboxDiscardGameDepth) Fast::ShipyardXenos::DiscardFramebufferDepth(mGameFb);\n'
@@ -304,7 +312,9 @@ def prepare():
               '        Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();\n'
               '        Fast::ShipyardXenos::DiscardPresentationColorOnEnd();\n'
               '    }')
-    text=once(text,'#define NOMINMAX\n','#define NOMINMAX\n#include "xenos/depth_discard.h"\n')
+    text=once(text,'#define NOMINMAX\n',
+              '#define NOMINMAX\n#include "xenos/depth_discard.h"\n'
+              '#include "libultraship/bridge/consolevariablebridge.h"\n')
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
     text=tri2_pair_projection.transform(text)
