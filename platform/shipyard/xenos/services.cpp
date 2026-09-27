@@ -319,6 +319,8 @@ void EndFrame() {
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
         counters.tilingDrawRestarts,counters.tilingPeakBytes);
+    Shipyard_Log("frame-profile presentation_color resolves_skipped=%u discard_blocked=%u",
+        counters.presentationColorResolvesSkipped, counters.presentationColorDiscardBlocked);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
         Milliseconds(previousReportTicks));
     // Reporting lies outside Graph and appears in the next outside_graph
