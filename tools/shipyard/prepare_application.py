@@ -35,8 +35,14 @@ def application_syntax(source):
     source=once(source,'context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });','Ship::AudioSettings audioSettings; audioSettings.SampleRate=32000; audioSettings.SampleLength=1024; audioSettings.DesiredBuffered=1680;\n    context->InitAudio(audioSettings);')
     source,count=re.subn(r'std::unordered_set<uint32_t> ValidHashes = (\{[\s\S]*?\});',r'const uint32_t validHashValues[]=\1;\n    std::unordered_set<uint32_t> ValidHashes(validHashValues,validHashValues+sizeof(validHashValues)/sizeof(validHashValues[0]));',source)
     assert count==1
-    source,count=re.subn(r'const std::vector<uint32_t> (hira1|hira2|kata1|kata2) = (\{[\s\S]*?\});',lambda m:'const uint32_t '+m[1]+'Values[]='+m[2]+';\n    const std::vector<uint32_t> '+m[1]+'('+m[1]+'Values,'+m[1]+'Values+sizeof('+m[1]+'Values)/sizeof('+m[1]+'Values[0]));',source)
+    source,count=re.subn(r'const std::vector<uint32_t> (hira1|hira2|kata1|kata2) = (\{[\s\S]*?\});',
+                         lambda m:'static const uint32_t '+m[1]+'[] = '+m[2]+';',source)
     assert count==4
+    for name in ('hira1','hira2','kata1','kata2'):
+        assert source.count(name+'.begin()')==2
+        assert source.count(name+'.end()')==2
+        source=source.replace(name+'.begin()',name)
+        source=source.replace(name+'.end()',name+' + sizeof('+name+')/sizeof('+name+'[0])')
     source=re.sub(r"u'(.)'",lambda m:hex(ord(m[1])),source)
     source=once(source,'for (auto& [key, value] : cvars.items()) {','for (nlohmann::json::iterator it=cvars.begin(); it!=cvars.end(); ++it) {\n            const std::string key=it.key(); nlohmann::json& value=it.value();')
     source=source.replace('[[unlikely]]','')
