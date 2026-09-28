@@ -344,6 +344,11 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             'Gamestate draw profile boundary')
     if name == 'soh/src/code/z_actor.c':
         replace_projected_once(
+            'void Actor_Draw(PlayState* play, Actor* actor) {',
+            'extern void Shipyard_FrameProfileActorInstanceAdvance(int actorId, unsigned nextStage);\n'
+            'void Actor_Draw(PlayState* play, Actor* actor) {',
+            'Actor phase declaration before first use')
+        replace_projected_once(
             'void func_800315AC(PlayState* play, ActorContext* actorCtx) {',
             'extern u64 Shipyard_FrameProfileActorInstanceBegin(int actorId);\n'
             'extern void Shipyard_FrameProfileActorInstanceEnd(int actorId, u64 started);\n'
@@ -363,6 +368,27 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             '                            Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart);\n'
             '                            actor->isDrawn = true;',
             'Sample drawn actor callback time by actor ID')
+        for original, replacement, reason in (
+            ('    Lights_Draw(lights, play->state.gfxCtx);',
+             '    Lights_Draw(lights, play->state.gfxCtx);\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 1);',
+             'Actor lights to matrix boundary'),
+            ('    actor->draw(actor, play);',
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 2);\n'
+             '    actor->draw(actor, play);\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 3);',
+             'Actor callback boundary'),
+            ('    if (actor->shape.shadowDraw != NULL) {\n'
+             '        actor->shape.shadowDraw(actor, lights, play);\n'
+             '    }',
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 4);\n'
+             '    if (actor->shape.shadowDraw != NULL) {\n'
+             '        actor->shape.shadowDraw(actor, lights, play);\n'
+             '    }\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 5);',
+             'Actor shadow boundary'),
+        ):
+            replace_projected_once(original, replacement, reason)
         for call, phase in (
             ('Effect_DrawAll(play->state.gfxCtx);', 'Effect'),
             ('EffectSs_DrawAll(play);', 'EffectSs'),

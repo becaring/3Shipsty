@@ -172,12 +172,11 @@ def static_arrays(text):
         values=decl.child_by_field_name('value');count=len([n for n in values.named_children if n.type!='comment'])
         if name=='tbl':typ='const char*'
         elif name=='ucode_attr_handlers':typ='UcodeAttributePointer'
-        elif name=='ucode_handlers':typ='const UcodeHandler*'
         else:raise ValueError('Unreviewed deduced static array '+name)
         replacement=('typedef const uint32_t (*UcodeAttributePointer)[7];\n' if name=='ucode_attr_handlers' else '')
         replacement+='static const std::array<'+typ+', '+str(count)+'> '+name+' = { '+values.text.decode()+' };'
         edits.append((node.start_byte,node.end_byte,replacement.encode()))
-    if len(edits)!=4:raise ValueError('Static array inventory drift')
+    if len(edits)!=3:raise ValueError('Static array inventory drift')
     for start,end,replacement in sorted(edits,reverse=True):source=source[:start]+replacement+source[end:]
     return source.decode()
 

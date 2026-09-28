@@ -170,6 +170,29 @@ def _once(source, old, new):
     return source.replace(old, new, 1)
 
 
+TRIANGLE_MATERIALIZE_GUARD = '''    // MODERN TRIANGLE MATERIALIZATION GUARD BEGIN
+    // Most surviving triangles reuse already materialized vertex slots. Keep
+    // the authoritative materializer for pending slots and for every other
+    // consumer; avoid its call/early-return cost for clean triangle inputs.
+    if (vtx1_idx < MAX_VERTICES && mXboxDeferredVertices[vtx1_idx].context)
+        XboxMaterializeVertex(vtx1_idx);
+    if (vtx2_idx < MAX_VERTICES && mXboxDeferredVertices[vtx2_idx].context)
+        XboxMaterializeVertex(vtx2_idx);
+    if (vtx3_idx < MAX_VERTICES && mXboxDeferredVertices[vtx3_idx].context)
+        XboxMaterializeVertex(vtx3_idx);
+    // MODERN TRIANGLE MATERIALIZATION GUARD END'''
+
+
+def _triangle_guard(source):
+    if '// MODERN TRIANGLE MATERIALIZATION GUARD BEGIN' in source:
+        return source
+    return _once(source,
+                 '    XboxMaterializeVertex(vtx1_idx);\n'
+                 '    XboxMaterializeVertex(vtx2_idx);\n'
+                 '    XboxMaterializeVertex(vtx3_idx);',
+                 TRIANGLE_MATERIALIZE_GUARD)
+
+
 def header(source):
     if '// MODERN DEFERRED LIT FOG BEGIN' in source:
         return source
@@ -225,7 +248,7 @@ def _position_only_replay(source):
 
 def transform(source):
     if '// MODERN DEFERRED LIT FOG BEGIN' in source:
-        return _position_only_replay(source)
+        return _triangle_guard(_position_only_replay(source))
     source = _once(source, 'void Interpreter::GfxSpVertex(size_t n_vertices, size_t dest_index, const F3DVtx* vertices) {',
                    SOURCE_METHODS + '\nvoid Interpreter::GfxSpVertex(size_t n_vertices, size_t dest_index, const F3DVtx* vertices) {\n'
                    '    if (XboxTryDeferVertices(n_vertices, dest_index, vertices)) return;')
@@ -248,4 +271,4 @@ def transform(source):
     run_brace = source.index('{', run)
     source = source[:run_brace + 1] + '\n    mXboxContextProbeCapture = ModernFrameProfile::CaptureTrianglePipeline();\n' + \
              '    mXboxContextSearchAttempts = mXboxContextSlotsScanned = mXboxContextMaxScan = 0;' + source[run_brace + 1:]
-    return _position_only_replay(source)
+    return _triangle_guard(_position_only_replay(source))

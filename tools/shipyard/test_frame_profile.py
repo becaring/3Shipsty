@@ -99,6 +99,7 @@ unsigned maxUsed[4],minRemaining[4],phaseSamples[4],maxSetupBytes,maxFinishBytes
 TilingGuardTrialStats tilingGuardTrial;
 Tile1PredicationTrialCounters tile1PredicationTrial;
 unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
+unsigned alphaDraws[3],alphaTriangles[3],alphaVertices[3];
 };
 unsigned timingTransitions=0,captures=0;
 void SetTimingEnabled(bool) { ++timingTransitions; }
@@ -119,6 +120,7 @@ int main() {
     }
     assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0);
     auto disabledActor = Shipyard_FrameProfileActorInstanceBegin(17);
+    for(unsigned stage=1;stage<=5;++stage) Shipyard_FrameProfileActorInstanceAdvance(17,stage);
     Shipyard_FrameProfileActorInstanceEnd(17, disabledActor);
     Shipyard_FrameProfileEffectBegin(); Shipyard_FrameProfileEffectEnd();
     Shipyard_FrameProfileEffectSsBegin(); Shipyard_FrameProfileEffectSsEnd();
@@ -359,12 +361,21 @@ int main() {
     failCpu=true; Begin(AudioGenerate); End(AudioGenerate); failCpu=false;
     assert(audioCpu.failures==1 && audioCpu.lastError==5 && audioCpu.samples==1);
     assert(logCalls==0 && frequencyReads==1);
+    unsigned actorClockReads=clockReads;
     for(unsigned i=0;i<128;++i) {
         auto started=Shipyard_FrameProfileActorInstanceBegin(17);
+        for(unsigned stage=1;stage<=5;++stage) Shipyard_FrameProfileActorInstanceAdvance(17,stage);
         Shipyard_FrameProfileActorInstanceEnd(17,started);
     }
     assert(actorDraw[17].calls==128 && actorDraw[17].samples>0);
     assert(actorDraw[17].ticks>0);
+    assert(clockReads-actorClockReads==actorDraw[17].samples*7);
+    uint64_t actorStageTotal=0;
+    for(unsigned stage=0;stage<6;++stage) {
+        assert(actorDraw[17].stageTicks[stage]>0);
+        actorStageTotal+=actorDraw[17].stageTicks[stage];
+    }
+    assert(actorStageTotal==actorDraw[17].ticks);
     Shipyard_FrameProfileEffectBegin(); Shipyard_FrameProfileEffectEnd();
     Shipyard_FrameProfileEffectSsBegin(); Shipyard_FrameProfileEffectSsEnd();
     Shipyard_FrameProfileLightsGlowBegin(); Shipyard_FrameProfileLightsGlowEnd();
@@ -373,8 +384,9 @@ int main() {
     assert(accumulator.phases[ActorLightsGlow].calls==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==55+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==56+PhaseCount);
     assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
+    for(unsigned stage=0;stage<6;++stage) assert(actorDraw[17].stageTicks[stage]==0);
     assert(dust.draws==0 && dust.updatesWithDust==0);
     assert(kokiriMotes.invisible==0 && kokiriMotes.outside==0 && kokiriMotes.emitted==0);
     assert(kokiriFairiesCulled==0 && kokiriFairiesVisible==0);

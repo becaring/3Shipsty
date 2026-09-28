@@ -66,6 +66,30 @@ class GameProjectionTests(unittest.TestCase):
             self.assertLess(body.index(begin), body.index(call))
             self.assertLess(body.index(call), body.index(finish))
 
+    def test_actor_draw_sample_boundaries_preserve_callback_and_shadow_order(self):
+        module = self.module()
+        name = 'soh/src/code/z_actor.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        start = output.index(b'void Actor_Draw(PlayState* play, Actor* actor) {')
+        end = output.index(b'void func_800315AC(', start)
+        body = output[start:end]
+        markers = (
+            b'Lights_Draw(lights, play->state.gfxCtx);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 1);',
+            b'Actor_SetObjectDependency(play, actor);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 2);',
+            b'actor->draw(actor, play);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 3);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 4);',
+            b'actor->shape.shadowDraw(actor, lights, play);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 5);',
+            b'FrameInterpolation_RecordCloseChild();',
+        )
+        positions = [body.index(marker) for marker in markers]
+        self.assertEqual(positions, sorted(positions))
+        for stage in range(1, 6):
+            self.assertEqual(body.count(f'Shipyard_FrameProfileActorInstanceAdvance(actor->id, {stage});'.encode()), 1)
+
     def module(self):
         path = ROOT / 'tools/shipyard/prepare_game.py'
         self.assertTrue(path.is_file(), 'game compiler projection missing')

@@ -130,10 +130,13 @@ DustCounters dust = {};
 struct KokiriMoteCounters { unsigned invisible, outside, emitted; };
 KokiriMoteCounters kokiriMotes = {};
 unsigned kokiriFairiesCulled = 0, kokiriFairiesVisible = 0;
-enum { ActorProfileCapacity = 512, ActorProfileTopCount = 8 };
-struct ActorDrawCounters { uint64_t ticks; unsigned calls, samples; };
+enum { ActorProfileCapacity = 512, ActorProfileTopCount = 8, ActorProfileStageCount = 6 };
+struct ActorDrawCounters { uint64_t ticks, stageTicks[ActorProfileStageCount]; unsigned calls, samples; };
 ActorDrawCounters actorDraw[ActorProfileCapacity] = {};
 uint32_t actorRandomState = 0x9827b18du;
+int activeActorSampleId = -1;
+uint64_t actorStageStart = 0;
+unsigned actorStage = 0;
 struct ThreadCpu {
     uint64_t start, ticks;
     unsigned samples, failures, processorMask, threadId, lastError;
@@ -185,6 +188,9 @@ void ResetMetadata() {
     kokiriFairiesCulled = kokiriFairiesVisible = 0;
     memset(actorDraw,0,sizeof(actorDraw));
     actorRandomState = 0x9827b18du;
+    activeActorSampleId = -1;
+    actorStageStart = 0;
+    actorStage = 0;
 }
 double Milliseconds(uint64_t ticks) {
     return frequency ? double(ticks) * 1000.0 / double(frequency) : 0.0;
@@ -265,12 +271,27 @@ uint64_t BeginActorInstance(int actorId) {
     actorRandomState ^= actorRandomState << 5;
     if ((actorRandomState & 3u) != 0) return 0;
     ++counter.samples;
-    return Clock() + 1;
+    const uint64_t started = Clock();
+    activeActorSampleId = actorId;
+    actorStageStart = started;
+    actorStage = 0;
+    return started + 1;
+}
+void AdvanceActorInstance(int actorId, unsigned nextStage) {
+    if (activeActorSampleId != actorId || nextStage != actorStage + 1 || nextStage >= ActorProfileStageCount) return;
+    const uint64_t now = Clock();
+    if (now >= actorStageStart) actorDraw[actorId].stageTicks[actorStage] += now - actorStageStart;
+    actorStageStart = now;
+    actorStage = nextStage;
 }
 void EndActorInstance(int actorId, uint64_t started) {
     if (!started || actorId < 0 || actorId >= ActorProfileCapacity) return;
     const uint64_t now = Clock();
     const uint64_t start = started - 1;
+    if (activeActorSampleId == actorId) {
+        if (now >= actorStageStart) actorDraw[actorId].stageTicks[actorStage] += now - actorStageStart;
+        activeActorSampleId = -1;
+    }
     if (now >= start) actorDraw[actorId].ticks += now - start;
 }
 bool BeginResourceWait() {
@@ -675,10 +696,17 @@ void EndFrame() {
     for (unsigned rank = 0; rank < ActorProfileTopCount && topActorIds[rank] >= 0; ++rank) {
         const unsigned id = static_cast<unsigned>(topActorIds[rank]);
         const ActorDrawCounters& actor = actorDraw[id];
-        Shipyard_Log("frame-profile actor_id rank=%u id=%u calls=%u samples=%u estimated_ms=%.3f ms_per_game=%.3f",
+        const double stageScale = double(actor.calls) / actor.samples / accumulator.frames;
+        Shipyard_Log("frame-profile actor_id rank=%u id=%u calls=%u samples=%u estimated_ms=%.3f ms_per_game=%.3f lights_ms_per_game=%.3f matrix_ms_per_game=%.3f callback_ms_per_game=%.3f post_filter_ms_per_game=%.3f shadow_ms_per_game=%.3f close_ms_per_game=%.3f",
             rank, id, actor.calls, actor.samples,
             Milliseconds(static_cast<uint64_t>(topActorTicks[rank])),
-            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])) / accumulator.frames);
+            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])) / accumulator.frames,
+            Milliseconds(actor.stageTicks[0]) * stageScale,
+            Milliseconds(actor.stageTicks[1]) * stageScale,
+            Milliseconds(actor.stageTicks[2]) * stageScale,
+            Milliseconds(actor.stageTicks[3]) * stageScale,
+            Milliseconds(actor.stageTicks[4]) * stageScale,
+            Milliseconds(actor.stageTicks[5]) * stageScale);
     }
     if (tri2ProfileEnabled) {
         Shipyard_Log("frame-profile tri2_route calls=%u samples=%u sample_probability=1/64 scope=opcode_06_interpreter flush_scope=buffer_full_only",
@@ -765,6 +793,10 @@ void EndFrame() {
         counters.bindingAttempted, counters.bindingWritten, counters.bindingSuppressed,
         counters.uploadRequests, counters.uploadReused, counters.uploadSavedBytes, counters.clears,
         counters.restoresAvoided, counters.depthRestoresAvoided);
+    Shipyard_Log("frame-profile native_alpha draws=%u/%u/%u triangles=%u/%u/%u vertices=%u/%u/%u modes=opaque/blended/cutout",
+        counters.alphaDraws[0], counters.alphaDraws[1], counters.alphaDraws[2],
+        counters.alphaTriangles[0], counters.alphaTriangles[1], counters.alphaTriangles[2],
+        counters.alphaVertices[0], counters.alphaVertices[1], counters.alphaVertices[2]);
     Shipyard_Log("frame-profile depth_resolves retained=%u skipped=%u early_fences=%u",
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
     Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
@@ -849,6 +881,9 @@ extern "C" void Shipyard_FrameProfileActorDrawEnd(void) {
 }
 extern "C" uint64_t Shipyard_FrameProfileActorInstanceBegin(int actorId) {
     return ModernFrameProfile::BeginActorInstance(actorId);
+}
+extern "C" void Shipyard_FrameProfileActorInstanceAdvance(int actorId, unsigned nextStage) {
+    ModernFrameProfile::AdvanceActorInstance(actorId, nextStage);
 }
 extern "C" void Shipyard_FrameProfileActorInstanceEnd(int actorId, uint64_t started) {
     ModernFrameProfile::EndActorInstance(actorId, started);
