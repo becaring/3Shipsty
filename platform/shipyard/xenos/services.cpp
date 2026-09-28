@@ -66,7 +66,7 @@ const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readines
     "play_update", "play_draw_record", "scene_room_draw", "actor_draw",
     "actor_effect", "actor_effect_ss", "actor_lights_glow", "game_state_draw", "gui_start_frame", "gui_draw_menu", "gui_viewport",
     "gui_draw_game", "gui_render", "gui_draw_data", "gui_floating", "gui_save_cvars",
-    "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end"};
+    "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end", "pixel_depth_read"};
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;

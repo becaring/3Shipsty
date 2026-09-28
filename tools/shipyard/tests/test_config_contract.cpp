@@ -3,6 +3,18 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <atomic>
+#include <cstdlib>
+#include <new>
+
+static std::atomic<size_t> allocationCount(0);
+void* operator new(size_t bytes) {
+    allocationCount.fetch_add(1, std::memory_order_relaxed);
+    if (void* result = std::malloc(bytes)) return result;
+    throw std::bad_alloc();
+}
+void operator delete(void* pointer) noexcept { std::free(pointer); }
+void operator delete(void* pointer, size_t) noexcept { std::free(pointer); }
 
 class Upgrade : public Ship::ConfigVersionUpdater {
 public:
@@ -61,4 +73,37 @@ int main(int argc,char** argv) {
     config.SetWindowBackend(Ship::WindowBackend::FAST3D_XENOS);
     assert(config.GetInt("Window.Backend.Id")==3 && config.GetString("Window.Backend.Name")=="Xenos");
 #endif
+    { std::ofstream file(path); file << "{\"Escaped/Key\":{\"Value\":9},\"T~Key\":{\"Value\":10},\"Numeric\":{\"123\":11},\"Wild\":{\"*\":\"literal\"},\"Array\":[1,2,3]}"; }
+    config.Reload();
+    assert(config.Contains("Escaped/Key") && config.Contains("Numeric"));
+    assert(config.GetInt("Escaped/Key.Value",-1)==9);
+    assert(config.GetInt("T~Key.Value",-1)==10);
+    assert(config.GetInt("Numeric.123",-1)==11);
+    assert(config.GetString("Wild.*","missing")=="literal");
+    assert(config.GetInt("Array.0",-1)==-1);
+    assert(config.GetInt("Missing.Numeric.123",-1)==11);
+    config.SetString("Bad~escape","bad");
+    bool unflattenRejected=false;
+    try { config.GetInt("Numeric.123",-1); } catch (const std::exception&) { unflattenRejected=true; }
+    assert(unflattenRejected);
+    config.Reload();
+    nlohmann::json bulk=nlohmann::json::object();
+    for(int i=0;i<128;++i) bulk["K"+std::to_string(i)]=i;
+    config.SetBlock("Bulk",bulk);
+    assert(config.GetInt("Bulk.K42",-1)==42);
+    config.SetInt("Bulk.K42",42);
+    allocationCount.store(0,std::memory_order_relaxed);
+    volatile int lookupSum=0;
+    for(int i=0;i<100;++i) lookupSum+=config.GetInt("Bulk.K42",-1);
+    assert(lookupSum==4200);
+    std::cerr << "config_lookup_allocations=" << allocationCount.load(std::memory_order_relaxed) << '\n';
+    config.SetInt("Bulk.K129",129);
+    assert(config.GetInt("Bulk.K129",-1)==129);
+    allocationCount.store(0,std::memory_order_relaxed);
+    config.Save();
+    std::cerr << "config_save_allocations=" << allocationCount.load(std::memory_order_relaxed) << '\n';
+    allocationCount.store(0,std::memory_order_relaxed);
+    for(int i=0;i<100;++i) lookupSum+=config.GetInt("Bulk.K129",-1);
+    assert(lookupSum==17100);
+    std::cerr << "config_lookup_after_save_allocations=" << allocationCount.load(std::memory_order_relaxed) << '\n';
 }

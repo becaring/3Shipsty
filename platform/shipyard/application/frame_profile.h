@@ -12,7 +12,7 @@ enum Phase {
     GuiStartFrame, GuiDrawMenu, GuiViewport,
     GuiDrawGame, GuiRender, GuiDrawData, GuiFloating, GuiSaveCvars,
     PresentEndFrame, PresentSwapBegin, PresentFinishRender, PresentSwapEnd,
-    PhaseCount
+    PixelDepthRead, PhaseCount
 };
 struct PhaseStats { uint64_t ticks, maximum; unsigned calls; };
 

@@ -23,6 +23,7 @@ import deferred_lit_fog
 import pipeline_phase_profile_projection
 import tri2_pair_projection
 import tri2_column_pack_projection
+import game_fill_discard_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -59,6 +60,7 @@ def header(text):
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
               '    XboxTrianglePipelineResult mXboxPipelineResult;')
+    text=game_fill_discard_projection.header(text)
     text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
               '    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);\n'
               '    void XboxPrepareTrianglePipeline();')
@@ -348,6 +350,7 @@ def prepare():
               '#include "xenos/tiling_guard_trial.h"\n'
               '#include "xenos/tile1_predication_trial.h"\n'
               '#include "libultraship/bridge/consolevariablebridge.h"\n')
+    text=game_fill_discard_projection.transform(text)
     from frame_profile_projection import interpreter as profile_interpreter
     text=profile_interpreter(text)
     text=texture_hash_borrowed_handler(text)
