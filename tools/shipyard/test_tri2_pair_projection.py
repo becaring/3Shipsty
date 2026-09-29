@@ -76,6 +76,7 @@ struct RenderingState {
 };
 struct RSP { unsigned geometry_mode; };
 struct RDP {
+    const unsigned char* palettes[2];
     bool viewport_or_scissor_changed, grayscale;
     uint64_t combine_mode;
     uint32_t other_mode_l,other_mode_h;
@@ -102,6 +103,8 @@ struct XboxTrianglePipelineTraits {
     static bool ShaderPresent(const Owner& x) { return x.shaderPresent; }
     static int64_t ShaderIdentity(const Owner& x) { return x.shaderIdentity; }
     static unsigned EffectiveTile(const Owner& x,unsigned i) { return x.mRdp->first_tile_index+i; }
+    static bool RestoresReloadedTextures(const Owner&) { return true; }
+    static const void* PaletteIdentity(const Owner& x,unsigned half) { return x.mRdp->palettes[half]; }
 };
 /* SELECTED CERTIFICATE */
 static unsigned seed=0x98025d31;

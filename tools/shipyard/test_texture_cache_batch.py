@@ -1,4 +1,4 @@
-"""The owned texture lookup cache lives for one interpolation batch."""
+"""The owned texture lookup cache persists until the lookup generation moves."""
 
 import unittest
 from pathlib import Path
@@ -25,12 +25,13 @@ class TextureCacheBatchTests(unittest.TestCase):
         self.assertIn('mXboxTextureHashCache.Clear();', clear)
         self.assertIn('mXboxTextureHashCache.Clear();', delete)
 
-    def test_batch_boundary_clears_even_when_first_replay_is_dropped(self):
+    def test_batch_boundary_retires_moved_generation_before_replays(self):
         source = APPLICATION.read_text(encoding='utf-8', errors='replace')
         batch = body_between(source, 'intp->mInterpolationIndex = 0;', '\n    ImGui::PopStyleColor();')
-        self.assertLess(batch.index('intp->mXboxTextureHashCache.Clear();'),
+        self.assertNotIn('intp->mXboxTextureHashCache.Clear();', batch)
+        self.assertLess(batch.index('intp->mXboxTextureHashCache.Retire('),
                         batch.index('for ('),
-                        'clear must precede the replay loop, which may skip a draw')
+                        'retirement must precede the replay loop, which may skip a draw')
 
 
 if __name__ == '__main__':

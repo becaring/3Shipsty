@@ -93,7 +93,22 @@ int main() {
     require(key.Matches(owner), "original backend clip not restored after reinit");
     require(owner.backend.clipReads==2, "reinit did not refresh clip");
     owner.rdp.textures_changed[0] = true;
-    require(!key.Matches(owner), "used dirty texture reused");
+    // A byte-identical reload restores the pipeline; any byte of the reloaded
+    // entry or either palette pointer still forces the import.
+    require(key.Matches(owner), "identical reloaded texture not restored");
+    // Both TMEM entries: an import may fall back to the other entry.
+    unsigned char* image = reinterpret_cast<unsigned char*>(&owner.rdp.loaded_texture[0]);
+    for (unsigned i=0; i<sizeof(owner.rdp.loaded_texture); ++i) {
+        image[i]^=1;
+        require(!key.Matches(owner), "reloaded texture byte missed");
+        image[i]^=1;
+    }
+    for (unsigned half=0; half<2; ++half) {
+        owner.rdp.palettes[half] = reinterpret_cast<const uint8_t*>(&owner);
+        require(!key.Matches(owner), "reloaded palette pointer missed");
+        owner.rdp.palettes[half] = NULL;
+    }
+    require(key.Matches(owner), "identical reload not restored after palette checks");
     owner.rdp.textures_changed[0] = false;
     owner.rdp.textures_changed[1] = true;
     require(key.Matches(owner), "unused dirty texture blocked reuse");

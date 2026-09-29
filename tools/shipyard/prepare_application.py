@@ -158,8 +158,11 @@ def platform_source(source):
     if (original_fps > 0 && time + original_fps <= next_original_frame) {
         mtx_replacements.reserve((next_original_frame - time) / original_fps);
     }''')
+    # Texture resolutions persist until the resource manager's lookup
+    # generation moves, instead of being re-resolved every batch.
     source=once(source,'    intp->mInterpolationIndex = 0;',
-                '    intp->mInterpolationIndex = 0;\n    intp->mXboxTextureHashCache.Clear();')
+                '    intp->mInterpolationIndex = 0;\n    intp->mXboxTextureHashCache.Retire(\n'
+                '        Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration());')
     source=once(source,'        wnd->DrawAndRunGraphicsCommands(Commands, m);',
                 '''        // Only the final render supplies depth to the next game update.
         intp->mXboxDiscardGameDepth =
