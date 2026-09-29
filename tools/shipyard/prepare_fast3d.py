@@ -57,6 +57,8 @@ def header(text):
               '    bool mXboxTileTrialEnabled = false;\n'
               '    bool mXboxTileCaptureEnabled = false;\n'
               '    bool mXboxDiscardGameDepth = false;\n'
+              '    void XboxPublishGameDepth();\n'
+              '    void XboxRetireGameDepth();\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
@@ -360,6 +362,16 @@ def prepare():
               '    if (mRendersToFb) {\n'
               '        Fast::ShipyardXenos::DiscardPresentationColorOnEnd();\n'
               '    }')
+    # GetPixelDepth reads this same target. The application publishes it after
+    # an update's final replay and retires it once the deferred read has run.
+    text=once(text,'uint16_t Interpreter::GetPixelDepth(float x, float y) {',
+              'void Interpreter::XboxPublishGameDepth() {\n'
+              '    Fast::ShipyardXenos::PublishFramebufferDepth(mRendersToFb ? mGameFb : 0);\n'
+              '}\n\n'
+              'void Interpreter::XboxRetireGameDepth() {\n'
+              '    Fast::ShipyardXenos::RetireFramebufferDepth();\n'
+              '}\n\n'
+              'uint16_t Interpreter::GetPixelDepth(float x, float y) {')
     text=once(text,'#define NOMINMAX\n',
               '#define NOMINMAX\n#include "xenos/depth_discard.h"\n'
               '#include "xenos/tiling_guard_trial.h"\n'

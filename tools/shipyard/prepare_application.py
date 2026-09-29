@@ -162,12 +162,38 @@ def platform_source(source):
     # generation moves, instead of being re-resolved every batch.
     source=once(source,'    intp->mInterpolationIndex = 0;',
                 '    intp->mInterpolationIndex = 0;\n    intp->mXboxTextureHashCache.Retire(\n'
-                '        Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration());')
+                '        Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration());\n'
+                '    // A lone replay is also the final one; its depth resolve would copy\n'
+                '    // the published depth. Read before it, in submission order.\n'
+                '    if (mtx_replacements.size() < 2) XboxRunDeferredDepthRead(intp);')
     source=once(source,'        wnd->DrawAndRunGraphicsCommands(Commands, m);',
                 '''        // Only the final render supplies depth to the next game update.
         intp->mXboxDiscardGameDepth =
             static_cast<size_t>(intp->mInterpolationIndex + 1) < mtx_replacements.size();
-        wnd->DrawAndRunGraphicsCommands(Commands, m);''')
+        wnd->DrawAndRunGraphicsCommands(Commands, m);
+        // The update's depth read waits for the previous final replay. Once
+        // this first replay is submitted, the GPU has work during that wait.
+        if (intp->mInterpolationIndex == 0) XboxRunDeferredDepthRead(intp);''')
+    # The depth read sees the previous update's final replay through the
+    # backend publication, so its values match the read at task submission.
+    source=once(source,'void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {',
+                '''extern "C" void Graph_RunDeferredCallback(void);
+
+static void XboxRunDeferredDepthRead(Fast::Interpreter* intp) {
+    Graph_RunDeferredCallback();
+    intp->XboxRetireGameDepth();
+}
+
+void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {''')
+    source=once(source,'    ImGui::PopStyleColor();\n}',
+                '''    ImGui::PopStyleColor();
+    XboxRunDeferredDepthRead(intp); // No replay ran this update.
+    // This update's final replay is what the next update's read observes.
+    intp->XboxPublishGameDepth();
+}''')
+    source=once(source,'    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-returned", false);',
+                '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-returned", false);
+    Graph_RunDeferredCallback(); // RunCommands had no window.''')
     from frame_profile_projection import application as profile_application
     source = profile_application(source)
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')

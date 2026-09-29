@@ -29,8 +29,9 @@ def resource_lookup(source):
 
 def application(source):
     source = '#include "application/frame_profile.h"\n' + source
-    # This callback runs between GameState_Update and Graph_ProcessGfxCommands.
-    # Keep its native readback wait visible even without hot Xenos diagnostics.
+    # The depth-reading graph callback runs after an update's first replay is
+    # submitted (inside the graphics phase). Keep its native readback wait
+    # visible even without hot Xenos diagnostics.
     source = once(source, '    return wnd->GetPixelDepth(x, y);',
                   '    ModernFrameProfile::PhaseScope depthRead(ModernFrameProfile::PixelDepthRead);\n'
                   '    return wnd->GetPixelDepth(x, y);')

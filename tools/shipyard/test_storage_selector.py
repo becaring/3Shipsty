@@ -16,7 +16,7 @@ assert 'XShowDeviceSelectorUI' not in storage
 report = json.loads((ROOT / 'scratch/save-storage-xdk/xdk/build.json').read_text())
 assert any(row['source'] == 'shipyard/sources/storage/device.cpp' and row['exit'] == 0 for row in report)
 assert 'if(!xenos_device || !buffers.empty())return E_UNEXPECTED;' in display
-assert 'xenos_device->Present(NULL,NULL,NULL,NULL)' in display
+assert '::Shipyard::XenosPresentationChain().Present()' in display
 result = subprocess.run([sys.executable, '-B', str(BASE / 'tests/test_storage_device.py')],
                         capture_output=True, text=True)
 assert result.returncode == 0, result.stdout + result.stderr

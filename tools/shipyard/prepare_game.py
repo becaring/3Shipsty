@@ -251,6 +251,41 @@ static const char* sShipyardGameStateNames[] = {
     "TitleSetup", "Select", "Title", "Gameplay", "Opening", "FileChoose"
 };''',
             'Gamestate runtime trace declaration')
+        # Environment_GraphCallback reads the depth the previous update's final
+        # replay rendered (the N64 read it after the RCP finished that task).
+        # Running it at task submission makes the CPU wait for that replay while
+        # the GPU has nothing queued. Run it after this update's first replay is
+        # submitted instead; the backend keeps the previous final depth
+        # published until then, so every value read is unchanged. Its results
+        # (sun depth, light glow flags) are first drawn by the next update.
+        replace_projected_once(
+            'void Graph_TaskSet00(GraphicsContext* gfxCtx) {',
+            '''static void (*sShipyardDeferredCallback)(struct GraphicsContext*, void*);
+static GraphicsContext* sShipyardDeferredGfxCtx;
+static void* sShipyardDeferredParam;
+
+void Graph_RunDeferredCallback(void) {
+    void (*callback)(struct GraphicsContext*, void*) = sShipyardDeferredCallback;
+
+    if (callback == NULL) {
+        return;
+    }
+    sShipyardDeferredCallback = NULL;
+    callback(sShipyardDeferredGfxCtx, sShipyardDeferredParam);
+}
+
+void Graph_TaskSet00(GraphicsContext* gfxCtx) {''',
+            'Deferred graph callback owner')
+        replace_projected_once(
+            '''    if (gfxCtx->callback != NULL) {
+        gfxCtx->callback(gfxCtx, gfxCtx->callbackParam);
+    }''',
+            '''    Graph_RunDeferredCallback();
+    sShipyardDeferredCallback = gfxCtx->callback;
+    sShipyardDeferredGfxCtx = gfxCtx;
+    sShipyardDeferredParam = gfxCtx->callbackParam;''',
+            'Deferred graph callback submission')
+        changes.append('Run the depth-reading graph callback after the first replay of its update is submitted')
         replace_projected_once(
             'void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {',
             '''extern void Shipyard_FrameProfileGameUpdateBegin(void);
