@@ -73,7 +73,7 @@ static unsigned sXboxPipelineMutation = 1;
 static __forceinline bool XboxPipelineCurrent(Interpreter& gfx) {
     if (gfx.mXboxPipelineKey.valid && gfx.mXboxPipelineCertified == sXboxPipelineMutation)
         return true;
-    if (!gfx.mXboxPipelineKey.Matches(gfx))
+    if (!gfx.mXboxPipelineKey.Certify(gfx))
         return false;
     gfx.mXboxPipelineCertified = sXboxPipelineMutation;
     return true;

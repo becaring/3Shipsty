@@ -109,6 +109,12 @@ int main() {
         owner.rdp.palettes[half] = NULL;
     }
     require(key.Matches(owner), "identical reload not restored after palette checks");
+    // Certify clears the used slot's flag, exactly as upstream's import would;
+    // the unused slot's flag is left alone.
+    owner.rdp.textures_changed[1] = true;
+    require(key.Certify(owner) && !owner.rdp.textures_changed[0] && owner.rdp.textures_changed[1],
+            "certified reload did not clear only the used dirty flag");
+    owner.rdp.textures_changed[1] = false;
     owner.rdp.textures_changed[0] = false;
     owner.rdp.textures_changed[1] = true;
     require(key.Matches(owner), "unused dirty texture blocked reuse");
