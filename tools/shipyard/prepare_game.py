@@ -241,23 +241,6 @@ def project_header(name, raw):
             'File-select fade trace')
         changes.append('Add bounded file-select fade trace after real update/draw commands')
         changes.append('Use owner-aware skybox initialization for FileChooseContext')
-    if name == 'soh/src/code/z_scene.c':
-        # Objects spawn when a scene or room loads, before any actor using
-        # them draws. Queue their resources on the resource workers now instead
-        # of loading each one on the game thread at its first draw.
-        replace_projected_once(
-            's32 Object_Spawn(ObjectContext* objectCtx, s16 objectId) {',
-            '''extern void ResourceMgr_PrefetchObject(const char* name);
-
-s32 Object_Spawn(ObjectContext* objectCtx, s16 objectId) {''',
-            'Object prefetch declaration')
-        replace_projected_once(
-            '    objectCtx->status[objectCtx->num].id = objectId;\n    size = gObjectTable[objectId].vromEnd - gObjectTable[objectId].vromStart;',
-            '''    objectCtx->status[objectCtx->num].id = objectId;
-    ResourceMgr_PrefetchObject(gObjectTable[objectId].fileName);
-    size = gObjectTable[objectId].vromEnd - gObjectTable[objectId].vromStart;''',
-            'Object prefetch at spawn')
-        changes.append("Queue a spawned object's resources on the resource workers")
     if name == 'soh/src/code/graph.c':
         replace_projected_once(
             'extern void ProcessSaveStateRequests(void);',
