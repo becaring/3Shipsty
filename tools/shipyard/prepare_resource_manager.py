@@ -77,6 +77,55 @@ def syntax(text):
     return text
 
 
+def concurrent_cache(text):
+    # SoH itself only ever runs one load at a time; object and scene prefetch
+    # run several. Every cache map access takes mMutex, and the first
+    # published instance of a path wins: game code keeps raw pointers into
+    # cached resources (OTRPlay_LoadFile, scene commands), so replacing an
+    # entry would free the instance it holds.
+    text=once(text,
+              '        mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
+              '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+              '        return nullptr;',
+              '        {\n'
+              '            const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+              '            mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
+              '        }\n'
+              '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+              '        return nullptr;')
+    text=once(text,
+              '        if (cachedResource != nullptr) {\n'
+              '            // If another thread has already loaded this resource, discard the work we already did and return from\n'
+              '            // cache.\n',
+              '        const auto published = mResourceCache.find(identifier);\n'
+              '        if (published != mResourceCache.end()) {\n'
+              '            const std::shared_ptr<IResource> current = GetCachedResource(published->second);\n'
+              '            if (current != nullptr) {\n'
+              '                cachedResource = current;\n'
+              '            }\n'
+              '        }\n'
+              '        if (cachedResource != nullptr) {\n'
+              '            // If another thread has already loaded this resource, discard the work we already did and return from\n'
+              '            // cache.\n')
+    # Erase under the lock and destroy after it: a resource destructor may
+    # load other resources.
+    return once(text,
+                '    if (Shipyard::Resources::contains(mResourceCache, identifier)) {\n'
+                '        const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+                '        mResourceCache.erase(identifier);\n'
+                '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+                '    }',
+                '    {\n'
+                '        const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+                '        const auto found = mResourceCache.find(identifier);\n'
+                '        if (found != mResourceCache.end()) {\n'
+                '            value = found->second;\n'
+                '            mResourceCache.erase(found);\n'
+                '            InterlockedIncrement(&mXboxLookupGeneration);\n'
+                '        }\n'
+                '    }')
+
+
 def transform(name, original):
     if name.endswith(('/glob.c','/glob.h')): return original
     text = syntax(original)
@@ -178,6 +227,18 @@ def transform(name, original):
                   '        }\n'
                   '        bytesRead += static_cast<zip_uint64_t>(chunk);\n'
                   '    }')
+        # libzip supports one thread per zip_t, and this archive has a single
+        # shared handle. Object and scene prefetch load on several resource
+        # workers at once; interleaved reads return failed or foreign entry
+        # data, and the cache then records the path as NotFound for good (a
+        # scene's collision header resolving to NULL in BgCheck_Allocate).
+        # The mutex is at namespace scope, so it exists before any worker.
+        text=once(text,'namespace Ship {\nO2rArchive::O2rArchive(',
+                  'namespace Ship {\nnamespace {\nShipyard::Async::mutex sXboxZipMutex;\n}\n\nO2rArchive::O2rArchive(')
+        for signature in ('std::shared_ptr<File> O2rArchive::LoadFile(const std::string& filePath) {\n',
+                          'bool O2rArchive::WriteFile(const std::string& filePath, const std::vector<uint8_t>& data) {\n'):
+            text=once(text,signature,signature+'    const Shipyard::Async::lock_guard<Shipyard::Async::mutex> zipLock(sXboxZipMutex);\n')
+        text='#include "async/native.h"\n'+text
     if name.endswith('/ArchiveManager.cpp'):
         text=text.replace('dynamic_pointer_cast<Archive>', 'std::dynamic_pointer_cast<Archive>')
         text=text.replace('mValidGameVersions.contains(archive->GetGameVersion())', 'Shipyard::Resources::contains(mValidGameVersions, archive->GetGameVersion())')
@@ -239,6 +300,7 @@ def transform(name, original):
 #endif
         resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();
     }''')
+        text=concurrent_cache(text)
     return '#include "resources/runtime_support.h"\n'+text
 
 
