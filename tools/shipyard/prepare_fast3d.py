@@ -14,7 +14,7 @@ from prepare_graphics import feature_header,lower_api
 from cpp_ast import PARSER,walk
 from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
-from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
+from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split, matrix_product
 from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_signature,
                                                texture_command_manager, texture_hash_cache_handler,
                                                texture_hash_borrowed_handler, texture_hash_epoch_handler)
@@ -43,6 +43,7 @@ def member_defaults(text,classname):
 
 
 def header(text):
+    text=matrix_product.header(text)
     text=texture_state.metadata_reference(text)
     text='#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
@@ -233,7 +234,7 @@ def prepare():
         pending[name]=re.sub(r'\bconstexpr\b','const',sources[name])
     light='include/fast/resource/type/Light.h'
     pending[light]=once(sources[light],'using Resource::Resource;','Light(std::shared_ptr<Ship::ResourceInitData> initData) : Resource<LightEntry>(initData) {}').replace(' final :',' :')
-    text=sources['src/fast/interpreter.cpp']
+    text=matrix_product.source(sources['src/fast/interpreter.cpp'])
     # CreateShader passes only the path to LoadFile. The upstream local
     # ResourceInitData is never observed by that call or any later branch.
     text=once(text,

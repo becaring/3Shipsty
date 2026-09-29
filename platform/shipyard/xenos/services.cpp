@@ -49,6 +49,9 @@ uint64_t Clock() {
     return static_cast<uint64_t>(value.QuadPart);
 }
 Accumulator accumulator(Clock);
+// Coarse cadence/phase timing must not enable per-command or per-vertex probes.
+bool interpreterDetailsEnabled = false;
+bool nativeDetailsEnabled = false;
 // Frame reporting uses the already recorded intervals; no extra work is done
 // during a present. Each 120-update window can have at most 120 samples/lane.
 uint64_t presentLaneIntervals[18][120];
@@ -222,6 +225,16 @@ void RecordTextureHashPhase(TextureHashSample& sample) {
 }
 CommandSampler commandSampler(Clock);
 void BeginFrame(bool enabled) {
+    interpreterDetailsEnabled = enabled &&
+        CVarGetInteger("gSettings.XboxInterpreterDetailsProfile", 0) != 0;
+    // Native details include full vertex tile-coverage scans and draw timers.
+    // Keep them independent of the coarse authentic-update cadence report.
+    const bool nativeDetails = enabled &&
+        CVarGetInteger("gSettings.XboxNativeDetailsProfile", 0) != 0;
+    if (nativeDetails != nativeDetailsEnabled) {
+        Fast::ShipyardXenos::SetTimingEnabled(nativeDetails);
+        nativeDetailsEnabled = nativeDetails;
+    }
     if (enabled != accumulator.enabled) {
         // Read once per profiling session. A cache A/B with only the coarse
         // frame profile enabled incurs no TRI2 timing or per-command counts.
@@ -232,7 +245,6 @@ void BeginFrame(bool enabled) {
         InterlockedExchange(&observeWorkers,enabled ? 1 : 0);
         InterlockedExchange(&workerProcessorMask,0);
         InterlockedExchange(&workerJobs,0);
-        Fast::ShipyardXenos::SetTimingEnabled(enabled);
         if (enabled) {
             Fast::ShipyardXenos::NativeCounters discarded;
             Fast::ShipyardXenos::CaptureAndResetCounters(&discarded);
@@ -247,7 +259,7 @@ void BeginFrame(bool enabled) {
         frequency = static_cast<uint64_t>(value.QuadPart);
     }
     accumulator.BeginFrame(enabled);
-    commandSampler.enabled=enabled;
+    commandSampler.enabled=interpreterDetailsEnabled;
 }
 void Begin(Phase phase) {
     accumulator.Begin(phase);
@@ -263,7 +275,7 @@ void End(Phase phase) {
     accumulator.End(phase);
 }
 uint64_t BeginActorInstance(int actorId) {
-    if (!accumulator.enabled || actorId < 0 || actorId >= ActorProfileCapacity) return 0;
+    if (!interpreterDetailsEnabled || actorId < 0 || actorId >= ActorProfileCapacity) return 0;
     ActorDrawCounters& counter = actorDraw[actorId];
     ++counter.calls;
     actorRandomState ^= actorRandomState << 13;
@@ -300,7 +312,7 @@ bool BeginResourceWait() {
     return true;
 }
 void EndResourceWait() { accumulator.End(ResourceWait); }
-bool CaptureResourceLookups() { return inInterpreter && accumulator.enabled; }
+bool CaptureResourceLookups() { return inInterpreter && interpreterDetailsEnabled; }
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes) {
     ++resourceLookups.calls;
     if (alternate) ++resourceLookups.alternate;
@@ -322,7 +334,7 @@ void ObserveTileState(unsigned kind, bool same, bool avoidable) {
     if (same) ++tileState.same[kind];
     if (avoidable) ++tileState.avoidable[kind];
 }
-bool CaptureTrianglePipeline() { return inInterpreter && accumulator.enabled; }
+bool CaptureTrianglePipeline() { return inInterpreter && interpreterDetailsEnabled; }
 void ObserveTrianglePipeline(bool hit) {
     if (hit) ++trianglePipeline.hits;
     else ++trianglePipeline.misses;
@@ -334,7 +346,7 @@ void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum) {
 }
 void BeginPipelinePreparation(PipelinePreparationSample& sample) {
     sample.sampled=false;
-    if (!inInterpreter || !accumulator.enabled) return;
+    if (!inInterpreter || !interpreterDetailsEnabled) return;
     ++pipelinePrep.calls;
     pipelineRandomState^=pipelineRandomState<<13;
     pipelineRandomState^=pipelineRandomState>>17;
@@ -472,7 +484,7 @@ void EndVtxHash(VtxHashSample& sample) {
 }
 void BeginTextureHash(TextureHashSample& sample, TextureHashPhase initialPhase) {
     sample.sampled=false;
-    if (!inInterpreter || !accumulator.enabled) return;
+    if (!inInterpreter || !interpreterDetailsEnabled) return;
     ++textureHash.calls;
     textureHashRandomState^=textureHashRandomState<<13;
     textureHashRandomState^=textureHashRandomState>>17;

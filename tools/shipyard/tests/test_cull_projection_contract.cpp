@@ -42,6 +42,33 @@ static float Bits(uint32_t bits) {
 int main() {
     uint32_t seed = 0x9462a3b1U;
     Vertex vertices[68] = {};
+    Shipyard::Fast3D::ProjectionValueCache legacy = {}, shared = {};
+    // Keep identical inputs alive across mode changes; also mutate each word.
+    // Exceptional inputs must remain uncached in both public interfaces.
+    const uint32_t inputWords[] = {0x3f333333U, 0x40400000U, 0x80000000U,
+                                  0, 1, 0x80000001U, 0x7f800000U,
+                                  0xff800000U, 0x7fc01234U};
+    for (unsigned input = 0; input != sizeof(inputWords) / sizeof(inputWords[0]); ++input) {
+        for (unsigned component = 0; component != 3; ++component) {
+            Vertex value = {0.7f, -0.3f, 3.0f};
+            (component == 0 ? value.x : component == 1 ? value.y : value.w) = Bits(inputWords[input]);
+            for (unsigned mode = 0; mode != 4; ++mode) {
+                unsigned previous;
+                _controlfp_s(&previous, mode << 8, _MCW_RC);
+                const uint32_t token = Shipyard::Fast3D::ProjectionRoundingMode();
+                for (unsigned repeat = 0; repeat != 2; ++repeat) {
+                    legacy.Load(value.x, value.y, value.w);
+                    shared.Load(value.x, value.y, value.w, token);
+                    if (std::memcmp(&legacy.x, &shared.x, sizeof(float) * 2) != 0 ||
+                        legacy.valid != shared.valid || legacy.roundingMode != shared.roundingMode) {
+                        std::printf("cull shared token mismatch mode=%u input=%u component=%u repeat=%u\n",
+                                    mode, input, component, repeat);
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
     for (unsigned mode = 0; mode != 4; ++mode) {
         unsigned previous;
         _controlfp_s(&previous, mode << 8, _MCW_RC);

@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from deferred_lit_fog import HEADER_TYPES, SOURCE_METHODS, header, transform
+from platform_base import resolve
 
 
 class DeferredLitFogProjection(unittest.TestCase):
@@ -26,7 +27,7 @@ class DeferredLitFogProjection(unittest.TestCase):
         source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
         projected = transform(source)
         self.assertIn('pending.source = vertices[i];', projected)
-        self.assertIn('context->fogMul = mRsp->fog_mul;', projected)
+        self.assertIn('context->fogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);', SOURCE_METHODS)
         self.assertIn('context->scaleS = mRsp->texture_scaling_factor.s;', projected)
         self.assertIn('XboxMaterializeVertex(vtx_idx);', projected)
         self.assertIn('if (mXboxDeferredReplay) return false;', projected)
@@ -112,6 +113,7 @@ class DeferredLitFogProjection(unittest.TestCase):
                                 '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashTransform);\n', '')
         fixture = FULL_VERTEX_FIXTURE.replace('/* PROJECTED TYPES */', HEADER_TYPES).replace(
             '/* PROJECTED METHODS */', SOURCE_METHODS + vertex)
+        fixture = '#include "' + (resolve(ROOT) / 'sources/fast3d/numeric.h').as_posix() + '"\n' + fixture
         fixture = fixture.replace('bool NearestRounding() { return false; }',
                                   'static bool nearest = true, transformAvailable = true;\n'
                                   'bool NearestRounding() { return nearest; }')
@@ -336,6 +338,8 @@ public:
         for(int c=0;c<3;++c) coeff[c]=(float)light->dir[c]/127.0f;
     }
     static void TransposedMatrixMul(float [3],const float [3],const float [4][4]) {}
+    // This fixture supplies the combined matrix directly for both paths.
+    void EnsureMatrixProduct() {}
     void XboxDiscardVertex(size_t);
     bool XboxTryDeferVertices(size_t,size_t,const F3DVtx*);
     void XboxMaterializeVertex(size_t);

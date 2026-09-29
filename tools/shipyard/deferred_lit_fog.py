@@ -11,7 +11,8 @@ struct XboxDeferredContext {
     uint8_t ambient[3];
     uint8_t count;
     uint16_t scaleS, scaleT;
-    int16_t fogMul, fogOffset;
+    // Exact signed-short values in the form every materialized vertex consumes.
+    float fogMul, fogOffset;
     uint8_t references;
 };
 struct XboxDeferredVertex {
@@ -86,8 +87,8 @@ bool Interpreter::XboxTryDeferVertices(size_t n_vertices, size_t dest_index, con
     }
     context->scaleS = mRsp->texture_scaling_factor.s;
     context->scaleT = mRsp->texture_scaling_factor.t;
-    context->fogMul = mRsp->fog_mul;
-    context->fogOffset = mRsp->fog_offset;
+    context->fogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);
+    context->fogOffset = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_offset);
 
     // Reuse the authoritative VMX/aspect/clip transform with attributes off.
     struct ReplayGuard {

@@ -136,6 +136,10 @@ def transform(text):
     text=recording_op_index(text)
     text=replay_op_index(text)
     text=once(text,'switch (item.first)','switch (item.first.GetValue())')
+    from platform_base import resolve
+    resolve(ROOT)
+    from xbox360_platform.interpolation_pairing import project as prepare_pairing
+    text=prepare_pairing(text, value_expression='{value}.GetValue()')
     text=once(text,'typedef pair<const void*, int> label;',
               'struct label { const void* first; int second;\n'
               'bool operator<(const label& rhs) const { return first < rhs.first || (!(rhs.first < first) && second < rhs.second); }\n};')

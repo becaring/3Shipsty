@@ -1,4 +1,6 @@
 #include <memory>
+#include <future>
+namespace BS { using priority_t=int; namespace pr { const int highest=0; } }
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,13 +12,15 @@
 #include "xbox_compat/variant.h"
 #include "resources/path_span.h"
 #define SPDLOG_TRACE(...) ((void)0)
-static size_t allocations, locks, probes;
+static size_t allocations, locks, probes, readyPromises;
+static long InterlockedIncrement(volatile long* value) { return ++*value; }
 void* operator new(size_t n){++allocations;if(void* p=std::malloc(n))return p;throw std::bad_alloc();}
 void operator delete(void* p) noexcept {std::free(p);}
 void operator delete(void* p,size_t) noexcept {std::free(p);}
 namespace Shipyard { namespace Async {
 struct mutex { std::mutex native; void lock(){++locks;native.lock();} void unlock(){native.unlock();} bool try_lock(){return native.try_lock();} };
-using std::lock_guard;
+using std::lock_guard; using std::shared_future;
+template<class T> struct promise : std::promise<T> { promise(){++readyPromises;} };
 } namespace Resources {
 bool starts_with(const std::string& value,const std::string& prefix){return value.compare(0,prefix.size(),prefix)==0;}
 }}
@@ -24,7 +28,7 @@ namespace Math {size_t HashCombine(size_t a,size_t b){return a^(b+0x9e3779b9u+(a
 namespace Ship {
 struct Archive {std::string path;const std::string& GetPath()const{return path;}};
 struct ResourceInitData {};
-struct IResource {bool dirty=false;bool IsDirty(){return dirty;}static const std::string gAltAssetPrefix;};
+struct IResource {std::vector<int> Instructions=std::vector<int>(1);bool dirty=false;bool IsDirty(){return dirty;}static const std::string gAltAssetPrefix;};
 const std::string IResource::gAltAssetPrefix="alt/";
 // SELECTED KEY
 class ResourceManager {
@@ -35,6 +39,7 @@ public:
         iterator find(const ResourceIdentifier& key){++probes;return std::unordered_map<ResourceIdentifier,Line,ResourceIdentifierHash>::find(key);}
     } mResourceCache;
     Shipyard::Async::mutex mMutex;
+    volatile long mXboxLookupGeneration=0;
     bool mAltAssetsEnabled=true;
     uintptr_t mDefaultCacheOwner=0;
     std::shared_ptr<Archive> mDefaultCacheArchive;
@@ -49,10 +54,29 @@ public:
     }
     ResourceManager* GetResourceLoader(){return this;}
     std::shared_ptr<IResource> LoadResource(const std::string& path,std::shared_ptr<int>,std::shared_ptr<ResourceInitData> init){loads.push_back(path);lastInit=init;return loaded;}
+    struct Pool {
+        unsigned workers=0;
+        template<class F> std::shared_future<std::shared_ptr<IResource>> submit_task(F f,int) {
+            ++workers;std::promise<std::shared_ptr<IResource>> p;p.set_value(f());return p.get_future().share();
+        }
+    } pool;
+    Pool* mThreadPool=&pool;
     // ACTUAL DECLARATIONS
 };
 // ACTUAL METHODS
+struct Context {
+    static inline ResourceManager* manager;
+    static Context* GetInstance(){static Context value;return &value;}
+    ResourceManager* GetResourceManager(){return manager;}
+};
 }
+using Gfx=int;
+namespace Fast { using DisplayList=Ship::IResource; }
+static bool mq;
+static unsigned preflights;
+static bool ResourceMgr_IsGameMasterQuest(){return mq;}
+static void ResourceMgr_UnloadOriginalWhenAltExists(const char*){++preflights;}
+// ACTUAL GRAPHICS BRIDGE
 int main(){
     using namespace Ship;
     const std::string path="objects/very_long_resource_path/texture_123456789";
@@ -80,6 +104,13 @@ int main(){
         }
         std::string request=(mode==2?"__OTR____OTR__":mode==3?"alt/":"")+path;
         bool exact=mode==1||mode==2;
+        // B5 bypass is eligible only for a settled clean alt and no base entry.
+        // All discovery, dirty/error, explicit-alt and multi-signature paths fall through.
+        const size_t originalSize=actual.mResourceCache.size();
+        auto settled=actual.GetSettledAlternate(request.c_str());
+        bool eligible=base==0 && alt==4 && mode!=4 && mode!=2 && mode!=3;
+        assert(settled==(eligible?clean:std::shared_ptr<IResource>()));
+        assert(actual.mResourceCache.size()==originalSize);
         auto reference=expected.LoadResourceProcess(request,exact,init);
         auto result=actual.LoadResourceProcess(request.c_str(),exact,init);
         assert(result==reference && actual.reads==expected.reads && actual.loads==expected.loads && actual.lastInit==expected.lastInit);
@@ -92,6 +123,53 @@ int main(){
         }
         ++cases;
     }
+    // Public explicit alias loads can populate alt/__OTR__x. The bridge must
+    // preserve that raw-name precedence while removing only ready cache futures.
+    unsigned bridgeCases=0;
+    for(int mode=0;mode<5;++mode)for(int altEnabled=0;altEnabled<2;++altEnabled)
+    for(int state=0;state<7;++state)for(int baseDirty=0;baseDirty<2;++baseDirty){
+        ResourceManager expected,actual;
+        auto alias=std::make_shared<IResource>();
+        for(auto* m:{&expected,&actual}){
+            m->mAltAssetsEnabled=altEnabled!=0;m->loaded=alias;
+            assert(m->LoadResource("alt/__OTR__"+path)==alias);
+            ResourceIdentifier key("alt/__OTR__"+path,0,{});
+            if(state==0)m->mResourceCache.erase(key);
+            if(state==1)m->mResourceCache[key]=ResourceManager::ResourceLoadError::None;
+            if(state==2)m->mResourceCache[key]=ResourceManager::ResourceLoadError::NotFound;
+            if(state==3)m->mResourceCache[key]=ResourceManager::ResourceLoadError::NotCached;
+            if(state==5)m->mResourceCache[key]=dirty;
+            if(state==6)m->mResourceCache[key]=std::shared_ptr<IResource>();
+            m->mResourceCache[ResourceIdentifier(path,0,{})]=baseDirty?dirty:clean;
+            m->loaded=loaded;
+        }
+        std::string request=(mode==1?"__OTR____OTR__":mode==2?"__OTR__alt/":mode==3?"":"__OTR__")+path;
+        mq=mode==4;
+        Context::manager=&expected;preflights=0;readyPromises=0;
+        Gfx* reference=ReferenceLoadGfxByName(request.c_str());
+        const size_t baselinePromises=readyPromises;
+        assert(preflights==1);
+        Context::manager=&actual;preflights=0;readyPromises=0;
+        Gfx* result=ResourceMgr_LoadGfxByName(request.c_str());
+        assert(result==reference && preflights==1);
+        assert(actual.pool.workers==expected.pool.workers);
+        assert(actual.reads==expected.reads && actual.loads==expected.loads);
+        if(mode==0 && !baseDirty && !(altEnabled && state==4)){
+            assert(baselinePromises==1 && readyPromises==0);
+        }
+        ++bridgeCases;
+    }
+    std::printf("PASS %u actual graphics-bridge alias/prefix/dirty cases; resident ready futures removed\n",bridgeCases);
+    ResourceManager settled;
+    settled.mResourceCache[ResourceIdentifier("alt/"+path,0,{})]=clean;
+    size_t settledBefore=allocations;
+    assert(settled.GetSettledAlternate(path.c_str())==clean);
+    assert(allocations==settledBefore);
+    std::string signedPath="__OTR__"+path;
+    assert(settled.GetSettledAlternate(signedPath.c_str())==clean);
+    settled.mAltAssetsEnabled=false; assert(!settled.GetSettledAlternate(path.c_str()));
+    settled.mAltAssetsEnabled=true; assert(settled.GetSettledAlternate(path.c_str())==clean);
+    clean->dirty=true; assert(!settled.GetSettledAlternate(path.c_str())); clean->dirty=false;
     ResourceManager warm;
     warm.mResourceCache[ResourceIdentifier(path,0,{})]=clean;
     warm.mResourceCache[ResourceIdentifier("alt/"+path,0,{})]=ResourceManager::ResourceLoadError::NotFound;

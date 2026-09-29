@@ -146,10 +146,13 @@ def _phase_profile(source):
     cull_start = source.index('void Interpreter::GfxSpTri1(')
     cull_end = source.index('\n}', cull_start)
     cull = source[cull_start:cull_end]
-    cull = _once(cull, '    XboxMaterializeVertex(vtx1_idx);',
+    cull = _once(cull,
+                 '    if (vtx1_idx < MAX_VERTICES && mXboxDeferredVertices[vtx1_idx].context)\n'
+                 '        XboxMaterializeVertex(vtx1_idx);',
                  '    if (sModernTri2Sample) ModernFrameProfile::AdvanceTri2(\n'
                  '        *sModernTri2Sample, ModernFrameProfile::Tri2Materialize);\n'
-                 '    XboxMaterializeVertex(vtx1_idx);')
+                 '    if (vtx1_idx < MAX_VERTICES && mXboxDeferredVertices[vtx1_idx].context)\n'
+                 '        XboxMaterializeVertex(vtx1_idx);')
     cull = _once(cull, '    XboxEmitTriangle(vtx1_idx, vtx2_idx, vtx3_idx, is_rect);',
                  '    if (sModernTri2Sample) ModernFrameProfile::AdvanceTri2(\n'
                  '        *sModernTri2Sample, ModernFrameProfile::Tri2Pipeline);\n'

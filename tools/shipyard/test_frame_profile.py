@@ -56,7 +56,13 @@ bool tri2CVarOn=false;
 unsigned tri2CVarReads=0;
 bool vtxCVarOn=false;
 unsigned vtxCVarReads=0;
+bool detailsCVarOn=false;
+bool nativeDetailsCVarOn=false;
 int CVarGetInteger(const char* name,int fallback) {
+    if (strcmp(name,"gSettings.XboxNativeDetailsProfile")==0)
+        return nativeDetailsCVarOn ? 1 : 0;
+    if (strcmp(name,"gSettings.XboxInterpreterDetailsProfile")==0)
+        return detailsCVarOn ? 1 : 0;
     if (strcmp(name,"gSettings.XboxTri2PhaseProfile")==0) {
         ++tri2CVarReads;
         return tri2CVarOn ? 1 : 0;
@@ -102,7 +108,8 @@ unsigned presentationColorResolvesSkipped,presentationColorDiscardBlocked;
 unsigned alphaDraws[3],alphaTriangles[3],alphaVertices[3];
 };
 unsigned timingTransitions=0,captures=0;
-void SetTimingEnabled(bool) { ++timingTransitions; }
+bool nativeTimingOn=false;
+void SetTimingEnabled(bool enabled) { ++timingTransitions; nativeTimingOn=enabled; }
 void CaptureAndResetCounters(NativeCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
 void CaptureAndResetTimingCounters(NativeTimingCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
 }}
@@ -173,7 +180,27 @@ int main() {
     Shipyard_FrameProfileGameUpdateEnd();
     assert(dust.draws==0 && clockReads==0);
     assert(Fast::ShipyardXenos::captures==0 && Fast::ShipyardXenos::timingTransitions==0);
-    for(unsigned i=0;i<119;++i) { BeginFrame(true); Begin(Interpreter); End(Interpreter); EndFrame(); }
+    // Coarse timing records intervals without entering expensive body probes.
+    BeginFrame(true); Begin(Interpreter);
+    assert(!commandSampler.enabled && !CaptureTrianglePipeline() && !CaptureResourceLookups());
+    assert(!Fast::ShipyardXenos::nativeTimingOn && Fast::ShipyardXenos::timingTransitions==0);
+    unsigned coarseReads=clockReads;
+    for(unsigned i=0;i<256;++i) {
+        auto token=commandSampler.Begin(6,4); commandSampler.End(token);
+        PipelinePreparationSample prep; BeginPipelinePreparation(prep); EndPipelinePreparation(prep);
+        TextureHashSample hash; BeginTextureHash(hash); EndTextureHash(hash);
+        assert(Shipyard_FrameProfileActorInstanceBegin(17)==0);
+    }
+    assert(clockReads==coarseReads && pipelinePrep.calls==0 && textureHash.calls==0);
+    End(Interpreter); EndFrame();
+    detailsCVarOn=true;
+    for(unsigned i=0;i<118;++i) {
+        nativeDetailsCVarOn=i==0;
+        BeginFrame(true);
+        assert(Fast::ShipyardXenos::nativeTimingOn==nativeDetailsCVarOn);
+        Begin(Interpreter); End(Interpreter); EndFrame();
+    }
+    assert(Fast::ShipyardXenos::timingTransitions==2);
     assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
     assert(tri2CVarReads==1 && !tri2ProfileEnabled);
     assert(vtxCVarReads==1 && !vtxHashProfileEnabled);
