@@ -2,6 +2,9 @@
 #include "xenos/core.h"
 #include "xenos/shader_variant.h"
 #include "native_display.h"
+#include "services.h"
+#include "xenos/shader_cache.h"
+#include "io/shader_worker.h"
 
 namespace Fast {
 namespace {
@@ -22,8 +25,8 @@ void InitializeNativeDisplay(){ShipyardXenos::InitializeDisplay();}
 HRESULT PresentNativeStartupUI(){return ShipyardXenos::PresentStartupUI();}
 void BeginNativeGuiDraw(){ShipyardXenos::BeginGuiDraw();}
 void InvalidateNativeGuiState(){ShipyardXenos::InvalidateGuiState();}
-void ShutdownNativeDisplay(){ShipyardXenos::Shutdown();}
-GfxRenderingAPIXenos::~GfxRenderingAPIXenos(){ShipyardXenos::Shutdown();}
+void ShutdownNativeDisplay(){Shipyard::IO::ShutdownShaderWrites();ShipyardXenos::Shutdown();}
+GfxRenderingAPIXenos::~GfxRenderingAPIXenos(){ShutdownNativeDisplay();}
 const char* GfxRenderingAPIXenos::GetName(){return "Xenos";}
 int GfxRenderingAPIXenos::GetMaxTextureSize(){return 4096;}
 GfxClipParameters GfxRenderingAPIXenos::GetClipParameters(){return ShipyardXenos::ClipParameters();}
@@ -43,9 +46,25 @@ void GfxRenderingAPIXenos::SetScissor(int x,int y,int w,int h){ShipyardXenos::Se
 void GfxRenderingAPIXenos::SetUseAlpha(bool alpha){ShipyardXenos::SetUseAlpha(alpha);}
 void GfxRenderingAPIXenos::DrawTriangles(float v[],size_t count,size_t tris){ShipyardXenos::DrawTriangles(v,count,tris);}
 void InitializeGuiForXenos();
-void GfxRenderingAPIXenos::Init(){ShipyardXenos::SetShaderCache(NULL);ShipyardXenos::Init();InitializeGuiForXenos();}
+void GfxRenderingAPIXenos::Init(){
+    const Shipyard::IO::ShaderWorkerConfig worker={"shader-cache",3,
+        Shipyard::Xenos::WriteShaderCacheRecord,Shipyard_Log,Shipyard_Fatal};
+    if(!Shipyard::IO::ConfigureShaderWorker(&worker))
+        Shipyard_Fatal("shader worker configuration",E_UNEXPECTED);
+    // Offline-compiled shaders (tools/shipyard/build_shader_pack.py); combinations
+    // it lacks compile once and persist in the appendable cache below.
+    Shipyard::Xenos::ConfigureShaderPack("game:\\shaders\\3shipsty.shaderpack");
+    const Shipyard::Xenos::ShaderCacheConfig config={"game:\\config\\3shipsty-shaders.cache",2,
+        Shipyard::IO::QueueShaderRecord};
+    if(!Shipyard::Xenos::ConfigureShaderCache(config))
+        Shipyard_Fatal("shader cache configuration",E_UNEXPECTED);
+    const ShipyardXenos::ShaderCacheOps cache={Shipyard::Xenos::LoadShaderCode,
+        Shipyard::Xenos::StoreShaderCode};
+    ShipyardXenos::SetShaderCache(&cache);
+    ShipyardXenos::Init();InitializeGuiForXenos();
+}
 void GfxRenderingAPIXenos::OnResize(){ShipyardXenos::Resize();}
-void GfxRenderingAPIXenos::StartFrame(){ShipyardXenos::StartFrame();}
+void GfxRenderingAPIXenos::StartFrame(){Shipyard::IO::PollShaderWrites();ShipyardXenos::StartFrame();}
 void GfxRenderingAPIXenos::EndFrame(){ShipyardXenos::EndFrame();}
 void GfxRenderingAPIXenos::FinishRender(){ShipyardXenos::FinishRender();}
 int GfxRenderingAPIXenos::CreateFramebuffer(){return ShipyardXenos::CreateFramebuffer();}

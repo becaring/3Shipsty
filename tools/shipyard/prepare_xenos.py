@@ -16,6 +16,8 @@ OUT=ROOT/'scratch/xenos-xdk'
 PLATFORM_BASE=resolve_platform_base(ROOT)
 CORE=PLATFORM_BASE/'sources/xenos/core.cpp'
 SHADER_PROVIDER=PLATFORM_BASE/'sources/graphics/shader_provider.cpp'
+SHADER_CACHE=PLATFORM_BASE/'sources/xenos/shader_cache.cpp'
+SHADER_WORKER=PLATFORM_BASE/'sources/io/shader_worker.cpp'
 
 
 def prepare():
@@ -31,7 +33,9 @@ def prepare():
     header='#pragma once\n#include "fast/backends/gfx_rendering_api.h"\nnamespace Fast {\nclass GfxRenderingAPIXenos : public GfxRenderingAPI {\n'+declarations+'};\n}\n'
     stable(OUT/'generated/xenos_backend.h',header)
     stable(OUT/'manifest.json',json.dumps(dict(outputs={'xenos_backend.h':hashlib.sha256(header.encode()).hexdigest()},
-                                               core_source=CORE.as_posix(),core_sha256=hashlib.sha256(CORE.read_bytes()).hexdigest()),indent=2)+'\n')
+                                               core_source=CORE.as_posix(),core_sha256=hashlib.sha256(CORE.read_bytes()).hexdigest(),
+                                               shader_cache_sources={p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                                                                     for p in (SHADER_CACHE,SHADER_WORKER)}),indent=2)+'\n')
 
 
 def build():
@@ -45,12 +49,12 @@ def build():
                                   OUT/'generated',OWN,ROOT/'scratch/fast3d-xdk/generated/include',
                                   ROOT/'scratch/imgui-xdk/generated',PLATFORM_BASE/'sources/graphics']+includes()]
     rows=[]
-    for source in [CORE,SHADER_PROVIDER,OWN/'api.cpp',OWN/'shader_provider.cpp',OWN/'services.cpp']:
+    for source in [CORE,SHADER_PROVIDER,SHADER_CACHE,SHADER_WORKER,OWN/'api.cpp',OWN/'shader_provider.cpp',OWN/'services.cpp']:
         obj=folder/('shipyard_shader_provider.obj' if source==SHADER_PROVIDER else source.stem+'.obj')
         command=[str(sdk/'bin/win32/cl.exe')]+flags+[str(source),'/Fo'+str(obj)]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True)
         stable(obj.with_suffix('.log'),result.stdout+result.stderr)
-        label='shipyard/'+source.relative_to(PLATFORM_BASE).as_posix() if source in (CORE,SHADER_PROVIDER) else source.relative_to(ROOT).as_posix()
+        label='shipyard/'+source.relative_to(PLATFORM_BASE).as_posix() if source.is_relative_to(PLATFORM_BASE) else source.relative_to(ROOT).as_posix()
         rows.append(dict(source=label,exit=result.returncode,command=command))
         print(source.name+': '+str(result.returncode))
         if result.returncode:print('\n'.join(l for l in result.stdout.splitlines() if 'error ' in l)[:3500])
