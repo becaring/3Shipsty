@@ -226,6 +226,14 @@ int main() {
             c->lights[i].coeff[j]=(float)((int)(next()%300)-150)/127.0f;
             c->lights[i].color[j]=(float)(next()%256);
         }
+        // Odd trials take the bounded float path; both rounding flags must
+        // reproduce the eager division.
+        const bool floatTrial=(trial&1)!=0;
+        c->nearest=(trial&2)!=0;
+        if(floatTrial) {
+            c->floatLighting=true; c->normalKey=0xffffffffu;
+            for(int j=0;j<3;++j) c->ambientFloat[j]=(float)c->ambient[j];
+        }
         F3DVtx input; memset(&input,0,sizeof(input));
         input.v.tc[0]=(short)next(); input.v.tc[1]=(short)next();
         input.n.n[0]=(signed char)next(); input.n.n[1]=(signed char)next(); input.n.n[2]=(signed char)next();
@@ -240,6 +248,7 @@ int main() {
         p.mXboxDeferredVertices[slot].context=c;
         LoadedVertex expected=original;
         eager(&expected,input,*c);
+        const F3DVtx kept=input;
         // Later commands can mutate the original input, light/fog state and RSP.
         memset(&input,0x5a,sizeof(input)); rsp.fog_mul=1; rsp.fog_offset=-17;
         p.XboxMaterializeVertex(slot);
@@ -254,6 +263,20 @@ int main() {
         expected.u=1234; expected.v=-5678;
         p.XboxMaterializeVertex(slot);
         if(memcmp(&expected,&rsp.loaded_vertices[slot],sizeof(expected))) return 4;
+        if(floatTrial) {
+            // The same normal reuses the snapshot's RGB; fog stays per vertex.
+            const int other=(slot+1)%MAX_VERTICES;
+            LoadedVertex second=original;
+            second.z=(float)((int)(next()%2000)-1000)/1000.0f;
+            second.w=(float)((int)(next()%2000)-1000)/1000.0f;
+            rsp.loaded_vertices[other]=second;
+            p.mXboxDeferredVertices[other].source=kept;
+            p.mXboxDeferredVertices[other].context=c; c->references=1;
+            LoadedVertex again=second;
+            eager(&again,kept,*c);
+            p.XboxMaterializeVertex(other);
+            if(memcmp(&again,&rsp.loaded_vertices[other],sizeof(again)) || c->references) return 7;
+        }
     }
     // BranchZ and culling read eager z/w/clip without touching a pending slot.
     XboxDeferredContext* c=&p.mXboxDeferredContexts[0]; c->references=2;

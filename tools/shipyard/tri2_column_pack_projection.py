@@ -41,7 +41,8 @@ COLUMN = r'''    // MODERN COLUMN PACK BEGIN
         for (int i = 0; i < 3; ++i) {
             const LoadedVertex& v = *v_arr[i];
             float z = v.z;
-            if (clip_parameters.z_is_from_0_to_1) z = (z + v.w) / 2.0f;
+            // Halving is exact: identical bits to the row packer's / 2.0f.
+            if (clip_parameters.z_is_from_0_to_1) z = (z + v.w) * 0.5f;
             xboxRows[i][0] = v.x;
             xboxRows[i][1] = clip_parameters.invertY ? -v.y : v.y;
             xboxRows[i][2] = z;
@@ -50,12 +51,12 @@ COLUMN = r'''    // MODERN COLUMN PACK BEGIN
         for (int t = 0; t < 2; ++t) {
             if (!usedTextures[t]) continue;
             size_t offset = xboxTextureOffset[t];
-            // Axes were prepared once for this triangle before either packer.
-            const Shipyard::Fast3D::CoordinateAxis& axisS = shipyardCoordinateS[t];
-            const Shipyard::Fast3D::CoordinateAxis& axisT = shipyardCoordinateT[t];
+            // Axes come from pipeline reconciliation (or the shared prelude).
+            const Shipyard::Fast3D::CoordinateAxis& axisS = *shipyardCoordinateS[t];
+            const Shipyard::Fast3D::CoordinateAxis& axisT = *shipyardCoordinateT[t];
             for (int i = 0; i < 3; ++i) {
-                xboxRows[i][offset] = axisS.Apply(v_arr[i]->u);
-                xboxRows[i][offset + 1] = axisT.Apply(v_arr[i]->v);
+                xboxRows[i][offset] = axisS.Apply(v_arr[i]->u, shipyardHalfTexel);
+                xboxRows[i][offset + 1] = axisT.Apply(v_arr[i]->v, shipyardHalfTexel);
             }
             offset += 2;
             if (tm & (1 << 2 * t)) {
@@ -152,6 +153,8 @@ def transform(source):
     start = source.index('__declspec(noinline) void Interpreter::XboxEmitTriangle(')
     end = source.index('\n}', start)
     emitter = source[start:end]
+    # Revalidate the whole key only after a command that can change its inputs.
+    emitter = _once(emitter, '|| mXboxPipelineKey.Matches(*this);', '|| XboxPipelineCurrent(*this);')
     emitter = _once(emitter, '    for (int i = 0; i < 3; i++) {\n        if (xboxPairPackFirst)',
                     COLUMN + '\n    for (int i = 0; i < 3; i++) {\n        if (xboxPairPackFirst)')
     emitter = _once(emitter,

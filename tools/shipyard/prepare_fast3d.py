@@ -45,7 +45,7 @@ def member_defaults(text,classname):
 def header(text):
     text=matrix_product.header(text)
     text=texture_state.metadata_reference(text)
-    text='#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
+    text='#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n#include "fast3d/coordinate.h"\n'+text
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
     text=fast3d_triangle_split.header(text)
     text=combiner_lookup.header(text)
@@ -60,7 +60,12 @@ def header(text):
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
-              '    XboxTrianglePipelineResult mXboxPipelineResult;')
+              '    XboxTrianglePipelineResult mXboxPipelineResult;\n'
+              '    Shipyard::Fast3D::CoordinateAxis mXboxAxisS[2];\n'
+              '    Shipyard::Fast3D::CoordinateAxis mXboxAxisT[2];\n'
+              '    float mXboxClampS[2];\n'
+              '    float mXboxClampT[2];\n'
+              '    unsigned mXboxPipelineCertified;')
     text=runpy.run_path(str(OWN/'resource_resolution_projection.py'))['header'](text)
     text=game_fill_discard_projection.header(text)
     text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
@@ -309,7 +314,9 @@ def prepare():
         capture_expr='mXboxTileCaptureEnabled',
         observe_expr='ModernFrameProfile::ObserveTileState')
     text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
-    text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    triangle_pipeline=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))
+    text=triangle_pipeline['transform'](text)
+    text=triangle_pipeline['pipeline_mutation_stamps'](text)
     text=pipeline_phase_profile_projection.transform(text)
     text=deferred_lit_fog.transform(text)
     start=text.index('void Interpreter::Run(Gfx* commands,')
@@ -338,6 +345,12 @@ def prepare():
               '        if (mXboxDiscardGameDepth) Fast::ShipyardXenos::DiscardFramebufferDepth(mGameFb);\n'
               '        mXboxDiscardGameDepth = false;\n'
               '        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));')
+    # Debugger state changes only through GUI/game calls outside this walk;
+    # read it once per Run instead of an out-of-line call per command.
+    body=once(body,'    auto dbg = Ship::Context::GetInstance()->GetGfxDebugger();',
+              '    auto dbg = Ship::Context::GetInstance()->GetGfxDebugger();\n'
+              '    const bool xboxDebugging = dbg->IsDebugging();')
+    body=once(body,'        if (dbg->IsDebugging()) {','        if (xboxDebugging) {')
     text=text[:start]+body+text[end:]
     text=once(text,'void Interpreter::EndFrame() {',
               'void Interpreter::EndFrame() {\n'

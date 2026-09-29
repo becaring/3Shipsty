@@ -15,9 +15,9 @@ from platform_base import resolve
 def main():
     source = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
     projected = vertex_packing.transform(source)
-    if projected.count('Shipyard::Fast3D::Coordinate(') != 0 or projected.count('].Apply(v_arr[i]->') != 2:
+    if projected.count('Shipyard::Fast3D::Coordinate(') != 0 or projected.count(']->Apply(v_arr[i]->') != 2:
         raise AssertionError('Modern must use the shared per-triangle UV axes for both axes')
-    if projected.count('Shipyard::Fast3D::CoordinateAxis shipyardCoordinateS[2]') != 1:
+    if projected.count('Shipyard::Fast3D::CoordinateAxis shipyardAxisStorage[2][2];') != 1:
         raise AssertionError('Modern UV axes must be prepared once before the packing loop')
     if projected.count('#include "fast3d/coordinate.h"') != 1:
         raise AssertionError('Modern coordinate include must resolve through Shipyard')
@@ -31,7 +31,7 @@ def main():
     restored = projected_body.replace('    float* shipyardVertexOutput = mBufVbo + mBufVboLen;\n', '')
     # Hoisted preludes (UV axes first, then clamp bounds, colors and material
     # inputs) all sit between the cursor and the loop.
-    prelude_begin = restored.index('    Shipyard::Fast3D::CoordinateAxis shipyardCoordinateS[2]')
+    prelude_begin = restored.index('    Shipyard::Fast3D::CoordinateAxis shipyardAxisStorage[2][2];')
     restored = restored[:prelude_begin] + restored[restored.index(begin, prelude_begin):]
     restored = restored.replace('shipyardClampS[t]', '(tex_width2[t] - 0.5f) / tex_width[t]')
     restored = restored.replace('shipyardClampT[t]', '(tex_height2[t] - 0.5f) / tex_height[t]')

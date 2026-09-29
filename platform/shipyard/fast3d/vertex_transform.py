@@ -89,6 +89,13 @@ def transform(source):
         eligible='shipyardTransformBatch && mRsp->current_num_lights > 0 && mRsp->current_num_lights <= MAX_LIGHTS + 1',
         capacity='MAX_LIGHTS', components=tuple('mRsp->current_lights[i].l.col[%d]' % axis for axis in range(3)))
     source = exact_attribute_conversions(source, loop)
+    # Every modelview change re-derives each light/look-at direction on the
+    # next lit batch; its signed-byte inputs have exact table values.
+    source = once(source,
+                  '    float light_dir[3] = { light->dir[0] / 127.0f, light->dir[1] / 127.0f, light->dir[2] / 127.0f };',
+                  '    float light_dir[3] = { Shipyard::Fast3D::NormalByteFloat(light->dir[0]) / 127.0f,\n'
+                  '                           Shipyard::Fast3D::NormalByteFloat(light->dir[1]) / 127.0f,\n'
+                  '                           Shipyard::Fast3D::NormalByteFloat(light->dir[2]) / 127.0f };')
     return ('#include "fast3d/clip_quantize.h"\n#include "fast3d/vertex_transform.h"\n'
             '#include "fast3d/numeric.h"\n' + source)
 
@@ -113,7 +120,28 @@ def exact_attribute_conversions(source, loop):
     body = once(body, loop,
                 '    const float shipyardFogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);\n'
                 '    const float shipyardFogOffset = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_offset);\n'
+                '    Shipyard::Fast3D::DeferredVertexBytes shipyardFogBytes[MAX_VERTICES];\n'
+                '    const bool shipyardNearestNormal = Shipyard::Fast3D::NearestRounding();\n'
                 + loop)
+    # fdiv is not pipelined on Xenon and stalls both hardware threads. Under
+    # round-to-nearest the double product is the exact float quotient (SoH360
+    # 4.0.5 DivideNormal127); other modes and non-finite values still divide.
+    for name in ('intensity', 'dotx', 'doty'):
+        body = once(body, '                %s /= 127.0f;' % name,
+                    '                %s = Shipyard::Fast3D::DivideNormal127(%s, shipyardNearestNormal);' % (name, name))
+    # As SoH360 4.0.5 did: convert fog with fctiwz/stfiwx inside the loop and
+    # read the bytes after clipping, not a store/reload for every vertex. Every
+    # vertex of a bounded fogged batch reaches the fog store; the replay path
+    # clears G_FOG.
+    body = once(body, '            d->color.a = fog_z; // Use alpha variable to store fog factor',
+                '            if (shipyardTransformBatch) shipyardFogBytes[i].Store(0, fog_z);\n'
+                '            else d->color.a = fog_z; // Use alpha variable to store fog factor')
+    body = once(body, '    if (shipyardVectorPositions) {\n        Shipyard::Fast3D::ClipVertices(',
+                '    if (shipyardTransformBatch && (mRsp->geometry_mode & G_FOG)) {\n'
+                '        for (size_t i = 0; i < n_vertices; ++i)\n'
+                '            mRsp->loaded_vertices[shipyardTransformFirst + i].color.a = shipyardFogBytes[i].Load(0);\n'
+                '    }\n'
+                '    if (shipyardVectorPositions) {\n        Shipyard::Fast3D::ClipVertices(')
     for axis in range(3):
         body = once(body, '                shipyardNormal[%d] = (float)vn->n[%d];' % (axis, axis),
                     '                shipyardNormal[%d] = Shipyard::Fast3D::NormalByteFloat(vn->n[%d]);' % (axis, axis))

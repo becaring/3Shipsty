@@ -58,7 +58,8 @@ class TrianglePipelineTests(unittest.TestCase):
         self.assertNotEqual(expected, original[start:end])
         self.assertEqual(cold, expected)
         next_method = '\nvoid Interpreter::GfxSpGeometryMode('
-        self.assertEqual(original[end:original.index(next_method, end)],
+        # Live packing only swaps in reconciliation-time UV axes/clamp bounds.
+        self.assertEqual(projection['prepared_packing'](original[end:original.index(next_method, end)]),
                          changed[changed.index(projection['END']):changed.index(next_method, changed.index(projection['END']))])
 
     def test_clip_snapshot_refreshes_after_every_backend_init(self):

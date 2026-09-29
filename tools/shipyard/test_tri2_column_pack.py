@@ -81,7 +81,7 @@ struct RDP {
     Tile texture_tile[2]; RGBA fog_color,grayscale_color,prim_color,env_color;
     uint8_t prim_lod_fraction;
 };
-struct ColorCombiner { uint8_t shader_input_mapping[2][7]; };
+struct ColorCombiner { uint8_t shader_input_mapping[2][7]; bool usedTextures[2]; };
 struct XboxTrianglePipelineResult {
     ColorCombiner* comb; bool alpha,fog,grayscale,usedTextures[2];
     uint32_t tm,width[2],height[2],boundWidth[2],boundHeight[2];
@@ -94,7 +94,19 @@ struct PairCopy {
 struct Runner {
     RDP* mRdp; XboxTrianglePipelineResult mXboxPipelineResult;
     PairCopy mXboxPairPacked; float mBufVbo[512]; size_t mBufVboLen;
+    Shipyard::Fast3D::CoordinateAxis mXboxAxisS[2], mXboxAxisT[2];
+    float mXboxClampS[2], mXboxClampT[2];
     void Pack(bool column,const LoadedVertex input[3],bool is_rect) {
+        // Mirrors the reconciliation-time derivation for combiner-used slots.
+        const XboxTrianglePipelineResult& q=mXboxPipelineResult;
+        for(unsigned i=0;i<2;++i) {
+            if(!q.comb->usedTextures[i]) continue;
+            const Tile& tile=mRdp->texture_tile[mRdp->first_tile_index+i];
+            mXboxAxisS[i].Prepare(tile.shifts,tile.uls,q.width[i]);
+            mXboxAxisT[i].Prepare(tile.shiftt,tile.ult,q.height[i]);
+            if(q.tm & (1u<<2*i)) mXboxClampS[i]=(q.boundWidth[i]-0.5f)/q.width[i];
+            if(q.tm & (1u<<(2*i+1))) mXboxClampT[i]=(q.boundHeight[i]-0.5f)/q.height[i];
+        }
         LoadedVertex* v1 = const_cast<LoadedVertex*>(&input[0]);
         LoadedVertex* v2 = const_cast<LoadedVertex*>(&input[1]);
         LoadedVertex* v3 = const_cast<LoadedVertex*>(&input[2]);
@@ -114,6 +126,9 @@ int main() {
         XboxTrianglePipelineResult p={};
         p.comb=&comb; p.alpha=!!(n&1); p.fog=!!(n&2);
         p.grayscale=!!(n&4); p.usedTextures[0]=!!(n&8);
+        // A clamp bit implies combiner use, as in reconciliation.
+        comb.usedTextures[0]=p.usedTextures[0] || (n&3)!=0 || !!(n&1024);
+        comb.usedTextures[1]=!!(n&2048) || (n&12)!=0;
         p.usedTextures[1]=!!(n&16); p.numInputs=uint8_t((n%3)+1);
         p.clip.invertY=!!(n&32); p.clip.z_is_from_0_to_1=!!(n&64);
         p.tm=n&15; r.other_mode_h=(n&128)?(1u<<G_MDSFT_TEXTFILT):0;

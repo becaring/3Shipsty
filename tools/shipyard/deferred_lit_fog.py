@@ -14,6 +14,14 @@ struct XboxDeferredContext {
     // Exact signed-short values in the form every materialized vertex consumes.
     float fogMul, fogOffset;
     uint8_t references;
+    // SoH360 4.0.5 lighting form: exact float ambient, bounded coefficients,
+    // and one exact RGB result for the most recent normal of this snapshot.
+    float ambientFloat[3];
+    bool floatLighting;
+    // Rounding mode when the snapshot was taken, where upstream divides.
+    bool nearest;
+    uint32_t normalKey;
+    uint8_t normalRgb[3];
 };
 struct XboxDeferredVertex {
     F3DVtx source;
@@ -89,6 +97,21 @@ bool Interpreter::XboxTryDeferVertices(size_t n_vertices, size_t dest_index, con
     context->scaleT = mRsp->texture_scaling_factor.t;
     context->fogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);
     context->fogOffset = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_offset);
+    // |normal| <= 128 and |coeff| <= 16 bound each intensity below 49, so every
+    // channel stays a finite nonnegative integer below 2^24. There, a float sum
+    // truncated after each light equals the int compound assignment. NaN and
+    // larger coefficients keep the int path.
+    context->floatLighting = true;
+    for (int i = 0; i < context->count; ++i)
+        for (int c = 0; c < 3; ++c)
+            if (!(context->lights[i].coeff[c] >= -16.0f && context->lights[i].coeff[c] <= 16.0f))
+                context->floatLighting = false;
+    for (int c = 0; c < 3; ++c) context->ambientFloat[c] = Shipyard::Fast3D::LightByteFloat(context->ambient[c]);
+    context->normalKey = 0xffffffffu;
+    // Upstream divides each intensity by 127 here, while loading. Under
+    // round-to-nearest the double product is that exact quotient (SoH360
+    // 4.0.5 DivideNormal127) without a non-pipelined fdiv per light and vertex.
+    context->nearest = Shipyard::Fast3D::NearestRounding();
 
     // Reuse the authoritative VMX/aspect/clip transform with attributes off.
     struct ReplayGuard {
@@ -129,6 +152,56 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
     // Exact table values avoid Xenon's store/reload integer-to-float moves.
     d->u = Shipyard::Fast3D::SignedShortFloat(U);
     d->v = Shipyard::Fast3D::SignedShortFloat(V);
+    if (context->floatLighting) {
+        // Channels stay in FPRs (fctidz/fcfid truncation) and bytes leave via
+        // stfiwx words read after the fog math, instead of an int<->float
+        // store/reload per light and channel. Lit RGB depends only on the
+        // normal within one snapshot, so a repeated normal reuses its bytes.
+        Shipyard::Fast3D::DeferredVertexBytes bytes;
+        const uint32_t normalKey = (uint32_t(uint8_t(vn->n[0])) << 16) |
+            (uint32_t(uint8_t(vn->n[1])) << 8) | uint8_t(vn->n[2]);
+        const bool reuse = normalKey == context->normalKey;
+        if (!reuse) {
+            float r = context->ambientFloat[0], g = context->ambientFloat[1], b = context->ambientFloat[2];
+            const float normal[3] = { Shipyard::Fast3D::NormalByteFloat(vn->n[0]),
+                                      Shipyard::Fast3D::NormalByteFloat(vn->n[1]),
+                                      Shipyard::Fast3D::NormalByteFloat(vn->n[2]) };
+            for (int i = 0; i < context->count; ++i) {
+                float intensity = 0;
+                intensity += normal[0] * context->lights[i].coeff[0];
+                intensity += normal[1] * context->lights[i].coeff[1];
+                intensity += normal[2] * context->lights[i].coeff[2];
+                intensity = Shipyard::Fast3D::DivideNormal127(intensity, context->nearest);
+                if (intensity > 0.0f) {
+                    r = Shipyard::Fast3D::TruncateLightChannel(r + intensity * context->lights[i].color[0]);
+                    g = Shipyard::Fast3D::TruncateLightChannel(g + intensity * context->lights[i].color[1]);
+                    b = Shipyard::Fast3D::TruncateLightChannel(b + intensity * context->lights[i].color[2]);
+                }
+            }
+            bytes.Store(0, Shipyard::Fast3D::VertexColorLimit(r));
+            bytes.Store(1, Shipyard::Fast3D::VertexColorLimit(g));
+            bytes.Store(2, Shipyard::Fast3D::VertexColorLimit(b));
+        }
+        float w = d->w;
+        if (fabsf(w) < 0.001f) w = 0.001f;
+        float winv = 1.0f / w;
+        if (winv < 0.0f) winv = std::numeric_limits<int16_t>::max();
+        float fog_z = d->z * winv * context->fogMul + context->fogOffset;
+        fog_z = Ship::Math::clamp(fog_z, 0.0f, 255.0f);
+        bytes.Store(3, fog_z);
+        if (!reuse) {
+            context->normalRgb[0] = bytes.Load(0);
+            context->normalRgb[1] = bytes.Load(1);
+            context->normalRgb[2] = bytes.Load(2);
+            context->normalKey = normalKey;
+        }
+        d->color.r = context->normalRgb[0];
+        d->color.g = context->normalRgb[1];
+        d->color.b = context->normalRgb[2];
+        d->color.a = bytes.Load(3);
+        XboxDiscardVertex(index);
+        return;
+    }
     int r = context->ambient[0], g = context->ambient[1], b = context->ambient[2];
     const float normal[3] = { Shipyard::Fast3D::NormalByteFloat(vn->n[0]),
                               Shipyard::Fast3D::NormalByteFloat(vn->n[1]),
@@ -138,7 +211,7 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
         intensity += normal[0] * context->lights[i].coeff[0];
         intensity += normal[1] * context->lights[i].coeff[1];
         intensity += normal[2] * context->lights[i].coeff[2];
-        intensity /= 127.0f;
+        intensity = Shipyard::Fast3D::DivideNormal127(intensity, context->nearest);
         if (intensity > 0.0f) {
             r += intensity * context->lights[i].color[0];
             g += intensity * context->lights[i].color[1];
