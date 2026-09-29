@@ -46,7 +46,17 @@ class TrianglePipelineTests(unittest.TestCase):
         cold = changed.split('// SHIPYARD ORIGINAL RECONCILIATION BEGIN\n', 1)[1]
         cold = cold.split('// SHIPYARD ORIGINAL RECONCILIATION END', 1)[0]
         cold = projection['remove_invalidations'](cold)
-        self.assertEqual(cold, original[start:end])
+        # The only intended reconciliation edits: no eager flush before a
+        # texture import (the lookup flushes before mutating), and an explicit
+        # flush before a program is created and bound.
+        expected = original[start:end]
+        expected = expected.replace('            if (mRdp->textures_changed[i]) {\n'
+                                    '                Flush();\n',
+                                    '            if (mRdp->textures_changed[i]) {\n', 1)
+        expected = expected.replace('    if (prg == NULL) {\n        comb->prg[tm] = prg =\n',
+                                    '    if (prg == NULL) {\n        Flush();\n        comb->prg[tm] = prg =\n', 1)
+        self.assertNotEqual(expected, original[start:end])
+        self.assertEqual(cold, expected)
         next_method = '\nvoid Interpreter::GfxSpGeometryMode('
         self.assertEqual(original[end:original.index(next_method, end)],
                          changed[changed.index(projection['END']):changed.index(next_method, changed.index(projection['END']))])

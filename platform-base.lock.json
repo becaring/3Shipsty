@@ -1,6 +1,6 @@
 {
-  "base": "../../../LibUltraShip+Fast3D360/scratch/canonical-optimization",
-  "git_revision": "3401dc34bdeb0e27aff028693f47de4fe65a8576",
+  "base": "../../../LibUltraShip+Fast3D360/scratch/claude-source-integration",
+  "git_revision": "de8bb0caaab124a84dea1b3ec316d1b7bbb5a32a",
   "api_version": 6,
-  "baseline_sha256": "e642efba66c8ec1f37e2892b92df8993535e398cbd09a843ccc113442483f00f"
+  "baseline_sha256": "60cff17a2ede69c81dade8d1db4aef40cf5988239f28c25707b5cafe023497ae"
 }

@@ -82,7 +82,7 @@ bool Interpreter::XboxTryDeferVertices(size_t n_vertices, size_t dest_index, con
     for (int i = 0; i < context->count; ++i) {
         for (int c = 0; c < 3; ++c) {
             context->lights[i].coeff[c] = mRsp->current_lights_coeffs[i][c];
-            context->lights[i].color[c] = (float)mRsp->current_lights[i].l.col[c];
+            context->lights[i].color[c] = Shipyard::Fast3D::LightByteFloat(mRsp->current_lights[i].l.col[c]);
         }
     }
     context->scaleS = mRsp->texture_scaling_factor.s;
@@ -126,10 +126,13 @@ void Interpreter::XboxMaterializeVertex(size_t index) {
     const F3DVtx_tn* vn = &pending.source.n;
     short U = v->tc[0] * context->scaleS >> 16;
     short V = v->tc[1] * context->scaleT >> 16;
-    d->u = U;
-    d->v = V;
+    // Exact table values avoid Xenon's store/reload integer-to-float moves.
+    d->u = Shipyard::Fast3D::SignedShortFloat(U);
+    d->v = Shipyard::Fast3D::SignedShortFloat(V);
     int r = context->ambient[0], g = context->ambient[1], b = context->ambient[2];
-    const float normal[3] = { (float)vn->n[0], (float)vn->n[1], (float)vn->n[2] };
+    const float normal[3] = { Shipyard::Fast3D::NormalByteFloat(vn->n[0]),
+                              Shipyard::Fast3D::NormalByteFloat(vn->n[1]),
+                              Shipyard::Fast3D::NormalByteFloat(vn->n[2]) };
     for (int i = 0; i < context->count; ++i) {
         float intensity = 0;
         intensity += normal[0] * context->lights[i].coeff[0];

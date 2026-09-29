@@ -88,4 +88,37 @@ def transform(source):
         positive='                if (intensity > 0.0f) {',
         eligible='shipyardTransformBatch && mRsp->current_num_lights > 0 && mRsp->current_num_lights <= MAX_LIGHTS + 1',
         capacity='MAX_LIGHTS', components=tuple('mRsp->current_lights[i].l.col[%d]' % axis for axis in range(3)))
-    return '#include "fast3d/clip_quantize.h"\n#include "fast3d/vertex_transform.h"\n' + source
+    source = exact_attribute_conversions(source, loop)
+    return ('#include "fast3d/clip_quantize.h"\n#include "fast3d/vertex_transform.h"\n'
+            '#include "fast3d/numeric.h"\n' + source)
+
+
+def exact_attribute_conversions(source, loop):
+    """Replace per-vertex GPR-to-FPR conversions with exact table values.
+
+    Xenon has no direct integer-to-float move; each conversion is a store and
+    reload of the same stack slot. The 16-bit texture coordinates, the two
+    signed-short fog coefficients, signed-byte normals and byte light colors
+    are exactly representable, and the shared tables return those same values.
+    Fog coefficients are RSP state the vertex loop never writes.
+    """
+    begin = source.index(START)
+    finish = source.index(END, begin)
+    body = source[begin:finish]
+    body = once(body, '        d->u = U;\n        d->v = V;',
+                '        d->u = Shipyard::Fast3D::SignedShortFloat(U);\n'
+                '        d->v = Shipyard::Fast3D::SignedShortFloat(V);')
+    body = once(body, '            float fog_z = z * winv * mRsp->fog_mul + mRsp->fog_offset;',
+                '            float fog_z = z * winv * shipyardFogMul + shipyardFogOffset;')
+    body = once(body, loop,
+                '    const float shipyardFogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);\n'
+                '    const float shipyardFogOffset = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_offset);\n'
+                + loop)
+    for axis in range(3):
+        body = once(body, '                shipyardNormal[%d] = (float)vn->n[%d];' % (axis, axis),
+                    '                shipyardNormal[%d] = Shipyard::Fast3D::NormalByteFloat(vn->n[%d]);' % (axis, axis))
+        body = once(body,
+                    '                        shipyardLightColors[i][%d] = (float)mRsp->current_lights[i].l.col[%d];' % (axis, axis),
+                    '                        shipyardLightColors[i][%d] = '
+                    'Shipyard::Fast3D::LightByteFloat(mRsp->current_lights[i].l.col[%d]);' % (axis, axis))
+    return source[:begin] + body + source[finish:]

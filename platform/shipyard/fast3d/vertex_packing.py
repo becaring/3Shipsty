@@ -21,17 +21,25 @@ COLOR = r'(mRdp->(?:fog_color|grayscale_color)\.[rgba]|v_arr\[i\]->color\.a|colo
 UV_START = '            float u = v_arr[i]->u / 32.0f;'
 UV_END = '            bool clampS = tm & (1 << 2 * t);'
 UV_SHA256 = '4a481cf5cab46ba525b62b2e3ba4d17148d6a9a4404660da9b8b00c4cd3de896'
-UV_REPLACEMENT = '''            const bool shipyardHalfTexel = !is_rect &&
-                (mRdp->other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
-            *shipyardVertexOutput++ = Shipyard::Fast3D::Coordinate(
-                v_arr[i]->u, mRdp->texture_tile[mRdp->first_tile_index + t].shifts,
-                mRdp->texture_tile[mRdp->first_tile_index + t].uls,
-                shipyardHalfTexel, tex_width[t]);
-            *shipyardVertexOutput++ = Shipyard::Fast3D::Coordinate(
-                v_arr[i]->v, mRdp->texture_tile[mRdp->first_tile_index + t].shiftt,
-                mRdp->texture_tile[mRdp->first_tile_index + t].ult,
-                shipyardHalfTexel, tex_height[t]);
+UV_REPLACEMENT = '''            *shipyardVertexOutput++ = shipyardCoordinateS[t].Apply(v_arr[i]->u);
+            *shipyardVertexOutput++ = shipyardCoordinateT[t].Apply(v_arr[i]->v);
 
+'''
+# Tile shifts/starts, the filter mode, is_rect and the texture extents are
+# triangle invariants; the loop only writes mBufVbo. Prepare each used axis
+# once instead of converting the extent and shift for every vertex.
+UV_PRELUDE = '''    Shipyard::Fast3D::CoordinateAxis shipyardCoordinateS[2], shipyardCoordinateT[2];
+    {
+        const bool shipyardHalfTexel = !is_rect &&
+            (mRdp->other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
+        for (int t = 0; t < 2; ++t) {
+            if (!usedTextures[t]) continue;
+            shipyardCoordinateS[t].Prepare(mRdp->texture_tile[mRdp->first_tile_index + t].shifts,
+                mRdp->texture_tile[mRdp->first_tile_index + t].uls, shipyardHalfTexel, tex_width[t]);
+            shipyardCoordinateT[t].Prepare(mRdp->texture_tile[mRdp->first_tile_index + t].shiftt,
+                mRdp->texture_tile[mRdp->first_tile_index + t].ult, shipyardHalfTexel, tex_height[t]);
+        }
+    }
 '''
 
 
@@ -48,6 +56,8 @@ def transform(source: str) -> str:
         raise ValueError('Modern UV arithmetic changed; re-audit coordinate helper')
     projected = ('#include "fast3d/coordinate.h"\n' + projected[:begin] +
                  UV_REPLACEMENT + projected[finish:])
+    loop = projected.index(START)
+    projected = projected[:loop] + UV_PRELUDE + projected[loop:]
     projected = hoist_clamp_bounds(projected, start=START, end=END,
         cursor='shipyardVertexOutput', used_textures='usedTextures', axes=(
             ('shipyardClampS', 'tm & (1 << 2 * t)', '(tex_width2[t] - 0.5f) / tex_width[t]'),

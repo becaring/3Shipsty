@@ -4,6 +4,7 @@
 #include <string.h>
 #include <float.h>
 #include "fast3d/material_value_cache.h"
+#include "fast3d/projection_cache.h"
 
 #define G_IM_SIZ_4b 0
 #define G_IM_SIZ_8b 1

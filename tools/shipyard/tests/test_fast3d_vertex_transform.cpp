@@ -1,5 +1,6 @@
 #include "fast/interpreter.h"
 #include "fast3d/vertex_transform.h"
+#include "fast3d/numeric.h"
 #include "fast3d/clip_quantize.h"
 #include <algorithm>
 #include <cmath>

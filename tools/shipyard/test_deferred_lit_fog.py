@@ -81,6 +81,7 @@ class DeferredLitFogProjection(unittest.TestCase):
             SOURCE_METHODS.split('bool Interpreter::XboxTryDeferVertices(', 1)[0] +
             'void Interpreter::XboxMaterializeVertex(' +
             SOURCE_METHODS.split('void Interpreter::XboxMaterializeVertex(', 1)[1])
+        fixture = '#include "' + (resolve(ROOT) / 'sources/fast3d/numeric.h').as_posix() + '"\n' + fixture
         with tempfile.TemporaryDirectory(prefix='modern-deferred-') as temp:
             cpp = Path(temp) / 'fixture.cpp'
             exe = Path(temp) / 'fixture.exe'

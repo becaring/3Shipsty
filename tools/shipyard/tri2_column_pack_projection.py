@@ -47,17 +47,15 @@ COLUMN = r'''    // MODERN COLUMN PACK BEGIN
             xboxRows[i][2] = z;
             xboxRows[i][3] = v.w;
         }
-        const bool xboxHalfTexel = !is_rect &&
-            (mRdp->other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
         for (int t = 0; t < 2; ++t) {
             if (!usedTextures[t]) continue;
             size_t offset = xboxTextureOffset[t];
-            const auto& tile = mRdp->texture_tile[mRdp->first_tile_index + t];
+            // Axes were prepared once for this triangle before either packer.
+            const Shipyard::Fast3D::CoordinateAxis& axisS = shipyardCoordinateS[t];
+            const Shipyard::Fast3D::CoordinateAxis& axisT = shipyardCoordinateT[t];
             for (int i = 0; i < 3; ++i) {
-                xboxRows[i][offset] = Shipyard::Fast3D::Coordinate(
-                    v_arr[i]->u, tile.shifts, tile.uls, xboxHalfTexel, tex_width[t]);
-                xboxRows[i][offset + 1] = Shipyard::Fast3D::Coordinate(
-                    v_arr[i]->v, tile.shiftt, tile.ult, xboxHalfTexel, tex_height[t]);
+                xboxRows[i][offset] = axisS.Apply(v_arr[i]->u);
+                xboxRows[i][offset + 1] = axisT.Apply(v_arr[i]->v);
             }
             offset += 2;
             if (tm & (1 << 2 * t)) {

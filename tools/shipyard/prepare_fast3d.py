@@ -61,6 +61,7 @@ def header(text):
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
               '    XboxTrianglePipelineResult mXboxPipelineResult;')
+    text=runpy.run_path(str(OWN/'resource_resolution_projection.py'))['header'](text)
     text=game_fill_discard_projection.header(text)
     text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
               '    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);\n'
@@ -356,6 +357,7 @@ def prepare():
     text=profile_interpreter(text)
     text=texture_hash_borrowed_handler(text)
     text=texture_hash_epoch_handler(text)
+    text=runpy.run_path(str(OWN/'resource_resolution_projection.py'))['transform'](text)
     text=tri2_pair_projection.transform(text)
     text=tri2_column_pack_projection.transform(text)
     pending['src/fast/interpreter.cpp']=text

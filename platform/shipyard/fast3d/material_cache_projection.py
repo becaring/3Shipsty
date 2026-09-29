@@ -54,8 +54,10 @@ template<class Tile,class Loaded>
 const ModernGeometryValue& ModernGeometry(
     Shipyard::Fast3D::MaterialValueCache<ModernGeometryKey,ModernGeometryValue>& cache,
     const Tile& tileState,const Loaded& loadedState) {
+    // The key needs only the rounding mode's identity. On Xenon _controlfp is
+    // a CRT/kernel round trip per used texture; this reads FPSCR RN directly.
     ModernGeometryKey key={tileState.line_size_bytes,loadedState.orig_size_bytes,
-        _controlfp(0,0)&_MCW_RC,
+        Shipyard::Fast3D::ProjectionRoundingMode(),
         tileState.uls,tileState.ult,tileState.lrs,tileState.lrt,
         tileState.siz,tileState.cms,tileState.cmt};
     ModernGeometryBuilder<Tile,Loaded> builder={tileState,loadedState};
@@ -81,4 +83,5 @@ static __declspec(thread) Shipyard::Fast3D::MaterialValueCache<ModernGeometryKey
     source = source.replace(body, replacement, 1)
     source = source.replace('void Interpreter::GfxSpTri1(',
                             helper + 'void Interpreter::GfxSpTri1(', 1)
-    return '#include <float.h>\n#include "fast3d/material_value_cache.h"\n' + source
+    return ('#include <float.h>\n#include "fast3d/material_value_cache.h"\n'
+            '#include "fast3d/projection_cache.h"\n' + source)

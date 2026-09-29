@@ -15,8 +15,10 @@ from platform_base import resolve
 def main():
     source = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
     projected = vertex_packing.transform(source)
-    if projected.count('Shipyard::Fast3D::Coordinate(') != 2:
-        raise AssertionError('Modern must use the shared UV numeric helper for both axes')
+    if projected.count('Shipyard::Fast3D::Coordinate(') != 0 or projected.count('].Apply(v_arr[i]->') != 2:
+        raise AssertionError('Modern must use the shared per-triangle UV axes for both axes')
+    if projected.count('Shipyard::Fast3D::CoordinateAxis shipyardCoordinateS[2]') != 1:
+        raise AssertionError('Modern UV axes must be prepared once before the packing loop')
     if projected.count('#include "fast3d/coordinate.h"') != 1:
         raise AssertionError('Modern coordinate include must resolve through Shipyard')
     begin = vertex_packing.START
@@ -27,10 +29,10 @@ def main():
     # Preserve complete output expressions and branch structure. Only the
     # intended writes/conversions may differ between these extracted methods.
     restored = projected_body.replace('    float* shipyardVertexOutput = mBufVbo + mBufVboLen;\n', '')
-    if '    float shipyardClampS[2];' in restored:
-        clamp_begin = restored.index('    float shipyardClampS[2];')
-        clamp_end = restored.index(begin, clamp_begin)
-        restored = restored[:clamp_begin] + restored[clamp_end:]
+    # Hoisted preludes (UV axes first, then clamp bounds, colors and material
+    # inputs) all sit between the cursor and the loop.
+    prelude_begin = restored.index('    Shipyard::Fast3D::CoordinateAxis shipyardCoordinateS[2]')
+    restored = restored[:prelude_begin] + restored[restored.index(begin, prelude_begin):]
     restored = restored.replace('shipyardClampS[t]', '(tex_width2[t] - 0.5f) / tex_width[t]')
     restored = restored.replace('shipyardClampT[t]', '(tex_height2[t] - 0.5f) / tex_height[t]')
     restored = re.sub(r'                // Begin shared invariant material reuse\.\n.*?                // End shared invariant material reuse\.\n', '', restored, flags=re.S)
@@ -45,7 +47,7 @@ def main():
     uv_start = '            float u = v_arr[i]->u / 32.0f;'
     uv_end = '            bool clampS = tm & (1 << 2 * t);'
     original_uv = original_body[original_body.index(uv_start):original_body.index(uv_end)]
-    projected_uv = restored[restored.index('            const bool shipyardHalfTexel'):restored.index(uv_end)]
+    projected_uv = restored[restored.index('            mBufVbo[mBufVboLen++] = shipyardCoordinateS[t]'):restored.index(uv_end)]
     restored = restored.replace(projected_uv, original_uv, 1)
     if restored != original_body:
         raise AssertionError('Non-packing statement changed')

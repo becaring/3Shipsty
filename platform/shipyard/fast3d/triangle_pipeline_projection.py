@@ -28,6 +28,25 @@ def transform(text):
     cold = text[start:end]
     if any(token in cold for token in ('v_arr', 'v1->', 'v2->', 'v3->', 'is_rect')):
         raise ValueError('Per-triangle geometry entered reconciliation')
+    # SetTile, SetTileSize and texture loads mark textures_changed, so this
+    # flush ended the batch at nearly every material block even when the same
+    # texture stays bound. The projected TextureCacheLookup already flushes
+    # before each backend mutation (select, eviction, upload after a miss), and
+    # the mask/replacement imports go through that lookup too, so buffered
+    # triangles still draw with exactly the state they were packed for.
+    import_flush = ('            if (mRdp->textures_changed[i]) {\n'
+                    '                Flush();\n'
+                    '                ImportTexture(i, tile, false);\n')
+    if cold.count(import_flush) != 1:
+        raise ValueError('Modern texture import flush changed')
+    cold = cold.replace(import_flush, import_flush.replace('                Flush();\n', ''))
+    # Creating a program binds it natively (CreateAndLoadNewShader). The import
+    # flush used to leave the batch empty here in most cases; flush explicitly,
+    # as Smash's projection does for the same change.
+    creation = '    if (prg == NULL) {\n        comb->prg[tm] = prg =\n'
+    if cold.count(creation) != 1:
+        raise ValueError('Modern shader creation boundary changed')
+    cold = cold.replace(creation, '    if (prg == NULL) {\n        Flush();\n        comb->prg[tm] = prg =\n')
     publish = '''    XboxTrianglePipelineResult& p=mXboxPipelineResult;
     p.comb=comb;p.ccId=cc_id;p.tm=tm;
     p.alpha=use_alpha;p.fog=use_fog;p.grayscale=use_grayscale;
