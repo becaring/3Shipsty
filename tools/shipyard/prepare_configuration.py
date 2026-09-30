@@ -10,6 +10,7 @@ import subprocess
 from dependency_sources import ROOT
 from prepare_archives import stable
 from prepare_filesystem import project_boundary
+from platform_base import resolve as resolve_platform_base
 
 OUT=ROOT/'scratch/configuration-xdk'
 OWN=ROOT/'platform/shipyard/configuration'
@@ -31,9 +32,23 @@ def transform(name,text):
         text=once(text,'enum class WindowBackend { FAST3D_DXGI_DX11, FAST3D_SDL_OPENGL, FAST3D_SDL_METAL, WINDOW_BACKEND_COUNT };',
                   'class Gui;\nclass GuiWindow;\nclass MouseStateManager;')
         text=once(text,'int32_t mLastScancode = -1;','int32_t mLastScancode; // Initialized by the projected Window constructors.')
+    if name.endswith('/Config.h'):
+        helper=runpy.run_path(str(resolve_platform_base(ROOT)/'python/xbox360_platform/config_leaf_lookup.py'))
+        text=helper['project_header'](text)
     if name.endswith('/Config.cpp'):
         text=project_boundary('libultraship/'+name,text)
-        text=once(text,'#include <any>','#include <iterator>\n#include "ship/window/Window.h"\n#include "resources/runtime_support.h"\n#include "context/platform.h"')
+        text=once(text,'#include <any>','#include <iterator>\n#include "ship/window/Window.h"\n#include "resources/runtime_support.h"\n#include "context/platform.h"\n#include "storage/atomic_file.h"')
+        text=once(text,'mIsNewInstance(false) {\n    Reload();',
+                  'mIsNewInstance(false) {\n    mPath = fs::path(mPath).make_preferred().string();\n    Reload();')
+        text=once(text,'''    std::ofstream file(mPath);
+    mNestedJson = mFlattenedJson.unflatten();
+    file << mNestedJson.dump(4);''',
+                  '''    if (mPath == "None") return;
+    mNestedJson = mFlattenedJson.unflatten();
+    Shipyard::Storage::WriteAtomicFile(fs::path(mPath), mNestedJson.dump(4));''')
+        text=once(text,'                } else if (gjson2->contains(dot)) {',
+                  '''                } else {
+                    if (!gjson2->contains(dot)) (*gjson2)[dot] = nlohmann::json::object();''')
         # The local stream is never observed again and is destroyed immediately;
         # only its complete JSON result or caught parse failure is observable.
         text=once(text,'nlohmann::json::parse(ifs)',
@@ -86,6 +101,8 @@ ConfigVersionUpdater::ConfigVersionUpdater''')
                   '#ifdef _XBOX\n    return WindowBackend::FAST3D_XENOS;\n#endif\n#ifdef ENABLE_DX11\n    return WindowBackend::FAST3D_DXGI_DX11;')
         lower=runpy.run_path(str(ROOT/'platform/shipyard/imgui/projection.py'))['lower_ranges']
         text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
+        helper=runpy.run_path(str(resolve_platform_base(ROOT)/'python/xbox360_platform/config_leaf_lookup.py'))
+        text=helper['project_source'](text)
     return text
 
 

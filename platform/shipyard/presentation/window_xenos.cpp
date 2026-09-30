@@ -2,6 +2,14 @@
 #include "native_display.h"
 #include "services.h"
 #include "input/physical.h"
+#include "libultraship/bridge/consolevariablebridge.h"
+
+namespace {
+bool UncappedProfileEnabled() {
+    return CVarGetInteger("gSettings.XboxUncappedProfile", 0) != 0 &&
+           CVarGetInteger("gSettings.VsyncEnabled", 1) == 0;
+}
+}
 
 namespace Fast {
 GfxWindowBackendXenos::GfxWindowBackendXenos() : mAllKeysUp(NULL) {
@@ -33,20 +41,29 @@ void GfxWindowBackendXenos::GetDimensions(uint32_t* w,uint32_t* h,int32_t* x,int
 void GfxWindowBackendXenos::HandleEvents(){ShipyardInput_PumpGamepads();}
 bool GfxWindowBackendXenos::IsFrameReady(){
     if(!mIsRunning)return false;
+    if (UncappedProfileEnabled()) {
+        ShipyardInput_BeginGamepadPresentation();
+        return true;
+    }
     bool ready=false;
     Shipyard_Check(mSurface.Prepare(Shipyard_Time,&ready),"presentation interval");
     if(!ready)return false;
     ShipyardInput_BeginGamepadPresentation();
     return true;
 }
-void GfxWindowBackendXenos::SwapBuffersBegin(){Shipyard_Check(mSurface.Present(),"Present");}
+void GfxWindowBackendXenos::SwapBuffersBegin(){
+    if (UncappedProfileEnabled())
+        Shipyard_Check(xenos_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE),
+                       "uncapped profile interval");
+    Shipyard_Check(mSurface.Present(),"Present");
+}
 void GfxWindowBackendXenos::SwapBuffersEnd(){}
 double GfxWindowBackendXenos::GetTime(){return Shipyard_Time();}
 int GfxWindowBackendXenos::GetTargetFps(){return mTargetFps;}
 void GfxWindowBackendXenos::SetTargetFps(int fps){if(fps<=0)throw std::invalid_argument("presentation rate must be positive");mSurface.SetRate(fps);mTargetFps=fps;}
 void GfxWindowBackendXenos::SetMaxFrameLatency(int frames){Shipyard_Check(mSurface.SetMaxFrameLatency(frames),"frame latency");}
 const char* GfxWindowBackendXenos::GetKeyName(int){return "Unknown";}
-bool GfxWindowBackendXenos::CanDisableVsync(){return false;}
+bool GfxWindowBackendXenos::CanDisableVsync(){return CVarGetInteger("gSettings.XboxUncappedProfile", 0) != 0;}
 bool GfxWindowBackendXenos::IsRunning(){return mIsRunning;}
 void GfxWindowBackendXenos::Destroy(){Close();}
 bool GfxWindowBackendXenos::IsFullscreen(){return true;}

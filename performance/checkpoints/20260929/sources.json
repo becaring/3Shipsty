@@ -1,0 +1,123 @@
+[
+  {
+    "path": "candidate/compile.rsp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\compile.rsp",
+    "sha256": "fb604d5247fc04dad15b05e17b56d375f271c0daf250d3b4cfc04c55f1a9e1d6"
+  },
+  {
+    "path": "candidate/archive.rsp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\archive.rsp",
+    "sha256": "bdb4a2eba674ac13cc669cbf2175b41832f5dad058b82e278f67a078cd897095"
+  },
+  {
+    "path": "candidate/link.rsp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\link.rsp",
+    "sha256": "0059805976cf34276944d9d95930b05909e295aab95555870525aec3059ec98f"
+  },
+  {
+    "path": "candidate/generation.json",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\generation.json",
+    "sha256": "f938c164fe68d5facfd2519c000f2223d26aca39e05acba6d825da32e66d6501"
+  },
+  {
+    "path": "candidate/interpreter.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\interpreter.cpp",
+    "sha256": "d71582f93687fdd4eff03d3fef7d88904b9876e0da514b8c226b7d7466102a6f"
+  },
+  {
+    "path": "candidate/include/direct_transform.h",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\include\\direct_transform.h",
+    "sha256": "c56c36e4f29410489939bb6d2ce0abe4ba20bbe8ecedd9eab087c95915d93141"
+  },
+  {
+    "path": "candidate/include/fast/interpreter.h",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\include\\fast\\interpreter.h",
+    "sha256": "4c0e8d9410bb9334ae6dc72417b77e1b4e51fb1bd5799e0edd9b4156c7397ba3"
+  },
+  {
+    "path": "candidate/include/fast3d/instruction_buffer.h",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\include\\fast3d\\instruction_buffer.h",
+    "sha256": "5a46410d4d79d720ec0e90243fd1dc93f04c5d96e913c2fb064bc00da6c568e5"
+  },
+  {
+    "path": "candidate/include/fast3d/update_instruction.h",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\include\\fast3d\\update_instruction.h",
+    "sha256": "caada967b02abf6cba46ac1de445aff964e87d813ad6bfc728da45d5c5d704e5"
+  },
+  {
+    "path": "overlays/autoload-slot0/file_choose_autoload.c",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\autoload-slot0\\file_choose_autoload.c",
+    "sha256": "908c8df4732de73cadd9b671f6c58d12455714e608c4e25a89be95ed2b6d0985",
+    "preserved": false,
+    "reason": "Duplicate or SDK-expanded preprocessing snapshot omitted from Git"
+  },
+  {
+    "path": "overlays/integrated-candidate/interpreter.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\interpreter.cpp",
+    "sha256": "d71582f93687fdd4eff03d3fef7d88904b9876e0da514b8c226b7d7466102a6f",
+    "preserved": false,
+    "reason": "Duplicate or SDK-expanded preprocessing snapshot omitted from Git"
+  },
+  {
+    "path": "overlays/lane-geometry/direct.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\lane-geometry\\direct.cpp",
+    "sha256": "2547c9f7c27aa63ed2e74f301a219a49d9298797696774e816656f1e7afd8e8e"
+  },
+  {
+    "path": "overlays/tree-alpha/z_play_tree.c",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\tree-alpha\\z_play_tree.c",
+    "sha256": "d3994c5e78f67564ac9c0e41d2fb0fda29f900805c6b80ec1c0257480988d055",
+    "preserved": false,
+    "reason": "Duplicate or SDK-expanded preprocessing snapshot omitted from Git"
+  },
+  {
+    "path": "overlays/wait-budget/core.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\wait-budget\\core.cpp",
+    "sha256": "1356848835db291f38ef376dc76746eb2cf8b5505a24ce1e219c216b828a2692"
+  },
+  {
+    "path": "layout-readers/Fast3dWindow.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\presentation-xdk\\generated\\src\\fast\\Fast3dWindow.cpp",
+    "sha256": "1a99d4a7ba5330236229fcaac12205fb669fceea98af9eea3494db26f3420d1b"
+  },
+  {
+    "path": "layout-readers/Gui.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\gui-xdk\\generated\\src\\ship\\window\\gui\\Gui.cpp",
+    "sha256": "c029e2bc08a196eafbe44df48333c95db26ee9f21e038da97edfebec3919b7bc"
+  },
+  {
+    "path": "layout-readers/ResolutionEditor.cpp",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\application-windows-xdk\\generated\\soh\\soh\\SohGui\\ResolutionEditor.cpp",
+    "sha256": "5a302e9090ba00c499b973352daa46de1c9d227d5ab3b39f89f3314dd47c2082"
+  },
+  {
+    "path": "allocation-overlays.json",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\fog-capture\\allocation-overlays.json",
+    "sha256": "cfada83eafa51eca584cea9c1dca510d9d49abe7dcefaca9e30b0a01cf94e8f9"
+  },
+  {
+    "path": "linked-verification.json",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\diagnostics-off\\integrated-linked-verification.json",
+    "sha256": "3ebfa91bef91687c41f5c0ecb4a508603ec783c462ef110e2d2a69b475d55356"
+  },
+  {
+    "path": "linked-cache-null-proof.json",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\integrated-candidate\\linked-cache-null-proof.json",
+    "sha256": "d3b931b39308c524bc40b91b05a9d31883c3b72786abe58e1c9b0af751e43251"
+  },
+  {
+    "path": "xenia-timing-results.json",
+    "original": "D:\\Projects\\3Shipsty9.x\\scratch\\deslop-worktree\\scratch\\perf-campaign-20260928\\update-stream-final2\\timing-results.json",
+    "sha256": "9108fdea6abafcab19c55ad82379ff6607085a4442d170419d470bd782328e2b"
+  },
+  {
+    "path": "baseline/shipofharkinian.json",
+    "original": "D:\\3Shipsty\\1080p60-AB-20260929\\baseline\\config\\shipofharkinian.json",
+    "sha256": "02e91dc0fe1f642256794448e8c994370e876fc28760a7c9301616dfd567c6d7"
+  },
+  {
+    "path": "candidate/shipofharkinian.json",
+    "original": "D:\\3Shipsty\\1080p60-AB-20260929\\candidate\\config\\shipofharkinian.json",
+    "sha256": "f05a11edb87f7774ce80fef185e788394c42ae15060848ac95d6f8821f93dd3c"
+  }
+]

@@ -24,6 +24,39 @@ def once(text, old, new):
     return text.replace(old, new)
 
 
+def archive_hash_epoch_header(source):
+    source = once(source, '    const char* HashToCString(uint64_t hash) const;',
+                  '    const char* HashToCString(uint64_t hash) const;\n'
+                  '    unsigned GetXboxHashEpoch() const;')
+    return once(source, '    std::unordered_map<uint64_t, std::string> mHashes;',
+                '    volatile long mXboxHashEpoch;\n'
+                '    std::unordered_map<uint64_t, std::string> mHashes;')
+
+
+def archive_hash_epoch_source(source):
+    # Keep the pinned archive sources intact. Fail when a new hash-map write
+    # appears so the epoch cannot silently miss an invalidation path.
+    if source.count('mHashes[') != 2 or source.count('mHashes.clear();') != 1:
+        raise ValueError('Archive hash map mutation inventory changed')
+    source = once(source, 'ArchiveManager::ArchiveManager() {',
+                  'ArchiveManager::ArchiveManager() : mXboxHashEpoch(1) {')
+    source = once(source, '    mHashes.clear();',
+                  '    InterlockedIncrement(&mXboxHashEpoch);\n    mHashes.clear();')
+    source = once(source, '            mHashes[hash] = filePath;',
+                  '            InterlockedIncrement(&mXboxHashEpoch);\n'
+                  '            mHashes[hash] = filePath;')
+    source = once(source, '    for (auto& [hash, filename] : *fileList.get()) {',
+                  '    InterlockedIncrement(&mXboxHashEpoch);\n'
+                  '    for (auto& [hash, filename] : *fileList.get()) {')
+    source = once(source, 'const std::string* ArchiveManager::HashToString(uint64_t hash) const {',
+                  'unsigned ArchiveManager::GetXboxHashEpoch() const {\n'
+                  '    return static_cast<unsigned>(InterlockedCompareExchange(\n'
+                  '        const_cast<volatile long*>(&mXboxHashEpoch), 0, 0));\n'
+                  '}\n\n'
+                  'const std::string* ArchiveManager::HashToString(uint64_t hash) const {')
+    return '#ifdef _XBOX\n#include <xtl.h>\n#else\n#include <windows.h>\n#endif\n' + source
+
+
 def syntax(text):
     # These are contextual specifiers, also legal identifiers. A textual
     # replacement corrupts e.g. EntranceHints' overrideIndex and data.override.
@@ -44,11 +77,62 @@ def syntax(text):
     return text
 
 
+def concurrent_cache(text):
+    # SoH itself only ever runs one load at a time; object and scene prefetch
+    # run several. Every cache map access takes mMutex, and the first
+    # published instance of a path wins: game code keeps raw pointers into
+    # cached resources (OTRPlay_LoadFile, scene commands), so replacing an
+    # entry would free the instance it holds.
+    text=once(text,
+              '        mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
+              '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+              '        return nullptr;',
+              '        {\n'
+              '            const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+              '            mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
+              '        }\n'
+              '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+              '        return nullptr;')
+    text=once(text,
+              '        if (cachedResource != nullptr) {\n'
+              '            // If another thread has already loaded this resource, discard the work we already did and return from\n'
+              '            // cache.\n',
+              '        const auto published = mResourceCache.find(identifier);\n'
+              '        if (published != mResourceCache.end()) {\n'
+              '            const std::shared_ptr<IResource> current = GetCachedResource(published->second);\n'
+              '            if (current != nullptr) {\n'
+              '                cachedResource = current;\n'
+              '            }\n'
+              '        }\n'
+              '        if (cachedResource != nullptr) {\n'
+              '            // If another thread has already loaded this resource, discard the work we already did and return from\n'
+              '            // cache.\n')
+    # Erase under the lock and destroy after it: a resource destructor may
+    # load other resources.
+    return once(text,
+                '    if (Shipyard::Resources::contains(mResourceCache, identifier)) {\n'
+                '        const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+                '        mResourceCache.erase(identifier);\n'
+                '        InterlockedIncrement(&mXboxLookupGeneration);\n'
+                '    }',
+                '    {\n'
+                '        const Shipyard::Async::lock_guard<Shipyard::Async::mutex> lock(mMutex);\n'
+                '        const auto found = mResourceCache.find(identifier);\n'
+                '        if (found != mResourceCache.end()) {\n'
+                '            value = found->second;\n'
+                '            mResourceCache.erase(found);\n'
+                '            InterlockedIncrement(&mXboxLookupGeneration);\n'
+                '        }\n'
+                '    }')
+
+
 def transform(name, original):
     if name.endswith(('/glob.c','/glob.h')): return original
     text = syntax(original)
     if '<filesystem>' in original or '__has_include' in original:
         text = syntax(project_boundary('libultraship/' + name, original))
+    if name.endswith('/ArchiveManager.h'): text = archive_hash_epoch_header(text)
+    if name.endswith('/ArchiveManager.cpp'): text = archive_hash_epoch_source(text)
     if name.endswith('/Context.h'):
         text = once(text, '#include "ship/audio/Audio.h"', '#include "ship/audio/AudioSettings.h"')
         text = once(text, 'class Console;', 'class Audio;\nclass Console;')
@@ -143,6 +227,18 @@ def transform(name, original):
                   '        }\n'
                   '        bytesRead += static_cast<zip_uint64_t>(chunk);\n'
                   '    }')
+        # libzip supports one thread per zip_t, and this archive has a single
+        # shared handle. Object and scene prefetch load on several resource
+        # workers at once; interleaved reads return failed or foreign entry
+        # data, and the cache then records the path as NotFound for good (a
+        # scene's collision header resolving to NULL in BgCheck_Allocate).
+        # The mutex is at namespace scope, so it exists before any worker.
+        text=once(text,'namespace Ship {\nO2rArchive::O2rArchive(',
+                  'namespace Ship {\nnamespace {\nShipyard::Async::mutex sXboxZipMutex;\n}\n\nO2rArchive::O2rArchive(')
+        for signature in ('std::shared_ptr<File> O2rArchive::LoadFile(const std::string& filePath) {\n',
+                          'bool O2rArchive::WriteFile(const std::string& filePath, const std::vector<uint8_t>& data) {\n'):
+            text=once(text,signature,signature+'    const Shipyard::Async::lock_guard<Shipyard::Async::mutex> zipLock(sXboxZipMutex);\n')
+        text='#include "async/native.h"\n'+text
     if name.endswith('/ArchiveManager.cpp'):
         text=text.replace('dynamic_pointer_cast<Archive>', 'std::dynamic_pointer_cast<Archive>')
         text=text.replace('mValidGameVersions.contains(archive->GetGameVersion())', 'Shipyard::Resources::contains(mValidGameVersions, archive->GetGameVersion())')
@@ -178,6 +274,33 @@ def transform(name, original):
                 r'Shipyard::Resources::contains(\1, \2)',text)
     lower_ranges=runpy.run_path(str(ROOT / 'platform/shipyard/imgui/projection.py'))['lower_ranges']
     text=lower_ranges(text.encode(), 'Shipyard::Resources::begin', 'Shipyard::Resources::end').decode()
+    if name.endswith('/ResourceManager.h'):
+        from platform_base import resolve
+        resolve(ROOT)
+        from xbox360_platform.resource_lookup import borrowed_cache_header, lookup_generation_header, settled_alternate_header
+        text=settled_alternate_header(lookup_generation_header(borrowed_cache_header(text)))
+    if name.endswith('/ResourceManager.cpp'):
+        from platform_base import resolve
+        resolve(ROOT)
+        from xbox360_platform.resource_lookup import path_hash, borrowed_cache_source, lookup_generation_source, settled_alternate_source
+        text=settled_alternate_source(lookup_generation_source(borrowed_cache_source(path_hash(text))))
+        from frame_profile_projection import resource_lookup as profile_resource_lookup
+        text=profile_resource_lookup(text)
+        text='#ifdef _XBOX\n#include "application/frame_profile.h"\n#endif\n'+text
+        text=once(text,'            return LoadResourceProcess(identifier, loadExact, initData);',
+                  '''#ifdef _XBOX
+            ModernFrameProfile::ObserveResourceWorker();
+#endif
+            return LoadResourceProcess(identifier, loadExact, initData);''')
+        text=once(text,'    auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();',
+                  '''    std::shared_ptr<IResource> resource;
+    {
+#ifdef _XBOX
+        ModernFrameProfile::ResourceWaitScope resourceWait;
+#endif
+        resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();
+    }''')
+        text=concurrent_cache(text)
     return '#include "resources/runtime_support.h"\n'+text
 
 

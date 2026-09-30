@@ -19,8 +19,6 @@
 extern "C" const char gGitCommitHash[];
 namespace {
 volatile LONG faultReceiptClaimed = 0;
-volatile LONG bootStorageMounted = 0;
-volatile LONG checkpointFlushActive = 0;
 LPTOP_LEVEL_EXCEPTION_FILTER previousFaultFilter = NULL;
 
 DWORD WriteFlushedFile(const char* path, const char* line, bool append) {
@@ -47,24 +45,8 @@ void RecordNativeFault(const char* kind, DWORD code, const void* address, const 
                 gGitCommitHash, kind, code, static_cast<DWORD>(reinterpret_cast<uintptr_t>(address)),
                 GetCurrentThreadId(), detail ? detail : "");
     OutputDebugStringA(line);
-    const DWORD gameError = WriteFlushedFile("game:\\3Shipsty.startup-fault", line, false);
-    // A read-only game: volume must not erase the only available fault record.
-    // This is best effort during an exception, and only after XContent mounted.
-    if (InterlockedCompareExchange(&bootStorageMounted, 0, 0) &&
-        !InterlockedCompareExchange(&checkpointFlushActive, 0, 0)) {
-        char savedLine[448];
-        _snprintf_s(savedLine, sizeof(savedLine), _TRUNCATE, "%sgame_write_error=%lu\n", line, gameError);
-        const DWORD saveError = WriteFlushedFile("shipyard:\\startup-fault.txt", savedLine, false);
-        if (saveError == ERROR_SUCCESS) {
-            const DWORD flushError = XContentFlush("shipyard", NULL);
-            if (flushError != ERROR_SUCCESS) {
-                char warning[96];
-                _snprintf_s(warning, sizeof(warning), _TRUNCATE,
-                            "Shipyard: fault receipt XContentFlush=%lu\n", flushError);
-                OutputDebugStringA(warning);
-            }
-        }
-    }
+    CreateDirectoryA("game:\\logs", NULL);
+    WriteFlushedFile("game:\\logs\\startup-fault.txt", line, false);
 }
 
 LONG WINAPI ShipyardUnhandledFault(EXCEPTION_POINTERS* information) {
@@ -95,46 +77,20 @@ extern "C" void Shipyard_InstallStartupFaultHandler() {
 namespace Shipyard { namespace Platform {
 void RecordBootStage(const char* stage, bool commitToSave) {
 #ifdef _XBOX
-    if (commitToSave && strcmp(stage, "mounted") == 0)
-        InterlockedExchange(&bootStorageMounted, 1);
+    (void)commitToSave;
+    if (strcmp(stage, "entry") == 0) CreateDirectoryA("game:\\logs", NULL);
     char line[256];
     _snprintf_s(line, sizeof(line), _TRUNCATE, "commit=%s stage=%s tick=%lu thread=%lu\n",
                 gGitCommitHash, stage, GetTickCount(), GetCurrentThreadId());
     OutputDebugStringA(line);
-    const DWORD gameError = WriteFlushedFile("game:\\3Shipsty.bootlog", line,
-                                              strcmp(stage, "entry") != 0);
-    if (commitToSave) {
-        const char* path = strcmp(stage, "mounted") == 0 ? "shipyard:\\boot-mounted.txt" :
-                           strcmp(stage, "pre-context") == 0 ? "shipyard:\\boot-pre-context.txt" : NULL;
-        if (path) {
-            char savedLine[320];
-            _snprintf_s(savedLine, sizeof(savedLine), _TRUNCATE,
-                        "%sgame_write_error=%lu\n", line, gameError);
-            const DWORD saveError = WriteFlushedFile(path, savedLine, false);
-            if (saveError == ERROR_SUCCESS) {
-                InterlockedExchange(&checkpointFlushActive, 1);
-                const DWORD flushError = XContentFlush("shipyard", NULL);
-                InterlockedExchange(&checkpointFlushActive, 0);
-                if (flushError != ERROR_SUCCESS) {
-                    char warning[96];
-                    _snprintf_s(warning, sizeof(warning), _TRUNCATE,
-                                "Shipyard: boot checkpoint XContentFlush=%lu\n", flushError);
-                    OutputDebugStringA(warning);
-                }
-            }
-        }
-    }
+    WriteFlushedFile("game:\\logs\\boot.txt", line, strcmp(stage, "entry") != 0);
 #else
     (void)stage;
     (void)commitToSave;
 #endif
 }
 
-// Config, CVars, saves and user mods share the selected writable namespace.
-// The release archives remain discoverable in the executable bundle directory.
-std::string ApplicationDirectory() {
-    return xbox_compat::filesystem::path(Storage::SaveDirectory()).root_name().string();
-}
+std::string ApplicationDirectory() { return "game:"; }
 std::string BundleDirectory() { return "game:"; }
 
 void ShowError(const wchar_t* title, const wchar_t* message) {
@@ -147,7 +103,7 @@ void ShowError(const wchar_t* title, const wchar_t* message) {
     if (status == ERROR_IO_PENDING) {
         const DWORD started = GetTickCount();
         while (!XHasOverlappedIoCompleted(&operation)) {
-            // The selector creates the same D3D device earlier. XAM dialogs
+            // Storage initialization creates the D3D device earlier. XAM dialogs
             // also need presentation after Context has allocated framebuffers.
             HRESULT presented = Fast::PresentNativeStartupUI();
             if (presented == E_UNEXPECTED && Fast::xenos_device)

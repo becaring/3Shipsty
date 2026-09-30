@@ -46,9 +46,20 @@ class TrianglePipelineTests(unittest.TestCase):
         cold = changed.split('// SHIPYARD ORIGINAL RECONCILIATION BEGIN\n', 1)[1]
         cold = cold.split('// SHIPYARD ORIGINAL RECONCILIATION END', 1)[0]
         cold = projection['remove_invalidations'](cold)
-        self.assertEqual(cold, original[start:end])
+        # The only intended reconciliation edits: no eager flush before a
+        # texture import (the lookup flushes before mutating), and an explicit
+        # flush before a program is created and bound.
+        expected = original[start:end]
+        expected = expected.replace('            if (mRdp->textures_changed[i]) {\n'
+                                    '                Flush();\n',
+                                    '            if (mRdp->textures_changed[i]) {\n', 1)
+        expected = expected.replace('    if (prg == NULL) {\n        comb->prg[tm] = prg =\n',
+                                    '    if (prg == NULL) {\n        Flush();\n        comb->prg[tm] = prg =\n', 1)
+        self.assertNotEqual(expected, original[start:end])
+        self.assertEqual(cold, expected)
         next_method = '\nvoid Interpreter::GfxSpGeometryMode('
-        self.assertEqual(original[end:original.index(next_method, end)],
+        # Live packing only swaps in reconciliation-time UV axes/clamp bounds.
+        self.assertEqual(projection['prepared_packing'](original[end:original.index(next_method, end)]),
                          changed[changed.index(projection['END']):changed.index(next_method, changed.index(projection['END']))])
 
     def test_clip_snapshot_refreshes_after_every_backend_init(self):
@@ -59,6 +70,16 @@ class TrianglePipelineTests(unittest.TestCase):
         cold = source[source.index('void Interpreter::XboxPrepareTrianglePipeline('):source.index('\nvoid Interpreter::',source.index('void Interpreter::XboxPrepareTrianglePipeline(')+1)]
         self.assertIn('clip_parameters = mXboxClipParameters;',cold)
         self.assertNotIn('mRapi->GetClipParameters()',cold)
+
+    def test_profile_counts_pipeline_certificate_outcome_without_timing_each_triangle(self):
+        projection = runpy.run_path(str(PROJECTION))
+        original = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
+        original = runpy.run_path(str(ROOT / 'platform/shipyard/fast3d/vertex_packing.py'))['transform'](original)
+        original = prepare_fast3d.triangle_split(original)
+        original = prepare_fast3d.texture_bindings(original)
+        changed = projection['transform'](original)
+        self.assertTrue('ModernFrameProfile::ObserveTrianglePipeline(xboxPipelineHit)' in changed)
+        self.assertEqual(changed.count('mXboxPipelineKey.Matches(*this)'), 1)
 
 
 if __name__ == '__main__':

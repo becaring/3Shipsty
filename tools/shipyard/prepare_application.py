@@ -35,8 +35,14 @@ def application_syntax(source):
     source=once(source,'context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });','Ship::AudioSettings audioSettings; audioSettings.SampleRate=32000; audioSettings.SampleLength=1024; audioSettings.DesiredBuffered=1680;\n    context->InitAudio(audioSettings);')
     source,count=re.subn(r'std::unordered_set<uint32_t> ValidHashes = (\{[\s\S]*?\});',r'const uint32_t validHashValues[]=\1;\n    std::unordered_set<uint32_t> ValidHashes(validHashValues,validHashValues+sizeof(validHashValues)/sizeof(validHashValues[0]));',source)
     assert count==1
-    source,count=re.subn(r'const std::vector<uint32_t> (hira1|hira2|kata1|kata2) = (\{[\s\S]*?\});',lambda m:'const uint32_t '+m[1]+'Values[]='+m[2]+';\n    const std::vector<uint32_t> '+m[1]+'('+m[1]+'Values,'+m[1]+'Values+sizeof('+m[1]+'Values)/sizeof('+m[1]+'Values[0]));',source)
+    source,count=re.subn(r'const std::vector<uint32_t> (hira1|hira2|kata1|kata2) = (\{[\s\S]*?\});',
+                         lambda m:'static const uint32_t '+m[1]+'[] = '+m[2]+';',source)
     assert count==4
+    for name in ('hira1','hira2','kata1','kata2'):
+        assert source.count(name+'.begin()')==2
+        assert source.count(name+'.end()')==2
+        source=source.replace(name+'.begin()',name)
+        source=source.replace(name+'.end()',name+' + sizeof('+name+')/sizeof('+name+'[0])')
     source=re.sub(r"u'(.)'",lambda m:hex(ord(m[1])),source)
     source=once(source,'for (auto& [key, value] : cvars.items()) {','for (nlohmann::json::iterator it=cvars.begin(); it!=cvars.end(); ++it) {\n            const std::string key=it.key(); nlohmann::json& value=it.value();')
     source=source.replace('[[unlikely]]','')
@@ -59,6 +65,7 @@ def function(text, name):
     return matches[0]
 
 def platform_source(source):
+    source=once(source,'"shipofharkinian.json"','"config/shipofharkinian.json"')
     # Retain the desktop extraction body behind the explicit PC boundary.
     node=function(source,'OTRGlobals::RunExtract');body=node.child_by_field_name('body')
     raw=source.encode();start=body.start_byte+1;end=body.end_byte-1
@@ -122,7 +129,7 @@ def platform_source(source):
                 '    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();\n    Shipyard::Platform::RecordBootStage("init-complete", false);')
     source=once(source,'    context->InitLogging(logLevel, logLevel);',
                 '''    if (!context->InitLogging(logLevel, logLevel)) {
-        throw std::runtime_error("Xbox save-container log initialization failed");
+        throw std::runtime_error("Xbox log directory initialization failed");
     }
     Shipyard::Platform::RecordBootStage("logging-ready", false);''')
     source=once(source,'    context->InitAudio({ .SampleRate = 32000, .SampleLength = 1024, .DesiredBuffered = 1680 });',
@@ -145,6 +152,50 @@ def platform_source(source):
     source=once(source,'    bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);',
                 '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-audio-complete", false);
     bool curAltAssets = CVarGetInteger(CVAR_SETTING("AltAssets"), 1);''')
+    source=once(source,'    int next_original_frame = fps;',
+                '''    int next_original_frame = fps;
+    // The loop emits this many maps before any presentation consumes them.
+    if (original_fps > 0 && time + original_fps <= next_original_frame) {
+        mtx_replacements.reserve((next_original_frame - time) / original_fps);
+    }''')
+    # Texture resolutions persist until the resource manager's lookup
+    # generation moves, instead of being re-resolved every batch.
+    source=once(source,'    intp->mInterpolationIndex = 0;',
+                '    intp->mInterpolationIndex = 0;\n    intp->mXboxTextureHashCache.Retire(\n'
+                '        Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration());\n'
+                '    // A lone replay is also the final one; its depth resolve would copy\n'
+                '    // the published depth. Read before it, in submission order.\n'
+                '    if (mtx_replacements.size() < 2) XboxRunDeferredDepthRead(intp);')
+    source=once(source,'        wnd->DrawAndRunGraphicsCommands(Commands, m);',
+                '''        // Only the final render supplies depth to the next game update.
+        intp->mXboxDiscardGameDepth =
+            static_cast<size_t>(intp->mInterpolationIndex + 1) < mtx_replacements.size();
+        wnd->DrawAndRunGraphicsCommands(Commands, m);
+        // The update's depth read waits for the previous final replay. Once
+        // this first replay is submitted, the GPU has work during that wait.
+        if (intp->mInterpolationIndex == 0) XboxRunDeferredDepthRead(intp);''')
+    # The depth read sees the previous update's final replay through the
+    # backend publication, so its values match the read at task submission.
+    source=once(source,'void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {',
+                '''extern "C" void Graph_RunDeferredCallback(void);
+
+static void XboxRunDeferredDepthRead(Fast::Interpreter* intp) {
+    Graph_RunDeferredCallback();
+    intp->XboxRetireGameDepth();
+}
+
+void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {''')
+    source=once(source,'    ImGui::PopStyleColor();\n}',
+                '''    ImGui::PopStyleColor();
+    XboxRunDeferredDepthRead(intp); // No replay ran this update.
+    // This update's final replay is what the next update's read observes.
+    intp->XboxPublishGameDepth();
+}''')
+    source=once(source,'    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-returned", false);',
+                '''    if (traceFirstFrame) Shipyard::Platform::RecordBootStage("first-graphics-returned", false);
+    Graph_RunDeferredCallback(); // RunCommands had no window.''')
+    from frame_profile_projection import application as profile_application
+    source = profile_application(source)
     source=once(source,'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();','extern "C" void DeinitOTR() {')
     source=once(source,'extern "C" void SaveManager_ThreadPoolWait() {', '''// Keep the genuine InitOTR body, but do not let a recoverable Xbox startup
 // failure escape through the C game entry before its crash handler exists.
@@ -266,6 +317,7 @@ def boundary_probe():
     if version is None:raise ValueError('Version record inventory changed')
     names=['CheckAndCreateModFolder','ReadPortVersionFromOTR','DetectOTRVersion','VerifyArchiveVersion','OTRGlobals::RunExtract','OTRAudio_Thread','OTRAudio_Init','OTRAudio_Exit']
     prelude='''#include "soh/OTRGlobals.h"
+#include "application/frame_profile.h"
 #include "soh/OTRAudio.h"
 #include "soh/Enhancements/savestates.h"
 #include <ship/resource/archive/O2rArchive.h>

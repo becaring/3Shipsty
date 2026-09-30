@@ -12,6 +12,10 @@
 #include "soh/frame_interpolation.h"
 #include <assert.h>
 
+#ifdef _XBOX
+extern void Shipyard_FrameProfileKokiriMotes(unsigned invisible, unsigned outside, unsigned emitted);
+#endif
+
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
 
 void ObjectKankyo_Init(Actor* thisx, PlayState* play);
@@ -178,9 +182,6 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
     f32 dx;
     f32 dy;
     f32 dz;
-    f32 viewForwardsX;
-    f32 viewForwardsY;
-    f32 viewForwardsZ;
     f32 maxDist;
     f32 baseX;
     f32 baseY;
@@ -230,26 +231,28 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
         play->envCtx.unk_EE[3] += 16;
     }
 
-    for (i = 0; i < play->envCtx.unk_EE[3]; i++) {
-        // spawn in front of the camera
+    // The view is constant throughout this actor update. The motes share its
+    // normalized direction and the point 80 units in front of the camera.
+    if (play->envCtx.unk_EE[3] != 0) {
         dx = play->view.lookAt.x - play->view.eye.x;
         dy = play->view.lookAt.y - play->view.eye.y;
         dz = play->view.lookAt.z - play->view.eye.z;
         dist = sqrtf(SQ(dx) + SQ(dy) + SQ(dz));
-
         viewForwards.x = dx / dist;
         viewForwards.y = dy / dist;
         viewForwards.z = dz / dist;
+        baseX = play->view.eye.x + viewForwards.x * 80.0f;
+        baseY = play->view.eye.y + viewForwards.y * 80.0f;
+        baseZ = play->view.eye.z + viewForwards.z * 80.0f;
+    }
 
-        viewForwardsX = viewForwards.x;
-        viewForwardsY = viewForwards.y;
-        viewForwardsZ = viewForwards.z;
+    for (i = 0; i < play->envCtx.unk_EE[3]; i++) {
 
         switch (this->effects[i].state) {
             case 0: // init
-                this->effects[i].base.x = play->view.eye.x + viewForwardsX * 80.0f;
-                this->effects[i].base.y = play->view.eye.y + viewForwardsY * 80.0f;
-                this->effects[i].base.z = play->view.eye.z + viewForwardsZ * 80.0f;
+                this->effects[i].base.x = baseX;
+                this->effects[i].base.y = baseY;
+                this->effects[i].base.z = baseZ;
 
                 this->effects[i].pos.x = (Rand_ZeroOne() - 0.5f) * 160.0f;
                 this->effects[i].pos.y = 30.0f;
@@ -269,10 +272,6 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
             case 1: // blinking fairies / inactive fairy trails
             case 2: // fairy trails
                 this->effects[i].alphaTimer++;
-                baseX = play->view.eye.x + viewForwards.x * 80.0f;
-                baseY = play->view.eye.y + viewForwards.y * 80.0f;
-                baseZ = play->view.eye.z + viewForwards.z * 80.0f;
-
                 this->effects[i].prevPos.x = this->effects[i].pos.x;
                 this->effects[i].prevPos.y = this->effects[i].pos.y;
                 this->effects[i].prevPos.z = this->effects[i].pos.z;
@@ -497,7 +496,15 @@ void ObjectKankyo_DrawFairies(ObjectKankyo* this2, PlayState* play2) {
     f32 alphaScale;
     Vec3f vec1 = { 0.0f, 0.0f, 0.0f };
     Vec3f vec2 = { 0.0f, 0.0f, 0.0f };
+    Vec3f motePos;
+    Vec3f projectedPos;
+    f32 projectedW;
     s16 i;
+#ifdef _XBOX
+    unsigned invisible = 0;
+    unsigned outside = 0;
+    unsigned emitted = 0;
+#endif
 
     if (!(play->cameraPtrs[0]->unk_14C & 0x100)) {
         OPEN_DISPS(play->state.gfxCtx);
@@ -506,19 +513,11 @@ void ObjectKankyo_DrawFairies(ObjectKankyo* this2, PlayState* play2) {
         gSPDisplayList(POLY_XLU_DISP++, gKokiriDustMoteMaterialDL);
 
         for (i = 0; i < play->envCtx.unk_EE[3]; i++) {
-            FrameInterpolation_RecordOpenChild(&this->effects[i], this->effects[i].epoch);
-            Matrix_Translate(this->effects[i].base.x + this->effects[i].pos.x,
-                             this->effects[i].base.y + this->effects[i].pos.y,
-                             this->effects[i].base.z + this->effects[i].pos.z, MTXMODE_NEW);
-
             // scale when fading in or out
             alphaScale = this->effects[i].alpha / 50.0f;
             if (alphaScale > 1.0f) {
                 alphaScale = 1.0f;
             }
-
-            Matrix_Scale(this->effects[i].size * alphaScale, this->effects[i].size * alphaScale,
-                         this->effects[i].size * alphaScale, MTXMODE_APPLY);
             if (i < 32) {
                 if (this->effects[i].state != 2) {
                     if (this->effects[i].alpha > 0) {
@@ -554,6 +553,33 @@ void ObjectKankyo_DrawFairies(ObjectKankyo* this2, PlayState* play2) {
                 }
             }
 
+            // Alpha advances even while a mote is invisible. Skip its matrix,
+            // interpolation subtree, and display list until it can draw pixels.
+            if (alphaScale <= 0.0f || this->effects[i].alpha == 0) {
+#ifdef _XBOX
+                ++invisible;
+#endif
+                continue;
+            }
+
+            motePos.x = this->effects[i].base.x + this->effects[i].pos.x;
+            motePos.y = this->effects[i].base.y + this->effects[i].pos.y;
+            motePos.z = this->effects[i].base.z + this->effects[i].pos.z;
+            SkinMatrix_Vec3fMtxFMultXYZW(&play->viewProjectionMtxF, &motePos, &projectedPos, &projectedW);
+            if (projectedW > 1.0f &&
+                (fabsf(projectedPos.x) > projectedW * 1.5f ||
+                 fabsf(projectedPos.y) > projectedW * 1.5f)) {
+#ifdef _XBOX
+                ++outside;
+#endif
+                continue;
+            }
+
+            FrameInterpolation_RecordOpenChild(&this->effects[i], this->effects[i].epoch);
+            Matrix_Translate(motePos.x, motePos.y, motePos.z, MTXMODE_NEW);
+            Matrix_Scale(this->effects[i].size * alphaScale, this->effects[i].size * alphaScale,
+                         this->effects[i].size * alphaScale, MTXMODE_APPLY);
+
             gDPPipeSync(POLY_XLU_DISP++);
 
             switch (i & 1) {
@@ -573,7 +599,13 @@ void ObjectKankyo_DrawFairies(ObjectKankyo* this2, PlayState* play2) {
             gSPMatrix(POLY_XLU_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_LOAD);
             gSPDisplayList(POLY_XLU_DISP++, gKokiriDustMoteModelDL);
             FrameInterpolation_RecordCloseChild();
+#ifdef _XBOX
+            ++emitted;
+#endif
         }
+#ifdef _XBOX
+        Shipyard_FrameProfileKokiriMotes(invisible, outside, emitted);
+#endif
         CLOSE_DISPS(play->state.gfxCtx);
     }
 }

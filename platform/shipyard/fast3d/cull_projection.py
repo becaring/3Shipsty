@@ -15,9 +15,11 @@ def transform(source: str) -> str:
         Shipyard::Fast3D::ProjectionValueCache& p1 = sModernCullProjection[vtx1_idx];
         Shipyard::Fast3D::ProjectionValueCache& p2 = sModernCullProjection[vtx2_idx];
         Shipyard::Fast3D::ProjectionValueCache& p3 = sModernCullProjection[vtx3_idx];
-        p1.Load(v1->x, v1->y, v1->w);
-        p2.Load(v2->x, v2->y, v2->w);
-        p3.Load(v3->x, v3->y, v3->w);
+        // No callbacks or rounding-mode writes occur among these divisions.
+        const uint32_t projectionRounding = Shipyard::Fast3D::ProjectionRoundingMode();
+        p1.Load(v1->x, v1->y, v1->w, projectionRounding);
+        p2.Load(v2->x, v2->y, v2->w, projectionRounding);
+        p3.Load(v3->x, v3->y, v3->w, projectionRounding);
         float dx1 = p1.x - p2.x;
         float dy1 = p1.y - p2.y;
         float dx2 = p3.x - p2.x;

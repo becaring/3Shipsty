@@ -44,9 +44,16 @@ template<class C> typename C::const_iterator LoggingEnd(const C& c){return c.end
 template<class T,size_t N> T* LoggingBegin(T (&data)[N]){return data;}
 template<class T,size_t N> T* LoggingEnd(T (&data)[N]){return data+N;}
 inline void LoggingRunFunction(void* context){std::unique_ptr<std::function<void()> > call(static_cast<std::function<void()>*>(context));(*call)();}
+// The asynchronous log writer runs on the service hardware thread, as the SoH
+// 4.0.5 Xbox build's writer did, instead of inheriting the title thread's.
 inline joining_thread LoggingMakeThread(const std::function<void()>& call){
     std::unique_ptr<std::function<void()> > owned(new std::function<void()>(call));
-    joining_thread thread(&LoggingRunFunction,owned.get());owned.release();return std::move(thread);
+#ifdef _XBOX
+    joining_thread thread(&LoggingRunFunction,owned.get(),ServiceProcessor);
+#else
+    joining_thread thread(&LoggingRunFunction,owned.get());
+#endif
+    owned.release();return std::move(thread);
 }
 }
 

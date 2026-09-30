@@ -24,6 +24,15 @@ enum {
     G_ACMUX_PRIM_LOD_FRAC = 6
 };
 struct Clip { bool z_is_from_0_to_1, invertY; };
+static unsigned boundCalls;
+static unsigned materialCalls;
+static unsigned selectorCalls;
+static uint8_t CountSelector(uint8_t value) { ++selectorCalls; return value; }
+static float CountMaterial(float value) { ++materialCalls; return value; }
+static float CountBound(uint32_t bound, uint32_t dimension) {
+    ++boundCalls;
+    return (bound - 0.5f) / dimension;
+}
 struct Harness {
     Vertex* v_arr[3]; Vertex* v1; RDP* mRdp; Combiner* comb;
     bool use_fog, use_grayscale, use_alpha, is_rect;
@@ -101,7 +110,38 @@ int main() {
             combiner.shader_input_mapping[1][j] = alphaSelectors[(n + j) % 6];
         }
         Harness b = a; b.mBufVbo = projected;
-        a.Original(); b.Projected();
+        unsigned expectedBounds = 0;
+        for (unsigned t = 0; t < 2; ++t) {
+            if (a.usedTextures[t]) {
+                expectedBounds += !!(a.tm & (1 << (2 * t)));
+                expectedBounds += !!(a.tm & (1 << (2 * t + 1)));
+            }
+        }
+        boundCalls = 0;
+        materialCalls = 0;
+        selectorCalls = 0;
+        a.Original();
+        if (selectorCalls != 3 * a.numInputs * (a.use_alpha ? 2 : 1)) return 7;
+        const unsigned expectedMaterials = (a.use_fog ? 3 : 0) + (a.use_grayscale ? 4 : 0);
+        if (materialCalls != 3 * expectedMaterials) return 5;
+        if (boundCalls != 3 * expectedBounds) {
+            printf("original bound count mismatch %u: %u/%u\n", n, boundCalls, 3 * expectedBounds);
+            return 3;
+        }
+        boundCalls = 0;
+        materialCalls = 0;
+        selectorCalls = 0;
+        b.Projected();
+        unsigned expectedSelectors = 0;
+        for (unsigned j = 0; j < a.numInputs; ++j)
+            for (unsigned k = 0; k < (a.use_alpha ? 2U : 1U); ++k)
+                expectedSelectors += combiner.shader_input_mapping[k][j] == G_CCMUX_SHADE ? 3 : 1;
+        if (selectorCalls != expectedSelectors) return 8;
+        if (materialCalls != expectedMaterials) return 6;
+        if (boundCalls != expectedBounds) {
+            printf("projected bound count mismatch %u: %u/%u\n", n, boundCalls, expectedBounds);
+            return 4;
+        }
         if (a.mBufVboLen != b.mBufVboLen || memcmp(original, projected, sizeof(original))) {
             printf("packing mismatch %u len %u/%u\n", n,
                    (unsigned)a.mBufVboLen, (unsigned)b.mBufVboLen);

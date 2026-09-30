@@ -241,6 +241,23 @@ def project_header(name, raw):
             'File-select fade trace')
         changes.append('Add bounded file-select fade trace after real update/draw commands')
         changes.append('Use owner-aware skybox initialization for FileChooseContext')
+    if name == 'soh/src/code/z_scene.c':
+        # Objects spawn when a scene or room loads, before any actor using
+        # them draws. Queue their resources on the resource workers now instead
+        # of loading each one on the game thread at its first draw.
+        replace_projected_once(
+            's32 Object_Spawn(ObjectContext* objectCtx, s16 objectId) {',
+            '''extern void ResourceMgr_PrefetchObject(const char* name);
+
+s32 Object_Spawn(ObjectContext* objectCtx, s16 objectId) {''',
+            'Object prefetch declaration')
+        replace_projected_once(
+            '    objectCtx->status[objectCtx->num].id = objectId;\n    size = gObjectTable[objectId].vromEnd - gObjectTable[objectId].vromStart;',
+            '''    objectCtx->status[objectCtx->num].id = objectId;
+    ResourceMgr_PrefetchObject(gObjectTable[objectId].fileName);
+    size = gObjectTable[objectId].vromEnd - gObjectTable[objectId].vromStart;''',
+            'Object prefetch at spawn')
+        changes.append("Queue a spawned object's resources on the resource workers")
     if name == 'soh/src/code/graph.c':
         replace_projected_once(
             'extern void ProcessSaveStateRequests(void);',
@@ -251,6 +268,53 @@ static const char* sShipyardGameStateNames[] = {
     "TitleSetup", "Select", "Title", "Gameplay", "Opening", "FileChoose"
 };''',
             'Gamestate runtime trace declaration')
+        # Environment_GraphCallback reads the depth the previous update's final
+        # replay rendered (the N64 read it after the RCP finished that task).
+        # Running it at task submission makes the CPU wait for that replay while
+        # the GPU has nothing queued. Run it after this update's first replay is
+        # submitted instead; the backend keeps the previous final depth
+        # published until then, so every value read is unchanged. Its results
+        # (sun depth, light glow flags) are first drawn by the next update.
+        replace_projected_once(
+            'void Graph_TaskSet00(GraphicsContext* gfxCtx) {',
+            '''static void (*sShipyardDeferredCallback)(struct GraphicsContext*, void*);
+static GraphicsContext* sShipyardDeferredGfxCtx;
+static void* sShipyardDeferredParam;
+
+void Graph_RunDeferredCallback(void) {
+    void (*callback)(struct GraphicsContext*, void*) = sShipyardDeferredCallback;
+
+    if (callback == NULL) {
+        return;
+    }
+    sShipyardDeferredCallback = NULL;
+    callback(sShipyardDeferredGfxCtx, sShipyardDeferredParam);
+}
+
+void Graph_TaskSet00(GraphicsContext* gfxCtx) {''',
+            'Deferred graph callback owner')
+        replace_projected_once(
+            '''    if (gfxCtx->callback != NULL) {
+        gfxCtx->callback(gfxCtx, gfxCtx->callbackParam);
+    }''',
+            '''    Graph_RunDeferredCallback();
+    sShipyardDeferredCallback = gfxCtx->callback;
+    sShipyardDeferredGfxCtx = gfxCtx;
+    sShipyardDeferredParam = gfxCtx->callbackParam;''',
+            'Deferred graph callback submission')
+        changes.append('Run the depth-reading graph callback after the first replay of its update is submitted')
+        replace_projected_once(
+            'void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {',
+            '''extern void Shipyard_FrameProfileGameUpdateBegin(void);
+extern void Shipyard_FrameProfileGameUpdateEnd(void);
+void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
+            'Game update profiling declarations')
+        replace_projected_once(
+            '    GameState_Update(gameState);',
+            '''    Shipyard_FrameProfileGameUpdateBegin();
+    GameState_Update(gameState);
+    Shipyard_FrameProfileGameUpdateEnd();''',
+            'Game update profiling boundary')
         replace_projected_once(
             '        GameState_Init(gGameState, runFrameContext.ovl->init, &runFrameContext.gfxCtx);',
             '''        Shipyard_RuntimeTrace("GAMESTATE init begin name=%s index=%d size=%u",
@@ -302,7 +366,138 @@ static const char* sShipyardGameStateNames[] = {
             'Do not cast the tiny TitleSetup allocation to PlayState on Xbox')
         changes.append('Add bounded central gamestate boundary trace adapted from the proven 4.0.5 Xbox loop')
         changes.append('Move Xbox skybox priming out of the TitleSetup allocation')
+    if name == 'soh/src/overlays/effects/ovl_Effect_Ss_Dust/z_eff_ss_dust.c':
+        replace_projected_once(
+            '#include "objects/gameplay_keep/gameplay_keep.h"\n',
+            '#include "objects/gameplay_keep/gameplay_keep.h"\n'
+            'extern void Shipyard_FrameProfileDustDraw(float posX, float posY, float posZ, '
+            'float eyeX, float eyeY, float eyeZ, float scale, unsigned flags);\n',
+            'Soft-dust draw profile declaration')
+        replace_projected_once(
+            '        gSPDisplayList(POLY_XLU_DISP++, this->gfx);\n',
+            '        gSPDisplayList(POLY_XLU_DISP++, this->gfx);\n'
+            '        Shipyard_FrameProfileDustDraw(this->pos.x, this->pos.y, this->pos.z,\n'
+            '                                      play->view.eye.x, play->view.eye.y, play->view.eye.z,\n'
+            '                                      scale, (unsigned)this->rDrawFlags);\n',
+            'Count emitted soft-dust draws in the frame profile')
+        changes.append('Count emitted soft-dust draws with position, eye, scale, and draw flags')
+    if name == 'soh/src/code/game.c':
+        replace_projected_once(
+            'void GameState_Update(GameState* gameState) {',
+            'extern void Shipyard_FrameProfileGameStateDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileGameStateDrawEnd(void);\n'
+            'void GameState_Update(GameState* gameState) {',
+            'Gamestate draw profile declarations')
+        replace_projected_once(
+            '        GameState_Draw(gameState, gfxCtx);',
+            '        Shipyard_FrameProfileGameStateDrawBegin();\n'
+            '        GameState_Draw(gameState, gfxCtx);\n'
+            '        Shipyard_FrameProfileGameStateDrawEnd();',
+            'Gamestate draw profile boundary')
+    if name == 'soh/src/code/z_actor.c':
+        replace_projected_once(
+            'void Actor_Draw(PlayState* play, Actor* actor) {',
+            'extern void Shipyard_FrameProfileActorInstanceAdvance(int actorId, unsigned nextStage);\n'
+            'void Actor_Draw(PlayState* play, Actor* actor) {',
+            'Actor phase declaration before first use')
+        replace_projected_once(
+            'void func_800315AC(PlayState* play, ActorContext* actorCtx) {',
+            'extern u64 Shipyard_FrameProfileActorInstanceBegin(int actorId);\n'
+            'extern void Shipyard_FrameProfileActorInstanceEnd(int actorId, u64 started);\n'
+            'extern void Shipyard_FrameProfileEffectBegin(void);\n'
+            'extern void Shipyard_FrameProfileEffectEnd(void);\n'
+            'extern void Shipyard_FrameProfileEffectSsBegin(void);\n'
+            'extern void Shipyard_FrameProfileEffectSsEnd(void);\n'
+            'extern void Shipyard_FrameProfileLightsGlowBegin(void);\n'
+            'extern void Shipyard_FrameProfileLightsGlowEnd(void);\n'
+            'void func_800315AC(PlayState* play, ActorContext* actorCtx) {',
+            'Actor callback and effect profile declarations')
+        replace_projected_once(
+            '                            Actor_Draw(play, actor);\n'
+            '                            actor->isDrawn = true;',
+            '                            u64 actorProfileStart = Shipyard_FrameProfileActorInstanceBegin(actor->id);\n'
+            '                            Actor_Draw(play, actor);\n'
+            '                            Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart);\n'
+            '                            actor->isDrawn = true;',
+            'Sample drawn actor callback time by actor ID')
+        for original, replacement, reason in (
+            ('    Lights_Draw(lights, play->state.gfxCtx);',
+             '    Lights_Draw(lights, play->state.gfxCtx);\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 1);',
+             'Actor lights to matrix boundary'),
+            ('    actor->draw(actor, play);',
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 2);\n'
+             '    actor->draw(actor, play);\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 3);',
+             'Actor callback boundary'),
+            ('    if (actor->shape.shadowDraw != NULL) {\n'
+             '        actor->shape.shadowDraw(actor, lights, play);\n'
+             '    }',
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 4);\n'
+             '    if (actor->shape.shadowDraw != NULL) {\n'
+             '        actor->shape.shadowDraw(actor, lights, play);\n'
+             '    }\n'
+             '    Shipyard_FrameProfileActorInstanceAdvance(actor->id, 5);',
+             'Actor shadow boundary'),
+        ):
+            replace_projected_once(original, replacement, reason)
+        for call, phase in (
+            ('Effect_DrawAll(play->state.gfxCtx);', 'Effect'),
+            ('EffectSs_DrawAll(play);', 'EffectSs'),
+            ('Lights_DrawGlow(play);', 'LightsGlow'),
+        ):
+            replace_projected_once(
+                '        ' + call,
+                '        Shipyard_FrameProfile' + phase + 'Begin();\n'
+                '        ' + call + '\n'
+                '        Shipyard_FrameProfile' + phase + 'End();',
+                phase + ' draw profile boundary')
+        changes.append('Sample actor callbacks by ID and separate effect draw costs')
     if name == 'soh/src/code/z_play.c':
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void Shipyard_FrameProfilePlayUpdateBegin(void);\n'
+            'extern void Shipyard_FrameProfilePlayUpdateEnd(void);\n'
+            'extern void Shipyard_FrameProfilePlayDrawRecordBegin(void);\n'
+            'extern void Shipyard_FrameProfilePlayDrawRecordEnd(void);\n'
+            'extern void Shipyard_FrameProfileSceneRoomDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileSceneRoomDrawEnd(void);\n'
+            'extern void Shipyard_FrameProfileActorDrawBegin(void);\n'
+            'extern void Shipyard_FrameProfileActorDrawEnd(void);\n'
+            'void Play_Init(GameState* thisx) {',
+            'Gameplay update and recorder-wrapped draw profile declarations')
+        replace_projected_once(
+            '        Play_Update(play);',
+            '        Shipyard_FrameProfilePlayUpdateBegin();\n'
+            '        Play_Update(play);\n'
+            '        Shipyard_FrameProfilePlayUpdateEnd();',
+            'Gameplay update profile boundary')
+        replace_projected_once(
+            '    FrameInterpolation_StartRecord();\n'
+            '    Play_Draw(play);\n'
+            '    FrameInterpolation_StopRecord();',
+            '    Shipyard_FrameProfilePlayDrawRecordBegin();\n'
+            '    FrameInterpolation_StartRecord();\n'
+            '    Play_Draw(play);\n'
+            '    FrameInterpolation_StopRecord();\n'
+            '    Shipyard_FrameProfilePlayDrawRecordEnd();',
+            'Recorder-wrapped gameplay draw profile boundary')
+        replace_projected_once(
+            '                Scene_Draw(play);\n'
+            '                Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);\n'
+            '                Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);',
+            '                Shipyard_FrameProfileSceneRoomDrawBegin();\n'
+            '                Scene_Draw(play);\n'
+            '                Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);\n'
+            '                Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);\n'
+            '                Shipyard_FrameProfileSceneRoomDrawEnd();',
+            'Scene and room draw profile boundary')
+        replace_projected_once(
+            '            func_800315AC(play, &play->actorCtx);',
+            '            Shipyard_FrameProfileActorDrawBegin();\n'
+            '            func_800315AC(play, &play->actorCtx);\n'
+            '            Shipyard_FrameProfileActorDrawEnd();',
+            'Actor draw profile boundary')
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
             'extern void Shipyard_RuntimeTrace(const char* format, ...);\n'

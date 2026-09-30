@@ -12,6 +12,9 @@ INITIALIZERS=runpy.run_path(str(OWN/'initializers.py'))
 CONSTRUCTORS=runpy.run_path(str(OWN/'constructors.py'))
 
 def transform(relative,text):
+    resolve_platform_base(ROOT)
+    from xbox360_platform.controller_routes import project as project_routes
+    text=project_routes(relative,text)
     text=re.sub(r'#include <(?:SDL2/)?SDL(?:_events)?\.h>', '#include "input/sdl_bridge.h"',text)
     if relative.endswith('.cpp') and '#include "ship/Context.h"' in text:
         text='#include "ship/controller/controldeck/ControlDeck.h"\n#include "ship/window/Window.h"\n'+text

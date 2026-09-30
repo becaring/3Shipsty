@@ -5,6 +5,91 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 
 class GameProjectionTests(unittest.TestCase):
+    def test_game_update_profile_wraps_only_the_update_call(self):
+        module = self.module()
+        name = 'soh/src/code/graph.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        self.assertEqual(output.count(b'Shipyard_FrameProfileGameUpdateBegin();'), 1)
+        self.assertEqual(output.count(b'Shipyard_FrameProfileGameUpdateEnd();'), 1)
+        begin = output.index(b'Shipyard_FrameProfileGameUpdateBegin();')
+        update = output.index(b'GameState_Update(gameState);', begin)
+        end = output.index(b'Shipyard_FrameProfileGameUpdateEnd();', update)
+        self.assertLess(begin, update)
+        self.assertLess(update, end)
+
+    def test_game_update_subphases_wrap_the_real_calls(self):
+        module = self.module()
+        cases = (
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayUpdate', b'Play_Update(play);'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfilePlayDrawRecord', b'FrameInterpolation_StartRecord();',
+             b'Play_Draw(play);', b'FrameInterpolation_StopRecord();'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfileSceneRoomDraw', b'Scene_Draw(play);',
+             b'Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);',
+             b'Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);'),
+            ('soh/src/code/z_play.c', b'Shipyard_FrameProfileActorDraw',
+             b'func_800315AC(play, &play->actorCtx);'),
+            ('soh/src/code/game.c', b'Shipyard_FrameProfileGameStateDraw', b'GameState_Draw(gameState, gfxCtx);'),
+        )
+        for name, prefix, *calls in cases:
+            with self.subTest(phase=prefix):
+                output, _ = module.project_header(name, (ROOT / name).read_bytes())
+                begin = prefix + b'Begin();'
+                end = prefix + b'End();'
+                self.assertEqual(output.count(begin), 1)
+                self.assertEqual(output.count(end), 1)
+                begin_at = output.index(begin)
+                end_at = output.index(end, begin_at)
+                call_positions = [output.index(call, begin_at) for call in calls]
+                self.assertEqual(call_positions, sorted(call_positions))
+                self.assertTrue(all(begin_at < pos < end_at for pos in call_positions))
+
+    def test_actor_draw_samples_callbacks_and_separates_effects(self):
+        module = self.module()
+        name = 'soh/src/code/z_actor.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        start = output.index(b'void func_800315AC(')
+        end = output.index(b'void func_80031A28(', start)
+        body = output[start:end]
+        self.assertEqual(body.count(b'Shipyard_FrameProfileActorInstanceBegin(actor->id)'), 1)
+        self.assertEqual(body.count(b'Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart)'), 1)
+        self.assertLess(body.index(b'Shipyard_FrameProfileActorInstanceBegin(actor->id)'),
+                        body.index(b'Actor_Draw(play, actor);'))
+        self.assertLess(body.index(b'Actor_Draw(play, actor);'),
+                        body.index(b'Shipyard_FrameProfileActorInstanceEnd(actor->id, actorProfileStart)'))
+        for phase, call in ((b'Effect', b'Effect_DrawAll(play->state.gfxCtx);'),
+                            (b'EffectSs', b'EffectSs_DrawAll(play);'),
+                            (b'LightsGlow', b'Lights_DrawGlow(play);')):
+            begin = b'Shipyard_FrameProfile' + phase + b'Begin();'
+            finish = b'Shipyard_FrameProfile' + phase + b'End();'
+            self.assertEqual(body.count(begin), 1)
+            self.assertEqual(body.count(finish), 1)
+            self.assertLess(body.index(begin), body.index(call))
+            self.assertLess(body.index(call), body.index(finish))
+
+    def test_actor_draw_sample_boundaries_preserve_callback_and_shadow_order(self):
+        module = self.module()
+        name = 'soh/src/code/z_actor.c'
+        output, _ = module.project_header(name, (ROOT / name).read_bytes())
+        start = output.index(b'void Actor_Draw(PlayState* play, Actor* actor) {')
+        end = output.index(b'void func_800315AC(', start)
+        body = output[start:end]
+        markers = (
+            b'Lights_Draw(lights, play->state.gfxCtx);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 1);',
+            b'Actor_SetObjectDependency(play, actor);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 2);',
+            b'actor->draw(actor, play);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 3);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 4);',
+            b'actor->shape.shadowDraw(actor, lights, play);',
+            b'Shipyard_FrameProfileActorInstanceAdvance(actor->id, 5);',
+            b'FrameInterpolation_RecordCloseChild();',
+        )
+        positions = [body.index(marker) for marker in markers]
+        self.assertEqual(positions, sorted(positions))
+        for stage in range(1, 6):
+            self.assertEqual(body.count(f'Shipyard_FrameProfileActorInstanceAdvance(actor->id, {stage});'.encode()), 1)
+
     def module(self):
         path = ROOT / 'tools/shipyard/prepare_game.py'
         self.assertTrue(path.is_file(), 'game compiler projection missing')

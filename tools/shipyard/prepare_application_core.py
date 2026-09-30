@@ -25,6 +25,35 @@ def project(name,text):
         text=once(text,'auto existingEntry = std::find_if(table, table + tableSize, [id = file->messages[j].id](const auto& entry)',
                   'const uint16_t id = file->messages[j].id;\n            auto existingEntry = std::find_if(table, table + tableSize, [id](const MessageTableEntry& entry)')
     if name.endswith('/ResourceManagerHelpers.cpp'):
+        text=once(text,'->LoadResource(Path.c_str());','->LoadResource(Path);')
+        text=once(text, 'extern "C" Gfx* ResourceMgr_LoadGfxByName(const char* path) {',
+            '\n'.join(['extern "C" Gfx* ResourceMgr_LoadGfxByName(const char* path) {',
+            '    // MQ remapping keeps the authoritative preflight/load path.',
+            '    const bool isMq = ResourceMgr_IsGameMasterQuest() != 0;',
+            '    if (!isMq) {',
+            '        auto manager = Ship::Context::GetInstance()->GetResourceManager();',
+            '        auto cached = manager->GetSettledAlternate(path);',
+            '        if (cached) {',
+            '            auto displayList = std::static_pointer_cast<Fast::DisplayList>(cached);',
+            '            return (Gfx*)&displayList->Instructions[0];',
+            '        }', '    }']))
+        text=once(text,
+            '    auto res = std::static_pointer_cast<Fast::DisplayList>(ResourceMgr_GetResourceByNameHandlingMQ(path));\n    return (Gfx*)&res->Instructions[0];',
+            '\n'.join([
+            '    // Preserve raw-name cache precedence, then normalize the resource signature.',
+            '    // Resident normalized resources need no ready future; cold loads retain the worker path.',
+            '    if (!isMq && std::strncmp(path, "__OTR__", 7) == 0 &&',
+            '        std::strncmp(path + 7, "__OTR__", 7) != 0 &&',
+            '        std::strncmp(path + 7, "alt/", 4) != 0) {',
+            '        auto manager = Ship::Context::GetInstance()->GetResourceManager();',
+            '        auto raw = std::static_pointer_cast<Fast::DisplayList>(manager->GetCachedResource(std::string(path)));',
+            '        if (raw != nullptr) return (Gfx*)&raw->Instructions[0];',
+            '        const std::string normalized(path + 7);',
+            '        auto res = std::static_pointer_cast<Fast::DisplayList>(manager->LoadResource(normalized));',
+            '        return (Gfx*)&res->Instructions[0];',
+            '    }',
+            '    auto res = std::static_pointer_cast<Fast::DisplayList>(ResourceMgr_GetResourceByNameHandlingMQ(path));',
+            '    return (Gfx*)&res->Instructions[0];']))
         text='#include "soh/Enhancements/randomizer/SeedContext.h"\n#include <fast/resource/type/Texture.h>\n#include <fast/interpreter.h>\n#include <stb_image.h>\n'+text
         text=once(text,'pathStr.starts_with(sOtr)','Shipyard::Resources::starts_with(pathStr,sOtr)')
         raw=text.encode();edits=[]
@@ -36,6 +65,59 @@ def project(name,text):
                 edits.append((n.parent.start_byte,n.parent.end_byte,'{ const GfxPatch patch = '+right.text.decode()+'; '+left.text.decode()+' = patch; }'))
         assert len(edits)==3
         text=edits_apply(raw,edits)
+    if name.endswith('/ResourceManagerHelpers.cpp'):
+        # First draws of a new object or room otherwise load every skeleton,
+        # display list and texture synchronously on the game thread.
+        text='#include <ship/resource/archive/ArchiveManager.h>\n#include <algorithm>\n'+text
+        text=once(text,'extern "C" void ResourceMgr_LoadDirectory(const char* resName) {','''namespace {
+// Sorted archive names, built once by the game thread: a directory query is a
+// binary search instead of ArchiveManager's glob over every archive entry.
+const std::vector<std::string>& ShipyardArchiveNames() {
+    static std::vector<std::string> names;
+    static bool built = false;
+    if (!built) {
+        built = true;
+        auto files = Ship::Context::GetInstance()->GetResourceManager()->GetArchiveManager()->ListFiles("");
+        names.assign(files->begin(), files->end());
+        std::sort(names.begin(), names.end());
+    }
+    return names;
+}
+}
+
+// Queue every resource under the directory prefix on the resource workers at
+// the lowest priority. A draw that requests a queued file first still loads it
+// at the highest priority; the cache keeps a single instance either way.
+extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix) {
+    auto manager = Ship::Context::GetInstance()->GetResourceManager();
+    const std::vector<std::string>& names = ShipyardArchiveNames();
+    const std::string start(prefix);
+    for (std::vector<std::string>::const_iterator it = std::lower_bound(names.begin(), names.end(), start);
+         it != names.end() && it->compare(0, start.size(), start) == 0; ++it) {
+        manager->LoadResourceAsync(*it, false, BS::pr::lowest);
+    }
+}
+
+// The keep objects hold thousands of mostly-unused resources; the rest are
+// loaded because an actor about to draw needs them.
+extern "C" void ResourceMgr_PrefetchObject(const char* name) {
+    if (name == NULL || name[0] == '\\0' || std::strncmp(name, "gameplay_", 9) == 0) {
+        return;
+    }
+    ResourceMgr_PrefetchDirectory((std::string("objects/") + name + "/").c_str());
+}
+
+extern "C" void ResourceMgr_LoadDirectory(const char* resName) {''')
+    if name.endswith('/z_play_otr.cpp'):
+        text=once(text,'    play->sceneSegment = OTRPlay_LoadFile(play, scenePath.c_str());',
+            '''    // Rooms, their display lists and textures load in the background while
+    // the scene file itself loads at the highest priority below.
+    ResourceMgr_PrefetchDirectory(
+        StringHelper::Sprintf("scenes/%s/%s/", sceneVersion.c_str(), scene->sceneFile.fileName).c_str());
+    play->sceneSegment = OTRPlay_LoadFile(play, scenePath.c_str());''')
+        text=once(text,'extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {',
+            'extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix);\n\n'
+            'extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {')
     if name.endswith('/CrashHandlerExt.cpp'):
         text=re.sub(r'(static std::array<[^;{}]+> \w+)\{',r'\1 = {',text)
         text=text.replace('snprintf(', 'Shipyard::SohResources::snprintf(')

@@ -15,8 +15,10 @@ from platform_base import resolve
 def main():
     source = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
     projected = vertex_packing.transform(source)
-    if projected.count('Shipyard::Fast3D::Coordinate(') != 2:
-        raise AssertionError('Modern must use the shared UV numeric helper for both axes')
+    if projected.count('Shipyard::Fast3D::Coordinate(') != 0 or projected.count(']->Apply(v_arr[i]->') != 2:
+        raise AssertionError('Modern must use the shared per-triangle UV axes for both axes')
+    if projected.count('Shipyard::Fast3D::CoordinateAxis shipyardAxisStorage[2][2];') != 1:
+        raise AssertionError('Modern UV axes must be prepared once before the packing loop')
     if projected.count('#include "fast3d/coordinate.h"') != 1:
         raise AssertionError('Modern coordinate include must resolve through Shipyard')
     begin = vertex_packing.START
@@ -27,6 +29,17 @@ def main():
     # Preserve complete output expressions and branch structure. Only the
     # intended writes/conversions may differ between these extracted methods.
     restored = projected_body.replace('    float* shipyardVertexOutput = mBufVbo + mBufVboLen;\n', '')
+    # Hoisted preludes (UV axes first, then clamp bounds, colors and material
+    # inputs) all sit between the cursor and the loop.
+    prelude_begin = restored.index('    Shipyard::Fast3D::CoordinateAxis shipyardAxisStorage[2][2];')
+    restored = restored[:prelude_begin] + restored[restored.index(begin, prelude_begin):]
+    restored = restored.replace('shipyardClampS[t]', '(tex_width2[t] - 0.5f) / tex_width[t]')
+    restored = restored.replace('shipyardClampT[t]', '(tex_height2[t] - 0.5f) / tex_height[t]')
+    restored = re.sub(r'                // Begin shared invariant material reuse\.\n.*?                // End shared invariant material reuse\.\n', '', restored, flags=re.S)
+    for name, field, channels in [('shipyardFog', 'fog_color', 'rgb'), ('shipyardGrayscale', 'grayscale_color', 'rgba')]:
+        for index, channel in enumerate(channels):
+            restored = restored.replace('%s[%d]' % (name, index),
+                'Shipyard::Fast3D::UnitColor(mRdp->%s.%s)' % (field, channel))
     restored = restored.replace('    mBufVboLen = (size_t)(shipyardVertexOutput - mBufVbo);\n\n', '')
     restored = restored.replace('*shipyardVertexOutput++', 'mBufVbo[mBufVboLen++]')
     restored = re.sub(r'Shipyard::Fast3D::UnitColor\(([^()]*)\)', r'\1 / 255.0f', restored)
@@ -34,7 +47,7 @@ def main():
     uv_start = '            float u = v_arr[i]->u / 32.0f;'
     uv_end = '            bool clampS = tm & (1 << 2 * t);'
     original_uv = original_body[original_body.index(uv_start):original_body.index(uv_end)]
-    projected_uv = restored[restored.index('            const bool shipyardHalfTexel'):restored.index(uv_end)]
+    projected_uv = restored[restored.index('            mBufVbo[mBufVboLen++] = shipyardCoordinateS[t]'):restored.index(uv_end)]
     restored = restored.replace(projected_uv, original_uv, 1)
     if restored != original_body:
         raise AssertionError('Non-packing statement changed')
@@ -51,7 +64,15 @@ def main():
     if (ROOT / 'scratch/fast3d-xdk/generated/include/fast3d/coordinate.h').exists():
         raise AssertionError('Generated coordinate header shadows Shipyard')
     template = pathlib.Path(__file__).with_name('test_vertex_packing_contract.cpp').read_text(encoding='utf-8')
-    code = template.replace('// ORIGINAL_LOOP', original_body).replace('// PROJECTED_LOOP', projected_body)
+    def counted(body):
+        body = body.replace('switch (comb->shader_input_mapping[k][j])', 'switch (CountSelector(comb->shader_input_mapping[k][j]))')
+        body = re.sub(r'(Shipyard::Fast3D::UnitColor\(mRdp->(?:fog_color|grayscale_color)\.[rgba]\))', r'CountMaterial(\1)', body)
+        body = re.sub(r'(mRdp->(?:fog_color|grayscale_color)\.[rgba] / 255\.0f)', r'CountMaterial(\1)', body)
+        return body.replace('(tex_width2[t] - 0.5f) / tex_width[t]',
+                            'CountBound(tex_width2[t], tex_width[t])').replace(
+                            '(tex_height2[t] - 0.5f) / tex_height[t]',
+                            'CountBound(tex_height2[t], tex_height[t])')
+    code = template.replace('// ORIGINAL_LOOP', counted(original_body)).replace('// PROJECTED_LOOP', counted(projected_body))
     contract = folder / 'contract.cpp'
     contract.write_text(code, encoding='utf-8')
     environment = runpy.run_path(str(pathlib.Path(__file__).with_name('test_binary.py')))

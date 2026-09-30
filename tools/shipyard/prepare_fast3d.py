@@ -14,7 +14,16 @@ from prepare_graphics import feature_header,lower_api
 from cpp_ast import PARSER,walk
 from platform_base import resolve as resolve_platform_base
 resolve_platform_base(ROOT)
-from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split
+from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split, matrix_product
+from xbox360_platform.resource_lookup import (texture_hash_lookup, stateless_signature,
+                                               texture_command_manager, texture_hash_cache_handler,
+                                               texture_hash_borrowed_handler, texture_hash_epoch_handler)
+from xbox360_platform import texture_state
+import deferred_lit_fog
+import pipeline_phase_profile_projection
+import tri2_pair_projection
+import tri2_column_pack_projection
+import game_fill_discard_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT=ROOT/'scratch/fast3d-xdk'
@@ -34,7 +43,9 @@ def member_defaults(text,classname):
 
 
 def header(text):
-    text='#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n'+text
+    text=matrix_product.header(text)
+    text=texture_state.metadata_reference(text)
+    text='#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include "fast3d/command_stack.h"\n#include "fast3d/coordinate.h"\n'+text
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['header'](text)
     text=fast3d_triangle_split.header(text)
     text=combiner_lookup.header(text)
@@ -42,10 +53,23 @@ def header(text):
               '#include "fast3d/triangle_traits.h"\n#include "fast3d/triangle_pipeline.h"\n\nclass Interpreter {')
     text=once(text,'    GfxTextureCache mTextureCache{};',
               '    GfxTextureCache mTextureCache{};\n'
+              '    Shipyard::Resources::TextureHashCache<Fast::Texture> mXboxTextureHashCache;\n'
+              '    bool mXboxTileTrialEnabled = false;\n'
+              '    bool mXboxTileCaptureEnabled = false;\n'
+              '    bool mXboxDiscardGameDepth = false;\n'
+              '    void XboxPublishGameDepth();\n'
+              '    void XboxRetireGameDepth();\n'
               '    Shipyard::Fast3D::TextureBindings<SHADER_MAX_TEXTURES> mXboxTextureBindings;\n'
               '    GfxClipParameters mXboxClipParameters;\n'
               '    XboxTrianglePipelineKey mXboxPipelineKey;\n'
-              '    XboxTrianglePipelineResult mXboxPipelineResult;')
+              '    XboxTrianglePipelineResult mXboxPipelineResult;\n'
+              '    Shipyard::Fast3D::CoordinateAxis mXboxAxisS[2];\n'
+              '    Shipyard::Fast3D::CoordinateAxis mXboxAxisT[2];\n'
+              '    float mXboxClampS[2];\n'
+              '    float mXboxClampT[2];\n'
+              '    unsigned mXboxPipelineCertified;')
+    text=runpy.run_path(str(OWN/'resource_resolution_projection.py'))['header'](text)
+    text=game_fill_discard_projection.header(text)
     text=once(text,'    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);',
               '    void XboxEmitTriangle(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bool is_rect);\n'
               '    void XboxPrepareTrianglePipeline();')
@@ -71,6 +95,8 @@ def header(text):
               'float h_byte_scale, v_pixel_scale;\n    RawTexMetadata() : width(0), height(0), h_byte_scale(1), v_pixel_scale(1), type(TextureType::Error) {}')
     text=once(text,'bool enabled = false;','bool enabled;\n    ShaderMod(bool enabledValue=false, int16_t idValue=0, uint8_t typeValue=0) : enabled(enabledValue), id(idValue), type(typeValue) {}')
     text,defaults,arrays=member_defaults(text,'Interpreter')
+    text=deferred_lit_fog.header(text)
+    text=tri2_pair_projection.header(text)
     text=text.replace('constexpr size_t','const size_t').replace(' noexcept',' throw()').replace('#include <stdbool.h>','')
     text=once(text,'#include "backends/gfx_rendering_api.h"','#include "fast/backends/gfx_rendering_api.h"')
     return text,defaults,arrays
@@ -85,6 +111,18 @@ def triangle_split(text):
 
 
 def texture_bindings(text):
+    # The selected binding is an ownership certificate for its cache node:
+    # every path that can erase a node invalidates bindings first. A repeated
+    # exact key can therefore recover the map iterator from that node's LRU
+    # entry without hashing the key or traversing the unordered_map bucket.
+    text=once(text,'    TextureCacheMap::iterator it = mTextureCache.map.find(key);\n'
+              '    TextureCacheNode** n = &mRenderingState.mTextures[i];',
+              '    TextureCacheNode* xboxBoundNode = mXboxTextureBindings.Bound<TextureCacheNode>(i);\n'
+              '    TextureCacheMap::iterator it =\n'
+              '        xboxBoundNode && xboxBoundNode->first == key\n'
+              '            ? xboxBoundNode->second.lru_location->it\n'
+              '            : mTextureCache.map.find(key);\n'
+              '    TextureCacheNode** n = &mRenderingState.mTextures[i];')
     text=once(text,'void Interpreter::TextureCacheClear() {',
               'void Interpreter::TextureCacheClear() {\n    Flush();\n    mXboxTextureBindings.Invalidate();')
     text=once(text,'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {',
@@ -145,12 +183,11 @@ def static_arrays(text):
         values=decl.child_by_field_name('value');count=len([n for n in values.named_children if n.type!='comment'])
         if name=='tbl':typ='const char*'
         elif name=='ucode_attr_handlers':typ='UcodeAttributePointer'
-        elif name=='ucode_handlers':typ='const UcodeHandler*'
         else:raise ValueError('Unreviewed deduced static array '+name)
         replacement=('typedef const uint32_t (*UcodeAttributePointer)[7];\n' if name=='ucode_attr_handlers' else '')
         replacement+='static const std::array<'+typ+', '+str(count)+'> '+name+' = { '+values.text.decode()+' };'
         edits.append((node.start_byte,node.end_byte,replacement.encode()))
-    if len(edits)!=4:raise ValueError('Static array inventory drift')
+    if len(edits)!=3:raise ValueError('Static array inventory drift')
     for start,end,replacement in sorted(edits,reverse=True):source=source[:start]+replacement+source[end:]
     return source.decode()
 
@@ -205,7 +242,7 @@ def prepare():
         pending[name]=re.sub(r'\bconstexpr\b','const',sources[name])
     light='include/fast/resource/type/Light.h'
     pending[light]=once(sources[light],'using Resource::Resource;','Light(std::shared_ptr<Ship::ResourceInitData> initData) : Resource<LightEntry>(initData) {}').replace(' final :',' :')
-    text=sources['src/fast/interpreter.cpp']
+    text=matrix_product.source(sources['src/fast/interpreter.cpp'])
     # CreateShader passes only the path to LoadFile. The upstream local
     # ResourceInitData is never observed by that call or any later branch.
     text=once(text,
@@ -265,7 +302,89 @@ def prepare():
     text=once(text, '    struct GfxClipParameters clip_parameters = mRapi->GetClipParameters();',
               '    struct GfxClipParameters clip_parameters = mXboxClipParameters;')
     text=combiner_lookup.transform(text)
-    text=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))['transform'](text)
+    text=texture_hash_lookup(text)
+    text=texture_command_manager(text)
+    text=texture_hash_cache_handler(text)
+    for signature in ('void Interpreter::TextureCacheClear() {',
+                      'void Interpreter::TextureCacheDelete(const uint8_t* origAddr) {'):
+        text=once(text,signature,signature+'\n    mXboxTextureHashCache.Clear();')
+    text=once(text,'void Interpreter::RunGuiOnly() {',
+              'void Interpreter::RunGuiOnly() {\n    mXboxTextureHashCache.Clear();')
+    text=stateless_signature(text)
+    text=texture_state.exact_tile_updates(
+        text, enabled_expr='mXboxTileTrialEnabled',
+        capture_expr='mXboxTileCaptureEnabled',
+        observe_expr='ModernFrameProfile::ObserveTileState')
+    text=texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
+    triangle_pipeline=runpy.run_path(str(OWN/'triangle_pipeline_projection.py'))
+    text=triangle_pipeline['transform'](text)
+    text=triangle_pipeline['pipeline_mutation_stamps'](text)
+    text=pipeline_phase_profile_projection.transform(text)
+    text=deferred_lit_fog.transform(text)
+    start=text.index('void Interpreter::Run(Gfx* commands,')
+    end=text.index('\nvoid Interpreter::EndFrame()',start)
+    body=text[start:end]
+    # Profile the cost of retaining last frame's full-resolution color. The
+    # ordinary path keeps Modern's depth-only clear, while this opt-in matches
+    # historical 4.0.5's fresh color/depth game draw. GUI-only and explicit
+    # framebuffer transfers retain their existing contents.
+    body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->StartFrame());',
+              '    mXboxTileTrialEnabled =\n'
+              '        CVarGetInteger("gSettings.XboxTileStateDedupTrialProfile", 0) != 0;\n'
+              '    mXboxTileCaptureEnabled = ModernFrameProfile::CaptureResourceLookups() &&\n'
+              '        CVarGetInteger("gSettings.XboxTileStateDedupCaptureProfile", 0) != 0;\n'
+              '    Fast::ShipyardXenos::SetTilingGuardTrialEnabled(\n'
+              '        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0) != 0);\n'
+              '    Fast::ShipyardXenos::SetTile1PredicationTrialEnabled(\n'
+              '        CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0) != 0);\n'
+              '    (mXboxPipelineKey.valid=false, mRapi->StartFrame());')
+    body=once(body,'    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(false, true));',
+              '    const bool xboxFullColorClear =\n'
+              '        CVarGetInteger("gSettings.XboxFullColorClearProfile", 0) != 0;\n'
+              '    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(xboxFullColorClear, true));')
+    body=once(body,'    if (mRendersToFb) {\n        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));',
+              '    if (mRendersToFb) {\n'
+              '        if (mXboxDiscardGameDepth) Fast::ShipyardXenos::DiscardFramebufferDepth(mGameFb);\n'
+              '        mXboxDiscardGameDepth = false;\n'
+              '        (mXboxPipelineKey.valid=false, mRapi->StartDrawToFramebuffer(0, 1));')
+    # Debugger state changes only through GUI/game calls outside this walk;
+    # read it once per Run instead of an out-of-line call per command.
+    body=once(body,'    auto dbg = Ship::Context::GetInstance()->GetGfxDebugger();',
+              '    auto dbg = Ship::Context::GetInstance()->GetGfxDebugger();\n'
+              '    const bool xboxDebugging = dbg->IsDebugging();')
+    body=once(body,'        if (dbg->IsDebugging()) {','        if (xboxDebugging) {')
+    text=text[:start]+body+text[end:]
+    text=once(text,'void Interpreter::EndFrame() {',
+              'void Interpreter::EndFrame() {\n'
+              '    // Direct 720p rendering needs depth only after the final replay.\n'
+              '    if (mRendersToFb || mXboxDiscardGameDepth)\n'
+              '        Fast::ShipyardXenos::DiscardPresentationDepthOnEnd();\n'
+              '    if (mRendersToFb) {\n'
+              '        Fast::ShipyardXenos::DiscardPresentationColorOnEnd();\n'
+              '    }')
+    # GetPixelDepth reads this same target. The application publishes it after
+    # an update's final replay and retires it once the deferred read has run.
+    text=once(text,'uint16_t Interpreter::GetPixelDepth(float x, float y) {',
+              'void Interpreter::XboxPublishGameDepth() {\n'
+              '    Fast::ShipyardXenos::PublishFramebufferDepth(mRendersToFb ? mGameFb : 0);\n'
+              '}\n\n'
+              'void Interpreter::XboxRetireGameDepth() {\n'
+              '    Fast::ShipyardXenos::RetireFramebufferDepth();\n'
+              '}\n\n'
+              'uint16_t Interpreter::GetPixelDepth(float x, float y) {')
+    text=once(text,'#define NOMINMAX\n',
+              '#define NOMINMAX\n#include "xenos/depth_discard.h"\n'
+              '#include "xenos/tiling_guard_trial.h"\n'
+              '#include "xenos/tile1_predication_trial.h"\n'
+              '#include "libultraship/bridge/consolevariablebridge.h"\n')
+    text=game_fill_discard_projection.transform(text)
+    from frame_profile_projection import interpreter as profile_interpreter
+    text=profile_interpreter(text)
+    text=texture_hash_borrowed_handler(text)
+    text=texture_hash_epoch_handler(text)
+    text=runpy.run_path(str(OWN/'resource_resolution_projection.py'))['transform'](text)
+    text=tri2_pair_projection.transform(text)
+    text=tri2_column_pack_projection.transform(text)
     pending['src/fast/interpreter.cpp']=text
     pending['include/stdbool.h']='#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C sources\n#endif\n'
     stale_color=OUT/'generated/include/fast3d/unit_color.h'

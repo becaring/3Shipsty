@@ -1,5 +1,6 @@
 #include "speech/XboxSpeechSynthesizer.h"
 #include "speech/data_boundary.h"
+#include "async/native.h"
 #include <espeak-ng/espeak_ng.h>
 #include <cstdio>
 #include <cstring>
@@ -28,6 +29,9 @@ bool XboxSpeechSynthesizer::DoInit(){
     if(FAILED(result)){Log("XAudio2 speech initialization failed",result);DoUninitialize();return false;}
     thread_=CreateThread(NULL,256*1024,WorkerEntry,this,0,NULL);
     if(!thread_){Log("speech worker creation failed",GetLastError());DoUninitialize();return false;}
+    // Synthesis runs on the service hardware thread rather than inheriting the
+    // title thread's; placement is advisory and a refused move keeps it there.
+    XSetThreadProcessor(thread_,Shipyard::Async::ServiceProcessor);
     Log("real eSpeak NG speech worker initialized",sampleRate_);return true;
 }
 void XboxSpeechSynthesizer::DoUninitialize(){

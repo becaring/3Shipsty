@@ -42,6 +42,11 @@ int main() {
     XboxTrianglePipelineResult result = {};
     result.comb = &comb;
     XboxTrianglePipelineKey key;
+    require((reinterpret_cast<uintptr_t>(key.rendering) & 3) == 0,
+            "rendering certificate bytes are not word aligned");
+    require((reinterpret_cast<uintptr_t>(key.tiles[0]) & 3) == 0 &&
+            (reinterpret_cast<uintptr_t>(key.tiles[1]) & 3) == 0,
+            "tile certificate bytes are not word aligned");
     key.Capture(owner, result);
     require(key.Matches(owner), "unchanged modern state did not certify");
     for (int i=0; i<100; ++i) require(key.Matches(owner), "cached clip changed");
@@ -88,7 +93,28 @@ int main() {
     require(key.Matches(owner), "original backend clip not restored after reinit");
     require(owner.backend.clipReads==2, "reinit did not refresh clip");
     owner.rdp.textures_changed[0] = true;
-    require(!key.Matches(owner), "used dirty texture reused");
+    // A byte-identical reload restores the pipeline; any byte of the reloaded
+    // entry or either palette pointer still forces the import.
+    require(key.Matches(owner), "identical reloaded texture not restored");
+    // Both TMEM entries: an import may fall back to the other entry.
+    unsigned char* image = reinterpret_cast<unsigned char*>(&owner.rdp.loaded_texture[0]);
+    for (unsigned i=0; i<sizeof(owner.rdp.loaded_texture); ++i) {
+        image[i]^=1;
+        require(!key.Matches(owner), "reloaded texture byte missed");
+        image[i]^=1;
+    }
+    for (unsigned half=0; half<2; ++half) {
+        owner.rdp.palettes[half] = reinterpret_cast<const uint8_t*>(&owner);
+        require(!key.Matches(owner), "reloaded palette pointer missed");
+        owner.rdp.palettes[half] = NULL;
+    }
+    require(key.Matches(owner), "identical reload not restored after palette checks");
+    // Certify clears the used slot's flag, exactly as upstream's import would;
+    // the unused slot's flag is left alone.
+    owner.rdp.textures_changed[1] = true;
+    require(key.Certify(owner) && !owner.rdp.textures_changed[0] && owner.rdp.textures_changed[1],
+            "certified reload did not clear only the used dirty flag");
+    owner.rdp.textures_changed[1] = false;
     owner.rdp.textures_changed[0] = false;
     owner.rdp.textures_changed[1] = true;
     require(key.Matches(owner), "unused dirty texture blocked reuse");

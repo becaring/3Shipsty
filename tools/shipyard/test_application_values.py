@@ -28,6 +28,10 @@ def main():
             audio=(ROOT/'libultraship/include/ship/audio/AudioPlayer.h').read_text()
             definition=re.search(r'struct AudioSettings \{.*?\n\};',audio,re.S)[0]
             source=source.replace('#include "ship/audio/AudioSettings.h"','#include "ship/audio/AudioChannelsSetting.h"\nnamespace Ship {\n'+definition+'\n}\n')
+        if projected:
+            printer=function(text,'OTRGfxPrint').text.decode()
+            assert printer.count('static const uint32_t ') == 4
+            assert 'std::vector<uint32_t>' not in printer
         for name in ['StringToU16','OTRGfxPrint']:source+=function(text,name).text.decode()+'\n'
         ctor=function(text,'OTRGlobals::OTRGlobals').text.decode()
         if projected:
@@ -72,7 +76,14 @@ for(unsigned i=0x10000;i<=0x10FFFF;i+=997){std::wstring wide=StringToU16(Utf8(i)
 printf("unicode %u %llu\\n",count,digest);return 0;}
 '''
         stable(folder/'contract.cpp',source)
-        flags=json.loads((ROOT/'scratch/soh-ui-xdk/host-projected/run.json').read_text())['command']
+        ui_host=ROOT/'scratch/soh-ui-xdk/host-projected/run.json'
+        if ui_host.is_file():
+            flags=json.loads(ui_host.read_text())['command']
+        else:
+            # The value contract only needs the UI include roots; do not rerun
+            # the unchanged UI projector just to recreate its host receipt.
+            from prepare_soh_ui import includes as ui_includes, OUT as ui_out, BASE as ui_base
+            flags=['/I'+str(ui_out/'generated'/ui_base)]+['/I'+str(p) for p in ui_includes()]
         header=ROOT/('scratch/resource-manager-xdk/generated/include' if projected else 'libultraship/include')
         command=[str(compiler),'/nologo','/std:c++20','/utf-8','/EHsc','/MD','/DF3DEX_GBI_2','/DCONTROLLERBUTTONS_T=uint32_t','/I'+str(header)]+[f for f in flags if f.startswith('/I')]
         command+=[str(folder/'contract.cpp'),'/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]

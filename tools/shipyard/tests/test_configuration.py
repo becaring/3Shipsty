@@ -42,6 +42,7 @@ def host(projected):
                   PLATFORM_BASE,PLATFORM_BASE/'sources']+env['includes'](True)
         sources=[audit,ROOT/'scratch/resource-manager-xdk/generated/src/ship/utils/StringHelper.cpp',
                  PLATFORM_BASE/'sources/json/json.cpp',PLATFORM_BASE/'sources/filesystem/filesystem.cpp',
+                 PLATFORM_BASE/'sources/storage/atomic_file.cpp',
                  PLATFORM_BASE / 'sources/async/native.cpp',PLATFORM_BASE/'sources/clock/chrono.cpp',
                  ROOT/'platform/shipyard/logging/environment.cpp']
     else:
@@ -67,10 +68,23 @@ def host(projected):
     (folder/'verification.json').write_text(json.dumps(dict(command=command,exit=result.returncode,stdout=result.stdout,stderr=result.stderr,
          scope='Current Config methods excluding live-window backend selection',target_runtime_executed=False),indent=2)+'\n')
     if result.returncode:raise RuntimeError('Config contract failed: '+result.stderr)
-    return result.stdout
+    counts=[]
+    for metric in ('config_lookup_allocations','config_lookup_after_save_allocations'):
+        match=re.search(metric+r'=(\d+)',result.stderr)
+        if not match:raise RuntimeError('Config allocation probe missing: '+metric+' '+result.stderr)
+        counts.append(int(match.group(1)))
+    match=re.search(r'config_save_allocations=(\d+)',result.stderr)
+    if not match:raise RuntimeError('Config save allocation probe missing: '+result.stderr)
+    return result.stdout,counts,int(match.group(1))
 
 
 if __name__=='__main__':
-    original=host(False);projected=host(True)
+    original,original_allocations,original_save=host(False)
+    projected,projected_allocations,projected_save=host(True)
     if original!=projected:raise RuntimeError('Original/projected Config behavior differs')
-    print('Current Config nested values, arrays, copies, erasure, version updates, file save/reload and malformed fallback agree; native audio/backend metadata checks pass')
+    if any(old<1000 or new*10>=old for old,new in zip(original_allocations,projected_allocations)):
+        raise RuntimeError('Flattened Config leaf lookup failed to remove repeated allocations: '
+                           +str((original_allocations,projected_allocations)))
+    print('Current Config behavior agrees for scalar, object, missing, array, escaped and wildcard paths; '
+          'allocation counts for 100 repeated reads '+str(original_allocations)+' -> '+str(projected_allocations)
+          +'; one Save '+str(original_save)+' -> '+str(projected_save))

@@ -48,6 +48,8 @@ def transform(name,text):
         text=once(text,'switch (GetWindowBackend()) {','switch (GetWindowBackend().GetValue()) {\n        case Ship::WindowBackend::FAST3D_XENOS:\n            mWindowManagerApi=new GfxWindowBackendXenos();\n            mRenderingApi=new GfxRenderingAPIXenos();\n            break;')
         text=once(text,'            SPDLOG_ERROR("Could not load the correct rendering backend");\n            break;',
                   '            throw std::runtime_error("Could not load the configured rendering backend");')
+        from frame_profile_projection import presentation as profile_presentation
+        text = profile_presentation(text)
         for typename in ('Ship::Coords','Ship::CoordsF'):
             for method in (('GetMousePos','GetMouseDelta') if typename=='Ship::Coords' else ('GetMouseWheel',)):
                 begin=text.index(typename+' Fast3dWindow::'+method+'()');end=text.index('\n}',begin)

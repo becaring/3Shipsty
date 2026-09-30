@@ -1,6 +1,7 @@
 """Native ABI plus host pixel/cache boundaries; never claims GPU execution."""
 from pathlib import Path
 import json
+import re
 import runpy
 import sys
 ROOT=Path(__file__).resolve().parents[3]
@@ -41,17 +42,25 @@ int main(){
     flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [PLATFORM_BASE/'sources/xenos',OWN,OUT/'generated',ROOT/'scratch/fast3d-xdk/generated/include',ROOT/'scratch/imgui-xdk/generated',PLATFORM_BASE/'sources/graphics']]
     env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
     result=env['invoke']([folder/'contract.exe'],folder,'run')
-    core=(PLATFORM_BASE/'sources/xenos/core.cpp').read_text()
+    # Formatting changes preserve the literal SDK slots and VMX contracts.
+    core=re.sub(r'\s+', '', (PLATFORM_BASE/'sources/xenos/core.cpp').read_text())
     assert all('SetTexture('+str(slot)+',texture)' in core for slot in range(6))
     assert 'SetTexture(tile,texture)' not in core
     assert core.count('__vxor(__lvx(cached,')==6
     assert core.count('__stvx(__lvx(values,')==6
     assert 'native_state.binding_constants_valid=false;' in core
     assert 'published_framebuffer_image=image;' in core
-    assert 'void DestroyFramebufferNative(int id)' in core
-    assert 'void ClearRegion(float x0,float y0,float x1,float y1)' in core
+    assert 'voidDestroyFramebufferNative(intid)' in core
+    assert 'voidClearRegion(floatx0,floaty0,floatx1,floaty1)' in core
     assert 'Smash360_' not in core and 'SoH_' not in core
-    assert 'ShipyardXenos::SetShaderCache(NULL)' in (OWN/'api.cpp').read_text()
+    api=re.sub(r'\s+', '', (OWN/'api.cpp').read_text())
+    assert 'ShipyardXenos::SetShaderCache(NULL)' not in api
+    assert 'ShipyardXenos::SetShaderCache(&cache)' in api
+    assert 'Shipyard::Xenos::LoadShaderCode' in api and 'Shipyard::Xenos::StoreShaderCode' in api
+    # Prebuilt programs by key, gated on the probe regenerating the pack's source.
+    assert 'Shipyard::Xenos::StoreShaderCode,PackedProgram}' in api
+    assert 'PackMatchesBuild()||!Shipyard::Xenos::FindPackedProgram(' in api
+    assert api.index('Shipyard::IO::ShutdownShaderWrites()') < api.index('ShipyardXenos::Shutdown()')
     assert not (OUT/'generated/native.cpp').exists()
     stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],
                                                   target_runtime_executed=False,

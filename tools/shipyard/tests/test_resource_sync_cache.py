@@ -25,7 +25,7 @@ class SyncCacheFastPath(unittest.TestCase):
         lookup = body.index("auto cachedResource = GetCachedResource(identifier, loadExact);")
         early_return = body.index("return cachedResource;", lookup)
         async_miss = body.index(
-            "auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();"
+            "resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();"
         )
         self.assertLess(lookup, early_return)
         self.assertLess(early_return, async_miss)
