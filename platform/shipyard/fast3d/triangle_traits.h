@@ -17,10 +17,9 @@ struct XboxTrianglePipelineTraits {
     template<class Owner> static unsigned EffectiveTile(const Owner& owner, unsigned slot) {
         return unsigned(owner.mRdp->first_tile_index) + slot;
     }
-    // ImportTexture keys only on the loaded entry's address, sizes and flags,
-    // the render tile, and palette pointers for CI formats; this consumer has
-    // no framebuffer-mirror import. An identical reload therefore finds the
-    // node already bound, as in the SoH 4.0.5 Xbox renderer.
+    // ImportTexture keys on the loaded entry, tile and CI palette pointers.
+    // This consumer has no framebuffer-mirror import, so a byte-identical
+    // reload resolves to the bound node.
     template<class Owner> static bool RestoresReloadedTextures(const Owner&) {
         return true;
     }

@@ -78,11 +78,9 @@ def syntax(text):
 
 
 def concurrent_cache(text):
-    # SoH itself only ever runs one load at a time; object and scene prefetch
-    # run several. Every cache map access takes mMutex, and the first
-    # published instance of a path wins: game code keeps raw pointers into
-    # cached resources (OTRPlay_LoadFile, scene commands), so replacing an
-    # entry would free the instance it holds.
+    # Prefetch can load a path concurrently. Recheck publication under mMutex
+    # and retain the first cached instance: game code holds raw pointers into
+    # resources, so replacing that instance could invalidate those pointers.
     text=once(text,
               '        mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
               '        InterlockedIncrement(&mXboxLookupGeneration);\n'
