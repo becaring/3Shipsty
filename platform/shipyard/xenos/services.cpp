@@ -72,6 +72,11 @@ const char* names[PhaseCount] = {"graph", "interpolation", "graphics", "readines
     "present_end_frame", "present_swap_begin", "present_finish_render", "present_swap_end", "pixel_depth_read"};
 // Resource workers must never write the interpreter thread's profiling buckets.
 __declspec(thread) bool inInterpreter=false;
+// Synchronous loads run on the calling thread and may nest (a resource that
+// loads another). Only the frame thread records them, game side and
+// interpreter alike, and only the outermost load of a nest.
+__declspec(thread) bool onFrameThread=false;
+__declspec(thread) unsigned resourceWaitDepth=0;
 volatile LONG observeWorkers=0, workerProcessorMask=0, workerJobs=0;
 struct ResourceLookupCounters { unsigned calls, alternate, resolved, fallback, probes, textureHits, textureMisses, pathHits, pathMisses; };
 ResourceLookupCounters resourceLookups = {};
@@ -225,6 +230,7 @@ void RecordTextureHashPhase(TextureHashSample& sample) {
 }
 CommandSampler commandSampler(Clock);
 void BeginFrame(bool enabled) {
+    onFrameThread = true;
     interpreterDetailsEnabled = enabled &&
         CVarGetInteger("gSettings.XboxInterpreterDetailsProfile", 0) != 0;
     // Native details include full vertex tile-coverage scans and draw timers.
@@ -309,11 +315,13 @@ void EndActorInstance(int actorId, uint64_t started) {
     }
 }
 bool BeginResourceWait() {
-    if (!inInterpreter || !accumulator.enabled) return false;
-    accumulator.Begin(ResourceWait);
+    if (!onFrameThread || !accumulator.enabled) return false;
+    if (resourceWaitDepth++ == 0) accumulator.Begin(ResourceWait);
     return true;
 }
-void EndResourceWait() { accumulator.End(ResourceWait); }
+void EndResourceWait() {
+    if (resourceWaitDepth && --resourceWaitDepth == 0) accumulator.End(ResourceWait);
+}
 bool CaptureResourceLookups() { return inInterpreter && interpreterDetailsEnabled; }
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes) {
     ++resourceLookups.calls;

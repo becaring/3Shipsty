@@ -28,6 +28,15 @@ def main():
 #include <cstdarg>
 #include <algorithm>
 #include <thread>
+// Deterministic host stand-in for the memory line emitted by the runtime.
+struct MEMORYSTATUS { unsigned dwLength; size_t dwAvailPhys, dwTotalPhys; };
+unsigned memoryReads=0;
+void GlobalMemoryStatus(MEMORYSTATUS* memory) {
+    assert(memory->dwLength==sizeof(*memory));
+    ++memoryReads;
+    memory->dwAvailPhys=128u*1024u*1024u;
+    memory->dwTotalPhys=512u*1024u*1024u;
+}
 struct FILETIME { unsigned dwLowDateTime,dwHighDateTime; };
 unsigned cpuReads=0, processor=0;
 bool failCpu=false;
@@ -51,7 +60,12 @@ struct LARGE_INTEGER { long long QuadPart; };
 unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
 void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart=1000; }
-void Shipyard_Log(const char*, ...) { ++logCalls; }
+unsigned memoryLogs=0, slowestActorLogs=0;
+void Shipyard_Log(const char* format, ...) {
+    ++logCalls;
+    if (strncmp(format,"frame-profile memory ",21)==0) ++memoryLogs;
+    if (strncmp(format,"frame-profile actor_slowest ",28)==0) ++slowestActorLogs;
+}
 bool tri2CVarOn=false;
 unsigned tri2CVarReads=0;
 bool vtxCVarOn=false;
@@ -125,7 +139,7 @@ int main() {
         if (CaptureResourceLookups()) ObserveTextureHashCache(true);
         { PhaseScope recording(RecordingRotate); }
     }
-    assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0);
+    assert(clockReads==0 && frequencyReads==0 && logCalls==0 && cpuReads==0 && memoryReads==0);
     auto disabledActor = Shipyard_FrameProfileActorInstanceBegin(17);
     for(unsigned stage=1;stage<=5;++stage) Shipyard_FrameProfileActorInstanceAdvance(17,stage);
     Shipyard_FrameProfileActorInstanceEnd(17, disabledActor);
@@ -204,7 +218,11 @@ int main() {
     assert(renderCpu.samples==119 && renderCpu.ticks==119000 && renderCpu.processorMask==1);
     assert(tri2CVarReads==1 && !tri2ProfileEnabled);
     assert(vtxCVarReads==1 && !vtxHashProfileEnabled);
-    assert(!BeginResourceWait());
+    // Game-side synchronous loads on the frame thread are recorded too, and a
+    // nested load (a resource that loads another) counts once.
+    { unsigned before=accumulator.phases[ResourceWait].calls;
+      { ResourceWaitScope outer; { ResourceWaitScope inner; } }
+      assert(accumulator.phases[ResourceWait].calls==before+1); }
     Shipyard_FrameProfileGameUpdateBegin();
     Shipyard_FrameProfilePlayUpdateBegin(); Shipyard_FrameProfilePlayUpdateEnd();
     Shipyard_FrameProfilePlayDrawRecordBegin(); Shipyard_FrameProfilePlayDrawRecordEnd();
@@ -380,7 +398,9 @@ int main() {
     { ResourceWaitScope wait; }
     assert(accumulator.phases[ResourceWait].calls==waits+1);
     End(Interpreter);
-    assert(!BeginResourceWait());
+    { unsigned before=accumulator.phases[ResourceWait].calls;
+      { ResourceWaitScope wait; }
+      assert(accumulator.phases[ResourceWait].calls==before+1); }
     processor=2; Begin(AudioGenerate); End(AudioGenerate);
     ObserveResourceWorker(); processor=4; ObserveResourceWorker();
     assert(workerJobs==2 && workerProcessorMask==20);
@@ -394,7 +414,7 @@ int main() {
         for(unsigned stage=1;stage<=5;++stage) Shipyard_FrameProfileActorInstanceAdvance(17,stage);
         Shipyard_FrameProfileActorInstanceEnd(17,started);
     }
-    assert(actorDraw[17].calls==128 && actorDraw[17].samples>0);
+    assert(actorDraw[17].calls==128 && actorDraw[17].samples==128);
     assert(actorDraw[17].ticks>0);
     assert(clockReads-actorClockReads==actorDraw[17].samples*7);
     uint64_t actorStageTotal=0;
@@ -411,7 +431,8 @@ int main() {
     assert(accumulator.phases[ActorLightsGlow].calls==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==56+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==58+PhaseCount);
+    assert(memoryReads==1 && memoryLogs==1 && slowestActorLogs==1);
     assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
     for(unsigned stage=0;stage<6;++stage) assert(actorDraw[17].stageTicks[stage]==0);
     assert(dust.draws==0 && dust.updatesWithDust==0);

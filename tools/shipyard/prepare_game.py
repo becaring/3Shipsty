@@ -482,8 +482,8 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             'Gameplay update and recorder-wrapped draw profile declarations')
         # Scene init loads the scene, its first room and its objects
         # synchronously. Prefetch queued meanwhile (the scene directory, every
-        # object) only competes with those loads for the two resource workers
-        # and the archive lock, so it is held until the scene is ready.
+        # object) would only compete with those loads for the archive lock, so
+        # it is held until the scene is ready.
         replace_projected_once(
             'void Play_Init(GameState* thisx) {',
             'extern void ResourceMgr_HoldPrefetch(void);\n'
@@ -501,12 +501,48 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             '    ResourceMgr_ReleasePrefetch();\n}',
             'Release prefetch after scene init')
         changes.append('Queue scene and object prefetch after scene init instead of during it')
+        # A transition has its destination resolved (randomizer entrance
+        # overrides are applied where the exit is taken) before the screen
+        # fades out, and its setup reads that same entrance entry for the BGM
+        # decision. Queueing the destination scene there lets it load during
+        # the fade. This is only a head start: Play_Init still queues the scene
+        # it actually spawns, so a destination changed later costs a wasted
+        # prefetch, never a wrong load. Return-to-previous markers
+        # (ENTR_RETURN_*) and anything outside the table are skipped.
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void OTRPlay_PrefetchScene(s32 sceneId);\n'
+            'void Play_Init(GameState* thisx) {',
+            'Transition destination prefetch declaration')
+        replace_projected_once(
+            '                        if (gSaveContext.cutsceneIndex >= 0xFFF0) {\n'
+            '                            sceneLayer = SCENE_LAYER_CUTSCENE_FIRST + (gSaveContext.cutsceneIndex & 0xF);\n'
+            '                        }\n',
+            '                        if (gSaveContext.cutsceneIndex >= 0xFFF0) {\n'
+            '                            sceneLayer = SCENE_LAYER_CUTSCENE_FIRST + (gSaveContext.cutsceneIndex & 0xF);\n'
+            '                        }\n'
+            '                        if (play->nextEntranceIndex >= 0 &&\n'
+            '                            play->nextEntranceIndex + sceneLayer < ENTR_MAX) {\n'
+            '                            OTRPlay_PrefetchScene(gEntranceTable[play->nextEntranceIndex + sceneLayer].scene);\n'
+            '                        }\n',
+            'Prefetch the transition destination during the fade-out')
+        changes.append('Prefetch the resolved transition destination during the fade-out')
+        # Before an update records: below the memory floor, drop scene and
+        # object directories nothing can still reference (see
+        # ResourceMgr_EvictUnusedDirectories). Almost always a counter check.
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void ResourceMgr_EvictUnusedDirectories(void);\n'
+            'void Play_Init(GameState* thisx) {',
+            'Resource eviction declaration')
         replace_projected_once(
             '        Play_Update(play);',
+            '        ResourceMgr_EvictUnusedDirectories();\n'
             '        Shipyard_FrameProfilePlayUpdateBegin();\n'
             '        Play_Update(play);\n'
             '        Shipyard_FrameProfilePlayUpdateEnd();',
             'Gameplay update profile boundary')
+        changes.append('Evict unreferenced scene and object directories below a memory floor')
         replace_projected_once(
             '    FrameInterpolation_StartRecord();\n'
             '    Play_Draw(play);\n'

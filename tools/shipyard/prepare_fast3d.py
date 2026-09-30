@@ -110,6 +110,115 @@ def triangle_split(text):
     return fast3d_triangle_split.transform(text, TRIANGLE_SPLIT_BOUNDARY)
 
 
+TEXEL_HELPERS = """
+// Xbox: an N64 RGBA5551 texel as the four RGBA bytes the importers write,
+// computed once per texel (or once per palette entry) and stored as one word.
+// Each table value is exactly SCALE_5_8 of its 5-bit channel.
+static const uint8_t kXboxScale5To8[32] = { 0, 8, 16, 24, 32, 41, 49, 57, 65, 74, 82, 90, 98, 106, 115, 123,
+                                             131, 139, 148, 156, 164, 172, 180, 189, 197, 205, 213, 222, 230, 238, 246, 255 };
+static inline uint32_t XboxRgba5551(uint16_t col16) {
+    return (uint32_t(kXboxScale5To8[col16 >> 11]) << 24) | (uint32_t(kXboxScale5To8[(col16 >> 6) & 0x1f]) << 16) |
+           (uint32_t(kXboxScale5To8[(col16 >> 1) & 0x1f]) << 8) | ((col16 & 1) ? 0xFFu : 0u);
+}
+static inline void XboxStoreRgba(uint8_t* out, uint32_t rgba) {
+#if defined(_M_PPC)
+    // Big-endian: the word's bytes are R, G, B, A in memory order.
+    *reinterpret_cast<uint32_t*>(out) = rgba;
+#else
+    out[0] = (uint8_t)(rgba >> 24);
+    out[1] = (uint8_t)(rgba >> 16);
+    out[2] = (uint8_t)(rgba >> 8);
+    out[3] = (uint8_t)rgba;
+#endif
+}
+"""
+
+
+def texel_decode(text):
+    # First use of every texture decodes it on the render thread. RGBA16 and
+    # the palette formats cover most of OoT: expand each texel (or each
+    # palette entry, on its first use in an import) straight to its RGBA word
+    # instead of a division and four byte stores per texel. Output bytes are
+    # unchanged; the upload buffer is malloc-aligned and written at 4 * i.
+    text=once(text,'#define SCALE_8_3(VAL_) ((VAL_) / 0x24)\n',
+              '#define SCALE_8_3(VAL_) ((VAL_) / 0x24)\n'+TEXEL_HELPERS)
+    text=once(text,
+              '            uint16_t col16 = (addr[2 * clrIdx] << 8) | addr[2 * clrIdx + 1];\n'
+              '            uint8_t a = col16 & 1;\n'
+              '            uint8_t r = col16 >> 11;\n'
+              '            uint8_t g = (col16 >> 6) & 0x1f;\n'
+              '            uint8_t b = (col16 >> 1) & 0x1f;\n'
+              '            mTexUploadBuffer[4 * i + 0] = SCALE_5_8(r);\n'
+              '            mTexUploadBuffer[4 * i + 1] = SCALE_5_8(g);\n'
+              '            mTexUploadBuffer[4 * i + 2] = SCALE_5_8(b);\n'
+              '            mTexUploadBuffer[4 * i + 3] = a ? 255 : 0;\n',
+              '            uint16_t col16 = (addr[2 * clrIdx] << 8) | addr[2 * clrIdx + 1];\n'
+              '            XboxStoreRgba(&mTexUploadBuffer[4 * i], XboxRgba5551(col16));\n')
+    text=once(text,
+              '    SUPPORT_CHECK(fullImageLineSizeBytes == lineSizeBytes);\n\n'
+              '    for (uint32_t i = 0; i < sizeBytes * 2; i++) {\n'
+              '        uint8_t byte = addr[i / 2];\n'
+              '        uint8_t idx = (byte >> (4 - (i % 2) * 4)) & 0xf;\n'
+              '        uint16_t col16 = (palette[idx * 2] << 8) | palette[idx * 2 + 1]; // Big endian load\n'
+              '        uint8_t a = col16 & 1;\n'
+              '        uint8_t r = col16 >> 11;\n'
+              '        uint8_t g = (col16 >> 6) & 0x1f;\n'
+              '        uint8_t b = (col16 >> 1) & 0x1f;\n'
+              '        mTexUploadBuffer[4 * i + 0] = SCALE_5_8(r);\n'
+              '        mTexUploadBuffer[4 * i + 1] = SCALE_5_8(g);\n'
+              '        mTexUploadBuffer[4 * i + 2] = SCALE_5_8(b);\n'
+              '        mTexUploadBuffer[4 * i + 3] = a ? 255 : 0;\n'
+              '    }\n',
+              '    SUPPORT_CHECK(fullImageLineSizeBytes == lineSizeBytes);\n\n'
+              '    // Each palette entry is converted on its first use, so only the\n'
+              '    // entries the texture indexes are read, as before.\n'
+              '    uint32_t xboxPalette[16];\n'
+              '    uint8_t xboxReady[16];\n'
+              '    memset(xboxReady, 0, sizeof(xboxReady));\n'
+              '    for (uint32_t i = 0; i < sizeBytes * 2; i++) {\n'
+              '        uint8_t byte = addr[i / 2];\n'
+              '        uint8_t idx = (byte >> (4 - (i % 2) * 4)) & 0xf;\n'
+              '        if (!xboxReady[idx]) {\n'
+              '            xboxPalette[idx] = XboxRgba5551((uint16_t)((palette[idx * 2] << 8) | palette[idx * 2 + 1]));\n'
+              '            xboxReady[idx] = 1;\n'
+              '        }\n'
+              '        XboxStoreRgba(&mTexUploadBuffer[4 * i], xboxPalette[idx]);\n'
+              '    }\n')
+    text=once(text,
+              '    for (uint32_t i = 0, j = 0; i < sizeBytes; j += fullImageLineSizeBytes - lineSizeBytes) {\n'
+              '        for (uint32_t k = 0; k < lineSizeBytes; i++, k++, j++) {\n'
+              '            uint8_t idx = addr[j];\n'
+              '            uint16_t col16 = (mRdp->palettes[idx / 128][(idx % 128) * 2] << 8) |\n'
+              '                             mRdp->palettes[idx / 128][(idx % 128) * 2 + 1]; // Big endian load\n'
+              '            uint8_t a = col16 & 1;\n'
+              '            uint8_t r = col16 >> 11;\n'
+              '            uint8_t g = (col16 >> 6) & 0x1f;\n'
+              '            uint8_t b = (col16 >> 1) & 0x1f;\n'
+              '            mTexUploadBuffer[4 * i + 0] = SCALE_5_8(r);\n'
+              '            mTexUploadBuffer[4 * i + 1] = SCALE_5_8(g);\n'
+              '            mTexUploadBuffer[4 * i + 2] = SCALE_5_8(b);\n'
+              '            mTexUploadBuffer[4 * i + 3] = a ? 255 : 0;\n'
+              '        }\n'
+              '    }\n',
+              '    // Each palette entry is converted on its first use: a texture that\n'
+              '    // indexes only the first 128 entries never reads the second half.\n'
+              '    uint32_t xboxPalette[256];\n'
+              '    uint8_t xboxReady[256];\n'
+              '    memset(xboxReady, 0, sizeof(xboxReady));\n'
+              '    for (uint32_t i = 0, j = 0; i < sizeBytes; j += fullImageLineSizeBytes - lineSizeBytes) {\n'
+              '        for (uint32_t k = 0; k < lineSizeBytes; i++, k++, j++) {\n'
+              '            uint8_t idx = addr[j];\n'
+              '            if (!xboxReady[idx]) {\n'
+              '                xboxPalette[idx] = XboxRgba5551((uint16_t)((mRdp->palettes[idx / 128][(idx % 128) * 2] << 8) |\n'
+              '                                                           mRdp->palettes[idx / 128][(idx % 128) * 2 + 1]));\n'
+              '                xboxReady[idx] = 1;\n'
+              '            }\n'
+              '            XboxStoreRgba(&mTexUploadBuffer[4 * i], xboxPalette[idx]);\n'
+              '        }\n'
+              '    }\n')
+    return text
+
+
 def texture_bindings(text):
     # The selected binding is an ownership certificate for its cache node:
     # every path that can erase a node invalidates bindings first. A repeated
@@ -295,6 +404,7 @@ def prepare():
     text=dispatch_owner['transform'](text)
     text=triangle_split(text)
     text=texture_bindings(text)
+    text=texel_decode(text)
     text=runpy.run_path(str(OWN/'shader_metadata_projection.py'))['transform'](text)
     text=once(text, '    mRapi->Init();\n    for (std::map<ColorCombinerKey, ColorCombiner>::iterator entry',
               '    mRapi->Init();\n    mXboxClipParameters = mRapi->GetClipParameters();\n'

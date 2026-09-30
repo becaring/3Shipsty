@@ -24,14 +24,14 @@ class SyncCacheFastPath(unittest.TestCase):
         body = projected[start:end]
         lookup = body.index("auto cachedResource = GetCachedResource(identifier, loadExact);")
         early_return = body.index("return cachedResource;", lookup)
-        async_miss = body.index(
-            "resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();"
-        )
+        inline_miss = body.index("resource = LoadResourceProcess(identifier, loadExact, initData);")
         self.assertLess(lookup, early_return)
-        self.assertLess(early_return, async_miss)
+        self.assertLess(early_return, inline_miss)
         self.assertEqual(body.count("GetCachedResource(identifier, loadExact)"), 1)
-        self.assertEqual(body.count("LoadResourceAsync(identifier, loadExact"), 1)
-        self.assertIn("if (resource == nullptr)", body[async_miss:])
+        # A miss loads on the calling thread; no worker handoff or future.
+        self.assertNotIn("LoadResourceAsync(", body)
+        self.assertNotIn(".get()", body)
+        self.assertIn("if (resource == nullptr)", body[inline_miss:])
         # The async API retains its original cache and worker behavior.
         async_start = projected.index("ResourceManager::LoadResourceAsync(const ResourceIdentifier&")
         async_end = projected.index("ResourceManager::LoadResourceAsync(const std::string&", async_start)

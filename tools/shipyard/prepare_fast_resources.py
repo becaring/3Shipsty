@@ -17,6 +17,52 @@ OWN=ROOT/'platform/shipyard/fast-resources'
 OUT=ROOT/'scratch/fast-resources-xdk'
 
 
+SHARED_VERTEX_REPAIR='''namespace {
+// Known extractor defect (SoH 9.2.3 archives, and 4.0.5 before them): a display
+// list whose G_VTX loads shared gameplay_keep vertices (segment 4) is exported
+// as a bare G_VTX_OTR_HASH with its vertex count and hash missing. The reader
+// then takes the next real command as the hash, so the vertices never load and
+// that command never runs: the Zora's Domain and fishing-pond water ripples.
+// In every supported ROM both lists begin with 01004008 0401A120, four
+// vertices at index 0 from gameplay_keep 0x1A120, and that exact span is
+// exported as its own resource. Only the damaged shape is rebuilt; a correctly
+// exported archive does not match and is left unchanged.
+struct XboxSharedVertexRepair {
+    const char* list;
+    const char* vertices;
+    int count;
+};
+const XboxSharedVertexRepair kXboxSharedVertexRepairs[] = {
+    { "objects/object_zo/gZoraRipplesModelDL", "objects/gameplay_keep/gameplay_keepVtx_01A120", 4 },
+    { "objects/object_fish/gFishingRippleModelDL", "objects/gameplay_keep/gameplay_keepVtx_01A120", 4 },
+};
+
+void XboxRepairSharedVertexLoads(std::vector<Gfx>& commands, const std::string& path) {
+    for (size_t r = 0; r < sizeof(kXboxSharedVertexRepairs) / sizeof(kXboxSharedVertexRepairs[0]); ++r) {
+        const XboxSharedVertexRepair& repair = kXboxSharedVertexRepairs[r];
+        if (path != repair.list) {
+            continue;
+        }
+        for (size_t i = 0; i + 1 < commands.size(); ++i) {
+            const uint32_t w0 = (uint32_t)commands[i].words.w0;
+            if ((int8_t)(w0 >> 24) != G_VTX_OTR_HASH || (w0 & 0x00FFFFFF) != 0 || commands[i].words.w1 != 0) {
+                continue;
+            }
+            // The command the reader consumed as this load's hash.
+            const Gfx swallowed = commands[i + 1];
+            commands[i] = GsSpVertexOtR2P1(const_cast<char*>(repair.vertices));
+            commands[i + 1] = GsSpVertexOtR2P2(repair.count, 0, 0);
+            commands.insert(commands.begin() + (i + 2), swallowed);
+            i += 2;
+        }
+        return;
+    }
+}
+}
+
+'''
+
+
 def transform(name,text):
     types={'DisplayList':'Gfx','Matrix':'Mtx','Vertex':'Vtx','Light':'LightEntry'}
     if name.endswith('/ResourceType.h'):
@@ -48,6 +94,11 @@ def transform(name,text):
         for a,b,v in sorted(edits,reverse=True):source=source[:a]+v+source[b:]
         text=source.decode()
         text=once(text,'std::size(values)','(sizeof(values)/sizeof(values[0]))')
+        text=once(text,'std::shared_ptr<Ship::IResource>\nResourceFactoryBinaryDisplayListV0::ReadResource(',
+                  SHARED_VERTEX_REPAIR+'std::shared_ptr<Ship::IResource>\nResourceFactoryBinaryDisplayListV0::ReadResource(')
+        text=once(text,'    return displayList;\n}\n\nstd::shared_ptr<Ship::IResource>\nResourceFactoryXMLDisplayListV0::ReadResource(',
+                  '    XboxRepairSharedVertexLoads(displayList->Instructions, initData->Path);\n'
+                  '    return displayList;\n}\n\nstd::shared_ptr<Ship::IResource>\nResourceFactoryXMLDisplayListV0::ReadResource(')
     if name.endswith('/TextureFactory.cpp'):
         old='(TextureType)reader->ReadUInt32()'
         if text.count(old)!=2:raise ValueError('Texture type boundary inventory changed')

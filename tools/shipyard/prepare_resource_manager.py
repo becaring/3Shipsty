@@ -318,13 +318,20 @@ def transform(name, original):
             ModernFrameProfile::ObserveResourceWorker();
 #endif
             return LoadResourceProcess(identifier, loadExact, initData);''')
+        # A synchronous miss loads on the calling thread. Handing it to a pool
+        # worker and blocking on the future adds two cross-core wakeups per
+        # resource and waits for a worker to finish its current (prefetch)
+        # job; an actor's first draw can need a hundred resources in a row.
+        # LoadResourceProcess is the worker body itself: the cache and zip
+        # locks make it safe on any thread, and the first published instance
+        # still wins a race with a concurrent prefetch of the same path.
         text=once(text,'    auto resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();',
                   '''    std::shared_ptr<IResource> resource;
     {
 #ifdef _XBOX
         ModernFrameProfile::ResourceWaitScope resourceWait;
 #endif
-        resource = LoadResourceAsync(identifier, loadExact, BS::pr::highest, initData).get();
+        resource = LoadResourceProcess(identifier, loadExact, initData);
     }''')
         text=concurrent_cache(text)
     return '#include "resources/runtime_support.h"\n'+text

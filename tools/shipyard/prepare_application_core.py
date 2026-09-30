@@ -14,6 +14,312 @@ UNITS=['soh/soh/'+n for n in ('ResourceManagerHelpers.cpp','z_message_OTR.cpp','
 
 def sha(t):return hashlib.sha256(t.encode()).hexdigest()
 
+PREFETCH_FEEDER='''namespace {
+// Directory prefetch runs on one service thread. The game thread only hands
+// over a directory prefix (a lock and an append). Building the sorted archive
+// index (tens of thousands of names) and queueing a directory's entries one
+// by one both cost far more than a frame: the first scene entry used to pay
+// for the index, and every entry for the queueing. The feeder loads one
+// resource at a time on its own thread through the same synchronous path as a
+// draw, so at most one archive read competes with a foreground load, and the
+// cache keeps a single instance either way. A directory prefetched once is
+// skipped until an eviction (ResourceMgr_EvictUnusedDirectories) frees
+// directories, and prefetch only runs while physical memory has headroom;
+// below it, files load on first use exactly as without prefetch.
+bool ShipyardPrefetchHeadroom() {
+#ifdef _XBOX
+    MEMORYSTATUS memory;
+    memory.dwLength = sizeof(memory);
+    GlobalMemoryStatus(&memory);
+    return memory.dwAvailPhys >= 64u * 1024u * 1024u;
+#else
+    return true;
+#endif
+}
+
+// Sorted archive names, built once by the feeder and read-only afterwards.
+// Eviction on the game thread uses it once it has been published.
+const std::vector<std::string>* volatile sShipyardArchiveIndex = NULL;
+// Advanced by each eviction; the feeder forgets its completed directories.
+volatile long sShipyardEvictionEpoch = 0;
+
+class ShipyardPrefetchFeeder {
+  public:
+    ShipyardPrefetchFeeder() : mStopping(0), mStarted(false) {
+    }
+    ~ShipyardPrefetchFeeder() {
+        {
+            Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+            InterlockedExchange(&mStopping, 1);
+        }
+        mWake.notify_all();
+        if (mWorker.joinable()) {
+            mWorker.join();
+        }
+    }
+    void Queue(const std::vector<std::string>& prefixes) {
+        if (prefixes.empty()) {
+            return;
+        }
+        {
+            Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+            for (size_t i = 0; i < prefixes.size(); ++i) {
+                if (std::find(mQueue.begin(), mQueue.end(), prefixes[i]) == mQueue.end()) {
+                    mQueue.push_back(prefixes[i]);
+                }
+            }
+            if (!mStarted) {
+                mStarted = true;
+#ifdef _XBOX
+                mWorker = Shipyard::Async::joining_thread(Run, this, Shipyard::Async::ServiceProcessorFor(1));
+#else
+                mWorker = Shipyard::Async::joining_thread(Run, this);
+#endif
+            }
+        }
+        mWake.notify_one();
+    }
+
+  private:
+    static void Run(void* context) {
+        static_cast<ShipyardPrefetchFeeder*>(context)->Loop();
+    }
+    bool Stopping() {
+        return InterlockedCompareExchange(&mStopping, 0, 0) != 0;
+    }
+    void Loop() {
+        auto manager = Ship::Context::GetInstance()->GetResourceManager();
+        // Archives are only added during setup. The index is built here, off
+        // the game thread, before the first directory is walked.
+        std::vector<std::string>* index = new std::vector<std::string>();
+        {
+            auto files = manager->GetArchiveManager()->ListFiles("");
+            index->assign(files->begin(), files->end());
+        }
+        std::sort(index->begin(), index->end());
+        // Publish only a complete index.
+        MemoryBarrier();
+        sShipyardArchiveIndex = index;
+        const std::vector<std::string>& names = *index;
+        std::set<std::string> completed;
+        long epoch = InterlockedCompareExchange(&sShipyardEvictionEpoch, 0, 0);
+        Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+        for (;;) {
+            while (mQueue.empty() && !Stopping()) {
+                mWake.wait(lock);
+            }
+            if (Stopping()) {
+                return;
+            }
+            const std::string start = mQueue.front();
+            mQueue.pop_front();
+            lock.unlock();
+            const long currentEpoch = InterlockedCompareExchange(&sShipyardEvictionEpoch, 0, 0);
+            if (currentEpoch != epoch) {
+                completed.clear();
+                epoch = currentEpoch;
+            }
+            if (completed.find(start) == completed.end() && ShipyardPrefetchHeadroom()) {
+                bool complete = true;
+                unsigned walked = 0;
+                for (std::vector<std::string>::const_iterator it = std::lower_bound(names.begin(), names.end(), start);
+                     it != names.end() && it->compare(0, start.size(), start) == 0; ++it) {
+                    if (Stopping() || ((++walked & 15) == 0 && !ShipyardPrefetchHeadroom())) {
+                        complete = false;
+                        break;
+                    }
+                    try {
+                        manager->LoadResource(*it);
+                    } catch (...) {
+                    }
+                }
+                if (complete) {
+                    completed.insert(start);
+                }
+            }
+            lock.lock();
+        }
+    }
+    Shipyard::Async::mutex mMutex;
+    Shipyard::Async::condition_variable mWake;
+    std::deque<std::string> mQueue;
+    volatile long mStopping;
+    bool mStarted;
+    Shipyard::Async::joining_thread mWorker;
+};
+ShipyardPrefetchFeeder sShipyardPrefetchFeeder;
+
+// Shared resources that nearly every scene draws on first use: the gameplay
+// keep, and the HUD, text box and pause menu textures. Queued once, after the
+// first scene's own directories.
+const char* const sShipyardSharedPrefetch[] = {
+    "objects/gameplay_keep/",
+    "textures/parameter_static/",
+    "textures/do_action_static/",
+    "textures/message_static/",
+    "textures/message_texture_static/",
+    "textures/nes_font_static/",
+    "textures/icon_item_static/",
+    "textures/icon_item_24_static/",
+    "textures/icon_item_field_static/",
+    "textures/icon_item_dungeon_static/",
+    "textures/icon_item_nes_static/",
+    "textures/item_name_static/",
+    "textures/map_name_static/",
+    "textures/map_i_static/",
+    "textures/map_48x85_static/",
+};
+
+// Game thread only. A scene's directories are handed over when Play_Init
+// finishes, so its own synchronous loads never share the archive with them.
+bool sShipyardPrefetchHeld = false;
+bool sShipyardSharedQueued = false;
+std::vector<std::string> sShipyardHeldPrefetch;
+// Game thread only: every scene and object directory the game has used since
+// the last eviction, the current scene's directory, and game frames since the
+// current scene finished Play_Init.
+std::vector<std::string> sShipyardResidentDirectories;
+std::string sShipyardCurrentScene;
+unsigned sShipyardFramesInScene = 0;
+}
+
+extern "C" void ResourceMgr_SetCurrentSceneDirectory(const char* prefix) {
+    sShipyardCurrentScene = prefix;
+}
+
+extern "C" void ResourceMgr_HoldPrefetch(void) {
+    sShipyardPrefetchHeld = true;
+}
+
+extern "C" void ResourceMgr_ReleasePrefetch(void) {
+    sShipyardPrefetchHeld = false;
+    sShipyardFramesInScene = 0;
+    std::vector<std::string> held;
+    held.swap(sShipyardHeldPrefetch);
+    if (!sShipyardSharedQueued) {
+        sShipyardSharedQueued = true;
+        for (size_t i = 0; i < sizeof(sShipyardSharedPrefetch) / sizeof(sShipyardSharedPrefetch[0]); ++i) {
+            held.push_back(sShipyardSharedPrefetch[i]);
+        }
+    }
+    sShipyardPrefetchFeeder.Queue(held);
+}
+
+extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix) {
+    const std::string start(prefix);
+    if ((start.compare(0, 7, "scenes/") == 0 || start.compare(0, 8, "objects/") == 0) &&
+        std::find(sShipyardResidentDirectories.begin(), sShipyardResidentDirectories.end(), start) ==
+            sShipyardResidentDirectories.end()) {
+        sShipyardResidentDirectories.push_back(start);
+    }
+    if (sShipyardPrefetchHeld) {
+        if (std::find(sShipyardHeldPrefetch.begin(), sShipyardHeldPrefetch.end(), start) ==
+            sShipyardHeldPrefetch.end()) {
+            sShipyardHeldPrefetch.push_back(start);
+        }
+        return;
+    }
+    sShipyardPrefetchFeeder.Queue(std::vector<std::string>(1, start));
+}
+
+// Every spawned object, including the keeps: a keep is walked once per
+// session and then skipped.
+extern "C" void ResourceMgr_PrefetchObject(const char* name) {
+    if (name == NULL || name[0] == '\\0') {
+        return;
+    }
+    ResourceMgr_PrefetchDirectory((std::string("objects/") + name + "/").c_str());
+}
+
+'''
+
+EVICTION='''
+extern "C" void gfx_texture_cache_clear();
+
+// Nothing else frees cached resources, and a long session visits most of the
+// game. Below a memory floor, whole scene and object directories that nothing
+// can still point at are dropped. This runs on the game thread before an
+// update records, at least 32 game frames into a scene and never during a
+// transition, so no recorded or replayed frame references the scene that was
+// left. Kept: the current scene, every object in the bank now, the keeps,
+// Link's and get-item objects (drawn outside the bank), and any directory
+// holding a patched display list (a reload would lose the patch). Resources
+// that game code still shares stay alive through their references. Fast3D
+// caches textures by address and freed memory is reused, so its cache is
+// cleared afterwards, as an alt-asset toggle does; prefetch forgets the
+// directories it had completed.
+extern "C" void ResourceMgr_EvictUnusedDirectories(void) {
+    if (sShipyardFramesInScene < 0x10000) {
+        ++sShipyardFramesInScene;
+    }
+    if (sShipyardFramesInScene < 32 || (sShipyardFramesInScene & 31) != 0) {
+        return;
+    }
+    if (gPlayState == NULL || gPlayState->transitionTrigger != TRANS_TRIGGER_OFF ||
+        gPlayState->transitionMode != TRANS_MODE_OFF) {
+        return;
+    }
+#ifdef _XBOX
+    MEMORYSTATUS memory;
+    memory.dwLength = sizeof(memory);
+    GlobalMemoryStatus(&memory);
+    if (memory.dwAvailPhys >= 48u * 1024u * 1024u) {
+        return;
+    }
+#else
+    return;
+#endif
+    const std::vector<std::string>* index = sShipyardArchiveIndex;
+    if (index == NULL) {
+        return;
+    }
+    MemoryBarrier();
+    std::vector<std::string> evict;
+    std::vector<std::string> keep;
+    const ObjectContext& objects = gPlayState->objectCtx;
+    for (size_t d = 0; d < sShipyardResidentDirectories.size(); ++d) {
+        const std::string& directory = sShipyardResidentDirectories[d];
+        bool retain = directory == sShipyardCurrentScene || directory.compare(0, 17, "objects/gameplay_") == 0 ||
+                      directory.compare(0, 20, "objects/object_link_") == 0 ||
+                      directory.compare(0, 18, "objects/object_gi_") == 0;
+        if (!retain && directory.compare(0, 8, "objects/") == 0) {
+            for (int i = 0; i < objects.num && !retain; ++i) {
+                const int id = objects.status[i].id < 0 ? -objects.status[i].id : objects.status[i].id;
+                if (id > 0 && id < OBJECT_ID_MAX && gObjectTable[id].fileName != NULL &&
+                    directory == std::string("objects/") + gObjectTable[id].fileName + "/") {
+                    retain = true;
+                }
+            }
+        }
+        for (std::unordered_map<std::string, std::unordered_map<std::string, GfxPatch>>::const_iterator patched =
+                 originalGfx.begin();
+             !retain && patched != originalGfx.end(); ++patched) {
+            const std::string& path = patched->first;
+            const size_t start = path.compare(0, 7, "__OTR__") == 0 ? 7 : 0;
+            if (path.compare(start, directory.size(), directory) == 0) {
+                retain = true;
+            }
+        }
+        (retain ? keep : evict).push_back(directory);
+    }
+    if (evict.empty()) {
+        return;
+    }
+    auto manager = Ship::Context::GetInstance()->GetResourceManager();
+    for (size_t d = 0; d < evict.size(); ++d) {
+        const std::string& start = evict[d];
+        for (std::vector<std::string>::const_iterator it = std::lower_bound(index->begin(), index->end(), start);
+             it != index->end() && it->compare(0, start.size(), start) == 0; ++it) {
+            manager->UnloadResource(*it);
+        }
+    }
+    sShipyardResidentDirectories.swap(keep);
+    InterlockedIncrement(&sShipyardEvictionEpoch);
+    gfx_texture_cache_clear();
+    SPDLOG_INFO("Evicted {} resource directories below the memory floor", evict.size());
+}
+'''
+
 def project(name,text):
     # Canonical projected headers are selected by full application include paths.
     directory=Path(name).parent.as_posix().removeprefix('soh/')
@@ -41,7 +347,7 @@ def project(name,text):
             '    auto res = std::static_pointer_cast<Fast::DisplayList>(ResourceMgr_GetResourceByNameHandlingMQ(path));\n    return (Gfx*)&res->Instructions[0];',
             '\n'.join([
             '    // Preserve raw-name cache precedence, then normalize the resource signature.',
-            '    // Resident normalized resources need no ready future; cold loads retain the worker path.',
+            '    // Resident normalized resources need no ready future; cold loads take the synchronous path.',
             '    if (!isMq && std::strncmp(path, "__OTR__", 7) == 0 &&',
             '        std::strncmp(path + 7, "__OTR__", 7) != 0 &&',
             '        std::strncmp(path + 7, "alt/", 4) != 0) {',
@@ -68,102 +374,43 @@ def project(name,text):
     if name.endswith('/ResourceManagerHelpers.cpp'):
         # First draws of a new object or room otherwise load every skeleton,
         # display list and texture synchronously on the game thread.
-        text='#ifdef _XBOX\n#include <xtl.h>\n#endif\n#include <ship/resource/archive/ArchiveManager.h>\n#include <algorithm>\n'+text
-        text=once(text,'extern "C" void ResourceMgr_LoadDirectory(const char* resName) {','''namespace {
-// Sorted archive names, built once by the game thread: a directory query is a
-// binary search instead of ArchiveManager's glob over every archive entry.
-const std::vector<std::string>& ShipyardArchiveNames() {
-    static std::vector<std::string> names;
-    static bool built = false;
-    if (!built) {
-        built = true;
-        auto files = Ship::Context::GetInstance()->GetResourceManager()->GetArchiveManager()->ListFiles("");
-        names.assign(files->begin(), files->end());
-        std::sort(names.begin(), names.end());
-    }
-    return names;
-}
-
-// Queue every resource under the directory prefix on the resource workers at
-// the lowest priority. A draw that requests a queued file first still loads it
-// at the highest priority; the cache keeps a single instance either way.
-// Nothing evicts cached resources, so prefetch (whole scene and object
-// directories) only runs while physical memory has headroom; below it, files
-// load on first use exactly as without prefetch.
-bool ShipyardPrefetchHeadroom() {
-#ifdef _XBOX
-    MEMORYSTATUS memory;
-    memory.dwLength = sizeof(memory);
-    GlobalMemoryStatus(&memory);
-    return memory.dwAvailPhys >= 64u * 1024u * 1024u;
-#else
-    return true;
-#endif
-}
-
-void ShipyardPrefetchNow(const std::string& start) {
-    if (!ShipyardPrefetchHeadroom()) {
-        return;
-    }
-    auto manager = Ship::Context::GetInstance()->GetResourceManager();
-    const std::vector<std::string>& names = ShipyardArchiveNames();
-    for (std::vector<std::string>::const_iterator it = std::lower_bound(names.begin(), names.end(), start);
-         it != names.end() && it->compare(0, start.size(), start) == 0; ++it) {
-        manager->LoadResourceAsync(*it, false, BS::pr::lowest);
-    }
-}
-
-// Game thread only. While a scene initializes, its own synchronous loads
-// would otherwise queue behind the prefetch jobs it just requested.
-bool sShipyardPrefetchHeld = false;
-std::vector<std::string> sShipyardHeldPrefetch;
-}
-
-extern "C" void ResourceMgr_HoldPrefetch(void) {
-    sShipyardPrefetchHeld = true;
-}
-
-extern "C" void ResourceMgr_ReleasePrefetch(void) {
-    sShipyardPrefetchHeld = false;
-    std::vector<std::string> held;
-    held.swap(sShipyardHeldPrefetch);
-    for (size_t i = 0; i < held.size(); ++i) {
-        ShipyardPrefetchNow(held[i]);
-    }
-}
-
-extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix) {
-    const std::string start(prefix);
-    if (sShipyardPrefetchHeld) {
-        if (std::find(sShipyardHeldPrefetch.begin(), sShipyardHeldPrefetch.end(), start) ==
-            sShipyardHeldPrefetch.end()) {
-            sShipyardHeldPrefetch.push_back(start);
-        }
-        return;
-    }
-    ShipyardPrefetchNow(start);
-}
-
-// The keep objects hold thousands of mostly-unused resources; the rest are
-// loaded because an actor about to draw needs them.
-extern "C" void ResourceMgr_PrefetchObject(const char* name) {
-    if (name == NULL || name[0] == '\\0' || std::strncmp(name, "gameplay_", 9) == 0) {
-        return;
-    }
-    ResourceMgr_PrefetchDirectory((std::string("objects/") + name + "/").c_str());
-}
-
-extern "C" void ResourceMgr_LoadDirectory(const char* resName) {''')
+        text='#ifdef _XBOX\n#include <xtl.h>\n#else\n#include <windows.h>\n#endif\n#include "async/native.h"\n#include <ship/resource/archive/ArchiveManager.h>\n#include <algorithm>\n#include <deque>\n#include <set>\n'+text
+        text=once(text,'extern "C" void ResourceMgr_LoadDirectory(const char* resName) {',PREFETCH_FEEDER+'extern "C" void ResourceMgr_LoadDirectory(const char* resName) {')
+        text=text.rstrip('\n')+'\n'+EVICTION
     if name.endswith('/z_play_otr.cpp'):
         text=once(text,'    play->sceneSegment = OTRPlay_LoadFile(play, scenePath.c_str());',
-            '''    // Rooms, their display lists and textures load in the background while
-    // the scene file itself loads at the highest priority below.
+            '''    // Rooms, their display lists and textures are prefetched on the service
+    // thread once Play_Init finishes; the scene file itself loads below. The
+    // directory is also the current scene's, which eviction always keeps.
+    const std::string xboxSceneDirectory =
+        StringHelper::Sprintf("scenes/%s/%s/", sceneVersion.c_str(), scene->sceneFile.fileName);
+    ResourceMgr_SetCurrentSceneDirectory(xboxSceneDirectory.c_str());
+    ResourceMgr_PrefetchDirectory(xboxSceneDirectory.c_str());
+    play->sceneSegment = OTRPlay_LoadFile(play, scenePath.c_str());''')
+        # The same directory OTRPlay_SpawnScene selects, for a scene that is
+        # not yet current: master quest is decided for that scene (randomizer
+        # MQ dungeons included), not for the scene being left.
+        text=once(text,'extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {',
+            '''extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix);
+extern "C" void ResourceMgr_SetCurrentSceneDirectory(const char* prefix);
+
+// A transition's destination, queued before the screen fades out.
+extern "C" void OTRPlay_PrefetchScene(s32 sceneId) {
+    if (sceneId < 0 || sceneId >= SCENE_ID_MAX) {
+        return;
+    }
+    const SceneTableEntry* scene = &gSceneTable[sceneId];
+    const bool inNonSharedScene = (sceneId >= SCENE_DEKU_TREE && sceneId <= SCENE_ICE_CAVERN) ||
+                                  sceneId == SCENE_GERUDO_TRAINING_GROUND || sceneId == SCENE_INSIDE_GANONS_CASTLE;
+    std::string sceneVersion = "shared";
+    if (inNonSharedScene) {
+        sceneVersion = ResourceMgr_IsSceneMasterQuest(static_cast<s16>(sceneId)) ? "mq" : "nonmq";
+    }
     ResourceMgr_PrefetchDirectory(
         StringHelper::Sprintf("scenes/%s/%s/", sceneVersion.c_str(), scene->sceneFile.fileName).c_str());
-    play->sceneSegment = OTRPlay_LoadFile(play, scenePath.c_str());''')
-        text=once(text,'extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {',
-            'extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix);\n\n'
-            'extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {')
+}
+
+extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {''')
     if name.endswith('/CrashHandlerExt.cpp'):
         text=re.sub(r'(static std::array<[^;{}]+> \w+)\{',r'\1 = {',text)
         text=text.replace('snprintf(', 'Shipyard::SohResources::snprintf(')
