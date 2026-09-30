@@ -27,7 +27,7 @@ def acquire(name, entry):
     repository = REPOSITORIES / name
     if not repository.exists():
         repository.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "--no-checkout", entry["url"], str(repository)], check=True)
+        subprocess.run(["git", "clone", entry["url"], str(repository)], check=True)
     if git(repository, "remote", "get-url", "origin") != entry["url"]:
         raise ValueError("Dependency URL drift: " + name)
     if git(repository, "status", "--porcelain"):
