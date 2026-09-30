@@ -1,4 +1,14 @@
-# Local code navigation
+# Maintainer-local code navigation (optional)
+
+These tools are private developer conveniences for the maintainer's Windows
+checkout layout. They are not portable build prerequisites, release tooling,
+or part of the Xbox runtime. Consumer generation, tests, compilation and linking
+use the documented build drivers without Serena, Codex or this navigation index.
+
+`nav.py` and `launch_serena.py` deliberately contain workstation paths for the
+fixed MCP registrations. A different workstation must configure its own paths
+and registrations before using them; cloning the repository does not install or
+activate any server. Do not copy these paths into portable build scripts.
 
 Five fixed, read-only MCP servers are registered in the machine Codex config:
 `serena_shipyard`, `serena_modern`, `serena_smash`, `serena_majora`, and `shipyard_nav`.
@@ -10,8 +20,9 @@ infer a call graph.
 
 `D:\Projects\becaring\shipyard` is the canonical maintained Shipyard repository.
 The active consumers include Modern, Smash, and the pinned Majora source at
-`D:\Projects\2Ship3Shipsty`. Majora selects an isolated Shipyard support
-worktree. The older root checkouts and frozen candidates remain preserved.
+`D:\Projects\2Ship3Shipsty`. OoT and Majora select `selections/3Shipsty` and
+`selections/2Ship` inside canonical Shipyard; Smash selects its root.
+The older root checkouts and frozen candidates remain preserved.
 `shipyard_topology` reports active worktree identity, lock identity, and freshness.
 The navigation runtime and database remain under the original Modern root's
 `scratch/code-nav`; analysis compile databases belong to the active worktrees.

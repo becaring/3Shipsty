@@ -34,7 +34,9 @@ class ApplicationContracts(unittest.TestCase):
         original=(ROOT/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         projected=(OUT/'generated/soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
         generated_helpers=['MakeItemIDtoGetItemIDMap','MakeItemIDtoRandomizerGetMap',
-                           'Shipyard_ReportStartupFailure','Shipyard_TryInitOTR']
+                           'Shipyard_ReportStartupFailure','Shipyard_TryInitOTR',
+                           'XboxRunDeferredDepthRead']
+        self.assertEqual(names(projected).count('XboxRunDeferredDepthRead'),1)
         self.assertEqual(names(original),[n for n in names(projected) if n not in generated_helpers])
         # Compare actual resource-registration expressions independently of
         # surrounding platform lifetime and container-construction lowering.
@@ -122,7 +124,7 @@ int main() {
         self.assertIn('65536',result['stdout'])
 
     def test_writable_app_path_is_crt_safe(self):
-        """The Context string join must not emit ``shipyard:\\/...``."""
+        """Context uses the executable directory without a mixed separator join."""
         folder=OUT/'host-app-path';folder.mkdir(exist_ok=True)
         source=r'''#include "context/platform.h"
 #include "save-storage/storage.h"
@@ -134,8 +136,8 @@ std::string SaveDirectory() { return "shipyard:\\Save"; }
 int main() {
     const std::string root=Shipyard::Platform::ApplicationDirectory();
     const std::string config=root+"/shipofharkinian.json";
-    assert(root=="shipyard:");
-    assert(config=="shipyard:/shipofharkinian.json");
+    assert(root=="game:");
+    assert(config=="game:/shipofharkinian.json");
     assert(config.find("\\/")==std::string::npos);
 }
 '''
@@ -210,9 +212,10 @@ int main() {
         recorder=platform[platform.index('void RecordNativeFault('):platform.index('LONG WINAPI ShipyardUnhandledFault(')]
         installer=platform[platform.index('extern "C" void Shipyard_InstallStartupFaultHandler()'):
                            platform.index('namespace Shipyard { namespace Platform')]
-        self.assertIn('game:\\\\3Shipsty.startup-fault',recorder)
-        self.assertIn('shipyard:\\\\startup-fault.txt',recorder)
-        self.assertIn('XContentFlush("shipyard", NULL)',recorder)
+        self.assertIn('OutputDebugStringA(line);',recorder)
+        self.assertIn('CreateDirectoryA("game:\\\\logs", NULL);',recorder)
+        self.assertEqual(recorder.count('WriteFlushedFile("game:\\\\logs\\\\startup-fault.txt", line, false);'),1)
+        self.assertLess(recorder.index('CreateDirectoryA('),recorder.index('WriteFlushedFile('))
         self.assertIn('FlushFileBuffers(file)',platform)
         self.assertIn('SetUnhandledExceptionFilter(ShipyardUnhandledFault)',installer)
         self.assertIn('std::set_terminate(ShipyardTerminated)',installer)

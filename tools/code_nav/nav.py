@@ -1,7 +1,8 @@
-"""Local, rebuildable build/projection relationships for the active Xbox ports.
+"""Maintainer-local relationships for the fixed Xbox development checkouts.
 
 No source is parsed or copied here. Compiler inputs and provenance come from
 the selected build manifests, source locks, project file, and #line records.
+Workstation paths are intentional; this module is not a portable build input.
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Launch one fixed, read-only Serena project per MCP process."""
+"""Maintainer-local launcher; fixed paths require this workstation's setup."""
 import os
 from pathlib import Path
 import subprocess
