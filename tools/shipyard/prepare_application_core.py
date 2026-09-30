@@ -68,7 +68,7 @@ def project(name,text):
     if name.endswith('/ResourceManagerHelpers.cpp'):
         # First draws of a new object or room otherwise load every skeleton,
         # display list and texture synchronously on the game thread.
-        text='#include <ship/resource/archive/ArchiveManager.h>\n#include <algorithm>\n'+text
+        text='#ifdef _XBOX\n#include <xtl.h>\n#endif\n#include <ship/resource/archive/ArchiveManager.h>\n#include <algorithm>\n'+text
         text=once(text,'extern "C" void ResourceMgr_LoadDirectory(const char* resName) {','''namespace {
 // Sorted archive names, built once by the game thread: a directory query is a
 // binary search instead of ArchiveManager's glob over every archive entry.
@@ -83,19 +83,65 @@ const std::vector<std::string>& ShipyardArchiveNames() {
     }
     return names;
 }
-}
 
 // Queue every resource under the directory prefix on the resource workers at
 // the lowest priority. A draw that requests a queued file first still loads it
 // at the highest priority; the cache keeps a single instance either way.
-extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix) {
+// Nothing evicts cached resources, so prefetch (whole scene and object
+// directories) only runs while physical memory has headroom; below it, files
+// load on first use exactly as without prefetch.
+bool ShipyardPrefetchHeadroom() {
+#ifdef _XBOX
+    MEMORYSTATUS memory;
+    memory.dwLength = sizeof(memory);
+    GlobalMemoryStatus(&memory);
+    return memory.dwAvailPhys >= 64u * 1024u * 1024u;
+#else
+    return true;
+#endif
+}
+
+void ShipyardPrefetchNow(const std::string& start) {
+    if (!ShipyardPrefetchHeadroom()) {
+        return;
+    }
     auto manager = Ship::Context::GetInstance()->GetResourceManager();
     const std::vector<std::string>& names = ShipyardArchiveNames();
-    const std::string start(prefix);
     for (std::vector<std::string>::const_iterator it = std::lower_bound(names.begin(), names.end(), start);
          it != names.end() && it->compare(0, start.size(), start) == 0; ++it) {
         manager->LoadResourceAsync(*it, false, BS::pr::lowest);
     }
+}
+
+// Game thread only. While a scene initializes, its own synchronous loads
+// would otherwise queue behind the prefetch jobs it just requested.
+bool sShipyardPrefetchHeld = false;
+std::vector<std::string> sShipyardHeldPrefetch;
+}
+
+extern "C" void ResourceMgr_HoldPrefetch(void) {
+    sShipyardPrefetchHeld = true;
+}
+
+extern "C" void ResourceMgr_ReleasePrefetch(void) {
+    sShipyardPrefetchHeld = false;
+    std::vector<std::string> held;
+    held.swap(sShipyardHeldPrefetch);
+    for (size_t i = 0; i < held.size(); ++i) {
+        ShipyardPrefetchNow(held[i]);
+    }
+}
+
+extern "C" void ResourceMgr_PrefetchDirectory(const char* prefix) {
+    const std::string start(prefix);
+    if (sShipyardPrefetchHeld) {
+        if (std::find(sShipyardHeldPrefetch.begin(), sShipyardHeldPrefetch.end(), start) ==
+            sShipyardHeldPrefetch.end()) {
+            sShipyardHeldPrefetch.push_back(start);
+        }
+        return;
+    }
+    ShipyardPrefetchNow(start);
 }
 
 // The keep objects hold thousands of mostly-unused resources; the rest are

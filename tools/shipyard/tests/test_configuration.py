@@ -32,6 +32,13 @@ def host(projected):
     body=body.replace(b'#include "ship/Context.h"',b'#include <spdlog/spdlog.h>')
     body=body.replace(b'#include "ship/window/Window.h"',b'')
     if projected:
+        # The writer uses real host threads in this behavioral test. Xbox
+        # service-processor placement is compiled by the native Config build.
+        worker_begin = body.index(b'class ShipyardConfigWriter {')
+        worker_end = body.index(b'Config::~Config()', worker_begin)
+        worker = body[worker_begin:worker_end]
+        assert worker.count(b'#ifdef _XBOX') == 1
+        body = body[:worker_begin] + worker.replace(b'#ifdef _XBOX', b'#if 0') + body[worker_end:]
         # Only conditional method code selects Xbox here. Header dependencies
         # were included as real host APIs above; no fake platform class exists.
         body=body.replace(b'namespace Ship {',

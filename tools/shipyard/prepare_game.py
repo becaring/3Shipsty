@@ -239,6 +239,20 @@ def project_header(name, raw):
 
     CLOSE_DISPS(this->state.gfxCtx);''',
             'File-select fade trace')
+        # Confirming a file starts a 26-update fade to black before
+        # FileChoose_LoadGame loads it. Read and parse the save during it.
+        replace_projected_once(
+            'void FileChoose_ConfirmFile(GameState* thisx) {',
+            'extern void Save_PrepareLoadFile(int fileNum);\n\n'
+            'void FileChoose_ConfirmFile(GameState* thisx) {',
+            'Save preparation declaration')
+        replace_projected_once(
+            '            this->selectMode = SM_FADE_OUT;\n            func_800F6964(0xF);',
+            '            this->selectMode = SM_FADE_OUT;\n'
+            '            Save_PrepareLoadFile(this->buttonIndex);\n'
+            '            func_800F6964(0xF);',
+            'Prepare the confirmed save during the fade')
+        changes.append('Read and parse the confirmed save during the file-select fade')
         changes.append('Add bounded file-select fade trace after real update/draw commands')
         changes.append('Use owner-aware skybox initialization for FileChooseContext')
     if name == 'soh/src/code/z_scene.c':
@@ -466,6 +480,27 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {''',
             'extern void Shipyard_FrameProfileActorDrawEnd(void);\n'
             'void Play_Init(GameState* thisx) {',
             'Gameplay update and recorder-wrapped draw profile declarations')
+        # Scene init loads the scene, its first room and its objects
+        # synchronously. Prefetch queued meanwhile (the scene directory, every
+        # object) only competes with those loads for the two resource workers
+        # and the archive lock, so it is held until the scene is ready.
+        replace_projected_once(
+            'void Play_Init(GameState* thisx) {',
+            'extern void ResourceMgr_HoldPrefetch(void);\n'
+            'extern void ResourceMgr_ReleasePrefetch(void);\n'
+            'void Play_Init(GameState* thisx) {',
+            'Scene-init prefetch hold declarations')
+        replace_projected_once(
+            '    gPlayState = play;\n',
+            '    gPlayState = play;\n'
+            '    ResourceMgr_HoldPrefetch();\n',
+            'Hold prefetch during scene init')
+        replace_projected_once(
+            '    gPlayState->nextEntranceIndex = gSaveContext.entranceIndex;\n}',
+            '    gPlayState->nextEntranceIndex = gSaveContext.entranceIndex;\n'
+            '    ResourceMgr_ReleasePrefetch();\n}',
+            'Release prefetch after scene init')
+        changes.append('Queue scene and object prefetch after scene init instead of during it')
         replace_projected_once(
             '        Play_Update(play);',
             '        Shipyard_FrameProfilePlayUpdateBegin();\n'

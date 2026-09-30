@@ -292,6 +292,11 @@ def prepare():
     states='#include "binary/compat.h"\n'+states
     stable(OUT/'generated/soh/soh/Enhancements/savestates.h',states)
     stable(OUT/'generated/soh/soh/OTRGlobals.h',header)
+    # fontJapanese has one user, the debug save editor. Rasterizing the full
+    # Japanese glyph range into the ImGui atlas cost boot time and atlas memory
+    # on every boot; the editor uses the largest standard font instead.
+    source=once(source,'        fontJapanese = CreateFontWithSize(24.0f, "fonts/NotoSansJP-Regular.ttf", true);',
+                '        fontJapanese = fontStandardLargest;')
     source=application_syntax(platform_source(source))
     stable(OUT/'generated/soh/soh/OTRGlobals.cpp',source)
     generated={p.relative_to(OUT/'generated').as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in (OUT/'generated').rglob('*') if p.is_file()}

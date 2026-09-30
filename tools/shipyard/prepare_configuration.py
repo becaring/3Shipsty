@@ -103,7 +103,121 @@ ConfigVersionUpdater::ConfigVersionUpdater''')
         text=lower(text.encode(),'Shipyard::Resources::begin','Shipyard::Resources::end').decode()
         helper=runpy.run_path(str(resolve_platform_base(ROOT)/'python/xbox360_platform/config_leaf_lookup.py'))
         text=helper['project_source'](text)
+        text=background_save(text)
     return text
+
+
+CONFIG_WRITER='''namespace {
+// Settings saves (every menu change, and scene/file hooks such as audio or
+// cosmetic randomization) otherwise unflatten, re-flatten, pretty-print and
+// flush the whole config on the calling thread. The caller now only copies the
+// flat settings; a service thread writes them. A newer request replaces one
+// that has not started, and Reload waits for the writes before reading.
+class ShipyardConfigWriter {
+  public:
+    ShipyardConfigWriter() : mPending(false), mBusy(false), mStop(false) {
+    }
+    ~ShipyardConfigWriter() {
+        {
+            Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+            mStop = true;
+        }
+        mWake.notify_all();
+        if (mWorker.joinable()) {
+            mWorker.join();
+        }
+    }
+    void Queue(const std::string& path, const nlohmann::json& flattened) {
+        nlohmann::json copy(flattened);
+        {
+            Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+            mPath = path;
+            mFlattened.swap(copy);
+            mPending = true;
+            if (!mWorker.joinable()) {
+#ifdef _XBOX
+                mWorker = Shipyard::Async::joining_thread(Run, this, Shipyard::Async::ServiceProcessor);
+#else
+                mWorker = Shipyard::Async::joining_thread(Run, this);
+#endif
+            }
+        }
+        mWake.notify_one();
+    }
+    void Wait() {
+        Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+        while (mPending || mBusy) {
+            mIdle.wait(lock);
+        }
+    }
+
+  private:
+    static void Run(void* context) {
+        static_cast<ShipyardConfigWriter*>(context)->Loop();
+    }
+    void Loop() {
+        Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(mMutex);
+        for (;;) {
+            while (!mPending && !mStop) {
+                mWake.wait(lock);
+            }
+            if (!mPending) {
+                return;
+            }
+            std::string path;
+            nlohmann::json flattened;
+            path.swap(mPath);
+            flattened.swap(mFlattened);
+            mPending = false;
+            mBusy = true;
+            lock.unlock();
+            try {
+                Shipyard::Storage::WriteAtomicFile(fs::path(path), flattened.unflatten().dump(4));
+            } catch (const std::exception& failure) {
+                SPDLOG_ERROR("Config save failed: {}", failure.what());
+            } catch (...) {
+                SPDLOG_ERROR("Config save failed");
+            }
+            lock.lock();
+            mBusy = false;
+            mIdle.notify_all();
+        }
+    }
+    Shipyard::Async::mutex mMutex;
+    Shipyard::Async::condition_variable mWake;
+    Shipyard::Async::condition_variable mIdle;
+    std::string mPath;
+    nlohmann::json mFlattened;
+    bool mPending;
+    bool mBusy;
+    bool mStop;
+    Shipyard::Async::joining_thread mWorker;
+};
+ShipyardConfigWriter sShipyardConfigWriter;
+}
+
+'''
+
+
+def background_save(text):
+    """Write settings on a service thread; see CONFIG_WRITER."""
+    # mNestedJson is read only at startup (version updaters, then CVar load
+    # after Reload), and Reload replaces it. mFlatLeafSafe is only an index
+    # validity flag: leaving it unchanged is always correct.
+    text=once(text,'''void Config::Save() {
+    if (mPath == "None") return;
+    mNestedJson = mFlattenedJson.unflatten();
+    mFlatLeafSafe = (mNestedJson.flatten() == mFlattenedJson);
+    Shipyard::Storage::WriteAtomicFile(fs::path(mPath), mNestedJson.dump(4));
+}''','''void Config::Save() {
+    if (mPath == "None") return;
+    sShipyardConfigWriter.Queue(mPath, mFlattenedJson);
+}''')
+    text=once(text,'void Config::Reload() {','void Config::Reload() {\n    sShipyardConfigWriter.Wait();')
+    # Defined before its first use (the destructor precedes Reload and Save);
+    # a destroyed Config has published its last requested save.
+    text=once(text,'Config::~Config() {',CONFIG_WRITER+'Config::~Config() {\n    sShipyardConfigWriter.Wait();')
+    return '#include "async/native.h"\n#include <spdlog/spdlog.h>\n'+text
 
 
 def prepare():

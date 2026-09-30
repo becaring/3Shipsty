@@ -1,6 +1,6 @@
 """Full SaveManager ownership/schema audit and real nontrivial JSON load contracts."""
 import hashlib,json,re,runpy,struct,subprocess
-from prepare_save_manager import ROOT,OUT,OWN,prepare,methods,load_defaults
+from prepare_save_manager import ROOT,OUT,OWN,prepare,methods,load_defaults,prepared_load
 from prepare_save_storage import METHODS
 from prepare_application import function
 from prepare_archives import stable
@@ -13,11 +13,26 @@ def main():
     projected=(OUT/'generated/soh/soh/SaveManager.cpp').read_text(encoding='utf-8')
     originals=methods(original);actual=methods(projected);canonical=methods(base)
     assert len(actual)==42 and set(actual)==set(originals)
-    for name in METHODS+['SaveRandomizer','InitMeta']:assert actual[name]==canonical[name],name
+    prepared_canonical=methods(prepared_load(base))
+    for name in METHODS+['SaveRandomizer','InitMeta']:
+        expected_method=prepared_canonical[name] if name in ('LoadFile','StartupCheckAndInitMeta') else canonical[name]
+        assert actual[name]==expected_method,name
     assert function(projected,'Save_LoadFile').text==function(base,'Save_LoadFile').text
     bridges=lambda text:[re.search(rb'\b(Save_\w+)\(',n.text)[1] for n in walk(PARSER.parse(text.encode()).root_node)
         if n.type=='linkage_specification' and n.text.startswith(b'extern "C"') and re.search(rb'\bSave_\w+\(',n.text)]
-    assert len(bridges(original))==12 and bridges(original)==bridges(projected)
+    original_bridges=bridges(original);projected_bridges=bridges(projected)
+    assert len(original_bridges)==12
+    assert projected_bridges.count(b'Save_PrepareLoadFile')==1
+    assert original_bridges==[b for b in projected_bridges if b!=b'Save_PrepareLoadFile']
+    load=function(projected,'SaveManager::LoadFile').text.decode()
+    assert load.index('ShipyardFinishPreparedSave();')<load.index('saveMtx.lock();')
+    assert 'input >> saveBlock' not in projected
+    assert 'input >> metaSaveBlock' not in projected
+    assert 'sShipyardPreparedSave.text == text' in projected
+    assert 'nlohmann::json::parse(saveText.begin(), saveText.end())' in load
+    worker=function(projected,'ShipyardPrepareSave').text.decode()
+    assert worker.index('ThreadPoolWait();')<worker.index('std::ifstream input(')
+    assert 'Shipyard::Async::ServiceProcessor' in function(projected,'Save_PrepareLoadFile').text.decode()
     def keys(text):
         result=[]
         for n in walk(PARSER.parse(text.encode()).root_node):
@@ -62,8 +77,8 @@ def main():
     assert native['source_sha256']==hashlib.sha256((ROOT/native['source']).read_bytes()).hexdigest()
     assert struct.unpack_from('<H',(OUT/'xdk/SaveManager.obj').read_bytes())[0]==0x1f2
     stable(OUT/'verification.json',json.dumps(dict(host=runs,native=native,methods=42,c_bridges=12,serialization_keys=len(keys(original)),
-        actual_randomizer_runtime_executed=False),indent=2)+'\n')
-    print('42 actual SaveManager methods / 12 C bridges retained; all serialization keys agree.')
+        prepared_load_bridge=True,actual_randomizer_runtime_executed=False),indent=2)+'\n')
+    print('42 actual SaveManager methods / 12 C bridges retained plus prepared-load bridge; all serialization keys agree.')
     print(runs[0]['stdout'])
 
 if __name__=='__main__':main()

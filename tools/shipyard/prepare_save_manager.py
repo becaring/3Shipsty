@@ -33,6 +33,161 @@ def load_defaults(source):
     if len(edits)!=4:raise ValueError('Expected four nontrivial LoadRandomizer default arguments')
     return edits_apply(source.encode(),edits)
 
+PREPARED_LOAD='''namespace {
+// File select confirms a save about 26 updates (the fade to black) before
+// FileChoose_LoadGame calls LoadFile. A service thread reads and parses it
+// meanwhile. LoadFile still reads the file itself and adopts the parsed block
+// only when those bytes are identical, so a save that changed is parsed anew.
+struct ShipyardPreparedSave {
+    Shipyard::Async::joining_thread worker;
+    int fileNum;
+    std::string text;
+    nlohmann::json block;
+    bool parsed;
+    ShipyardPreparedSave() : fileNum(-1), parsed(false) {}
+};
+ShipyardPreparedSave sShipyardPreparedSave;
+
+std::string ShipyardReadSaveText(std::ifstream& input) {
+    std::ostringstream text;
+    text << input.rdbuf();
+    return text.str();
+}
+
+void ShipyardPrepareSave(void* context) {
+    ShipyardPreparedSave* prepared = static_cast<ShipyardPreparedSave*>(context);
+    try {
+        // A save queued before the confirm is published first.
+        ShipyardSaveInstance()->ThreadPoolWait();
+        const xbox_compat::filesystem::path sSavePath(Shipyard::Storage::SaveDirectory());
+        const xbox_compat::filesystem::path fileName =
+            sSavePath / ("file" + std::to_string(static_cast<long long>(prepared->fileNum + 1)) + ".sav");
+        std::ifstream input(fileName.c_str());
+        if (!input) {
+            return;
+        }
+        prepared->text = ShipyardReadSaveText(input);
+        prepared->block = nlohmann::json::parse(prepared->text.begin(), prepared->text.end());
+        prepared->parsed = true;
+    } catch (...) {
+        // LoadFile parses the file itself and keeps its error handling.
+        prepared->parsed = false;
+    }
+}
+
+// Game thread, before LoadFile takes saveMtx: the worker may be waiting for a
+// save task that needs it.
+void ShipyardFinishPreparedSave() {
+    if (sShipyardPreparedSave.worker.joinable()) {
+        sShipyardPreparedSave.worker.join();
+    }
+}
+
+bool ShipyardTakePreparedSave(int fileNum, const std::string& text, nlohmann::json& block) {
+    const bool match = sShipyardPreparedSave.parsed && sShipyardPreparedSave.fileNum == fileNum &&
+                       sShipyardPreparedSave.text == text;
+    if (match) {
+        block.swap(sShipyardPreparedSave.block);
+    }
+    sShipyardPreparedSave.fileNum = -1;
+    sShipyardPreparedSave.parsed = false;
+    std::string().swap(sShipyardPreparedSave.text);
+    nlohmann::json().swap(sShipyardPreparedSave.block);
+    return match;
+}
+}
+
+extern "C" void Save_PrepareLoadFile(int fileNum) {
+    ShipyardFinishPreparedSave();
+    sShipyardPreparedSave.fileNum = fileNum;
+    sShipyardPreparedSave.parsed = false;
+#ifdef _XBOX
+    sShipyardPreparedSave.worker = Shipyard::Async::joining_thread(ShipyardPrepareSave, &sShipyardPreparedSave,
+                                                                   Shipyard::Async::ServiceProcessor);
+#else
+    sShipyardPreparedSave.worker = Shipyard::Async::joining_thread(ShipyardPrepareSave, &sShipyardPreparedSave);
+#endif
+}
+
+'''
+
+META_CACHE='''namespace {
+// The title screen rebuilds file-select metadata on every visit by parsing
+// each whole save. Metadata depends only on the file's bytes, so an unchanged
+// file reuses what its last parse produced.
+struct ShipyardMetaCacheEntry {
+    bool valid;
+    size_t length;
+    uint64_t hash;
+    SaveFileMetaInfo meta;
+    ShipyardMetaCacheEntry() : valid(false), length(0), hash(0) {}
+};
+ShipyardMetaCacheEntry sShipyardMetaCache[SaveManager::MaxFiles];
+
+uint64_t ShipyardSaveTextHash(const std::string& text) {
+    uint64_t hash = 14695981039346656037ULL;
+    for (size_t i = 0; i < text.size(); ++i) {
+        hash = (hash ^ static_cast<unsigned char>(text[i])) * 1099511628211ULL;
+    }
+    return hash;
+}
+
+bool ShipyardCachedMeta(int fileNum, const std::string& text, SaveFileMetaInfo& meta) {
+    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles) {
+        return false;
+    }
+    const ShipyardMetaCacheEntry& entry = sShipyardMetaCache[fileNum];
+    if (!entry.valid || entry.length != text.size() || entry.hash != ShipyardSaveTextHash(text)) {
+        return false;
+    }
+    meta = entry.meta;
+    return true;
+}
+
+void ShipyardStoreMeta(int fileNum, const std::string& text, const SaveFileMetaInfo& meta) {
+    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles) {
+        return;
+    }
+    ShipyardMetaCacheEntry& entry = sShipyardMetaCache[fileNum];
+    entry.length = text.size();
+    entry.hash = ShipyardSaveTextHash(text);
+    entry.meta = meta;
+    entry.valid = true;
+}
+}
+
+'''
+
+def prepared_load(source):
+    """Parse the confirmed save during the file-select fade (see PREPARED_LOAD) and
+    reuse title-screen metadata for unchanged saves (see META_CACHE)."""
+    source=once(source,'void SaveManager::StartupCheckAndInitMeta(int fileNum) {',
+                PREPARED_LOAD+META_CACHE+'void SaveManager::StartupCheckAndInitMeta(int fileNum) {')
+    source=once(source,'    nlohmann::json metaSaveBlock = nlohmann::json::object();\n    input >> metaSaveBlock;\n    input.close();\n    saveMtx.unlock();',
+                '    nlohmann::json metaSaveBlock = nlohmann::json::object();\n'
+                '    const std::string metaText = ShipyardReadSaveText(input);\n'
+                '    input.close();\n'
+                '    saveMtx.unlock();\n'
+                '    if (ShipyardCachedMeta(fileNum, metaText, fileMetaInfo[fileNum])) {\n'
+                '        return;\n'
+                '    }\n'
+                '    metaSaveBlock = nlohmann::json::parse(metaText.begin(), metaText.end());')
+    source=once(source,'                                    metaSaveBlock["sections"]["sohStats"]["data"]["buildVersion"],\n'
+                '                                    ARRAY_COUNT(fileMetaInfo[fileNum].buildVersion));\n}',
+                '                                    metaSaveBlock["sections"]["sohStats"]["data"]["buildVersion"],\n'
+                '                                    ARRAY_COUNT(fileMetaInfo[fileNum].buildVersion));\n'
+                '    ShipyardStoreMeta(fileNum, metaText, fileMetaInfo[fileNum]);\n}')
+    source=once(source,'void SaveManager::LoadFile(int fileNum) {\n    saveMtx.lock();',
+                'void SaveManager::LoadFile(int fileNum) {\n    ShipyardFinishPreparedSave();\n    saveMtx.lock();')
+    source=once(source,'        saveBlock = nlohmann::json::object();\n        input >> saveBlock;\n        input.close();',
+                '        saveBlock = nlohmann::json::object();\n'
+                '        const std::string saveText = ShipyardReadSaveText(input);\n'
+                '        input.close();\n'
+                '        if (!ShipyardTakePreparedSave(fileNum, saveText, saveBlock)) {\n'
+                '            saveBlock = nlohmann::json::parse(saveText.begin(), saveText.end());\n'
+                '        }')
+    return '#include <sstream>\n'+source
+
 def prepare():
     lock=json.loads((OWN/'sources.lock.json').read_text());texts={};generated={};defaults={}
     for name,digest in lock['sources'].items():
@@ -77,6 +232,7 @@ def prepare():
     if not match:raise ValueError('Old hint order inventory drift')
     source=source[:match.start()]+'static const RandomizerHint oldVerHintValues[]='+match[1]+';\nstd::vector<RandomizerHint> Rando::StaticData::oldVerHintOrder(oldVerHintValues,oldVerHintValues+sizeof(oldVerHintValues)/sizeof(oldVerHintValues[0]));'+source[match.end():]
     source=load_defaults(source)
+    source=prepared_load(source)
     emit('soh/soh/SaveManager.cpp',source)
     emit('include/save-manager/enum_traits.h','''#pragma once
 #include <nlohmann/json.hpp>

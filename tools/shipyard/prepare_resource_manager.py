@@ -78,9 +78,11 @@ def syntax(text):
 
 
 def concurrent_cache(text):
-    # Prefetch can load a path concurrently. Recheck publication under mMutex
-    # and retain the first cached instance: game code holds raw pointers into
-    # resources, so replacing that instance could invalidate those pointers.
+    # SoH itself only ever runs one load at a time; object and scene prefetch
+    # run several. Every cache map access takes mMutex, and the first
+    # published instance of a path wins: game code keeps raw pointers into
+    # cached resources (OTRPlay_LoadFile, scene commands), so replacing an
+    # entry would free the instance it holds.
     text=once(text,
               '        mResourceCache[identifier] = ResourceLoadError::NotFound;\n'
               '        InterlockedIncrement(&mXboxLookupGeneration);\n'
@@ -238,6 +240,32 @@ def transform(name, original):
             text=once(text,signature,signature+'    const Shipyard::Async::lock_guard<Shipyard::Async::mutex> zipLock(sXboxZipMutex);\n')
         text='#include "async/native.h"\n'+text
     if name.endswith('/ArchiveManager.cpp'):
+        # Lookups must not insert. operator[] adds an empty entry for every
+        # missing hash (each alt/ probe of every load), mutating the map while
+        # other resource workers read it; with prefetch that corrupted it.
+        # Archives are added only during setup, so find() keeps runtime
+        # lookups read-only and returns the same null for a missing file.
+        text=once(text,'    auto archive = mFileToArchive[hash];\n    if (archive == nullptr) {',
+                  '    std::shared_ptr<Archive> archive;\n'
+                  '    const auto found = mFileToArchive.find(hash);\n'
+                  '    if (found != mFileToArchive.end()) {\n'
+                  '        archive = found->second;\n'
+                  '    }\n'
+                  '    if (archive == nullptr) {')
+        text=once(text,'    return mFileToArchive[CRC64(filePath.c_str())];',
+                  '    const auto found = mFileToArchive.find(CRC64(filePath.c_str()));\n'
+                  '    if (found == mFileToArchive.end()) {\n'
+                  '        return std::shared_ptr<Archive>();\n'
+                  '    }\n'
+                  '    return found->second;')
+        # Size both indices once per archive (oot.o2r holds tens of thousands
+        # of entries) instead of rehashing repeatedly while inserting at boot.
+        # VC10's unordered_map has rehash() but no reserve().
+        text=once(text,'    const auto fileList = archive->ListFiles();\n    InterlockedIncrement(&mXboxHashEpoch);',
+                  '    const auto fileList = archive->ListFiles();\n'
+                  '    InterlockedIncrement(&mXboxHashEpoch);\n'
+                  '    mHashes.rehash(static_cast<size_t>((mHashes.size() + fileList->size()) / mHashes.max_load_factor()) + 1);\n'
+                  '    mFileToArchive.rehash(static_cast<size_t>((mFileToArchive.size() + fileList->size()) / mFileToArchive.max_load_factor()) + 1);')
         text=text.replace('dynamic_pointer_cast<Archive>', 'std::dynamic_pointer_cast<Archive>')
         text=text.replace('mValidGameVersions.contains(archive->GetGameVersion())', 'Shipyard::Resources::contains(mValidGameVersions, archive->GetGameVersion())')
         text=text.replace('Init(archivePaths, {});', 'Init(archivePaths, std::unordered_set<uint32_t>());')

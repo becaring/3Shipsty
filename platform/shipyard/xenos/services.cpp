@@ -134,7 +134,7 @@ struct KokiriMoteCounters { unsigned invisible, outside, emitted; };
 KokiriMoteCounters kokiriMotes = {};
 unsigned kokiriFairiesCulled = 0, kokiriFairiesVisible = 0;
 enum { ActorProfileCapacity = 512, ActorProfileTopCount = 8, ActorProfileStageCount = 6 };
-struct ActorDrawCounters { uint64_t ticks, stageTicks[ActorProfileStageCount]; unsigned calls, samples; };
+struct ActorDrawCounters { uint64_t ticks, maximum, stageTicks[ActorProfileStageCount]; unsigned calls, samples; };
 ActorDrawCounters actorDraw[ActorProfileCapacity] = {};
 uint32_t actorRandomState = 0x9827b18du;
 int activeActorSampleId = -1;
@@ -277,11 +277,9 @@ void End(Phase phase) {
 uint64_t BeginActorInstance(int actorId) {
     if (!interpreterDetailsEnabled || actorId < 0 || actorId >= ActorProfileCapacity) return 0;
     ActorDrawCounters& counter = actorDraw[actorId];
+    // Every draw is timed while enabled: a one-off slow draw (a single long
+    // frame) must be attributable, which a 1-in-4 sample would usually miss.
     ++counter.calls;
-    actorRandomState ^= actorRandomState << 13;
-    actorRandomState ^= actorRandomState >> 17;
-    actorRandomState ^= actorRandomState << 5;
-    if ((actorRandomState & 3u) != 0) return 0;
     ++counter.samples;
     const uint64_t started = Clock();
     activeActorSampleId = actorId;
@@ -304,7 +302,11 @@ void EndActorInstance(int actorId, uint64_t started) {
         if (now >= actorStageStart) actorDraw[actorId].stageTicks[actorStage] += now - actorStageStart;
         activeActorSampleId = -1;
     }
-    if (now >= start) actorDraw[actorId].ticks += now - start;
+    if (now >= start) {
+        const uint64_t elapsed = now - start;
+        actorDraw[actorId].ticks += elapsed;
+        if (elapsed > actorDraw[actorId].maximum) actorDraw[actorId].maximum = elapsed;
+    }
 }
 bool BeginResourceWait() {
     if (!inInterpreter || !accumulator.enabled) return false;
@@ -703,8 +705,25 @@ void EndFrame() {
             break;
         }
     }
-    Shipyard_Log("frame-profile actor_instances calls=%u samples=%u estimated_ms=%.3f scope=Actor_Draw sampled_1_in_4",
+    Shipyard_Log("frame-profile actor_instances calls=%u samples=%u estimated_ms=%.3f scope=Actor_Draw every_draw",
         actorCalls, actorSamples, Milliseconds(static_cast<uint64_t>(actorEstimatedTicks)));
+    // The single slowest draws in the window, by actor ID.
+    int slowestIds[ActorProfileTopCount];
+    for (unsigned rank = 0; rank < ActorProfileTopCount; ++rank) {
+        slowestIds[rank] = -1;
+        for (unsigned id = 0; id < ActorProfileCapacity; ++id) {
+            if (!actorDraw[id].maximum) continue;
+            bool taken = false;
+            for (unsigned previous = 0; previous < rank; ++previous) taken = taken || slowestIds[previous] == static_cast<int>(id);
+            if (taken) continue;
+            if (slowestIds[rank] < 0 || actorDraw[id].maximum > actorDraw[slowestIds[rank]].maximum)
+                slowestIds[rank] = static_cast<int>(id);
+        }
+        if (slowestIds[rank] < 0) break;
+        const ActorDrawCounters& slow = actorDraw[slowestIds[rank]];
+        Shipyard_Log("frame-profile actor_slowest rank=%u id=%u max_ms=%.3f calls=%u",
+            rank, static_cast<unsigned>(slowestIds[rank]), Milliseconds(slow.maximum), slow.calls);
+    }
     for (unsigned rank = 0; rank < ActorProfileTopCount && topActorIds[rank] >= 0; ++rank) {
         const unsigned id = static_cast<unsigned>(topActorIds[rank]);
         const ActorDrawCounters& actor = actorDraw[id];
@@ -786,6 +805,12 @@ void EndFrame() {
     const double presentsPerGame = double(accumulator.phases[Present].calls) / accumulator.frames;
     Shipyard_Log("frame-profile game_hz=%.3f presents_per_game=%.3f estimated_present_hz=%.3f",
         gameHz, presentsPerGame, gameHz * presentsPerGame);
+    // Physical memory headroom: the resource cache only grows during a session.
+    MEMORYSTATUS memory;
+    memory.dwLength = sizeof(memory);
+    GlobalMemoryStatus(&memory);
+    Shipyard_Log("frame-profile memory available_mb=%.1f total_mb=%.1f",
+        memory.dwAvailPhys / 1048576.0, memory.dwTotalPhys / 1048576.0);
     const double nativeMs = native.frequency ? 1000.0 / double(native.frequency) : 0.0;
     Shipyard_Log("frame-profile native_inclusive_ms draw=%.3f upload=%.3f setup=%.3f resolve=%.3f clear=%.3f calls=%u/%u/%u/%u/%u upload_bytes=%I64u preparation_rebuilt=%u reused=%u active=%ux%u samples=%u tiles=%u presentation=%ux%u buffer2frames=%u present_interval=%u",
         native.drawTicks * nativeMs, native.uploadTicks * nativeMs, native.framebufferSetupTicks * nativeMs,

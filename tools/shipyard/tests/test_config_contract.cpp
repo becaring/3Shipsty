@@ -1,11 +1,23 @@
 #include "ship/config/Config.h"
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/sink.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <atomic>
 #include <cstdlib>
 #include <new>
+
+class ConfigFailureSink : public spdlog::sinks::sink {
+public:
+    std::string text;
+    void log(const spdlog::details::log_msg& message) override {
+        text.append(message.payload.data(), message.payload.size());
+    }
+    void flush() override {}
+    void set_pattern(const std::string&) override {}
+    void set_formatter(std::unique_ptr<spdlog::formatter>) override {}
+};
 
 static std::atomic<size_t> allocationCount(0);
 void* operator new(size_t bytes) {
@@ -50,7 +62,7 @@ int main(int argc,char** argv) {
     std::cout << config.GetNestedJson().dump() << '\n';
     { std::ofstream file(path);file << "{broken"; }
     config.Reload();assert(config.GetString("Features.Name","empty")=="empty");
-    config.Save();std::cout << config.GetNestedJson().dump() << '\n';
+    config.Save();config.Reload();std::cout << config.GetNestedJson().dump() << '\n';
 #ifdef SHIPYARD_PROJECTED_CONFIG_TEST
     // New configurations must accept a preset before any CVars exist.
     config.SetBlock("CVars.gEnhancements", nlohmann::json::parse("{\"InterpolationFPS\":60}"));
@@ -60,12 +72,19 @@ int main(int argc,char** argv) {
     restarted.Save();
     config.Reload();
     assert(config.GetInt("CVars.gEnhancements.InterpolationFPS",20)==40);
-    // A failed write must be reported, rather than pretending it persisted.
+    // The service writer reports failed writes through the logger. Reload
+    // waits for completion, so the error must be visible before it returns.
     Ship::Config unwritable(path+"/missing/settings.json");
     unwritable.SetInt("Value",1);
-    bool reported=false;
-    try { unwritable.Save(); } catch (const std::exception&) { reported=true; }
-    assert(reported);
+    auto priorLogger=spdlog::default_logger();
+    auto failureSink=std::make_shared<ConfigFailureSink>();
+    auto failureLogger=std::make_shared<spdlog::logger>("config-write-test",failureSink);
+    failureLogger->set_level(spdlog::level::err);
+    spdlog::set_default_logger(failureLogger);
+    unwritable.Save();unwritable.Reload();
+    spdlog::set_default_logger(priorLogger);
+    assert(failureSink->text.find("Config save failed")!=std::string::npos);
+    assert(!std::ifstream(path+"/missing/settings.json"));
     config.SetString("Window.AudioBackend","wasapi");
     assert(config.GetCurrentAudioBackend()==Ship::AudioBackend::XAUDIO2);
     config.SetCurrentAudioBackend(Ship::AudioBackend::XAUDIO2);
@@ -92,6 +111,7 @@ int main(int argc,char** argv) {
     config.SetBlock("Bulk",bulk);
     assert(config.GetInt("Bulk.K42",-1)==42);
     config.SetInt("Bulk.K42",42);
+    config.Reload();
     allocationCount.store(0,std::memory_order_relaxed);
     volatile int lookupSum=0;
     for(int i=0;i<100;++i) lookupSum+=config.GetInt("Bulk.K42",-1);
@@ -102,6 +122,8 @@ int main(int argc,char** argv) {
     allocationCount.store(0,std::memory_order_relaxed);
     config.Save();
     std::cerr << "config_save_allocations=" << allocationCount.load(std::memory_order_relaxed) << '\n';
+    // Separate read-allocation measurements from the asynchronous writer.
+    config.Reload();
     allocationCount.store(0,std::memory_order_relaxed);
     for(int i=0;i<100;++i) lookupSum+=config.GetInt("Bulk.K129",-1);
     assert(lookupSum==17100);

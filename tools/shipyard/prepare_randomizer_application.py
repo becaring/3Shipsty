@@ -246,12 +246,9 @@ def project(name,text):
             index=chunk_index//8
             chunk='\n'.join('    '+n.text.decode() for n in statements[chunk_index:chunk_index+8])
             helpers.append('static __declspec(noinline) void ShipyardTrickNamesChunk'+str(index)+'() {\n'+chunk+'\n}\n')
-            calls.append('    SPDLOG_INFO("RANDO trick names chunk={} begin", '+str(index)+');\n'
-                         '    ShipyardTrickNamesChunk'+str(index)+'();\n'
-                         '    SPDLOG_INFO("RANDO trick names chunk={} end", '+str(index)+');')
-        replacement='\n'.join(helpers)+'\nstatic void InitTrickNames() {\n    SPDLOG_INFO("RANDO trick names begin");\n'+'\n'.join(calls)+'\n}\n'
+            calls.append('    ShipyardTrickNamesChunk'+str(index)+'();')
+        replacement='\n'.join(helpers)+'\nstatic void InitTrickNames() {\n'+'\n'.join(calls)+'\n}\n'
         text=edits_apply(raw,[(fn.start_byte,fn.end_byte,replacement)])
-        text='#include <spdlog/spdlog.h>\n'+text
     text,_=content_expressions(text)
     if name.endswith('/savefile.cpp'):
         raw=text.encode();edits=[]
