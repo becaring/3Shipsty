@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/shipyard'))
 from cpp_ast import PARSER, walk
 import prepare_resource_manager
+from platform_base import resolve
 
 
 def load_method(source):
@@ -32,14 +33,23 @@ def main():
     compiler, environment = runpy.run_path(str(Path(__file__).with_name('test_binary.py')))['host_environment']()
     folder = ROOT / 'scratch/resource-manager-xdk/host-o2r-read'
     contract = Path(__file__).with_name('test_o2r_read_contract.cpp')
+    base = resolve(ROOT)
     projected = prepare_resource_manager.OUT / 'generated/src/ship/resource/archive/O2rArchive.cpp'
     for label, source in [('original', original), ('projected', projected)]:
         target = folder / label
         target.mkdir(parents=True, exist_ok=True)
-        (target / 'method.inc').write_bytes(load_method(source))
+        method = load_method(source)
+        support = []
+        if label == 'projected':
+            declaration = b'Shipyard::Async::mutex sXboxZipMutex;'
+            assert source.read_bytes().count(declaration) == 1
+            method = b'namespace {\n' + declaration + b'\n}\n' + method
+            support = ['/DNOMINMAX', '/FI' + str(base / 'sources/async/native.h'),
+                       '/I' + str(base / 'sources'), str(base / 'sources/async/native.cpp')]
+        (target / 'method.inc').write_bytes(method)
         command = [str(compiler), '/nologo', '/std:c++20', '/EHsc', '/MD',
                    *(['/DSHIPYARD_PROJECTED'] if label == 'projected' else []),
-                   '/I' + str(target), str(contract), '/Fe:' + str(target / 'contract.exe')]
+                   '/I' + str(target), str(contract), *support, '/Fe:' + str(target / 'contract.exe')]
         build = subprocess.run(command, cwd=target, env=environment, capture_output=True, text=True)
         if build.returncode:
             raise RuntimeError(f'{label} contract compile failed:\n{build.stdout}{build.stderr}')

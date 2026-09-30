@@ -1,25 +1,51 @@
 """Quantized presentation fractions and preservation of the real draw path."""
+
 from pathlib import Path
 import json
 import runpy
 import sys
-ROOT=Path(__file__).resolve().parents[3]
-sys.path.insert(0,str(ROOT/'tools/shipyard'))
-from prepare_presentation import prepare,OUT,OWN,PLATFORM_BASE
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools/shipyard"))
+from prepare_presentation import prepare, OUT, OWN, PLATFORM_BASE
 from prepare_archives import stable
+from cpp_ast import PARSER, walk
 
 
 def main():
-    prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
-    original=(ROOT/'libultraship/src/fast/Fast3dWindow.cpp').read_text()
-    projected=(OUT/'generated/src/fast/Fast3dWindow.cpp').read_text()
-    begin='bool Fast3dWindow::DrawAndRunGraphicsCommands('
-    # This central application path needs no syntax adaptation: compare it whole.
-    def draw(text):return text[text.index(begin):text.index('\nvoid Fast3dWindow::HandleEvents()',text.index(begin))]
-    assert draw(original)==draw(projected),'Real GUI/interpreter draw ordering changed'
-    manifest=(OUT/'manifest.json').read_bytes();prepare()
-    assert manifest==(OUT/'manifest.json').read_bytes(),'Nondeterministic generation'
-    text='''#include "window_xenos.h"
+    prepare()
+    folder = OUT / "host"
+    folder.mkdir(exist_ok=True)
+    original = (ROOT / "libultraship/src/fast/Fast3dWindow.cpp").read_text()
+    projected = (OUT / "generated/src/fast/Fast3dWindow.cpp").read_text()
+    begin = "bool Fast3dWindow::DrawAndRunGraphicsCommands("
+
+    # Compare the application path after removing only its profiler observations.
+    def draw(text):
+        return text[text.index(begin) : text.index("\nvoid Fast3dWindow::HandleEvents()", text.index(begin))]
+
+    observed = draw(projected).encode()
+    edits = []
+    for node in walk(PARSER.parse(observed).root_node):
+        if node.type == "if_statement" and b"ModernFrameProfile::CaptureTrianglePipeline()" in (
+            node.child_by_field_name("condition").text
+        ):
+            edits.append((node.start_byte, node.end_byte))
+        elif node.type == "expression_statement" and node.text.startswith(b"ModernFrameProfile::"):
+            if not any(start <= node.start_byte < end for start, end in edits):
+                edits.append((node.start_byte, node.end_byte))
+    for start, end in sorted(edits, reverse=True):
+        observed = observed[:start] + observed[end:]
+    observed = observed.decode()
+    assert observed.count("const bool ready = wnd->IsFrameReady();") == 1
+    observed = observed.replace("const bool ready = wnd->IsFrameReady();", "")
+    observed = observed.replace("if (!ready)", "if (!wnd->IsFrameReady())")
+    normalize = lambda text: "\n".join(line.rstrip() for line in text.splitlines() if line.strip())
+    assert normalize(draw(original)) == normalize(observed), "GUI/interpreter draw ordering changed"
+    manifest = (OUT / "manifest.json").read_bytes()
+    prepare()
+    assert manifest == (OUT / "manifest.json").read_bytes(), "Nondeterministic generation"
+    text = """#include "window_xenos.h"
 #include <type_traits>
 #include <cstdio>
 #include <stdexcept>
@@ -47,12 +73,46 @@ int main(){
     failed=false;try{p.SetRefresh(0);}catch(const std::invalid_argument&){failed=true;}CHECK(failed);
     std::printf("%u pacing steps pass, including repeated targets, rate changes and overflow boundary; current window interface is concrete\\n",calls);
 }
-'''
-    stable(folder/'contract.cpp',text)
-    env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
-    flags=['/nologo','/std:c++20','/EHsc','/MD']+['/I'+str(p) for p in [PLATFORM_BASE/'sources',OWN,OUT/'generated/include',ROOT/'scratch/fast3d-xdk/generated/include']]
-    env['invoke']([compiler]+flags+[folder/'contract.cpp','/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')],folder,'build',environment)
-    result=env['invoke']([folder/'contract.exe'],folder,'run')
-    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],draw_path_unchanged=True,deterministic=True,target_runtime_executed=False),indent=2)+'\n')
-    print(result['stdout'])
-if __name__=='__main__':main()
+"""
+    stable(folder / "contract.cpp", text)
+    # The host checks interface completeness, so GPU pointers need declarations only.
+    stable(folder / "xtl.h", "#pragma once\n#include <Windows.h>\nstruct IDirect3DDevice9;\n")
+    env = runpy.run_path(str(Path(__file__).with_name("test_binary.py")))
+    compiler, environment = env["host_environment"]()
+    flags = ["/nologo", "/std:c++20", "/EHsc", "/MD", "/DNOMINMAX"] + [
+        "/I" + str(p)
+        for p in [
+            folder,
+            PLATFORM_BASE / "sources",
+            OWN,
+            OUT / "generated/include",
+            ROOT / "scratch/fast3d-xdk/generated/include",
+        ]
+    ]
+    env["invoke"](
+        [compiler]
+        + flags
+        + [folder / "contract.cpp", "/Fo:" + str(folder) + "/", "/Fe:" + str(folder / "contract.exe")],
+        folder,
+        "build",
+        environment,
+    )
+    result = env["invoke"]([folder / "contract.exe"], folder, "run")
+    stable(
+        OUT / "verification.json",
+        json.dumps(
+            dict(
+                host_output=result["stdout"],
+                draw_path_unchanged=True,
+                deterministic=True,
+                target_runtime_executed=False,
+            ),
+            indent=2,
+        )
+        + "\n",
+    )
+    print(result["stdout"])
+
+
+if __name__ == "__main__":
+    main()

@@ -1,4 +1,6 @@
 """TRI2 pair certificate reuse: projection, differential, and benchmark."""
+
+import os
 import sys
 import json
 import subprocess
@@ -13,51 +15,50 @@ from tri2_pair_projection import header, transform
 
 class Tri2PairProjection(unittest.TestCase):
     def test_pair_scope_and_flush_guard(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
+        source = (ROOT / "scratch/fast3d-xdk/generated/src/fast/interpreter.cpp").read_text()
         projected = transform(source)
-        handler = projected.split('bool gfx_tri2_handler_f3dex(', 1)[1].split('\n}', 1)[0]
-        self.assertIn('mXboxTrianglePairActive = true;', handler)
-        self.assertIn('mXboxTrianglePairPrepared = false;', handler)
-        self.assertIn('mXboxTrianglePairActive = false;', handler)
-        emitter = projected.split('void Interpreter::XboxEmitTriangle(', 1)[1].split('\n}', 1)[0]
-        self.assertIn('mXboxTrianglePairActive && mXboxTrianglePairPrepared', emitter)
-        self.assertTrue('mXboxTrianglePairPrepared = mXboxTrianglePairActive && mXboxPipelineKey.valid;' in emitter)
-        self.assertIn('mXboxTrianglePairPrepared = false;', emitter)
+        handler = projected.split("bool gfx_tri2_handler_f3dex(", 1)[1].split("\n}", 1)[0]
+        self.assertIn("mXboxTrianglePairActive = true;", handler)
+        self.assertIn("mXboxTrianglePairPrepared = false;", handler)
+        self.assertIn("mXboxTrianglePairActive = false;", handler)
+        emitter = projected.split("void Interpreter::XboxEmitTriangle(", 1)[1].split("\n}", 1)[0]
+        self.assertIn("mXboxTrianglePairActive && mXboxTrianglePairPrepared", emitter)
+        self.assertTrue("mXboxTrianglePairPrepared = mXboxTrianglePairActive && mXboxPipelineKey.valid;" in emitter)
+        self.assertIn("mXboxTrianglePairPrepared = false;", emitter)
 
     def test_header_owns_pair_state(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/include/fast/interpreter.h').read_text()
+        source = (ROOT / "scratch/fast3d-xdk/generated/include/fast/interpreter.h").read_text()
         projected = header(source)
-        self.assertIn('bool mXboxTrianglePairActive;', projected)
-        self.assertIn('bool mXboxTrianglePairPrepared;', projected)
+        self.assertIn("bool mXboxTrianglePairActive;", projected)
+        self.assertIn("bool mXboxTrianglePairPrepared;", projected)
 
     def test_selected_certificate_pair_differential_and_benchmark(self):
-        vcvars = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/vcvarsall.bat')
-        compiler = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/bin/cl.exe')
+        vcvars = Path("C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/vcvarsall.bat")
+        compiler = Path("C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/bin/cl.exe")
         if not vcvars.is_file() or not compiler.is_file():
-            self.skipTest('VS2010 host compiler unavailable')
-        lock = json.loads((ROOT / 'platform-base.lock.json').read_text())
-        header_text = (ROOT / lock['base'] / 'sources/fast3d/triangle_pipeline.h').read_text()
-        fixture = HOST_FIXTURE.replace('/* SELECTED CERTIFICATE */', header_text)
-        with tempfile.TemporaryDirectory(prefix='modern-tri2-') as temp:
-            cpp = Path(temp) / 'fixture.cpp'
-            exe = Path(temp) / 'fixture.exe'
-            batch = Path(temp) / 'build.bat'
+            self.skipTest("VS2010 host compiler unavailable")
+        lock = json.loads((ROOT / "platform-base.lock.json").read_text())
+        header_text = (
+            Path(os.environ.get("XBOX360_PLATFORM_BASE", ROOT / lock["base"])) / "sources/fast3d/triangle_pipeline.h"
+        ).read_text()
+        fixture = HOST_FIXTURE.replace("/* SELECTED CERTIFICATE */", header_text)
+        with tempfile.TemporaryDirectory(prefix="modern-tri2-") as temp:
+            cpp = Path(temp) / "fixture.cpp"
+            exe = Path(temp) / "fixture.exe"
+            batch = Path(temp) / "build.bat"
             cpp.write_text(fixture)
-            batch.write_text(f'@call "{vcvars}" x86 >nul\n'
-                             f'@"{compiler}" /nologo /O2 /EHsc /fp:precise "{cpp}" /Fe"{exe}"\n')
-            built = subprocess.run(['cmd.exe', '/c', str(batch)], capture_output=True, text=True)
+            batch.write_text(
+                f'@call "{vcvars}" x86 >nul\n' f'@"{compiler}" /nologo /O2 /EHsc /fp:precise "{cpp}" /Fe"{exe}"\n'
+            )
+            built = subprocess.run(["cmd.exe", "/c", str(batch)], capture_output=True, text=True)
             self.assertEqual(0, built.returncode, (built.stdout + built.stderr)[-3000:])
             result = subprocess.run([str(exe)], capture_output=True, text=True)
             self.assertEqual(0, result.returncode, (result.stdout + result.stderr)[-3000:])
-            self.assertIn('differential=passed', result.stdout)
+            self.assertIn("differential=passed", result.stdout)
             print(result.stdout.strip())
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
-HOST_FIXTURE = r'''
+HOST_FIXTURE = r"""
 #include <stdint.h>
 #include <stddef.h>
 #include <cstring>
@@ -184,4 +185,8 @@ static void benchmark() {
                 pairs,baselineMs,pairMs,baselineMs/pairMs,(unsigned)sink);
 }
 int main() { if(differential()) return 1; benchmark(); return 0; }
-'''
+"""
+
+
+if __name__ == "__main__":
+    unittest.main()

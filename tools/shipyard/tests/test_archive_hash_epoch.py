@@ -55,11 +55,20 @@ class ArchiveHashEpoch(unittest.TestCase):
 
     def test_fast3d_uses_epoch_only_after_existing_owner_and_profile_projection(self):
         projector = (ROOT / 'tools/shipyard/prepare_fast3d.py').read_text()
-        self.assertIn('texture_hash_epoch_handler)', projector)
-        self.assertLess(projector.index('    text=profile_interpreter(text)'),
-                        projector.index('    text=texture_hash_borrowed_handler(text)'))
-        self.assertLess(projector.index('    text=texture_hash_borrowed_handler(text)'),
-                        projector.index('    text=texture_hash_epoch_handler(text)'))
+        tree = ast.parse(projector)
+        imports = {
+            alias.name for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module == 'xbox360_platform.resource_lookup'
+            for alias in node.names
+        }
+        self.assertIn('texture_hash_epoch_handler', imports)
+        names = ['profile_interpreter', 'texture_hash_borrowed_handler', 'texture_hash_epoch_handler']
+        calls = [
+            (node.lineno, node.value.func.id) for node in ast.walk(tree)
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name) and node.value.func.id in names
+        ]
+        self.assertEqual([name for _, name in sorted(calls)], names)
 
 
 if __name__ == '__main__':

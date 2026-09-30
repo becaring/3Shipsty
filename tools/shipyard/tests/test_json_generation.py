@@ -2,6 +2,13 @@ import unittest,runpy,json,hashlib,tempfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 M=runpy.run_path(str(ROOT/'tools/shipyard/prepare_json.py'))
+from cpp_ast import PARSER, walk
+
+
+def cpp_tokens(text):
+    return [(node.type, node.text) for node in walk(PARSER.parse(text.encode()).root_node)
+            if not node.children]
+
 class GenerationTests(unittest.TestCase):
     def test_deterministic(self):
         one=M['generate']();two=M['generate']();self.assertEqual(one,two)
@@ -39,7 +46,10 @@ class GenerationTests(unittest.TestCase):
                 if source[end]=='{':depth+=1
                 elif source[end]=='}':depth-=1
                 end+=1
-            self.assertIn(source[start:end],contract)
+            expected = cpp_tokens(source[start:end])
+            selected = cpp_tokens(contract)
+            self.assertTrue(any(selected[i:i + len(expected)] == expected for i in range(len(selected))),
+                            'Save template tokens changed: ' + name)
     def test_actual_enum_sources_and_probe(self):
         manifest=M['generate']()['containers']
         self.assertEqual(len(manifest['source_sha256']),3)

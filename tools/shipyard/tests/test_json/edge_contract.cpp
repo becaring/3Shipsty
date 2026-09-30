@@ -51,8 +51,8 @@ int main() {
             json j = json::parse(texts[i]);
             std::cout << int(j.type()) << ":" << j.dump();
         });
-    const char *pointers[] = {
-        "", "/", "/0", "/1", "/00", "/-", "/-1", "/+1", "/a", "/18446744073709551616", "/~", "/~2", "/~01"};
+    const char *pointers[] = {"",   "/",   "/0",  "/1", "/00", "/-", "/-1", "/+1", "/a", "/18446744073709551616",
+                              "/~", "/~2", "/~01"};
     for (size_t i = 0; i < sizeof(pointers) / sizeof(*pointers); ++i)
         Case(pointers[i], [&] {
             json j = json::parse("[1,2]");
@@ -62,15 +62,9 @@ int main() {
                            "{\"/00\":1}", "{\"/0\":1,\"/a\":2}", "{\"/a\":1,\"/a/b\":2}"};
     for (size_t i = 0; i < sizeof(flats) / sizeof(*flats); ++i)
         Case(flats[i], [&] { std::cout << json::parse(flats[i]).unflatten().dump(); });
-    const char *utf[] = {"\xff",
-                         "\xc0\x80",
-                         "\xc2",
-                         "\xe0\x80\x80",
-                         "\xed\xa0\x80",
-                         "\xf0\x80\x80\x80",
-                         "\xf4\x90\x80\x80",
-                         "\xf0\x9f\x98",
-                         "\xe2\x28\xa1"};
+    const char *utf[] = {
+        "\xff",         "\xc0\x80",    "\xc2", "\xe0\x80\x80", "\xed\xa0\x80", "\xf0\x80\x80\x80", "\xf4\x90\x80\x80",
+        "\xf0\x9f\x98", "\xe2\x28\xa1"};
     for (size_t i = 0; i < sizeof(utf) / sizeof(*utf); ++i)
         Case("utf", [&] { std::cout << json(std::string(utf[i])).dump(); });
     Case("control", [] {
@@ -103,10 +97,28 @@ int main() {
         json j = -1;
         std::cout << (j == json(std::numeric_limits<unsigned long long>::max()));
     });
-    Case("deep-parser", [] { std::string text(512, '['); text += "0"; text.append(512, ']'); json j=json::parse(text); std::cout<<j.size(); });
-    Case("discarded", [] { json j=json::parse("[",nullptr,false); std::cout<<j.is_discarded()<<":"<<j.dump(); });
-    Case("unordered-values", [] { json n=std::numeric_limits<double>::quiet_NaN(); json d=json::parse("[",nullptr,false); std::cout<<(n!=n)<<":"<<(n!=json(1))<<":"<<(n!=json("x"))<<":"<<d.is_primitive()<<":"<<(d!=d)<<":"<<(d!=json(1)); });
-    Case("unflatten-discarded", [] {json flat=json::object();flat["/x"]=json::parse("[",nullptr,false);std::cout<<flat.unflatten().dump();});
+    Case("deep-parser", [] {
+        std::string text(512, '[');
+        text += "0";
+        text.append(512, ']');
+        json j = json::parse(text);
+        std::cout << j.size();
+    });
+    Case("discarded", [] {
+        json j = json::parse("[", nullptr, false);
+        std::cout << j.is_discarded() << ":" << j.dump();
+    });
+    Case("unordered-values", [] {
+        json n = std::numeric_limits<double>::quiet_NaN();
+        json d = json::parse("[", nullptr, false);
+        std::cout << (n != n) << ":" << (n != json(1)) << ":" << (n != json("x")) << ":" << d.is_primitive() << ":"
+                  << (d != d) << ":" << (d != json(1));
+    });
+    Case("unflatten-discarded", [] {
+        json flat = json::object();
+        flat["/x"] = json::parse("[", nullptr, false);
+        std::cout << flat.unflatten().dump();
+    });
     unsigned long long bits = 1;
     for (int i = 0; i < 4000; ++i) {
         bits = bits * 6364136223846793005ULL + 1442695040888963407ULL;

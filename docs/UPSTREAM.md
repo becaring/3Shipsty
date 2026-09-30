@@ -30,8 +30,8 @@ part of the applicable distribution process. Do not relabel it as permissively
 licensed platform code. Sonic commit `fbf75c3d6d846bad3bb3d456cbc5d07d9fd8c104`
 is a build dependency and is not linked into this Xbox runtime.
 
-The [speech documentation](../platform/shipyard/speech/README.md) retains exact
-source, configuration, data-packaging, and licensing information. Preserve all
+The [architecture guide](ARCHITECTURE.md#speech-and-shutdown) describes
+speech data packaging and shutdown. Preserve all
 other dependency licenses, copyright notices, and source-authority files too.
 ROMs, extracted game assets, and the Xbox SDK are external inputs.
 

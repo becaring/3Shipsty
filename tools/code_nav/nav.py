@@ -4,6 +4,7 @@ No source is parsed or copied here. Compiler inputs and provenance come from
 the selected build manifests, source locks, project file, and #line records.
 Workstation paths are intentional; this module is not a portable build input.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,8 +49,7 @@ def git_dirs(root: Path) -> tuple[Path, Path]:
             raise ValueError(f"Unrecognized worktree marker: {marker}")
         git_dir = (root / value[8:]).resolve()
     common_file = git_dir / "commondir"
-    common = ((git_dir / common_file.read_text(encoding="utf-8").strip()).resolve()
-              if common_file.is_file() else git_dir)
+    common = (git_dir / common_file.read_text(encoding="utf-8").strip()).resolve() if common_file.is_file() else git_dir
     return git_dir, common
 
 
@@ -81,8 +81,9 @@ def atomic_text(path: Path, content: str) -> bool:
     if path.is_file() and path.read_text(encoding="utf-8") == content:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="\n", dir=path.parent,
-                                     prefix=path.name + ".", suffix=".tmp", delete=False) as stream:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", newline="\n", dir=path.parent, prefix=path.name + ".", suffix=".tmp", delete=False
+    ) as stream:
         temporary = Path(stream.name)
         stream.write(content)
     try:
@@ -107,8 +108,12 @@ def verify_base(base: Path, lock: Path):
 
 
 def git_output(root: Path, *args: str) -> str:
-    result = subprocess.run(["git", "-c", f"safe.directory={root}", "-C", str(root), *args],
-                            stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", "-c", f"safe.directory={root}", "-C", str(root), *args],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+    )
     if result.returncode:
         raise ValueError(f"Git identity check failed in {root}: {' '.join(args)}: {result.stderr.strip()}")
     return result.stdout.strip()
@@ -132,10 +137,13 @@ def shipyard_identity(base: Path) -> dict:
     else:
         history_relation = "diverged-branch-of-maintained"
     root = git_output(canonical, "rev-list", "--max-parents=0", maintained_head).splitlines()[0]
-    return {"canonical": str(canonical), "canonical_head": maintained_head,
-            "history_root": root, "repository_relation": (
-                "linked-worktree-of-canonical" if linked else "normal-checkout-of-canonical"),
-            "history_relation": history_relation}
+    return {
+        "canonical": str(canonical),
+        "canonical_head": maintained_head,
+        "history_root": root,
+        "repository_relation": ("linked-worktree-of-canonical" if linked else "normal-checkout-of-canonical"),
+        "history_relation": history_relation,
+    }
 
 
 def modern_rows(base: Path):
@@ -171,8 +179,10 @@ def majora_rows(base: Path):
 
 def verify_majora_upstream():
     lock = data(MAJORA / "platform/xbox360/source-lock.json")
-    if head(MAJORA) != lock["upstream_commit"] and not git_output(
-            MAJORA, "merge-base", "--is-ancestor", lock["upstream_commit"], "HEAD") == "":
+    if (
+        head(MAJORA) != lock["upstream_commit"]
+        and not git_output(MAJORA, "merge-base", "--is-ancestor", lock["upstream_commit"], "HEAD") == ""
+    ):
         raise ValueError("Majora checkout does not contain the pinned upstream")
     for name, expected in lock["submodules"].items():
         if head(MAJORA / name) != expected:
@@ -219,8 +229,11 @@ def smash_flags(base: Path, project: str) -> list[str]:
     if group is None:
         raise ValueError(f"No selected ClCompile definition: {path}")
     staged = SMASH / "scratch/application-xdk/native/source"
-    substitutions = {"$(SmashSourceRoot)": str(staged) + os.sep,
-                     "$(ShipyardRoot)": str(base), "$(SmashFullProfiling)": "0"}
+    substitutions = {
+        "$(SmashSourceRoot)": str(staged) + os.sep,
+        "$(ShipyardRoot)": str(base),
+        "$(SmashFullProfiling)": "0",
+    }
     result = []
     for entry in (group.findtext("m:AdditionalIncludeDirectories", "", ns) or "").split(";"):
         if not entry or entry.startswith("%("):
@@ -245,9 +258,11 @@ def smash_flags(base: Path, project: str) -> list[str]:
 def analysis_command(source: Path, options: list[str], language: str) -> dict:
     # clangd infers the clang-cl driver from argv[0]. XDK-only output/link flags
     # are intentionally absent; these are analysis recipes, never build recipes.
-    return {"directory": str(source.parent), "file": str(source),
-            "arguments": ["clang-cl", "/nologo", "/std:c++14" if language != "c" else "/TC",
-                          *options, str(source)]}
+    return {
+        "directory": str(source.parent),
+        "file": str(source),
+        "arguments": ["clang-cl", "/nologo", "/std:c++14" if language != "c" else "/TC", *options, str(source)],
+    }
 
 
 def probe_commands():
@@ -255,8 +270,10 @@ def probe_commands():
     modern_base, _ = selected_base(MODERN)
     smash_base, _ = selected_base(SMASH)
     names = ("shader_provider.cpp", "core.cpp", "shader_builder.cpp")
-    for consumer, rows, base in (("modern", modern_rows(modern_base), modern_base),
-                                 ("smash", smash_rows(smash_base), smash_base)):
+    for consumer, rows, base in (
+        ("modern", modern_rows(modern_base), modern_base),
+        ("smash", smash_rows(smash_base), smash_base),
+    ):
         commands = []
         for source, row, _ in rows:
             if source.name not in names:
@@ -276,8 +293,10 @@ def probe_commands():
 def all_commands(*, verbose: bool = True):
     modern_base, _ = selected_base(MODERN)
     smash_base, _ = selected_base(SMASH)
-    for consumer, root, rows, base in (("modern", MODERN, modern_rows(modern_base), modern_base),
-                                       ("smash", SMASH, smash_rows(smash_base), smash_base)):
+    for consumer, root, rows, base in (
+        ("modern", MODERN, modern_rows(modern_base), modern_base),
+        ("smash", SMASH, smash_rows(smash_base), smash_base),
+    ):
         commands = []
         for source, row, _ in rows:
             if consumer == "modern":
@@ -292,8 +311,10 @@ def all_commands(*, verbose: bool = True):
     manifest = MAJORA / "scratch/project-xdk/manifest.json"
     if manifest.is_file():
         base, _ = selected_base(MAJORA)
-        commands = [analysis_command(source, majora_flags(row["options"], base), row["language"])
-                    for source, row, _ in majora_rows(base)]
+        commands = [
+            analysis_command(source, majora_flags(row["options"], base), row["language"])
+            for source, row, _ in majora_rows(base)
+        ]
         atomic_text(MAJORA / "compile_commands.json", json.dumps(commands, indent=2) + "\n")
         if verbose:
             print(f"majora: {len(commands)} selected translation units")
@@ -307,19 +328,28 @@ def configure_serena(phase: str, *, verbose: bool = True):
         path = root / ".serena/project.yml"
         config = yaml.safe_load(path.read_text(encoding="utf-8"))
         if phase == "probe":
-            folders = (["platform/shipyard/xenos", "scratch/prism-xdk/generated", "tools/shipyard"]
-                       if consumer == "modern" else
-                       ["platform/xbox360/graphics", "scratch/prism-xdk", "tools"])
+            folders = (
+                ["platform/shipyard/xenos", "scratch/prism-xdk/generated", "tools/shipyard"]
+                if consumer == "modern"
+                else ["platform/xbox360/graphics", "scratch/prism-xdk", "tools"]
+            )
         else:
             base, _ = selected_base(root)
             rows = modern_rows(base) if consumer == "modern" else smash_rows(base)
             selected = list(rows)
-            folders = sorted({str(source.parent.relative_to(root)).replace("\\", "/")
-                              for source, _, _ in selected if source.is_relative_to(root)})
+            folders = sorted(
+                {
+                    str(source.parent.relative_to(root)).replace("\\", "/")
+                    for source, _, _ in selected
+                    if source.is_relative_to(root)
+                }
+            )
             if consumer == "smash":
-                folders += [str((root / row["path"]).parent.relative_to(root)).replace("\\", "/")
-                            for _, row, _ in selected
-                            if row["path"].startswith(("platform/xbox360/", "scratch/"))]
+                folders += [
+                    str((root / row["path"]).parent.relative_to(root)).replace("\\", "/")
+                    for _, row, _ in selected
+                    if row["path"].startswith(("platform/xbox360/", "scratch/"))
+                ]
             folders += ["tools/shipyard"] if consumer == "modern" else ["tools", "platform/xbox360"]
         folders = sorted(set(folders))
         prefixes = {""}
@@ -338,14 +368,32 @@ def configure_serena(phase: str, *, verbose: bool = True):
                 if relative not in prefixes:
                     ignored.append("/" + relative + "/")
         ignored += ["*.apk", "*.zip", "*.obj", "*.lib", "*.xex", "*.rom", "*.z64", "*.n64"]
-        config.update(ignore_all_files_in_gitignore=False, read_only=True,
-                      excluded_tools=["activate_project", "onboarding", "initial_instructions",
-                                      "write_memory", "read_memory", "list_memories",
-                                      "delete_memory", "edit_memory", "rename_memory"],
-                      ls_workspace_folders=folders, ignored_paths=sorted(set(ignored)))
-        config["ls_specific_settings"] = {"cpp": {"ls_path": str(STATE /
-            "serena-home/language_servers/static/ClangdLanguageServer/clangd/clangd_19.1.2/bin/clangd.exe")},
-            "python": {"pyright_version": "1.1.403"}}
+        config.update(
+            ignore_all_files_in_gitignore=False,
+            read_only=True,
+            excluded_tools=[
+                "activate_project",
+                "onboarding",
+                "initial_instructions",
+                "write_memory",
+                "read_memory",
+                "list_memories",
+                "delete_memory",
+                "edit_memory",
+                "rename_memory",
+            ],
+            ls_workspace_folders=folders,
+            ignored_paths=sorted(set(ignored)),
+        )
+        config["ls_specific_settings"] = {
+            "cpp": {
+                "ls_path": str(
+                    STATE
+                    / "serena-home/language_servers/static/ClangdLanguageServer/clangd/clangd_19.1.2/bin/clangd.exe"
+                )
+            },
+            "python": {"pyright_version": "1.1.403"},
+        }
         atomic_text(path, yaml.safe_dump(config, sort_keys=False))
         if verbose:
             print(f"{consumer}: {len(folders)} workspace paths, {len(ignored)} ignored patterns")
@@ -358,18 +406,30 @@ def configure_serena(phase: str, *, verbose: bool = True):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     base, _ = selected_base(MAJORA)
     selected = list(majora_rows(base))
-    folders = {"platform/xbox360", "mm/src", "mm/2s2h", "mm/include",
-               "libultraship/src/fast", "libultraship/src/ship",
-               "libultraship/src/libultraship", "libultraship/include"}
-    folders.update(source.parent.relative_to(MAJORA).as_posix()
-                   for source, _, _ in selected if source.is_relative_to(MAJORA))
+    folders = {
+        "platform/xbox360",
+        "mm/src",
+        "mm/2s2h",
+        "mm/include",
+        "libultraship/src/fast",
+        "libultraship/src/ship",
+        "libultraship/src/libultraship",
+        "libultraship/include",
+    }
+    folders.update(
+        source.parent.relative_to(MAJORA).as_posix() for source, _, _ in selected if source.is_relative_to(MAJORA)
+    )
     selected_manifest = MAJORA / "scratch/project-xdk/manifest.json"
     if selected_manifest.is_file():
-        folders.update((MAJORA / row["output"]).parent.relative_to(MAJORA).as_posix()
-                       for row in data(selected_manifest).get("projections", []))
+        folders.update(
+            (MAJORA / row["output"]).parent.relative_to(MAJORA).as_posix()
+            for row in data(selected_manifest).get("projections", [])
+        )
     config["ls_workspace_folders"] = sorted(folders)
-    config["ignored_paths"] = sorted((set(config.get("ignored_paths", [])) - {"/scratch/"}) | {
-        "*.z64", "*.n64", "*.o2r", "*.otr", "*.zip", "*.obj", "*.lib", "*.xex"})
+    config["ignored_paths"] = sorted(
+        (set(config.get("ignored_paths", [])) - {"/scratch/"})
+        | {"*.z64", "*.n64", "*.o2r", "*.otr", "*.zip", "*.obj", "*.lib", "*.xex"}
+    )
     atomic_text(path, yaml.safe_dump(config, sort_keys=False))
     if verbose:
         print(f"majora: {len(folders)} workspace paths from selected Xbox sources")
@@ -384,16 +444,27 @@ def projections():
     smash_output = SMASH / "scratch/prism-xdk/shader_builder.cpp"
     shared_base, _ = selected_base(MODERN)
     records = [
-        ("modern", modern_output, MODERN / "tools/shipyard/prepare_prism.py",
-         shared_base / "python/xbox360_platform/prism.py", modern_input,
-         data(modern_lock)["inputs"]["libultraship/src/fast/backends/gfx_direct3d11.cpp"], modern_lock),
-        ("smash", smash_output, SMASH / "tools/prepare_prism_xdk.py",
-         shared_base / "python/xbox360_platform/prism.py", smash_input,
-         data(smash_lock)["source"]["upstream/BattleShip/libultraship/src/fast/backends/gfx_direct3d11.cpp"], smash_lock),
+        (
+            "modern",
+            modern_output,
+            MODERN / "tools/shipyard/prepare_prism.py",
+            shared_base / "python/xbox360_platform/prism.py",
+            modern_input,
+            data(modern_lock)["inputs"]["libultraship/src/fast/backends/gfx_direct3d11.cpp"],
+            modern_lock,
+        ),
+        (
+            "smash",
+            smash_output,
+            SMASH / "tools/prepare_prism_xdk.py",
+            shared_base / "python/xbox360_platform/prism.py",
+            smash_input,
+            data(smash_lock)["source"]["upstream/BattleShip/libultraship/src/fast/backends/gfx_direct3d11.cpp"],
+            smash_lock,
+        ),
     ]
     staged = SMASH / "scratch/application-xdk/native/source/scratch/prism-xdk/shader_builder.cpp"
-    records.append(("smash", staged, records[-1][2], records[-1][3], records[-1][4],
-                    records[-1][5], records[-1][6]))
+    records.append(("smash", staged, records[-1][2], records[-1][3], records[-1][4], records[-1][5], records[-1][6]))
     return records
 
 
@@ -407,14 +478,15 @@ def modern_manifest_projections(base: Path):
         projector = MODERN / "tools/shipyard" / ("prepare_" + subsystem.replace("-", "_") + ".py")
         if not projector.is_file():
             continue
-        upstream = (base / upstream_name.removeprefix("shipyard/") if upstream_name.startswith("shipyard/")
-                    else MODERN / upstream_name)
-        locks = [MODERN / "platform/shipyard" / subsystem / name
-                 for name in ("sources.lock.json", "source-lock.json")]
+        upstream = (
+            base / upstream_name.removeprefix("shipyard/")
+            if upstream_name.startswith("shipyard/")
+            else MODERN / upstream_name
+        )
+        locks = [MODERN / "platform/shipyard" / subsystem / name for name in ("sources.lock.json", "source-lock.json")]
         lock = next((p for p in locks if p.is_file()), None)
         locked = data(lock) if lock else {}
-        pinned = (locked.get("sources", {}).get(upstream_name) or
-                  locked.get("inputs", {}).get(upstream_name))
+        pinned = locked.get("sources", {}).get(upstream_name) or locked.get("inputs", {}).get(upstream_name)
         yield ("modern", output, projector, None, upstream, pinned, lock, row["sha256"])
 
 
@@ -443,8 +515,7 @@ def majora_vendor_headers(row: dict, output: Path, upstream: Path, projector: Pa
         source_dir = "build/host/vcpkg/buildtrees/libpng/src/v1.6.58-b91136795d.clean"
         output_dir = MAJORA / "scratch/project-xdk/libpng"
         projector_name = "platform/xbox360/project_png.py"
-        headers = {name: name for name in ("png.h", "pngconf.h", "pngdebug.h", "pnginfo.h",
-                                           "pngpriv.h", "pngstruct.h")}
+        headers = {name: name for name in ("png.h", "pngconf.h", "pngdebug.h", "pnginfo.h", "pngpriv.h", "pngstruct.h")}
         headers["scripts/pnglibconf.h.prebuilt"] = "pnglibconf.h"
         is_png = True
     elif lock_name == "platform/xbox360/gfxd-source-lock.json":
@@ -460,18 +531,23 @@ def majora_vendor_headers(row: dict, output: Path, upstream: Path, projector: Pa
         return False, False
     relative = upstream.relative_to(source_root).as_posix()
     lock = data(MAJORA / lock_name)
-    allowed = (lock.get("source_directory") == source_dir and
-               relative in headers and lock.get("files", {}).get(relative) == row.get("upstream_sha256") and
-               output == output_dir / headers.get(relative, "") and
-               projector == MAJORA / projector_name)
+    allowed = (
+        lock.get("source_directory") == source_dir
+        and relative in headers
+        and lock.get("files", {}).get(relative) == row.get("upstream_sha256")
+        and output == output_dir / headers.get(relative, "")
+        and projector == MAJORA / projector_name
+    )
     return (allowed, False) if is_png else (False, allowed)
 
 
 def majora_interpreter_projection(row: dict, output: Path, upstream: Path, projector: Path) -> bool:
-    return (row.get("lock") == "platform/xbox360/project_interpreter.py" and
-            output == MAJORA / "scratch/project-xdk/generated/libultraship/src/fast/interpreter.cpp" and
-            upstream == MAJORA / "libultraship/src/fast/interpreter.cpp" and
-            projector == MAJORA / "platform/xbox360/project_interpreter.py")
+    return (
+        row.get("lock") == "platform/xbox360/project_interpreter.py"
+        and output == MAJORA / "scratch/project-xdk/generated/libultraship/src/fast/interpreter.cpp"
+        and upstream == MAJORA / "libultraship/src/fast/interpreter.cpp"
+        and projector == MAJORA / "platform/xbox360/project_interpreter.py"
+    )
 
 
 def refresh():
@@ -482,10 +558,19 @@ def refresh():
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
             columns = {row[1] for row in conn.execute("PRAGMA table_info(snapshot)")}
-            for column in ("compile_sha", "serena_sha", "canonical", "canonical_head",
-                           "canonical_config_sha", "dependency_config_sha", "history_root",
-                           "repository_relation", "history_relation", "source_lock_path",
-                           "source_lock_sha"):
+            for column in (
+                "compile_sha",
+                "serena_sha",
+                "canonical",
+                "canonical_head",
+                "canonical_config_sha",
+                "dependency_config_sha",
+                "history_root",
+                "repository_relation",
+                "history_relation",
+                "source_lock_path",
+                "source_lock_sha",
+            ):
                 if column not in columns:
                     conn.execute(f"ALTER TABLE snapshot ADD COLUMN {column} TEXT")
             selection_columns = {row[1] for row in conn.execute("PRAGMA table_info(selection)")}
@@ -499,63 +584,155 @@ def refresh():
                 base, lock = selected_base(root)
                 verify_base(base, lock)
                 identity = shipyard_identity(base)
-                manifest = (MODERN / "scratch/project-xdk/manifest.json" if consumer == "modern"
-                            else SMASH / "scratch/application-xdk/native/project-items.json")
-                conn.execute("INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,history_root,repository_relation,history_relation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                             (consumer, str(root), head(root), str(base), head(base), str(lock), sha(lock),
-                              str(manifest), sha(manifest), sha(root / "compile_commands.json"),
-                              sha(root / ".serena/project.yml"), VERSION, time.time(),
-                              identity["canonical"], identity["canonical_head"],
-                              sha(git_dirs(SHIPYARD)[1] / "config"),
-                              sha(git_dirs(base)[1] / "config"),
-                              identity["history_root"], identity["repository_relation"],
-                              identity["history_relation"]))
+                manifest = (
+                    MODERN / "scratch/project-xdk/manifest.json"
+                    if consumer == "modern"
+                    else SMASH / "scratch/application-xdk/native/project-items.json"
+                )
+                conn.execute(
+                    """INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,\
+compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,\
+history_root,repository_relation,history_relation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        consumer,
+                        str(root),
+                        head(root),
+                        str(base),
+                        head(base),
+                        str(lock),
+                        sha(lock),
+                        str(manifest),
+                        sha(manifest),
+                        sha(root / "compile_commands.json"),
+                        sha(root / ".serena/project.yml"),
+                        VERSION,
+                        time.time(),
+                        identity["canonical"],
+                        identity["canonical_head"],
+                        sha(git_dirs(SHIPYARD)[1] / "config"),
+                        sha(git_dirs(base)[1] / "config"),
+                        identity["history_root"],
+                        identity["repository_relation"],
+                        identity["history_relation"],
+                    ),
+                )
                 rows = modern_rows(base) if consumer == "modern" else smash_rows(base)
                 for source, row, origin in rows:
                     config = "xdk-release" if consumer == "modern" else row["project"] + "-release"
-                    kind = "shared" if source.is_relative_to(base) else ("generated" if "scratch" in source.parts else "consumer")
-                    receipt = (str(MODERN / row.get("report", "scratch/project-xdk/manifest.json"))
-                               if consumer == "modern" else str(SMASH / "scratch/application-xdk/native/parallel" /
-                               row["project"] / "compile-receipt.json"))
+                    kind = (
+                        "shared"
+                        if source.is_relative_to(base)
+                        else ("generated" if "scratch" in source.parts else "consumer")
+                    )
+                    receipt = (
+                        str(MODERN / row.get("report", "scratch/project-xdk/manifest.json"))
+                        if consumer == "modern"
+                        else str(
+                            SMASH / "scratch/application-xdk/native/parallel" / row["project"] / "compile-receipt.json"
+                        )
+                    )
                     options = row.get("options", []) if consumer == "modern" else smash_flags(base, row["project"])
-                    conn.execute("INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) VALUES (?,?,?,?,?,?,?,?,?)",
-                                 (consumer, config, str(source), row.get("sha256", sha(source)), kind, str(origin), receipt,
-                                  json.dumps(options), sha(Path(receipt))))
+                    conn.execute(
+                        """INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) \
+VALUES (?,?,?,?,?,?,?,?,?)""",
+                        (
+                            consumer,
+                            config,
+                            str(source),
+                            row.get("sha256", sha(source)),
+                            kind,
+                            str(origin),
+                            receipt,
+                            json.dumps(options),
+                            sha(Path(receipt)),
+                        ),
+                    )
             verify_majora_upstream()
             base, lock = selected_base(MAJORA)
             verify_base(base, lock)
             identity = shipyard_identity(base)
             manifest = MAJORA / "scratch/project-xdk/manifest.json"
             source_lock = MAJORA / "platform/xbox360/source-lock.json"
-            conn.execute("INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,history_root,repository_relation,history_relation,source_lock_path,source_lock_sha) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                         ("majora", str(MAJORA), head(MAJORA), str(base), head(base), str(lock), sha(lock),
-                          str(manifest), sha(manifest), sha(MAJORA / "compile_commands.json"),
-                          sha(MAJORA / ".serena/project.yml"), VERSION, time.time(),
-                          identity["canonical"], identity["canonical_head"],
-                          sha(git_dirs(SHIPYARD)[1] / "config"),
-                          sha(git_dirs(base)[1] / "config"), identity["history_root"],
-                          identity["repository_relation"], identity["history_relation"],
-                          str(source_lock), sha(source_lock)))
+            conn.execute(
+                """INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,\
+compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,\
+history_root,repository_relation,history_relation,source_lock_path,source_lock_sha) VALUES (?,?,?,?,?,?,?,?,?,\
+?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    "majora",
+                    str(MAJORA),
+                    head(MAJORA),
+                    str(base),
+                    head(base),
+                    str(lock),
+                    sha(lock),
+                    str(manifest),
+                    sha(manifest),
+                    sha(MAJORA / "compile_commands.json"),
+                    sha(MAJORA / ".serena/project.yml"),
+                    VERSION,
+                    time.time(),
+                    identity["canonical"],
+                    identity["canonical_head"],
+                    sha(git_dirs(SHIPYARD)[1] / "config"),
+                    sha(git_dirs(base)[1] / "config"),
+                    identity["history_root"],
+                    identity["repository_relation"],
+                    identity["history_relation"],
+                    str(source_lock),
+                    sha(source_lock),
+                ),
+            )
             for source, row, origin in majora_rows(base):
                 receipt = MAJORA / row["receipt"] if row.get("receipt") else origin
-                kind = "shared" if source.is_relative_to(base) else (
-                    "generated" if source.is_relative_to(MAJORA / "scratch") else "consumer")
-                conn.execute("INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) VALUES (?,?,?,?,?,?,?,?,?)",
-                             ("majora", row.get("config", "xdk-release"), str(source), row["sha256"],
-                              kind, str(origin), str(receipt), json.dumps(row["options"]), sha(receipt)))
+                kind = (
+                    "shared"
+                    if source.is_relative_to(base)
+                    else ("generated" if source.is_relative_to(MAJORA / "scratch") else "consumer")
+                )
+                conn.execute(
+                    "INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (
+                        "majora",
+                        row.get("config", "xdk-release"),
+                        str(source),
+                        row["sha256"],
+                        kind,
+                        str(origin),
+                        str(receipt),
+                        json.dumps(row["options"]),
+                        sha(receipt),
+                    ),
+                )
                 if row.get("upstream_source") and row.get("projector"):
-                    upstream = (base / row["upstream_source"].removeprefix("shipyard/")
-                                if row["upstream_source"].startswith("shipyard/")
-                                else MAJORA / row["upstream_source"])
+                    upstream = (
+                        base / row["upstream_source"].removeprefix("shipyard/")
+                        if row["upstream_source"].startswith("shipyard/")
+                        else MAJORA / row["upstream_source"]
+                    )
                     projector = MAJORA / row["projector"]
-                    shared = (base / row["shared_projector"].removeprefix("shipyard/")
-                              if row.get("shared_projector") else None)
+                    shared = (
+                        base / row["shared_projector"].removeprefix("shipyard/")
+                        if row.get("shared_projector")
+                        else None
+                    )
                     projection_lock = MAJORA / row["lock"] if row.get("lock") else source_lock
-                    conn.execute("INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                                 ("majora", str(source), row["sha256"], str(projector), sha(projector),
-                                  str(shared) if shared else None, sha(shared) if shared else None,
-                                  str(upstream), row.get("upstream_sha256"), str(projection_lock),
-                                   sha(projection_lock)))
+                    conn.execute(
+                        "INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                        (
+                            "majora",
+                            str(source),
+                            row["sha256"],
+                            str(projector),
+                            sha(projector),
+                            str(shared) if shared else None,
+                            sha(shared) if shared else None,
+                            str(upstream),
+                            row.get("upstream_sha256"),
+                            str(projection_lock),
+                            sha(projection_lock),
+                        ),
+                    )
             majora_manifest = MAJORA / "scratch/project-xdk/manifest.json"
             if majora_manifest.is_file():
                 for row in data(majora_manifest).get("projections", []):
@@ -565,99 +742,210 @@ def refresh():
                     libzip_source = MAJORA / "build/host/vcpkg/buildtrees/libzip/src/v1.11.4-05742a9dee.clean"
                     zlib_source = MAJORA / "build/host/vcpkg/buildtrees/zlib/src/v1.3.2-c19a0bfd23.clean"
                     tinyxml2_source = MAJORA / "build/host/vcpkg/buildtrees/tinyxml2/src/11.0.0-f00fa8a9d2.clean"
-                    from_libzip = (row.get("lock") == "platform/xbox360/libzip-source-lock.json" and
-                                   output.is_relative_to(MAJORA / "scratch/project-xdk/libzip") and
-                                   upstream.is_relative_to(libzip_source))
-                    from_zlib = (row.get("lock") == "platform/xbox360/zlib-source-lock.json" and
-                                 output.is_relative_to(MAJORA / "scratch/project-xdk/zlib") and
-                                 upstream.is_relative_to(zlib_source))
-                    from_tinyxml2 = (row.get("lock") == "platform/xbox360/tinyxml2-source-lock.json" and
-                                     output == MAJORA / "scratch/project-xdk/tinyxml2/tinyxml2.h" and
-                                     upstream == tinyxml2_source / "tinyxml2.h")
-                    from_imgui = (row.get("lock") == "platform/xbox360/imgui-source-lock.json" and
-                                  output.parent == MAJORA / "scratch/project-xdk/imgui" and
-                                  output.name in {"imconfig.h", "imgui.h", "imgui_internal.h"} and
-                                  upstream == MAJORA / "build/host/_deps/imgui-src" / output.name)
+                    from_libzip = (
+                        row.get("lock") == "platform/xbox360/libzip-source-lock.json"
+                        and output.is_relative_to(MAJORA / "scratch/project-xdk/libzip")
+                        and upstream.is_relative_to(libzip_source)
+                    )
+                    from_zlib = (
+                        row.get("lock") == "platform/xbox360/zlib-source-lock.json"
+                        and output.is_relative_to(MAJORA / "scratch/project-xdk/zlib")
+                        and upstream.is_relative_to(zlib_source)
+                    )
+                    from_tinyxml2 = (
+                        row.get("lock") == "platform/xbox360/tinyxml2-source-lock.json"
+                        and output == MAJORA / "scratch/project-xdk/tinyxml2/tinyxml2.h"
+                        and upstream == tinyxml2_source / "tinyxml2.h"
+                    )
+                    from_imgui = (
+                        row.get("lock") == "platform/xbox360/imgui-source-lock.json"
+                        and output.parent == MAJORA / "scratch/project-xdk/imgui"
+                        and output.name in {"imconfig.h", "imgui.h", "imgui_internal.h"}
+                        and upstream == MAJORA / "build/host/_deps/imgui-src" / output.name
+                    )
                     from_png, from_gfxd = majora_vendor_headers(row, output, upstream, projector)
                     from_interpreter = majora_interpreter_projection(row, output, upstream, projector)
-                    from_lus = (row.get("lock") == "platform/xbox360/source-lock.json" and
-                                upstream.is_relative_to(MAJORA / "libultraship"))
-                    from_input = (row.get("lock") == "platform/xbox360/input-source-lock.json" and
-                                  upstream.is_relative_to(MAJORA / "libultraship/include") and
-                                  output == MAJORA / "scratch/project-xdk/headers" / upstream.relative_to(MAJORA / "libultraship/include") and
-                                  projector == MAJORA / "platform/xbox360/project_input.py")
+                    from_lus = row.get("lock") == "platform/xbox360/source-lock.json" and upstream.is_relative_to(
+                        MAJORA / "libultraship"
+                    )
+                    from_input = (
+                        row.get("lock") == "platform/xbox360/input-source-lock.json"
+                        and upstream.is_relative_to(MAJORA / "libultraship/include")
+                        and output
+                        == MAJORA
+                        / "scratch/project-xdk/headers"
+                        / upstream.relative_to(MAJORA / "libultraship/include")
+                        and projector == MAJORA / "platform/xbox360/project_input.py"
+                    )
                     from_codecs = False
                     if row.get("lock") == "platform/xbox360/codec-source-lock.json":
                         for package, codec in data(MAJORA / row["lock"]).items():
                             source_root = MAJORA / codec["source_directory"]
                             if upstream.is_relative_to(source_root):
                                 relative = upstream.relative_to(source_root).as_posix()
-                                from_codecs = (relative in codec["files"] and
-                                               output == MAJORA / "scratch/project-xdk/codecs" / package / relative and
-                                               projector == MAJORA / "platform/xbox360/project_codecs.py")
+                                from_codecs = (
+                                    relative in codec["files"]
+                                    and output == MAJORA / "scratch/project-xdk/codecs" / package / relative
+                                    and projector == MAJORA / "platform/xbox360/project_codecs.py"
+                                )
                                 break
-                    from_prism = (row.get("lock") == "platform/xbox360/prism-source-lock.json" and
-                                  output.is_relative_to(MAJORA / "scratch/project-xdk/prism/prism") and
-                                  upstream.is_relative_to(MAJORA / "build/host/_deps/prism-src/src/prism") and
-                                  projector == MAJORA / "platform/xbox360/project_prism.py")
-                    from_fixed_point = (row.get("lock") == "platform/xbox360/project_c89.py" and
-                                        output == MAJORA / "scratch/project-xdk/generated/mm/src/boot/O2/fixed_point_xdk.h" and
-                                        upstream == MAJORA / "mm/include/fixed_point.h" and
-                                        projector == MAJORA / "platform/xbox360/project_c89.py")
-                    from_majora = (row.get("lock") in ("platform/xbox360/source-lock.json", "platform/xbox360/majora-resource-header-lock.json") and
-                                   output.is_relative_to(MAJORA / "scratch/project-xdk/generated/mm/2s2h") and
-                                   upstream.is_relative_to(MAJORA / "mm/2s2h"))
-                    from_cvars = (row.get("lock") == "platform/xbox360/source-lock.json" and
-                                  output == MAJORA / "scratch/project-xdk/generated/mm/2s2h/XboxCvars.h" and
-                                  upstream == MAJORA / "CMake/2ship-cvars.cmake")
-                    from_logging = (row.get("lock") == "platform/xbox360/logging/core-source-lock.json" and
-                                    (output.is_relative_to(MAJORA / "scratch/project-xdk/logging/core-include/spdlog") or
-                                     output.is_relative_to(MAJORA / "scratch/project-xdk/logging/queue-include/spdlog")) and
-                                    upstream.is_relative_to(MAJORA / "scratch/deps/spdlog/include/spdlog"))
-                    from_runtime = (row.get("lock") == "platform/xbox360/runtime-dependency-lock.json" and
-                                    ((output == MAJORA / "scratch/project-xdk/thread-pool/BS_thread_pool.hpp" and
-                                      upstream == MAJORA / "build/host/_deps/threadpool-src/include/BS_thread_pool.hpp") or
-                                     (output.is_relative_to(MAJORA / "scratch/project-xdk/json/generated") and
-                                      upstream in {MAJORA / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/ordered_map.hpp",
-                                                   MAJORA / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/input/lexer.hpp",
-                                                   MAJORA / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/conversions/to_chars.hpp",
-                                                   MAJORA / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/output/serializer.hpp"})))
-                    if not (output.is_relative_to(MAJORA / "scratch") and
-                            (from_lus or from_majora or from_cvars or from_libzip or from_zlib or from_tinyxml2 or from_imgui or
-                             from_png or from_gfxd or from_interpreter or
-                             from_logging or from_runtime or from_prism or from_fixed_point or from_input or from_codecs) and
-                            projector.is_relative_to(MAJORA)):
+                    from_prism = (
+                        row.get("lock") == "platform/xbox360/prism-source-lock.json"
+                        and output.is_relative_to(MAJORA / "scratch/project-xdk/prism/prism")
+                        and upstream.is_relative_to(MAJORA / "build/host/_deps/prism-src/src/prism")
+                        and projector == MAJORA / "platform/xbox360/project_prism.py"
+                    )
+                    from_fixed_point = (
+                        row.get("lock") == "platform/xbox360/project_c89.py"
+                        and output == MAJORA / "scratch/project-xdk/generated/mm/src/boot/O2/fixed_point_xdk.h"
+                        and upstream == MAJORA / "mm/include/fixed_point.h"
+                        and projector == MAJORA / "platform/xbox360/project_c89.py"
+                    )
+                    from_majora = (
+                        row.get("lock")
+                        in ("platform/xbox360/source-lock.json", "platform/xbox360/majora-resource-header-lock.json")
+                        and output.is_relative_to(MAJORA / "scratch/project-xdk/generated/mm/2s2h")
+                        and upstream.is_relative_to(MAJORA / "mm/2s2h")
+                    )
+                    from_cvars = (
+                        row.get("lock") == "platform/xbox360/source-lock.json"
+                        and output == MAJORA / "scratch/project-xdk/generated/mm/2s2h/XboxCvars.h"
+                        and upstream == MAJORA / "CMake/2ship-cvars.cmake"
+                    )
+                    from_logging = (
+                        row.get("lock") == "platform/xbox360/logging/core-source-lock.json"
+                        and (
+                            output.is_relative_to(MAJORA / "scratch/project-xdk/logging/core-include/spdlog")
+                            or output.is_relative_to(MAJORA / "scratch/project-xdk/logging/queue-include/spdlog")
+                        )
+                        and upstream.is_relative_to(MAJORA / "scratch/deps/spdlog/include/spdlog")
+                    )
+                    from_runtime = row.get("lock") == "platform/xbox360/runtime-dependency-lock.json" and (
+                        (
+                            output == MAJORA / "scratch/project-xdk/thread-pool/BS_thread_pool.hpp"
+                            and upstream == MAJORA / "build/host/_deps/threadpool-src/include/BS_thread_pool.hpp"
+                        )
+                        or (
+                            output.is_relative_to(MAJORA / "scratch/project-xdk/json/generated")
+                            and upstream
+                            in {
+                                MAJORA
+                                / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/ordered_map.hpp",
+                                MAJORA
+                                / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/input/lexer.hpp",
+                                MAJORA
+                                / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/conversions/to_chars.hpp",
+                                MAJORA
+                                / "build/host/vcpkg/installed/x64-windows-static/include/nlohmann/detail/output/serializer.hpp",
+                            }
+                        )
+                    )
+                    if not (
+                        output.is_relative_to(MAJORA / "scratch")
+                        and (
+                            from_lus
+                            or from_majora
+                            or from_cvars
+                            or from_libzip
+                            or from_zlib
+                            or from_tinyxml2
+                            or from_imgui
+                            or from_png
+                            or from_gfxd
+                            or from_interpreter
+                            or from_logging
+                            or from_runtime
+                            or from_prism
+                            or from_fixed_point
+                            or from_input
+                            or from_codecs
+                        )
+                        and projector.is_relative_to(MAJORA)
+                    ):
                         raise ValueError("Majora projected header escaped selected roots")
-                    shared = (base / row["shared_projector"].removeprefix("shipyard/")
-                              if row.get("shared_projector") else None)
+                    shared = (
+                        base / row["shared_projector"].removeprefix("shipyard/")
+                        if row.get("shared_projector")
+                        else None
+                    )
                     lock_path = MAJORA / row["lock"]
                     existing = conn.execute(
                         "SELECT output_sha,projector,projector_sha,upstream,upstream_sha,lock_path,lock_sha "
-                        "FROM projection WHERE consumer='majora' AND output=?", (str(output),)).fetchone()
+                        "FROM projection WHERE consumer='majora' AND output=?",
+                        (str(output),),
+                    ).fetchone()
                     if existing is not None:
-                        expected = (row["sha256"], str(projector), sha(projector), str(upstream),
-                                    row["upstream_sha256"], str(lock_path), sha(lock_path))
+                        expected = (
+                            row["sha256"],
+                            str(projector),
+                            sha(projector),
+                            str(upstream),
+                            row["upstream_sha256"],
+                            str(lock_path),
+                            sha(lock_path),
+                        )
                         if not from_interpreter or existing != expected:
                             raise ValueError("Conflicting Majora projection provenance")
                         continue
-                    conn.execute("INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                                 ("majora", str(output), row["sha256"], str(projector), sha(projector),
-                                  str(shared) if shared else None, sha(shared) if shared else None,
-                                  str(upstream), row["upstream_sha256"], str(lock_path), sha(lock_path)))
+                    conn.execute(
+                        "INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                        (
+                            "majora",
+                            str(output),
+                            row["sha256"],
+                            str(projector),
+                            sha(projector),
+                            str(shared) if shared else None,
+                            sha(shared) if shared else None,
+                            str(upstream),
+                            row["upstream_sha256"],
+                            str(lock_path),
+                            sha(lock_path),
+                        ),
+                    )
             for consumer, output, projector, shared, upstream, pinned, lock in projections():
                 output_name = "shader_builder.cpp"
-                expected_output = (data(MODERN / "scratch/prism-xdk/manifest.json")["outputs"][output_name]
-                                   if consumer == "modern" else
-                                   data(SMASH / "scratch/prism-xdk/manifest.json")["outputs"][output_name])
-                conn.execute("INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                             (consumer, str(output), expected_output, str(projector), sha(projector), str(shared),
-                              sha(shared), str(upstream), pinned, str(lock), sha(lock)))
+                expected_output = (
+                    data(MODERN / "scratch/prism-xdk/manifest.json")["outputs"][output_name]
+                    if consumer == "modern"
+                    else data(SMASH / "scratch/prism-xdk/manifest.json")["outputs"][output_name]
+                )
+                conn.execute(
+                    "INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        consumer,
+                        str(output),
+                        expected_output,
+                        str(projector),
+                        sha(projector),
+                        str(shared),
+                        sha(shared),
+                        str(upstream),
+                        pinned,
+                        str(lock),
+                        sha(lock),
+                    ),
+                )
             modern_base, _ = selected_base(MODERN)
-            for consumer, output, projector, shared, upstream, pinned, lock, expected in modern_manifest_projections(modern_base):
-                conn.execute("INSERT OR IGNORE INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                             (consumer, str(output), expected, str(projector), sha(projector),
-                              str(shared) if shared else None, sha(shared) if shared else None,
-                              str(upstream), pinned, str(lock) if lock else None, sha(lock) if lock else None))
+            for consumer, output, projector, shared, upstream, pinned, lock, expected in modern_manifest_projections(
+                modern_base
+            ):
+                conn.execute(
+                    "INSERT OR IGNORE INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        consumer,
+                        str(output),
+                        expected,
+                        str(projector),
+                        sha(projector),
+                        str(shared) if shared else None,
+                        sha(shared) if shared else None,
+                        str(upstream),
+                        pinned,
+                        str(lock) if lock else None,
+                        sha(lock) if lock else None,
+                    ),
+                )
             conn.commit()
         except Exception:
             conn.rollback()
@@ -680,34 +968,100 @@ def refresh_modern():
             verify_base(base, lock)
             identity = shipyard_identity(base)
             manifest = MODERN / "scratch/project-xdk/manifest.json"
-            conn.execute("INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,history_root,repository_relation,history_relation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                         ("modern", str(MODERN), head(MODERN), str(base), head(base), str(lock), sha(lock),
-                          str(manifest), sha(manifest), sha(MODERN / "compile_commands.json"),
-                          sha(MODERN / ".serena/project.yml"), VERSION, time.time(),
-                          identity["canonical"], identity["canonical_head"],
-                          sha(git_dirs(SHIPYARD)[1] / "config"), sha(git_dirs(base)[1] / "config"),
-                          identity["history_root"], identity["repository_relation"],
-                          identity["history_relation"]))
+            conn.execute(
+                """INSERT INTO snapshot (consumer,root,root_head,base,base_head,lock_path,lock_sha,manifest_path,manifest_sha,\
+compile_sha,serena_sha,indexer,updated,canonical,canonical_head,canonical_config_sha,dependency_config_sha,\
+history_root,repository_relation,history_relation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    "modern",
+                    str(MODERN),
+                    head(MODERN),
+                    str(base),
+                    head(base),
+                    str(lock),
+                    sha(lock),
+                    str(manifest),
+                    sha(manifest),
+                    sha(MODERN / "compile_commands.json"),
+                    sha(MODERN / ".serena/project.yml"),
+                    VERSION,
+                    time.time(),
+                    identity["canonical"],
+                    identity["canonical_head"],
+                    sha(git_dirs(SHIPYARD)[1] / "config"),
+                    sha(git_dirs(base)[1] / "config"),
+                    identity["history_root"],
+                    identity["repository_relation"],
+                    identity["history_relation"],
+                ),
+            )
             for source, row, origin in modern_rows(base):
-                kind = "shared" if source.is_relative_to(base) else (
-                    "generated" if "scratch" in source.parts else "consumer")
+                kind = (
+                    "shared"
+                    if source.is_relative_to(base)
+                    else ("generated" if "scratch" in source.parts else "consumer")
+                )
                 receipt = MODERN / row.get("report", "scratch/project-xdk/manifest.json")
-                conn.execute("INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) VALUES (?,?,?,?,?,?,?,?,?)",
-                             ("modern", "xdk-release", str(source), row.get("sha256", sha(source)), kind,
-                              str(origin), str(receipt), json.dumps(row.get("options", [])), sha(receipt)))
+                conn.execute(
+                    "INSERT INTO selection (consumer,config,source,source_sha,kind,manifest_path,receipt,options_json,receipt_sha) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (
+                        "modern",
+                        "xdk-release",
+                        str(source),
+                        row.get("sha256", sha(source)),
+                        kind,
+                        str(origin),
+                        str(receipt),
+                        json.dumps(row.get("options", [])),
+                        sha(receipt),
+                    ),
+                )
             for consumer, output, projector, shared, upstream, pinned, projection_lock in projections():
                 if consumer != "modern":
                     continue
                 expected = data(MODERN / "scratch/prism-xdk/manifest.json")["outputs"]["shader_builder.cpp"]
-                conn.execute("INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                             (consumer, str(output), expected, str(projector), sha(projector), str(shared),
-                              sha(shared), str(upstream), pinned, str(projection_lock), sha(projection_lock)))
-            for consumer, output, projector, shared, upstream, pinned, projection_lock, expected in modern_manifest_projections(base):
-                conn.execute("INSERT OR IGNORE INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                             (consumer, str(output), expected, str(projector), sha(projector),
-                              str(shared) if shared else None, sha(shared) if shared else None,
-                              str(upstream), pinned, str(projection_lock) if projection_lock else None,
-                              sha(projection_lock) if projection_lock else None))
+                conn.execute(
+                    "INSERT INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        consumer,
+                        str(output),
+                        expected,
+                        str(projector),
+                        sha(projector),
+                        str(shared),
+                        sha(shared),
+                        str(upstream),
+                        pinned,
+                        str(projection_lock),
+                        sha(projection_lock),
+                    ),
+                )
+            for (
+                consumer,
+                output,
+                projector,
+                shared,
+                upstream,
+                pinned,
+                projection_lock,
+                expected,
+            ) in modern_manifest_projections(base):
+                conn.execute(
+                    "INSERT OR IGNORE INTO projection VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        consumer,
+                        str(output),
+                        expected,
+                        str(projector),
+                        sha(projector),
+                        str(shared) if shared else None,
+                        sha(shared) if shared else None,
+                        str(upstream),
+                        pinned,
+                        str(projection_lock) if projection_lock else None,
+                        sha(projection_lock) if projection_lock else None,
+                    ),
+                )
             conn.commit()
         except Exception:
             conn.rollback()
@@ -728,25 +1082,35 @@ def _snapshot_status(conn: sqlite3.Connection, consumer: str) -> str:
     if snap is None or snap["indexer"] != VERSION:
         return "stale-indexer"
     try:
-        topology_stale = bool(snap["canonical"] and (
-            head(Path(snap["canonical"])) != snap["canonical_head"] or
-            sha(git_dirs(Path(snap["canonical"]))[1] / "config") != snap["canonical_config_sha"] or
-            sha(git_dirs(Path(snap["base"]))[1] / "config") != snap["dependency_config_sha"] or
-            (git_dirs(Path(snap["base"]))[1].resolve() ==
-             git_dirs(Path(snap["canonical"]))[1].resolve()) !=
-            (snap["repository_relation"] == "linked-worktree-of-canonical")))
-        manifest_changed = (_status(snap["manifest_path"], snap["manifest_sha"]) != "current"
-                            if snap["manifest_sha"] else Path(snap["manifest_path"]).is_file())
-        if (topology_stale or
-            _status(snap["lock_path"], snap["lock_sha"]) != "current" or
-            manifest_changed or
-            (snap["source_lock_path"] is not None and
-             _status(snap["source_lock_path"], snap["source_lock_sha"]) != "current") or
-            sha(Path(snap["root"]) / "compile_commands.json") != snap["compile_sha"] or
-            sha(Path(snap["root"]) / ".serena/project.yml") != snap["serena_sha"] or
-            head(Path(snap["root"])) != snap["root_head"] or
-            head(Path(snap["base"])) != snap["base_head"] or
-            selected_base(Path(snap["root"]))[0] != Path(snap["base"])):
+        topology_stale = bool(
+            snap["canonical"]
+            and (
+                head(Path(snap["canonical"])) != snap["canonical_head"]
+                or sha(git_dirs(Path(snap["canonical"]))[1] / "config") != snap["canonical_config_sha"]
+                or sha(git_dirs(Path(snap["base"]))[1] / "config") != snap["dependency_config_sha"]
+                or (git_dirs(Path(snap["base"]))[1].resolve() == git_dirs(Path(snap["canonical"]))[1].resolve())
+                != (snap["repository_relation"] == "linked-worktree-of-canonical")
+            )
+        )
+        manifest_changed = (
+            _status(snap["manifest_path"], snap["manifest_sha"]) != "current"
+            if snap["manifest_sha"]
+            else Path(snap["manifest_path"]).is_file()
+        )
+        if (
+            topology_stale
+            or _status(snap["lock_path"], snap["lock_sha"]) != "current"
+            or manifest_changed
+            or (
+                snap["source_lock_path"] is not None
+                and _status(snap["source_lock_path"], snap["source_lock_sha"]) != "current"
+            )
+            or sha(Path(snap["root"]) / "compile_commands.json") != snap["compile_sha"]
+            or sha(Path(snap["root"]) / ".serena/project.yml") != snap["serena_sha"]
+            or head(Path(snap["root"])) != snap["root_head"]
+            or head(Path(snap["base"])) != snap["base_head"]
+            or selected_base(Path(snap["root"]))[0] != Path(snap["base"])
+        ):
             return "stale-configuration"
     except (OSError, ValueError):
         return "stale-configuration"
@@ -764,32 +1128,46 @@ def topology() -> dict:
         results = []
         for row in conn.execute("SELECT * FROM snapshot ORDER BY consumer"):
             lock = data(Path(row["lock_path"])) if Path(row["lock_path"]).is_file() else {}
-            results.append({"consumer": row["consumer"], "consumer_worktree": row["root"],
-                            "selected_builds": [r[0] for r in conn.execute(
-                                "SELECT DISTINCT config FROM selection WHERE consumer=? ORDER BY config",
-                                (row["consumer"],))],
-                            "maintained_worktree": row["canonical"],
-                            "maintained_revision": row["canonical_head"],
-                            "selected_worktree": row["base"],
-                            "selected_revision": row["base_head"],
-                            "locked_revision": lock.get("git_revision"),
-                            "repository_relation": row["repository_relation"],
-                            "history_relation": row["history_relation"],
-                            "history_root": row["history_root"],
-                            "maintained_baseline_sha": sha(Path(row["canonical"]) / "baseline.json")
-                                if row["canonical"] else None,
-                            "selected_baseline_sha": sha(Path(row["base"]) / "baseline.json"),
-                            "locked_baseline_sha": lock.get("baseline_sha256"),
-                            "maintained_api_version": data(Path(row["canonical"]) / "baseline.json").get("api_version")
-                                if row["canonical"] and (Path(row["canonical"]) / "baseline.json").is_file() else None,
-                            "selected_api_version": lock.get("api_version"),
-                            "lock": row["lock_path"],
-                            "upstream_source_lock": row["source_lock_path"],
-                            "upstream_source_lock_sha": row["source_lock_sha"],
-                            "status": _snapshot_status(conn, row["consumer"]),
-                            "coverage": ("source and Shipyard locks; Xbox selection pending" if
-                                         row["consumer"] == "majora" and not row["manifest_sha"] else
-                                         "locks, selected manifest, receipts, local Git ancestry, file hashes")})
+            results.append(
+                {
+                    "consumer": row["consumer"],
+                    "consumer_worktree": row["root"],
+                    "selected_builds": [
+                        r[0]
+                        for r in conn.execute(
+                            "SELECT DISTINCT config FROM selection WHERE consumer=? ORDER BY config", (row["consumer"],)
+                        )
+                    ],
+                    "maintained_worktree": row["canonical"],
+                    "maintained_revision": row["canonical_head"],
+                    "selected_worktree": row["base"],
+                    "selected_revision": row["base_head"],
+                    "locked_revision": lock.get("git_revision"),
+                    "repository_relation": row["repository_relation"],
+                    "history_relation": row["history_relation"],
+                    "history_root": row["history_root"],
+                    "maintained_baseline_sha": (
+                        sha(Path(row["canonical"]) / "baseline.json") if row["canonical"] else None
+                    ),
+                    "selected_baseline_sha": sha(Path(row["base"]) / "baseline.json"),
+                    "locked_baseline_sha": lock.get("baseline_sha256"),
+                    "maintained_api_version": (
+                        data(Path(row["canonical"]) / "baseline.json").get("api_version")
+                        if row["canonical"] and (Path(row["canonical"]) / "baseline.json").is_file()
+                        else None
+                    ),
+                    "selected_api_version": lock.get("api_version"),
+                    "lock": row["lock_path"],
+                    "upstream_source_lock": row["source_lock_path"],
+                    "upstream_source_lock_sha": row["source_lock_sha"],
+                    "status": _snapshot_status(conn, row["consumer"]),
+                    "coverage": (
+                        "source and Shipyard locks; Xbox selection pending"
+                        if row["consumer"] == "majora" and not row["manifest_sha"]
+                        else "locks, selected manifest, receipts, local Git ancestry, file hashes"
+                    ),
+                }
+            )
         return {"indexer": VERSION, "results": results, "truncated": False}
     finally:
         conn.close()
@@ -819,92 +1197,145 @@ def query(kind: str, path: str, *, limit: int = 10, offset: int = 0, line: int |
             for row in rows[:limit]:
                 status = _status(row["source"], row["source_sha"])
                 config_status = _snapshot_status(conn, row["consumer"])
-                snapshot = conn.execute("SELECT root,base,base_head,canonical,canonical_head,repository_relation,history_relation FROM snapshot WHERE consumer=?",
-                                        (row["consumer"],)).fetchone()
+                snapshot = conn.execute(
+                    "SELECT root,base,base_head,canonical,canonical_head,repository_relation,history_relation FROM snapshot WHERE consumer=?",
+                    (row["consumer"],),
+                ).fetchone()
                 if config_status != "current":
                     status = config_status
-                result.append({"consumer": row["consumer"], "config": row["config"],
-                               "worktree": snapshot["root"] if snapshot else None,
-                               "dependency": snapshot["base"] if snapshot else None,
-                               "selected_revision": snapshot["base_head"] if snapshot else None,
-                               "maintained_worktree": snapshot["canonical"] if snapshot else None,
-                               "maintained_revision": snapshot["canonical_head"] if snapshot else None,
-                               "repository_relation": snapshot["repository_relation"] if snapshot else None,
-                               "history_relation": snapshot["history_relation"] if snapshot else None,
-                               "source": row["source"], "source_sha": row["source_sha"],
-                               "kind": row["kind"], "manifest": row["manifest_path"],
-                               "receipt": row["receipt"],
-                               "receipt_status": _status(row["receipt"], row["receipt_sha"]),
-                               "coverage": "build-selected; semantic references partial",
-                               "status": status})
+                result.append(
+                    {
+                        "consumer": row["consumer"],
+                        "config": row["config"],
+                        "worktree": snapshot["root"] if snapshot else None,
+                        "dependency": snapshot["base"] if snapshot else None,
+                        "selected_revision": snapshot["base_head"] if snapshot else None,
+                        "maintained_worktree": snapshot["canonical"] if snapshot else None,
+                        "maintained_revision": snapshot["canonical_head"] if snapshot else None,
+                        "repository_relation": snapshot["repository_relation"] if snapshot else None,
+                        "history_relation": snapshot["history_relation"] if snapshot else None,
+                        "source": row["source"],
+                        "source_sha": row["source_sha"],
+                        "kind": row["kind"],
+                        "manifest": row["manifest_path"],
+                        "receipt": row["receipt"],
+                        "receipt_status": _status(row["receipt"], row["receipt_sha"]),
+                        "coverage": "build-selected; semantic references partial",
+                        "status": status,
+                    }
+                )
         elif kind == "origin":
-            rows = conn.execute("SELECT * FROM projection WHERE output=? LIMIT ? OFFSET ?",
-                                (target, limit + 1, offset)).fetchall()
+            rows = conn.execute(
+                "SELECT * FROM projection WHERE output=? LIMIT ? OFFSET ?", (target, limit + 1, offset)
+            ).fetchall()
             result = []
             for row in rows[:limit]:
-                snapshot = conn.execute("SELECT root,base,base_head,canonical,canonical_head,repository_relation,history_relation FROM snapshot WHERE consumer=?",
-                                        (row["consumer"],)).fetchone()
-                selected = conn.execute("SELECT config FROM selection WHERE consumer=? AND source=? LIMIT 1",
-                                        (row["consumer"], row["output"])).fetchone()
-                status = {"output": _status(row["output"], row["output_sha"]),
-                          "projector": _status(row["projector"], row["projector_sha"]),
-                          "shared_projector": _status(row["shared_projector"], row["shared_projector_sha"]),
-                          "upstream": (_status(row["upstream"], row["upstream_sha"])
-                                       if row["upstream_sha"] else "unpinned"),
-                          "lock": _status(row["lock_path"], row["lock_sha"])}
+                snapshot = conn.execute(
+                    "SELECT root,base,base_head,canonical,canonical_head,repository_relation,history_relation FROM snapshot WHERE consumer=?",
+                    (row["consumer"],),
+                ).fetchone()
+                selected = conn.execute(
+                    "SELECT config FROM selection WHERE consumer=? AND source=? LIMIT 1",
+                    (row["consumer"], row["output"]),
+                ).fetchone()
+                status = {
+                    "output": _status(row["output"], row["output_sha"]),
+                    "projector": _status(row["projector"], row["projector_sha"]),
+                    "shared_projector": _status(row["shared_projector"], row["shared_projector_sha"]),
+                    "upstream": (_status(row["upstream"], row["upstream_sha"]) if row["upstream_sha"] else "unpinned"),
+                    "lock": _status(row["lock_path"], row["lock_sha"]),
+                }
                 status["configuration"] = _snapshot_status(conn, row["consumer"])
                 mapped = map_line(Path(row["output"]), line) if line and status["output"] == "current" else None
-                result.append({"consumer": row["consumer"],
-                               "config": selected["config"] if selected else None,
-                               "worktree": snapshot["root"] if snapshot else None,
-                               "dependency": snapshot["base"] if snapshot else None,
-                               "selected_revision": snapshot["base_head"] if snapshot else None,
-                               "maintained_worktree": snapshot["canonical"] if snapshot else None,
-                               "maintained_revision": snapshot["canonical_head"] if snapshot else None,
-                               "repository_relation": snapshot["repository_relation"] if snapshot else None,
-                               "history_relation": snapshot["history_relation"] if snapshot else None,
-                               "output": row["output"],
-                               "line": line, "line_mapping": mapped, "projector": row["projector"],
-                               "shared_projector": row["shared_projector"], "upstream": row["upstream"],
-                               "output_sha_pinned": row["output_sha"],
-                               "upstream_sha_pinned": row["upstream_sha"], "lock": row["lock_path"],
-                               "coverage": "#line" if mapped else ("projector/source-lock (no exact #line)"
-                                   if row["lock_path"] else "manifest origin (no source lock or exact #line)"),
-                               "status": status})
+                result.append(
+                    {
+                        "consumer": row["consumer"],
+                        "config": selected["config"] if selected else None,
+                        "worktree": snapshot["root"] if snapshot else None,
+                        "dependency": snapshot["base"] if snapshot else None,
+                        "selected_revision": snapshot["base_head"] if snapshot else None,
+                        "maintained_worktree": snapshot["canonical"] if snapshot else None,
+                        "maintained_revision": snapshot["canonical_head"] if snapshot else None,
+                        "repository_relation": snapshot["repository_relation"] if snapshot else None,
+                        "history_relation": snapshot["history_relation"] if snapshot else None,
+                        "output": row["output"],
+                        "line": line,
+                        "line_mapping": mapped,
+                        "projector": row["projector"],
+                        "shared_projector": row["shared_projector"],
+                        "upstream": row["upstream"],
+                        "output_sha_pinned": row["output_sha"],
+                        "upstream_sha_pinned": row["upstream_sha"],
+                        "lock": row["lock_path"],
+                        "coverage": (
+                            "#line"
+                            if mapped
+                            else (
+                                "projector/source-lock (no exact #line)"
+                                if row["lock_path"]
+                                else "manifest origin (no source lock or exact #line)"
+                            )
+                        ),
+                        "status": status,
+                    }
+                )
         elif kind == "affected":
-            contexts = {r["consumer"]: (r["root"], r["base"])
-                        for r in conn.execute("SELECT consumer,root,base FROM snapshot")}
-            selected = conn.execute("SELECT * FROM selection WHERE source=? OR manifest_path=? ORDER BY consumer,config,source",
-                                    (target, target)).fetchall()
-            projected = conn.execute("SELECT * FROM projection WHERE output=? OR projector=? OR shared_projector=? OR upstream=? OR lock_path=? ORDER BY consumer,output",
-                                     (target, target, target, target, target)).fetchall()
+            contexts = {
+                r["consumer"]: (r["root"], r["base"]) for r in conn.execute("SELECT consumer,root,base FROM snapshot")
+            }
+            selected = conn.execute(
+                "SELECT * FROM selection WHERE source=? OR manifest_path=? ORDER BY consumer,config,source",
+                (target, target),
+            ).fetchall()
+            projected = conn.execute(
+                "SELECT * FROM projection WHERE output=? OR projector=? OR shared_projector=? OR upstream=? OR lock_path=? ORDER BY consumer,output",
+                (target, target, target, target, target),
+            ).fetchall()
             all_results = [
-                {"consumer": r["consumer"], "config": r["config"],
-                 "worktree": contexts.get(r["consumer"], (None, None))[0],
-                 "dependency": contexts.get(r["consumer"], (None, None))[1],
-                 "source": r["source"],
-                 "status": _status(r["source"], r["source_sha"]),
-                 "configuration": _snapshot_status(conn, r["consumer"]), "relationship": "selection"}
-                for r in selected]
+                {
+                    "consumer": r["consumer"],
+                    "config": r["config"],
+                    "worktree": contexts.get(r["consumer"], (None, None))[0],
+                    "dependency": contexts.get(r["consumer"], (None, None))[1],
+                    "source": r["source"],
+                    "status": _status(r["source"], r["source_sha"]),
+                    "configuration": _snapshot_status(conn, r["consumer"]),
+                    "relationship": "selection",
+                }
+                for r in selected
+            ]
             for r in projected:
                 selected_config = conn.execute(
-                    "SELECT config FROM selection WHERE consumer=? AND source=? LIMIT 1",
-                    (r["consumer"], r["output"])).fetchone()
-                all_results.append({"consumer": r["consumer"],
-                                    "config": selected_config["config"] if selected_config else None,
-                                    "worktree": contexts.get(r["consumer"], (None, None))[0],
-                                    "dependency": contexts.get(r["consumer"], (None, None))[1],
-                                    "output": r["output"], "upstream": r["upstream"],
-                                    "projector": r["projector"], "relationship": "projection",
-                                    "status": _status(r["output"], r["output_sha"]),
-                                    "configuration": _snapshot_status(conn, r["consumer"])})
-            result = all_results[offset:offset + limit]
+                    "SELECT config FROM selection WHERE consumer=? AND source=? LIMIT 1", (r["consumer"], r["output"])
+                ).fetchone()
+                all_results.append(
+                    {
+                        "consumer": r["consumer"],
+                        "config": selected_config["config"] if selected_config else None,
+                        "worktree": contexts.get(r["consumer"], (None, None))[0],
+                        "dependency": contexts.get(r["consumer"], (None, None))[1],
+                        "output": r["output"],
+                        "upstream": r["upstream"],
+                        "projector": r["projector"],
+                        "relationship": "projection",
+                        "status": _status(r["output"], r["output_sha"]),
+                        "configuration": _snapshot_status(conn, r["consumer"]),
+                    }
+                )
+            result = all_results[offset : offset + limit]
             rows = all_results
         else:
             raise ValueError("kind must be consumers, origin, or affected")
-        return {"indexer": VERSION, "query": kind, "path": target, "offset": offset,
-                "limit": limit, "results": result, "truncated": len(rows) > offset + limit,
-                "next_offset": offset + limit if len(rows) > offset + limit else None}
+        return {
+            "indexer": VERSION,
+            "query": kind,
+            "path": target,
+            "offset": offset,
+            "limit": limit,
+            "results": result,
+            "truncated": len(rows) > offset + limit,
+            "next_offset": offset + limit if len(rows) > offset + limit else None,
+        }
     finally:
         conn.close()
 

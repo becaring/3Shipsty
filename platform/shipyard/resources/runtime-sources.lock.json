@@ -32,7 +32,7 @@
   "audio_channels_sha256": "787cf6c565236c44c450acf942a04250869b4a8c1ac60a3a625808e382255659",
   "helpers": {
     "platform/shipyard/resources/runtime_support.h": "6e6028e50fc54aac43851c7166d24fdb97799350656697387dc2392c5d4e7791",
-    "platform/shipyard/imgui/projection.py": "0cf09feddb10e0c765088a21d8fb88ac5a86a6803047f1c59efb5aa68947d368",
+    "platform/shipyard/imgui/projection.py": "d5bad5d3e9ea47f48693dcb0081171ef09aff6de931816a3062ae28d32b2ed89",
     "tools/shipyard/cpp_ast.py": "5a37cf10f237ec425d816149dd7b8895822771b2df422641f66aa002b4d9e260"
   }
 }

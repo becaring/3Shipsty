@@ -6,6 +6,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 TESTS = (
+    "tools/check_hygiene.py",
+    "tools/test_hygiene.py",
     "tools/shipyard/check_projector_style.py",
     "tools/shipyard/test_setup_dependencies.py",
     "tools/shipyard/tests/test_regeneration_resume.py",

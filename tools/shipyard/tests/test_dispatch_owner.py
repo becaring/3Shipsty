@@ -5,9 +5,12 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
-BASE = ROOT.parent / 'LibUltraShip+Fast3D360'
 sys.path.insert(0, str(ROOT / 'tools/shipyard'))
 from prepare_fast3d import prepare
+from platform_base import resolve
+from cpp_ast import PARSER, walk
+
+BASE = resolve(ROOT)
 
 
 class DispatchOwnerTests(unittest.TestCase):
@@ -21,13 +24,30 @@ class DispatchOwnerTests(unittest.TestCase):
         original = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8-sig')
         selected = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
         self.assertEqual(original.count('Interpreter* gfx = mInstance.lock().get();'), 84)
-        self.assertEqual(selected.count('Interpreter* gfx = XboxDispatchInterpreter();'), 84)
+        borrow = 'Interpreter* gfx = XboxDispatchInterpreter();'
+        for helper in ('XboxResolveResourceHash', 'XboxResolveResourcePath'):
+            body = selected.split('static void* ' + helper + '(', 1)[1].split('\n}', 1)[0]
+            self.assertEqual(body.count(borrow), 1)
+        self.assertEqual(selected.count(borrow), 84 + 2)
         self.assertEqual(selected.count('mInstance.lock().get()'), 2)
         self.assertIn('typedef Shipyard::Fast3D::DispatchOwner<Interpreter> XboxDispatchOwner;', selected)
         self.assertIn('    mInstance = gfx;\n    XboxDispatchOwner::Invalidate(sXboxDispatchOwner);', selected)
-        run = selected[selected.index('void Interpreter::Run('):]
-        self.assertIn('    XboxDispatchOwner dispatchOwner(sXboxDispatchOwner, mInstance);\n    g_exec_stack.start(', run)
-        self.assertIn('        gfx_step();\n    }\n    }\n\n    Flush();', run)
+        run = next(
+            node for node in walk(PARSER.parse(selected.encode()).root_node)
+            if node.type == 'function_definition'
+            and node.child_by_field_name('declarator').text.startswith(b'Interpreter::Run(')
+        )
+        owner = next(node for node in walk(run) if node.type == 'declaration'
+                     and node.text.startswith(b'XboxDispatchOwner dispatchOwner('))
+        scope = owner.parent
+        loop = next(node for node in scope.named_children if node.type == 'while_statement')
+        flush = next(node for node in run.child_by_field_name('body').named_children
+                     if node.type == 'expression_statement' and node.text == b'Flush();')
+        self.assertEqual(scope.type, 'compound_statement')
+        self.assertLess(owner.end_byte, loop.start_byte)
+        self.assertLess(loop.end_byte, scope.end_byte)
+        self.assertLess(scope.end_byte, flush.start_byte)
+        self.assertEqual(loop.text.count(b'gfx_step();'), 2)
         self.assertFalse((ROOT / 'platform/shipyard/fast3d/dispatch_owner.h').exists())
         source = BASE / 'tests/dispatch_owner_contract.cpp'
         batch = self.output / 'build.cmd'

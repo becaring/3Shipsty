@@ -1,4 +1,6 @@
 """Bitwise TRI2 packing differential for the Modern columnar projection."""
+
+import os
 import unittest
 import sys
 import json
@@ -15,48 +17,57 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class ColumnPackProjection(unittest.TestCase):
     def test_projects_exact_selected_emitter(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
+        source = (ROOT / "scratch/fast3d-xdk/generated/src/fast/interpreter.cpp").read_text()
         projected = transform(source)
-        self.assertIn('// MODERN COLUMN PACK BEGIN', projected)
+        self.assertIn("// MODERN COLUMN PACK BEGIN", projected)
 
     def test_actual_pack_bytes_match_row_reference(self):
-        vcvars = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/vcvarsall.bat')
-        compiler = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/bin/cl.exe')
+        vcvars = Path("C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/vcvarsall.bat")
+        compiler = Path("C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/bin/cl.exe")
         if not vcvars.is_file() or not compiler.is_file():
-            self.skipTest('VS2010 host compiler unavailable')
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        start = source.index('void Interpreter::XboxEmitTriangle(')
-        end = source.index('\n}', start)
+            self.skipTest("VS2010 host compiler unavailable")
+        source = (ROOT / "scratch/fast3d-xdk/generated/src/fast/interpreter.cpp").read_text()
+        start = source.index("void Interpreter::XboxEmitTriangle(")
+        end = source.index("\n}", start)
         emitter = source[start:end]
-        prelude = emitter[emitter.index('    const XboxTrianglePipelineResult& p='):
-                          emitter.index('    // MODERN COLUMN PACK BEGIN')]
-        projected = emitter[emitter.index('    // MODERN COLUMN PACK BEGIN'):
-                            emitter.index('    // MODERN COLUMN PACK END')]
-        row = projected[projected.index('    // MODERN COLUMN PACK FALLBACK BEGIN'):
-                        projected.rindex('\n    }')]
-        row = row.replace('    // MODERN COLUMN PACK FALLBACK BEGIN', '', 1)
-        body = prelude + '\n    if (column) {\n' + projected + '\n    } else {\n' + row + \
-               '\n    }\n    mBufVboLen = size_t(shipyardVertexOutput - mBufVbo);\n'
-        fixture = HOST_FIXTURE.replace('/* PACK BODY */', body)
-        lock = json.loads((ROOT / 'platform-base.lock.json').read_text())
-        selected = ROOT / lock['base'] / 'sources'
-        with tempfile.TemporaryDirectory(prefix='modern-tri2-column-') as temp:
-            cpp = Path(temp) / 'fixture.cpp'
-            exe = Path(temp) / 'fixture.exe'
-            batch = Path(temp) / 'build.bat'
+        prelude = emitter[
+            emitter.index("    const XboxTrianglePipelineResult& p=") : emitter.index("    // MODERN COLUMN PACK BEGIN")
+        ]
+        projected = emitter[
+            emitter.index("    // MODERN COLUMN PACK BEGIN") : emitter.index("    // MODERN COLUMN PACK END")
+        ]
+        row = projected[projected.index("    // MODERN COLUMN PACK FALLBACK BEGIN") : projected.rindex("\n    }")]
+        row = row.replace("    // MODERN COLUMN PACK FALLBACK BEGIN", "", 1)
+        body = (
+            prelude
+            + "\n    if (column) {\n"
+            + projected
+            + "\n    } else {\n"
+            + row
+            + "\n    }\n    mBufVboLen = size_t(shipyardVertexOutput - mBufVbo);\n"
+        )
+        fixture = HOST_FIXTURE.replace("/* PACK BODY */", body)
+        lock = json.loads((ROOT / "platform-base.lock.json").read_text())
+        selected = Path(os.environ.get("XBOX360_PLATFORM_BASE", ROOT / lock["base"])) / "sources"
+        with tempfile.TemporaryDirectory(prefix="modern-tri2-column-") as temp:
+            cpp = Path(temp) / "fixture.cpp"
+            exe = Path(temp) / "fixture.exe"
+            batch = Path(temp) / "build.bat"
             cpp.write_text(fixture)
-            batch.write_text(f'@call "{vcvars}" x86 >nul\n'
-                             f'@"{compiler}" /nologo /O2 /EHsc /fp:precise '
-                             f'/I"{selected}" "{cpp}" /Fe"{exe}"\n')
-            built = subprocess.run(['cmd.exe', '/c', str(batch)], capture_output=True, text=True)
+            batch.write_text(
+                f'@call "{vcvars}" x86 >nul\n'
+                f'@"{compiler}" /nologo /O2 /EHsc /fp:precise '
+                f'/I"{selected}" "{cpp}" /Fe"{exe}"\n'
+            )
+            built = subprocess.run(["cmd.exe", "/c", str(batch)], capture_output=True, text=True)
             self.assertEqual(0, built.returncode, (built.stdout + built.stderr)[-5000:])
             result = subprocess.run([str(exe)], capture_output=True, text=True)
             self.assertEqual(0, result.returncode, (result.stdout + result.stderr)[-5000:])
-            self.assertIn('columnar_differential=passed', result.stdout)
+            self.assertIn("columnar_differential=passed", result.stdout)
             print(result.stdout.strip())
 
 
-HOST_FIXTURE = r'''
+HOST_FIXTURE = r"""
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -213,8 +224,8 @@ int main() {
     }
     return 0;
 }
-'''
+"""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

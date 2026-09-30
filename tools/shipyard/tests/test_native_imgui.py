@@ -1,4 +1,5 @@
 """Real current ImGui events with physical fixtures, plus native shader compilation."""
+
 from pathlib import Path
 import ast
 import json
@@ -6,34 +7,52 @@ import re
 import runpy
 import subprocess
 import sys
-ROOT=Path(__file__).resolve().parents[3]
-sys.path.insert(0,str(ROOT/'tools/shipyard'))
-from prepare_native_imgui import prepare,OUT,OWN
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools/shipyard"))
+from prepare_native_imgui import prepare, OUT, OWN
 from platform_base import resolve as resolve_platform_base
 from prepare_archives import stable
 
 
 def main():
-    prepare();folder=OUT/'host';folder.mkdir(exist_ok=True)
-    sdk=Path('C:/Program Files (x86)/Microsoft Xbox 360 SDK')
-    native=(resolve_platform_base(ROOT)/'sources/imgui/imgui_xenos.cpp').read_text()
-    begin=native.index('    static const char* source =');end=native.index('\n    ID3DXBuffer* code =',begin)
-    shader=''.join(ast.literal_eval(m[0]) for m in re.finditer(r'"(?:[^"\\]|\\.)*"',native[begin:end]))
-    shaderpath=folder/'gui.hlsl';stable(shaderpath,shader)
-    for profile,entry in [('vs_3_0','VSMain'),('ps_3_0','PSMain')]:
-        command=[str(sdk/'bin/win32/fxc.exe'),'/nologo','/T',profile,'/E',entry,'/Fo',str(folder/(entry+'.bin')),str(shaderpath)]
-        result=subprocess.run(command,capture_output=True,text=True);stable(folder/(entry+'.log'),result.stdout+result.stderr)
-        if result.returncode:raise RuntimeError('Native GUI shader compile failed '+entry)
+    prepare()
+    folder = OUT / "host"
+    folder.mkdir(exist_ok=True)
+    sdk = Path("C:/Program Files (x86)/Microsoft Xbox 360 SDK")
+    native = (resolve_platform_base(ROOT) / "sources/imgui/imgui_xenos.cpp").read_text()
+    begin = native.index("    static const char* source =")
+    end = native.index("\n    ID3DXBuffer* code =", begin)
+    shader = "".join(ast.literal_eval(m[0]) for m in re.finditer(r'"(?:[^"\\]|\\.)*"', native[begin:end]))
+    shaderpath = folder / "gui.hlsl"
+    stable(shaderpath, shader)
+    for profile, entry in [("vs_3_0", "VSMain"), ("ps_3_0", "PSMain")]:
+        command = [
+            str(sdk / "bin/win32/fxc.exe"),
+            "/nologo",
+            "/T",
+            profile,
+            "/E",
+            entry,
+            "/Fo",
+            str(folder / (entry + ".bin")),
+            str(shaderpath),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True)
+        stable(folder / (entry + ".log"), result.stdout + result.stderr)
+        if result.returncode:
+            raise RuntimeError("Native GUI shader compile failed " + entry)
     # Constants come from the actual XDK header. The host supplies only native
     # time and physical-device fixtures, keeping the complete platform TU body.
-    defines=(sdk/'include/xbox/xinputdefs.h').read_text()
-    masks='\n'.join(m[0] for m in re.finditer(r'^#define XINPUT_GAMEPAD_\w+\s+0x[0-9A-Fa-f]+',defines,re.M))
-    base=resolve_platform_base(ROOT)
-    platform=(base/'sources/imgui/platform_frame.cpp').read_text()
-    platform=platform.replace('#ifdef _XBOX','#if 1').replace('#include <xtl.h>','')
-    adapter=(OWN/'platform_adapter.cpp').read_text().replace('#include "imgui_xenos.h"','')
-    assert not (OWN/'platform_frame.cpp').exists()
-    text='''#include "imgui.h"
+    defines = (sdk / "include/xbox/xinputdefs.h").read_text()
+    masks = "\n".join(m[0] for m in re.finditer(r"^#define XINPUT_GAMEPAD_\w+\s+0x[0-9A-Fa-f]+", defines, re.M))
+    base = resolve_platform_base(ROOT)
+    platform = (base / "sources/imgui/platform_frame.cpp").read_text()
+    platform = platform.replace("#ifdef _XBOX", "#if 1").replace("#include <xtl.h>", "")
+    adapter = (OWN / "platform_adapter.cpp").read_text().replace('#include "imgui_xenos.h"', "")
+    assert not (OWN / "platform_frame.cpp").exists()
+    text = (
+        """#include "imgui.h"
 #include "input/physical.h"
 #include "native-imgui/font_lifecycle.h"
 #include <cstdint>
@@ -69,14 +88,23 @@ void ShipyardInput_BeginGamepadPresentation(){++presentations;}
 bool ShipyardInput_ReadCachedGamepad(unsigned slot,ShipyardInputRawPad* out){
     if(slot==physicalSlot){*out=physicalPad;return true;}std::memset(out,0,sizeof(*out));return false;
 }
-'''+masks+'\n'+platform+'\n'+adapter+'\n'+(base/'tests/imgui_keyboard_contract.inc').read_text()+'''
+"""
+        + masks
+        + "\n"
+        + platform
+        + "\n"
+        + adapter
+        + "\n"
+        + (base / "tests/imgui_keyboard_contract.inc").read_text()
+        + """
 static unsigned fontRebuilds=0;
 static void RebuildFonts(){
     ++fontRebuilds;unsigned char* pixels;int width,height;
     ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
     CHECK(pixels!=NULL && width>0 && height>0);
 }
-static void frame(bool visible=false){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720,visible);ImGui::NewFrame();ImGui::EndFrame();}
+static void frame(bool visible=false){seconds+=1.0/60;Shipyard_ImGuiPlatformNewFrame(1280,720,visible);\
+ImGui::NewFrame();ImGui::EndFrame();}
 int main(){
     ImGui::CreateContext();ImGuiIO& io=ImGui::GetIO();io.IniFilename=NULL;
     io.ConfigFlags|=ImGuiConfigFlags_NavEnableGamepad;
@@ -139,26 +167,53 @@ int main(){
     ImDrawList* cursorList=ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
     CHECK(cursorList->VtxBuffer.Size>=6);
     ImDrawData* drawData=ImGui::GetDrawData();bool cursorSubmitted=false;
-    if(drawData)for(int i=0;i<drawData->CmdListsCount;++i)if(drawData->CmdLists[i]==cursorList)cursorSubmitted=true;
+    if(drawData)for(int i=0;i<drawData->CmdListsCount;\
+++i)if(drawData->CmdLists[i]==cursorList)cursorSubmitted=true;
     CHECK(cursorSubmitted);
     CHECK(io.ConfigFlags==policy);Shipyard_ImGuiPlatformShutdown();CHECK(io.BackendPlatformName==NULL);
-    const Shipyard::ImGuiPlatform::Services alternate={Shipyard_Time,ShipyardInput_BeginGamepadPresentation,"Alternate_XInput"};
+    const Shipyard::ImGuiPlatform::Services alternate={Shipyard_Time,ShipyardInput_BeginGamepadPresentation,\
+"Alternate_XInput"};
     Shipyard::ImGuiPlatform::Init(alternate);
     const unsigned priorRefreshes=refreshes;
     seconds+=1.0/60;Shipyard::ImGuiPlatform::NewFrame(1280,720,false);
     CHECK(presentations==1 && refreshes==priorRefreshes);
     CHECK(std::strcmp(io.BackendPlatformName,"Alternate_XInput")==0);
     Shipyard::ImGuiPlatform::Shutdown();
-    ImGui::DestroyContext();std::printf("56 real ImGui button bindings, donor cursor mode, click suppression, analog/disconnect and navigation ownership pass (%u refreshes)\\n",refreshes);
+    ImGui::DestroyContext();std::printf("56 real ImGui button bindings, donor cursor mode, click suppression, \
+analog/disconnect and navigation ownership pass (%u refreshes)\\n",refreshes);
 }
-'''
-    stable(folder/'contract.cpp',text)
-    env=runpy.run_path(str(Path(__file__).with_name('test_binary.py')));compiler,environment=env['host_environment']()
-    includes=[OUT/'generated',ROOT/'scratch/imgui-xdk/generated',ROOT/'platform/shipyard',resolve_platform_base(ROOT)/'sources/imgui',resolve_platform_base(ROOT)/'sources']
-    units=[ROOT/'scratch/imgui-xdk/generated'/(n+'.cpp') for n in ('imgui','imgui_draw','imgui_tables','imgui_widgets')]
-    command=[compiler,'/nologo','/std:c++20','/EHsc','/MD','/O2']+['/I'+str(p) for p in includes]+[folder/'contract.cpp']+units+['/Fo:'+str(folder)+'/', '/Fe:'+str(folder/'contract.exe')]
-    env['invoke'](command,folder,'build',environment)
-    result=env['invoke']([folder/'contract.exe'],folder,'run')
-    stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],native_shader_stages=2,target_runtime_executed=False),indent=2)+'\n')
-    print(result['stdout'])
-if __name__=='__main__':main()
+"""
+    )
+    stable(folder / "contract.cpp", text)
+    env = runpy.run_path(str(Path(__file__).with_name("test_binary.py")))
+    compiler, environment = env["host_environment"]()
+    includes = [
+        OUT / "generated",
+        ROOT / "scratch/imgui-xdk/generated",
+        ROOT / "platform/shipyard",
+        resolve_platform_base(ROOT) / "sources/imgui",
+        resolve_platform_base(ROOT) / "sources",
+    ]
+    units = [
+        ROOT / "scratch/imgui-xdk/generated" / (n + ".cpp")
+        for n in ("imgui", "imgui_draw", "imgui_tables", "imgui_widgets")
+    ]
+    command = (
+        [compiler, "/nologo", "/std:c++20", "/EHsc", "/MD", "/O2"]
+        + ["/I" + str(p) for p in includes]
+        + [folder / "contract.cpp"]
+        + units
+        + ["/Fo:" + str(folder) + "/", "/Fe:" + str(folder / "contract.exe")]
+    )
+    env["invoke"](command, folder, "build", environment)
+    result = env["invoke"]([folder / "contract.exe"], folder, "run")
+    stable(
+        OUT / "verification.json",
+        json.dumps(dict(host_output=result["stdout"], native_shader_stages=2, target_runtime_executed=False), indent=2)
+        + "\n",
+    )
+    print(result["stdout"])
+
+
+if __name__ == "__main__":
+    main()

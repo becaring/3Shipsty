@@ -1,6 +1,6 @@
 {
-  "base": "../../../becaring/shipyard",
-  "git_revision": "4e1f2c9dfdcce157f95ec4c4a687a39429b1c4bb",
+  "base": "../Shipyard",
+  "git_revision": "55e02fa4637f9e55515cc09782b1afb59851e0e4",
   "api_version": 7,
-  "baseline_sha256": "a1db32078378a1a2825870133cf5cf6fd53ba6fa384e5f391ccd9a3784fe9011"
+  "baseline_sha256": "bdc363c75fbba8a12aab4871e26a66238ff3189365989d38a39a0071b4daf61e"
 }

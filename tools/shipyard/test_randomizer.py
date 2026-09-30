@@ -12,6 +12,7 @@ import struct
 import subprocess
 import unittest
 from prepare_randomizer import ROOT, OWN, OUT, BASE, CUSTOM, PARSER, walk, prepare, build, inventory, function_nodes
+from platform_base import resolve as resolve_platform_base
 
 ENV = runpy.run_path(str(ROOT / 'tools/shipyard/tests/test_binary.py'))
 CLASS_INPUTS = [('Text', BASE + '3drando/text.hpp', False),
@@ -170,7 +171,7 @@ def host(projected, legacy=False):
     compiler, env = ENV['host_environment']()
     includes = ([OUT / 'generated/soh'] if projected else []) + [ROOT / 'soh', ROOT / 'soh/include',
                 ROOT / 'platform/shipyard/json/upstream/include', ROOT / 'platform/shipyard',
-                ROOT / 'scratch/binary-xdk/generated/include']
+                ROOT / 'scratch/binary-xdk/generated/include', resolve_platform_base(ROOT) / 'sources']
     command = [compiler, '/nologo', '/std:c++20', '/Zc:preprocessor', '/EHsc', '/GR', '/MD', '/D_CRT_SECURE_NO_WARNINGS']
     if legacy:
         command += ['/DSHIPYARD_RANDOMIZER_LEGACY_BOOL']

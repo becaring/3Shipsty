@@ -414,10 +414,9 @@ def project(name, text):
                         " std::static_pointer_cast<Fast::DisplayList>(manager->GetCachedResource(std::string(path)));"
                     ),
                     "        if (raw != nullptr) return (Gfx*)&raw->Instructions[0];",
-                    "        const std::string normalized(path + 7);",
                     (
                         "        auto res ="
-                        " std::static_pointer_cast<Fast::DisplayList>(manager->LoadResource(normalized));"
+                        " std::static_pointer_cast<Fast::DisplayList>(manager->LoadResourceProcess(path + 7));"
                     ),
                     "        return (Gfx*)&res->Instructions[0];",
                     "    }",
