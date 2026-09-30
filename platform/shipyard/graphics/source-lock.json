@@ -14,6 +14,6 @@
   "donor": {
     "platform_base": "sources/graphics/shader_lower.cpp",
     "origin": "Shipyard/sources/graphics/shader_lower.cpp",
-    "sha256": "e0a86eb3154ecf32dbfbd251bfed8d407cb34ad86938920ee5ac658930edfd23"
+    "sha256": "42ce914c07a4a8aaa2db08e2713154d96ec6ecb44743a8f9ae558774639526c2"
   }
 }

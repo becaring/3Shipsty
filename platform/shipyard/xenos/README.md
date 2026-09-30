@@ -1,8 +1,14 @@
 # Current Xenos rendering backend
 
-Both active consumers compile Shipyard's physical `sources/xenos/core.cpp`.
+All three active consumers compile Shipyard's physical `sources/xenos/core.cpp`.
 Modern SoH's local `api.cpp` adapts the current 9.2.3 rendering interface,
 including its uint64/uint32 shader IDs.
+
+API 7 uses the single shared package root. `tools/shipyard/xenos_capabilities.py`
+selects shader ABI 2, prebuilt shader packs, deferred framebuffer work, binding
+reuse and the tiling budget for this adapter. Normal builds disable diagnostic
+instrumentation; `SHIPYARD_XENOS_DIAGNOSTICS=1` enables it explicitly. The host
+shader-pack builder and runtime probe both request shader ABI 2.
 
 The shared core implements six texture/sampler slots, independent attachment
 clears, rectangular copy, native RGB5551 readback, and native display creation

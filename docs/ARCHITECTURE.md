@@ -19,7 +19,7 @@ application policy and version-specific schema adaptation remain here.
 The modern application is projected for the XDK's C and C++ compilers. Source
 locks reject unexpected input changes. Generated translation units retain the
 selected upstream implementations while explicit adapters bridge platform APIs.
-Generated output is never the durable owner of a correction.
+Make fixes in the adapter or projector, then regenerate the output.
 
 The modern Fast3D interpreter feeds the Xenos backend. Its shader identifiers,
 six texture bindings, resource overrides, framebuffer operations, and vertex
@@ -33,9 +33,9 @@ services and storage are destroyed. See [resource lifetime](reference/RESOURCES.
 and [legacy-save layout](reference/LEGACY_SAVE.md).
 
 Frame interpolation keeps the pinned recording and matrix/angle algorithms.
-Its consumed local context transfers replacement-map ownership to the caller.
-The return contract checks value preservation and map payload copies separately
-from full-frame execution.
+It moves the replacement map out of the temporary context when returning it
+to the caller. Tests check that the returned values are unchanged and that the
+map payload is not copied; they do not measure a complete game frame.
 
 ## Extending the port
 

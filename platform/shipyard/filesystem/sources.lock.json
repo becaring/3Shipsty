@@ -26,7 +26,7 @@
     "libultraship/include/ship/utils/filesystemtools/PathHelper.h": "fcf52698eaec1ce6cd6188c40ffffc584942c603e726514eda21d50bc3f3de21"
   },
   "helpers": {
-    "filesystem.h": "fbd7a17684e07b1da52f48b6163aa5cb7e86154a83b2a1088aa6f21a1218373e",
-    "filesystem.cpp": "9476a8a905862703c1331839f3cdba18f8427b5d36be1f9d5dd68670e0f647b5"
+    "filesystem.h": "e7b2dd3782915e0035d54d110c0b3ddb2919b4703929871881b08630c33650d0",
+    "filesystem.cpp": "8b3e92dae2e2f8f2676bf75f4256c50d68f6cf3d38780cea60c1f60b330970b9"
   }
 }

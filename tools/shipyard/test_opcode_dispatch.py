@@ -18,7 +18,7 @@ class OpcodeDispatchTests(unittest.TestCase):
     def test_pinned_interpreter_uses_composed_dispatch(self):
         source = (ROOT / 'libultraship/src/fast/interpreter.cpp').read_text()
         projected, tables = fast3d_opcode.lower(
-            source, PARSER, walk, fast3d_opcode.FAST3D_TABLES)
+            source, PARSER, walk, fast3d_opcode.FAST3D_TABLES, composed_dispatch=True)
         self.assertEqual(6, len(tables))
         step = projected.split('static void gfx_step() {', 1)[1].split('\n}', 1)[0]
         name = projected.split('const char* GfxGetOpcodeName(int8_t opcode) {', 1)[1].split('\n}', 1)[0]

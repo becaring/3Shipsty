@@ -60,7 +60,7 @@ bool PackMatchesBuild(){
     if(!Shipyard::Xenos::GetShaderPackProbe(&first,&second,&threePoint,&srgb,&packedFloats,expected))return false;
     const ShaderProgramKey probe={first,second,threePoint?FILTER_THREE_POINT:FILTER_LINEAR,srgb};
     CCFeatures features;size_t floats=0;std::string hlsl,lowered,error;unsigned char actual[32];
-    if(Shipyard_BuildFast3DShader(probe,features,floats,hlsl,error)&&Shipyard_LowerShader(hlsl,lowered,error)){
+    if(Shipyard_BuildFast3DShader(probe,features,floats,hlsl,error)&&Shipyard_LowerShader(hlsl,lowered,error,2)){
         Shipyard::Xenos::ShaderPackSha256(lowered,actual);
         if(floats==packedFloats&&!memcmp(actual,expected,sizeof(actual))){
             packState=1;

@@ -6,6 +6,6 @@
     "soh/soh/Network/CrowdControl/CrowdControl.h": "4ebbfb2f63eda2328a03604f1026c17bfe2acb9f24e93a02b8b72f72aca008ba",
     "soh/soh/Network/Sail/Sail.h": "576d21cc5d4a5d9f3f457148387e176c8b2303cbb48a3e0d934be8780e404307",
     "soh/soh/Network/Anchor/Anchor.h": "6102fd5325f3c22f9d210b814a51ca296e04808bc307d8cf4e6dd1d970ed4b17",
-    ".github/workflows/generate-builds.yml": "a94b299cfa4b5a913f684156d482024c6c21d63e93e1c083cc926a676e397445"
+    "archive/upstream-ci/generate-builds.yml": "a94b299cfa4b5a913f684156d482024c6c21d63e93e1c083cc926a676e397445"
   }
 }

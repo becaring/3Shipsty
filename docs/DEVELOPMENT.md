@@ -55,6 +55,19 @@ it is not needed for an ordinary incremental build.
 
 ## Tests and changes
 
+The portable CI suite needs only Python 3.13 and Git. It runs in a fresh checkout
+without submodules, game assets, Shipyard, or the Xbox SDK:
+
+```powershell
+python -B tools/shipyard/test_host_ci.py
+```
+
+It checks dependency acquisition, interrupted regeneration, source selection,
+and the 140-character limit in `prepare*.py` projectors. Keep embedded C++ helpers
+in readable multiline blocks. Exact source-match strings must keep their bytes;
+split their Python literals when needed. CI does not build an XEX or establish
+runtime compatibility. The subsystem tests below require their documented inputs.
+
 Subsystem contracts live beside the generators and in `tools/shipyard/tests`.
 Use the tests named in the affected subsystem README. For interpolation:
 
@@ -65,7 +78,7 @@ python -B tools/shipyard/prepare_interpolation.py --build
 
 Change the maintained adapter or generator, regenerate, inspect the emitted
 difference, and verify the affected host contracts and native translation units.
-Keep C/C++ language semantics, numeric behavior, ownership, and source locks
+Keep C/C++ language semantics, numeric behavior, object lifetimes, and source locks
 intact. Preserve precise floating-point compilation.
 
 Generated manifests and compile/link receipts record what was built. Host

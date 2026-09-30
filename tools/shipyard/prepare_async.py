@@ -16,6 +16,7 @@ def main(source=SOURCE, output=OUTPUT):
     if not output.is_relative_to((ROOT / "scratch/async-xdk").resolve()):
         raise ValueError("output must remain under owned scratch/async-xdk")
     from xbox360_platform.bs_thread_pool import generate
+
     return generate(source, output)
 
 

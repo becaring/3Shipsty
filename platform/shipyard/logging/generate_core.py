@@ -30,4 +30,4 @@ def common():
     return configure().common()
 
 def generate(out):
-    return configure().generate(out)
+    return configure().generate(out, normalize_file_paths=False)

@@ -20,7 +20,8 @@ def main():
         return result
     original=(ROOT/'soh/soh/SaveManager.cpp').read_text();projected_source=(OUT/'generated/soh/soh/SaveManager.cpp').read_text()
     assert keys(original)==keys(projected_source),'serialized keys changed'
-    init=methods(projected_source)['Init']
+    # Check the operation order independently of generated C++ indentation.
+    init=re.sub(r'\s+', ' ', methods(projected_source)['Init'])
     ordered=['Shipyard::LegacySave::Path()', 'Shipyard::LegacySave::BackupPath()',
              'if (xbox_compat::filesystem::exists(sOldSavePath))',
              'if (xbox_compat::filesystem::exists(sOldBackupSavePath)) throw',

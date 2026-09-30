@@ -188,11 +188,10 @@ def collect(config=None):
                     continue
                 source, language, options = parsed
                 if source == 'shipyard/sources/xenos/core.cpp':
-                    diagnostics = os.environ.get('SHIPYARD_XENOS_DIAGNOSTICS', '0')
-                    if diagnostics not in ('0', '1'):
-                        raise ValueError('SHIPYARD_XENOS_DIAGNOSTICS must be 0 or 1')
-                    if diagnostics == '1':
-                        options.append('/DSHIPYARD_XENOS_DIAGNOSTICS=1')
+                    from xenos_capabilities import compiler_options
+                    options = [option for option in options
+                               if not option.startswith('/DSHIPYARD_XENOS_')]
+                    options.extend(compiler_options())
                 if language=='cpp':canonical_headers(options,config.get('canonical_header_providers',[]))
                 reason = config['production_exclusions'].get(source)
                 if source.startswith('tools/') or '/tests/' in source:

@@ -31,7 +31,7 @@ def audit_source(text):
     start=text.index('class UcodeHandler {');end=text.index('\n};',start)+3
     if 'struct UcodeEntry {' in text:start=text.index('struct UcodeEntry {')
     limit=re.search(r'^(?:constexpr|const) size_t MAX_TRI_BUFFER = [0-9]+;',text,re.M).group(0)
-    return '#include "fast/interpreter.h"\n#include "fast3d/value_init.h"\n#include "fast3d/math.h"\n#include <cmath>\n#include <limits>\n'+limit+'\nnamespace Fast {\n'+ '\n'.join(parts)+'\ntypedef bool (*GfxOpcodeHandlerFunc)(F3DGfx**);\n'+text[start:end]+'\n}\n'
+    return '#include "fast/interpreter.h"\n#include "fast3d/value_init.h"\n#include "fast3d/math_compat.h"\n#include <cmath>\n#include <limits>\n'+limit+'\nnamespace Fast {\n'+ '\n'.join(parts)+'\ntypedef bool (*GfxOpcodeHandlerFunc)(F3DGfx**);\n'+text[start:end]+'\n}\n'
 
 
 def table_entries(text,projected):

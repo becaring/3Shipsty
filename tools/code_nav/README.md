@@ -20,8 +20,8 @@ infer a call graph.
 
 `D:\Projects\becaring\shipyard` is the canonical maintained Shipyard repository.
 The active consumers include Modern, Smash, and the pinned Majora source at
-`D:\Projects\2Ship3Shipsty`. OoT and Majora select `selections/3Shipsty` and
-`selections/2Ship` inside canonical Shipyard; Smash selects its root.
+`D:\Projects\2Ship3Shipsty`. All three consumers select the canonical Shipyard
+package root through independent revision and baseline pins.
 The older root checkouts and frozen candidates remain preserved.
 `shipyard_topology` reports active worktree identity, lock identity, and freshness.
 The navigation runtime and database remain under the original Modern root's

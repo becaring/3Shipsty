@@ -34,7 +34,7 @@ class NetworkContracts(unittest.TestCase):
         self.assertIn(original[start:end],projected)
         self.assertIn('#ifdef ENABLE_REMOTE_CONTROL',projected)
         self.assertNotIn('#define ENABLE_REMOTE_CONTROL 0',projected)
-        self.assertIn('BUILD_REMOTE_CONTROL=1',(ROOT/'.github/workflows/generate-builds.yml').read_text())
+        self.assertIn('BUILD_REMOTE_CONTROL=1',(ROOT/'archive/upstream-ci/generate-builds.yml').read_text())
     def test_repeatable_generation(self):
         first=json.loads((OUT/'manifest.json').read_text())['generated'];prepare()
         self.assertEqual(first,json.loads((OUT/'manifest.json').read_text())['generated'])

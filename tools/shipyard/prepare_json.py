@@ -9,7 +9,6 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from platform_base import resolve as resolve_platform_base
 
-
 ROOT = Path(__file__).resolve().parents[2]
 PLATFORM_BASE = resolve_platform_base(ROOT)
 BACKEND = ROOT / "platform/shipyard/json"
@@ -26,8 +25,12 @@ def generate(source=SOURCE, output=OUT):
     output = Path(output).resolve()
     if not output.is_relative_to((ROOT / "scratch/json-xdk").resolve()):
         raise ValueError("output must remain in owned scratch/json-xdk")
-    core = runpy.run_path(str(PLATFORM_BASE / "python/xbox360_platform/json/backend.py"))["generate"](output, source)
-    ordered_consumers = runpy.run_path(str(BACKEND / "generate_ordered_consumers.py"))["generate"](output)
+    core = runpy.run_path(str(PLATFORM_BASE / "python/xbox360_platform/json/backend.py"))[
+        "generate"
+    ](output, source)
+    ordered_consumers = runpy.run_path(str(BACKEND / "generate_ordered_consumers.py"))["generate"](
+        output
+    )
     containers = runpy.run_path(str(BACKEND / "generate_containers.py"))["generate"](output)
     manifest = {
         "shipyard": core,

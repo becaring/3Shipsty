@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
             const std::string hlsl =
                 Fast::gfx_direct3d_common_build_shader(floats, features, false, threePoint != 0, srgb != 0);
             std::string lowered, error;
-            if (!Shipyard_LowerShader(hlsl, lowered, error)) {
+            if (!Shipyard_LowerShader(hlsl, lowered, error, 2)) {
                 std::printf("F %016llx %08lx %d %d %s\n", id0, id1, threePoint, srgb, error.c_str());
                 continue;
             }
