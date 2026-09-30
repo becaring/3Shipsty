@@ -60,9 +60,29 @@ struct LARGE_INTEGER { long long QuadPart; };
 unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
 void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart=1000; }
-unsigned memoryLogs=0, slowestActorLogs=0;
+unsigned memoryLogs=0, slowestActorLogs=0, tiledRingLogs=0, ringProbeLogs=0;
+const unsigned expectedTilingPassLimit=4194304, expectedRingSegmentBytes=524288;
 void Shipyard_Log(const char* format, ...) {
     ++logCalls;
+    if (strncmp(format,"frame-profile tiled_ring ",25)==0) {
+        assert(strstr(format,"guard_bytes=%u"));
+        va_list args;
+        va_start(args,format);
+        va_arg(args,unsigned); va_arg(args,unsigned);
+        assert(va_arg(args,unsigned)==expectedTilingPassLimit);
+        va_end(args);
+        ++tiledRingLogs;
+    }
+    if (strncmp(format,"frame-profile ring_draw_probe ",30)==0) {
+        assert(strstr(format,"segment_bytes=%u"));
+        va_list args;
+        va_start(args,format);
+        va_arg(args,unsigned); va_arg(args,unsigned); va_arg(args,unsigned);
+        va_arg(args,double); va_arg(args,double); va_arg(args,unsigned);
+        assert(va_arg(args,unsigned)==expectedRingSegmentBytes);
+        va_end(args);
+        ++ringProbeLogs;
+    }
     if (strncmp(format,"frame-profile memory ",21)==0) ++memoryLogs;
     if (strncmp(format,"frame-profile actor_slowest ",28)==0) ++slowestActorLogs;
 }
@@ -108,10 +128,10 @@ unsigned activeWidth,activeHeight,activeSamples,activeTiles,presentationWidth,pr
 struct NativeCounters {
 unsigned samplerAttempted,samplerWritten,samplerSuppressed,constantsAttempted,constantsWritten,constantsSuppressed;
 unsigned bindingAttempted,bindingWritten,bindingSuppressed,uploadRequests,uploadReused,uploadSavedBytes,clears,restoresAvoided,depthRestoresAvoided;
-unsigned depthResolves,depthResolvesSkipped,earlyDepthFences,tilingDrawRestarts,tilingPeakBytes;
+unsigned depthResolves,depthResolvesSkipped,earlyDepthFences,tilingDrawRestarts,tilingPeakBytes,tilingPassLimit;
 unsigned tiling1080Batches,tiling1080Tile1Batches,tiling1080Vertices,tiling1080Tile1Vertices;
 unsigned tiling1080OversizeBatches;
-unsigned ringSameSegmentDraws,ringAmbiguousDraws,ringSegmentChangedDraws,ringMaxSameSegmentBytes;
+unsigned ringSameSegmentDraws,ringAmbiguousDraws,ringSegmentChangedDraws,ringMaxSameSegmentBytes,ringSegmentBytes;
 uint64_t ringSameSegmentBytes,ringSameSegmentEstimatedBytes;
 struct { unsigned brackets,guardFinishes,normalFinishes,querySamples,capacityChanges;
 unsigned usedRegressions;
@@ -124,7 +144,11 @@ unsigned alphaDraws[3],alphaTriangles[3],alphaVertices[3];
 unsigned timingTransitions=0,captures=0;
 bool nativeTimingOn=false;
 void SetTimingEnabled(bool enabled) { ++timingTransitions; nativeTimingOn=enabled; }
-void CaptureAndResetCounters(NativeCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
+void CaptureAndResetCounters(NativeCounters* p) {
+    ++captures; memset(p,0,sizeof(*p));
+    p->tilingPassLimit=expectedTilingPassLimit;
+    p->ringSegmentBytes=expectedRingSegmentBytes;
+}
 void CaptureAndResetTimingCounters(NativeTimingCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
 }}
 namespace ModernFrameProfile {
@@ -433,6 +457,7 @@ int main() {
     assert(accumulator.phases[RecordingRotate].calls==1);
     BeginFrame(true); EndFrame(); assert(logCalls==58+PhaseCount);
     assert(memoryReads==1 && memoryLogs==1 && slowestActorLogs==1);
+    assert(tiledRingLogs==1 && ringProbeLogs==1);
     assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
     for(unsigned stage=0;stage<6;++stage) assert(actorDraw[17].stageTicks[stage]==0);
     assert(dust.draws==0 && dust.updatesWithDust==0);

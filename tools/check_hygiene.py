@@ -21,8 +21,7 @@ DEFERRED = [
     "platform/shipyard/randomizer/xdk_abi.cpp",
     "platform/shipyard/soh-resources/xdk_abi.cpp",
     "platform/shipyard/speech/XboxSpeechSynthesizer.cpp",
-    "platform/shipyard/xenos/api.cpp",
-    "platform/shipyard/xenos/services.cpp"
+    "platform/shipyard/xenos/api.cpp"
 ]
 
 import fnmatch

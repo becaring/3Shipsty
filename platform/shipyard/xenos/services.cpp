@@ -35,7 +35,12 @@ void Shipyard_Fatal(const char* operation,HRESULT result){
     catch(...){OutputDebugStringA("Shipyard fatal graphics failure while logging\n");}
     std::abort();
 }
-double Shipyard_Time(){LARGE_INTEGER tick,freq;QueryPerformanceCounter(&tick);QueryPerformanceFrequency(&freq);return double(tick.QuadPart)/double(freq.QuadPart);}
+double Shipyard_Time() {
+    LARGE_INTEGER tick, freq;
+    QueryPerformanceCounter(&tick);
+    QueryPerformanceFrequency(&freq);
+    return double(tick.QuadPart) / double(freq.QuadPart);
+}
 bool Shipyard_WriteFile(const char* relative,const void* bytes,size_t size){
     try {Shipyard::Storage::WriteAtomicRelativeFile("game:\\",relative,bytes,size);return true;}
     catch(...) {return false;}
@@ -599,11 +604,14 @@ void EndFrame() {
     Fast::ShipyardXenos::CaptureAndResetCounters(&counters);
     // This runs after the audio rendezvous. Scopes are inclusive wall time,
     // not CPU utilization or GPU duration; their totals must not be added.
-    Shipyard_Log("frame-profile frames=%u periods=%u period_ms=%.3f outside_graph_ms=%.3f mixed=%u requested=%d effective=%d original=%d update_rate=%d refresh=%d lowres=%d advanced=%d vsync=%d internal=%ux%u viewport=%ux%u window=%ux%u msaa=%u scale=%.3f maps=%u nonempty_maps=%u replacements=%u",
-        accumulator.frames, accumulator.periods, Milliseconds(accumulator.periodTicks), Milliseconds(accumulator.outsideTicks),
-        changed ? 1u : 0u, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5], settings[6], settings[7],
-        dimensions[0], dimensions[1], dimensions[2], dimensions[3], dimensions[4], dimensions[5], dimensions[6], multiplier,
-        maps, nonemptyMaps, replacements);
+    Shipyard_Log("frame-profile frames=%u periods=%u period_ms=%.3f outside_graph_ms=%.3f mixed=%u requested=%d "
+                 "effective=%d original=%d update_rate=%d refresh=%d lowres=%d advanced=%d vsync=%d internal=%ux%u "
+                 "viewport=%ux%u window=%ux%u msaa=%u scale=%.3f maps=%u nonempty_maps=%u replacements=%u",
+                 accumulator.frames, accumulator.periods, Milliseconds(accumulator.periodTicks),
+                 Milliseconds(accumulator.outsideTicks), changed ? 1u : 0u, settings[0], settings[1], settings[2],
+                 settings[3], settings[4], settings[5], settings[6], settings[7], dimensions[0], dimensions[1],
+                 dimensions[2], dimensions[3], dimensions[4], dimensions[5], dimensions[6], multiplier, maps,
+                 nonemptyMaps, replacements);
     const unsigned intervalCount = accumulator.presentIntervalCount;
     unsigned over20 = 0, over33 = 0, over50 = 0;
     unsigned laneSamples[3] = {}, laneOver20[3] = {};
@@ -628,14 +636,14 @@ void EndFrame() {
         }
     }
     std::sort(accumulator.presentIntervals, accumulator.presentIntervals + intervalCount);
-    Shipyard_Log("frame-profile present_intervals samples=%u overflow=%u median_ms=%.3f p95_ms=%.3f max_ms=%.3f over20=%u over33=%u over50=%u lane_samples=%u/%u/%u lane_over20=%u/%u/%u scope=present_begin_to_begin",
+    Shipyard_Log(
+        "frame-profile present_intervals samples=%u overflow=%u median_ms=%.3f p95_ms=%.3f max_ms=%.3f over20=%u "
+        "over33=%u over50=%u lane_samples=%u/%u/%u lane_over20=%u/%u/%u scope=present_begin_to_begin",
         intervalCount, accumulator.presentIntervalDropped,
         intervalCount ? Milliseconds(accumulator.presentIntervals[(intervalCount - 1) / 2]) : 0.0,
         intervalCount ? Milliseconds(accumulator.presentIntervals[(intervalCount * 95 - 1) / 100]) : 0.0,
-        intervalCount ? Milliseconds(accumulator.presentIntervals[intervalCount - 1]) : 0.0,
-        over20, over33, over50,
-        laneSamples[0], laneSamples[1], laneSamples[2],
-        laneOver20[0], laneOver20[1], laneOver20[2]);
+        intervalCount ? Milliseconds(accumulator.presentIntervals[intervalCount - 1]) : 0.0, over20, over33, over50,
+        laneSamples[0], laneSamples[1], laneSamples[2], laneOver20[0], laneOver20[1], laneOver20[2]);
     for (unsigned lane = 0; lane < 18; ++lane) {
         const unsigned count = laneCounts[lane];
         if (!count) continue;
@@ -736,16 +744,14 @@ void EndFrame() {
         const unsigned id = static_cast<unsigned>(topActorIds[rank]);
         const ActorDrawCounters& actor = actorDraw[id];
         const double stageScale = double(actor.calls) / actor.samples / accumulator.frames;
-        Shipyard_Log("frame-profile actor_id rank=%u id=%u calls=%u samples=%u estimated_ms=%.3f ms_per_game=%.3f lights_ms_per_game=%.3f matrix_ms_per_game=%.3f callback_ms_per_game=%.3f post_filter_ms_per_game=%.3f shadow_ms_per_game=%.3f close_ms_per_game=%.3f",
-            rank, id, actor.calls, actor.samples,
-            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])),
-            Milliseconds(static_cast<uint64_t>(topActorTicks[rank])) / accumulator.frames,
-            Milliseconds(actor.stageTicks[0]) * stageScale,
-            Milliseconds(actor.stageTicks[1]) * stageScale,
-            Milliseconds(actor.stageTicks[2]) * stageScale,
-            Milliseconds(actor.stageTicks[3]) * stageScale,
-            Milliseconds(actor.stageTicks[4]) * stageScale,
-            Milliseconds(actor.stageTicks[5]) * stageScale);
+        Shipyard_Log("frame-profile actor_id rank=%u id=%u calls=%u samples=%u estimated_ms=%.3f ms_per_game=%.3f "
+                     "lights_ms_per_game=%.3f matrix_ms_per_game=%.3f callback_ms_per_game=%.3f "
+                     "post_filter_ms_per_game=%.3f shadow_ms_per_game=%.3f close_ms_per_game=%.3f",
+                     rank, id, actor.calls, actor.samples, Milliseconds(static_cast<uint64_t>(topActorTicks[rank])),
+                     Milliseconds(static_cast<uint64_t>(topActorTicks[rank])) / accumulator.frames,
+                     Milliseconds(actor.stageTicks[0]) * stageScale, Milliseconds(actor.stageTicks[1]) * stageScale,
+                     Milliseconds(actor.stageTicks[2]) * stageScale, Milliseconds(actor.stageTicks[3]) * stageScale,
+                     Milliseconds(actor.stageTicks[4]) * stageScale, Milliseconds(actor.stageTicks[5]) * stageScale);
     }
     if (tri2ProfileEnabled) {
         Shipyard_Log("frame-profile tri2_route calls=%u samples=%u sample_probability=1/64 scope=opcode_06_interpreter flush_scope=buffer_full_only",
@@ -758,10 +764,10 @@ void EndFrame() {
         }
     }
     if (vtxHashProfileEnabled) {
-        Shipyard_Log("frame-profile vtx_hash_route calls=%u samples=%u pointer=%u hash_resolved=%u hash_missing=%u deferred=%u vmx=%u sample_probability=1/64 scope=opcode_32_interpreter route_counts=sampled",
-            vtxHash.calls,vtxHash.samples,vtxHash.routes[VtxHashPointer],
-            vtxHash.routes[VtxHashResolved],vtxHash.routes[VtxHashMissing],
-            vtxHash.deferred,vtxHash.vmx);
+        Shipyard_Log("frame-profile vtx_hash_route calls=%u samples=%u pointer=%u hash_resolved=%u hash_missing=%u "
+                     "deferred=%u vmx=%u sample_probability=1/64 scope=opcode_32_interpreter route_counts=sampled",
+                     vtxHash.calls, vtxHash.samples, vtxHash.routes[VtxHashPointer], vtxHash.routes[VtxHashResolved],
+                     vtxHash.routes[VtxHashMissing], vtxHash.deferred, vtxHash.vmx);
         for(unsigned i=0;i<VtxHashPhaseCount;++i) {
             const double sampled=Milliseconds(vtxHash.ticks[i]);
             const double estimated=vtxHash.samples ? sampled*vtxHash.calls/vtxHash.samples : 0.0;
@@ -769,11 +775,13 @@ void EndFrame() {
                 vtxHashNames[i],sampled,estimated,Milliseconds(vtxHash.maximum[i]));
         }
         const double vmxScale=vtxHash.samples ? double(vtxHash.calls)/vtxHash.samples : 0.0;
-        Shipyard_Log("frame-profile vtx_vmx_split attempts=%u accepted=%u sampled_vertices=%u sampled_setup_ms=%.3f estimated_setup_ms=%.3f sampled_loop_ms=%.3f estimated_loop_ms=%.3f setup_max_ms=%.3f loop_max_ms=%.3f scope=opcode_32_sampled_transform",
-            vtxHash.vmxAttempts,vtxHash.vmxAccepted,vtxHash.vmxVertices,
-            Milliseconds(vtxHash.vmxSetupTicks),Milliseconds(vtxHash.vmxSetupTicks)*vmxScale,
-            Milliseconds(vtxHash.vmxLoopTicks),Milliseconds(vtxHash.vmxLoopTicks)*vmxScale,
-            Milliseconds(vtxHash.vmxSetupMaximum),Milliseconds(vtxHash.vmxLoopMaximum));
+        Shipyard_Log("frame-profile vtx_vmx_split attempts=%u accepted=%u sampled_vertices=%u sampled_setup_ms=%.3f "
+                     "estimated_setup_ms=%.3f sampled_loop_ms=%.3f estimated_loop_ms=%.3f setup_max_ms=%.3f "
+                     "loop_max_ms=%.3f scope=opcode_32_sampled_transform",
+                     vtxHash.vmxAttempts, vtxHash.vmxAccepted, vtxHash.vmxVertices, Milliseconds(vtxHash.vmxSetupTicks),
+                     Milliseconds(vtxHash.vmxSetupTicks) * vmxScale, Milliseconds(vtxHash.vmxLoopTicks),
+                     Milliseconds(vtxHash.vmxLoopTicks) * vmxScale, Milliseconds(vtxHash.vmxSetupMaximum),
+                     Milliseconds(vtxHash.vmxLoopMaximum));
     }
     Shipyard_Log("frame-profile texture_hash_route calls=%u samples=%u sample_probability=1/64 scope=opcode_20_interpreter",
         textureHash.calls,textureHash.samples);
@@ -820,66 +828,73 @@ void EndFrame() {
     Shipyard_Log("frame-profile memory available_mb=%.1f total_mb=%.1f",
         memory.dwAvailPhys / 1048576.0, memory.dwTotalPhys / 1048576.0);
     const double nativeMs = native.frequency ? 1000.0 / double(native.frequency) : 0.0;
-    Shipyard_Log("frame-profile native_inclusive_ms draw=%.3f upload=%.3f setup=%.3f resolve=%.3f clear=%.3f calls=%u/%u/%u/%u/%u upload_bytes=%I64u preparation_rebuilt=%u reused=%u active=%ux%u samples=%u tiles=%u presentation=%ux%u buffer2frames=%u present_interval=%u",
-        native.drawTicks * nativeMs, native.uploadTicks * nativeMs, native.framebufferSetupTicks * nativeMs,
-        native.framebufferResolveTicks * nativeMs, native.framebufferClearTicks * nativeMs,
-        native.drawCalls, native.uploadCalls, native.framebufferSetupCalls, native.framebufferResolveCalls,
-        native.framebufferClearCalls, native.uploadBytes, native.preparationRebuilt, native.preparationReused,
-        native.activeWidth, native.activeHeight, native.activeSamples, native.activeTiles,
-        native.presentationWidth, native.presentationHeight, native.buffer2Frames, native.presentationInterval);
+    Shipyard_Log("frame-profile native_inclusive_ms draw=%.3f upload=%.3f setup=%.3f resolve=%.3f clear=%.3f "
+                 "calls=%u/%u/%u/%u/%u upload_bytes=%I64u preparation_rebuilt=%u reused=%u active=%ux%u samples=%u "
+                 "tiles=%u presentation=%ux%u buffer2frames=%u present_interval=%u",
+                 native.drawTicks * nativeMs, native.uploadTicks * nativeMs, native.framebufferSetupTicks * nativeMs,
+                 native.framebufferResolveTicks * nativeMs, native.framebufferClearTicks * nativeMs, native.drawCalls,
+                 native.uploadCalls, native.framebufferSetupCalls, native.framebufferResolveCalls,
+                 native.framebufferClearCalls, native.uploadBytes, native.preparationRebuilt, native.preparationReused,
+                 native.activeWidth, native.activeHeight, native.activeSamples, native.activeTiles,
+                 native.presentationWidth, native.presentationHeight, native.buffer2Frames,
+                 native.presentationInterval);
     Shipyard_Log("frame-profile depth_read_ms total=%.3f lock=%.3f calls=%u lock_calls=%u samples=%u prelock_busy=%u prelock_idle=%u busy_1080=%u idle_1080=%u",
         native.depthReadTicks * nativeMs, native.depthLockTicks * nativeMs,
         native.depthReadCalls, native.depthLockCalls, native.depthSamples,
         native.depthBusyCalls, native.depthIdleCalls,
         native.depthBusy1080Calls, native.depthIdle1080Calls);
-    Shipyard_Log("frame-profile native_counts sampler_attempted=%u written=%u suppressed=%u constants_attempted=%u written=%u suppressed=%u binding_attempted=%u written=%u suppressed=%u uploads=%u reused=%u saved_bytes=%u clears=%u restores_avoided=%u depth_restores_avoided=%u",
-        counters.samplerAttempted, counters.samplerWritten, counters.samplerSuppressed,
-        counters.constantsAttempted, counters.constantsWritten, counters.constantsSuppressed,
-        counters.bindingAttempted, counters.bindingWritten, counters.bindingSuppressed,
-        counters.uploadRequests, counters.uploadReused, counters.uploadSavedBytes, counters.clears,
-        counters.restoresAvoided, counters.depthRestoresAvoided);
+    Shipyard_Log("frame-profile native_counts sampler_attempted=%u written=%u suppressed=%u constants_attempted=%u "
+                 "written=%u suppressed=%u binding_attempted=%u written=%u suppressed=%u uploads=%u reused=%u "
+                 "saved_bytes=%u clears=%u restores_avoided=%u depth_restores_avoided=%u",
+                 counters.samplerAttempted, counters.samplerWritten, counters.samplerSuppressed,
+                 counters.constantsAttempted, counters.constantsWritten, counters.constantsSuppressed,
+                 counters.bindingAttempted, counters.bindingWritten, counters.bindingSuppressed,
+                 counters.uploadRequests, counters.uploadReused, counters.uploadSavedBytes, counters.clears,
+                 counters.restoresAvoided, counters.depthRestoresAvoided);
     Shipyard_Log("frame-profile native_alpha draws=%u/%u/%u triangles=%u/%u/%u vertices=%u/%u/%u modes=opaque/blended/cutout",
         counters.alphaDraws[0], counters.alphaDraws[1], counters.alphaDraws[2],
         counters.alphaTriangles[0], counters.alphaTriangles[1], counters.alphaTriangles[2],
         counters.alphaVertices[0], counters.alphaVertices[1], counters.alphaVertices[2]);
     Shipyard_Log("frame-profile depth_resolves retained=%u skipped=%u early_fences=%u",
         counters.depthResolves, counters.depthResolvesSkipped, counters.earlyDepthFences);
-    Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=2097152",
-        counters.tilingDrawRestarts,counters.tilingPeakBytes);
-    Shipyard_Log("frame-profile tiling_space_1080 brackets=%u guard_finishes=%u normal_finishes=%u queries=%u query_calls=%u query_ms=%.3f capacity_changes=%u used_regressions=%u max_setup_bytes=%u max_finish_bytes=%u",
-        counters.tilingSpace.brackets,counters.tilingSpace.guardFinishes,
-        counters.tilingSpace.normalFinishes,counters.tilingSpace.querySamples,
-        native.tilingSpaceQueryCalls,native.tilingSpaceQueryTicks*nativeMs,
-        counters.tilingSpace.capacityChanges,counters.tilingSpace.usedRegressions,
-        counters.tilingSpace.maxSetupBytes,counters.tilingSpace.maxFinishBytes);
+    Shipyard_Log("frame-profile tiled_ring restarts=%u peak_estimated_bytes=%u guard_bytes=%u",
+        counters.tilingDrawRestarts, counters.tilingPeakBytes, counters.tilingPassLimit);
+    Shipyard_Log(
+        "frame-profile tiling_space_1080 brackets=%u guard_finishes=%u normal_finishes=%u queries=%u query_calls=%u "
+        "query_ms=%.3f capacity_changes=%u used_regressions=%u max_setup_bytes=%u max_finish_bytes=%u",
+        counters.tilingSpace.brackets, counters.tilingSpace.guardFinishes, counters.tilingSpace.normalFinishes,
+        counters.tilingSpace.querySamples, native.tilingSpaceQueryCalls, native.tilingSpaceQueryTicks * nativeMs,
+        counters.tilingSpace.capacityChanges, counters.tilingSpace.usedRegressions, counters.tilingSpace.maxSetupBytes,
+        counters.tilingSpace.maxFinishBytes);
     Shipyard_Log("frame-profile tiling_space_1080_phase max_used=%u/%u/%u/%u min_remaining=%u/%u/%u/%u phases=begin/setup/pre_resolve/pre_end",
         counters.tilingSpace.maxUsed[0],counters.tilingSpace.maxUsed[1],
         counters.tilingSpace.maxUsed[2],counters.tilingSpace.maxUsed[3],
         counters.tilingSpace.minRemaining[0],counters.tilingSpace.minRemaining[1],
         counters.tilingSpace.minRemaining[2],counters.tilingSpace.minRemaining[3]);
     const Fast::ShipyardXenos::TilingGuardTrialStats& guard = counters.tilingGuardTrial;
-    Shipyard_Log("frame-profile tiling_guard_trial enabled=%d begin_rejected=%u candidates=%u continued=%u fallback_ineligible=%u fallback_oversize=%u fallback_capacity=%u fallback_cursor=%u fallback_space=%u post_queries=%u post_fallbacks=%u post_capacity_changes=%u post_cursor_regressions=%u max_draw_bytes=%u max_used=%u total_draw_bytes=%I64u",
-        CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0),
-        guard.beginCapacityRejected,guard.candidates,guard.continued,
-        guard.ineligibleFallbacks,guard.oversizeFallbacks,guard.capacityFallbacks,
-        guard.cursorFallbacks,guard.spaceFallbacks,guard.postQueries,
-        guard.postFallbacks,guard.postCapacityChanges,guard.postCursorRegressions,
-        guard.maxDrawBytes,guard.maxUsed,guard.totalDrawBytes);
-    Shipyard_Log("frame-profile ring_draw_probe same_segment=%u ambiguous=%u segment_changed=%u actual_bytes=%.0f estimated_bytes=%.0f max_actual_bytes=%u segment_bytes=262144",
-        counters.ringSameSegmentDraws, counters.ringAmbiguousDraws,
-        counters.ringSegmentChangedDraws,
-        (double)counters.ringSameSegmentBytes,
-        (double)counters.ringSameSegmentEstimatedBytes,
-        counters.ringMaxSameSegmentBytes);
+    Shipyard_Log("frame-profile tiling_guard_trial enabled=%d begin_rejected=%u candidates=%u continued=%u "
+                 "fallback_ineligible=%u fallback_oversize=%u fallback_capacity=%u fallback_cursor=%u "
+                 "fallback_space=%u post_queries=%u post_fallbacks=%u post_capacity_changes=%u "
+                 "post_cursor_regressions=%u max_draw_bytes=%u max_used=%u total_draw_bytes=%I64u",
+                 CVarGetInteger("gSettings.XboxTilingGuardTrialProfile", 0), guard.beginCapacityRejected,
+                 guard.candidates, guard.continued, guard.ineligibleFallbacks, guard.oversizeFallbacks,
+                 guard.capacityFallbacks, guard.cursorFallbacks, guard.spaceFallbacks, guard.postQueries,
+                 guard.postFallbacks, guard.postCapacityChanges, guard.postCursorRegressions, guard.maxDrawBytes,
+                 guard.maxUsed, guard.totalDrawBytes);
+    Shipyard_Log("frame-profile ring_draw_probe same_segment=%u ambiguous=%u segment_changed=%u actual_bytes=%.0f "
+                 "estimated_bytes=%.0f max_actual_bytes=%u segment_bytes=%u",
+                 counters.ringSameSegmentDraws, counters.ringAmbiguousDraws, counters.ringSegmentChangedDraws,
+                 (double)counters.ringSameSegmentBytes, (double)counters.ringSameSegmentEstimatedBytes,
+                 counters.ringMaxSameSegmentBytes, counters.ringSegmentBytes);
     Shipyard_Log("frame-profile tiled_1080_batches total=%u tile1_only=%u vertices=%u tile1_only_vertices=%u oversize=%u",
         counters.tiling1080Batches, counters.tiling1080Tile1Batches,
         counters.tiling1080Vertices, counters.tiling1080Tile1Vertices,
         counters.tiling1080OversizeBatches);
     const Fast::ShipyardXenos::Tile1PredicationTrialCounters& tile1 = counters.tile1PredicationTrial;
-    Shipyard_Log("frame-profile tile1_predication_trial enabled=%d candidates=%u eligible=%u applied=%u target_rejected=%u viewport_rejected=%u geometry_rejected=%u",
-        CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0),
-        tile1.candidates,tile1.eligible,tile1.applied,
-        tile1.targetRejected,tile1.viewportRejected,tile1.geometryRejected);
+    Shipyard_Log("frame-profile tile1_predication_trial enabled=%d candidates=%u eligible=%u applied=%u "
+                 "target_rejected=%u viewport_rejected=%u geometry_rejected=%u",
+                 CVarGetInteger("gSettings.XboxTile1PredicationTrialProfile", 0), tile1.candidates, tile1.eligible,
+                 tile1.applied, tile1.targetRejected, tile1.viewportRejected, tile1.geometryRejected);
     Shipyard_Log("frame-profile presentation_color resolves_skipped=%u discard_blocked=%u",
         counters.presentationColorResolvesSkipped, counters.presentationColorDiscardBlocked);
     Shipyard_Log("frame-profile previous_report_ms=%.3f scopes=inclusive_wall qpc_overhead=included outside_graph=game_update+scheduling+reporting",
