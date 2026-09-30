@@ -1,0 +1,4 @@
+serena-agent==1.7.0
+mcp==1.28.1
+filelock==3.25.2
+PyYAML==6.0.2
