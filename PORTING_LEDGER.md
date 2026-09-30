@@ -1,5 +1,9 @@
 # 3Shipsty porting ledger
 
+## 2026-09-25 — Both ports booting again
+
+User reports that Modern SoH and Smash are booting again with the delivered `scratch/vertex-repair-xex` candidates. Modern is revision `d11ff710b` (XEX SHA-256 `7a2b19f94f700361e1e64742838f007512e80e4033ee574aa6c0d1c2553e9963`); Smash is revision `edb686a` (XEX SHA-256 `87431fdd6ab6daff65cdac926a51997b24922936040522cfe273a5220306394d`). Both pin Shipyard main `58d4344396851ac19692b207061748df10631ac3`. This records boot recovery only; gameplay, UI, audio, presets and performance have no additional validation from this report. Earlier failure observations below describe the preceding candidates.
+
 ## 2026-09-25 — Static source-to-generated efficiency audit
 
 The active clean successors at audit start are Shipyard `d4684981fd7b703cb600e09c94be5ec97cd8be29`, modern SoH `1c4aae428632a596061ff4158b922c39042401ba`, and Smash `8d910ff86ec59072f44ad12e0342da344744e91e`. Both consumer `platform-base.lock.json` files pin Shipyard API 6 and baseline `89042b5b0bd575525004751173792ef3f9063d7711dd72f186c0c81a7fd17e77`. Generated artifacts are selected through the consumer project manifests; previous candidates remain frozen.
