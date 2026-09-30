@@ -16,8 +16,9 @@ CPU):
   3. compile each distinct source for vs_3_0/VSMain and ps_3_0/PSMain with the
      XDK's fxc.exe, the offline front end of the D3DX compiler the runtime
      calls with default flags;
-  4. write the pack (Shipyard sources/xenos/shader_pack.h) for
-     game:\\shaders\\3shipsty.shaderpack.
+  4. write the pack (Shipyard sources/xenos/shader_pack.h): each program key
+     with its vertex float count and vertex/pixel microcode, which the runtime
+     keeps resident and uses without generating, lowering or compiling.
 Intermediate files live in scratch/shader-pack and make reruns incremental.
 """
 import argparse
@@ -44,7 +45,7 @@ PLATFORM_BASE = resolve_platform_base(ROOT)
 SDK = Path(os.environ.get('XEDK', 'C:/Program Files (x86)/Microsoft Xbox 360 SDK'))
 PROFILES = (('vs_3_0', 'VSMain'), ('ps_3_0', 'PSMain'))
 TEMPLATE = ROOT / 'libultraship/src/fast/shaders/directx/default.shader.hlsl'
-PACK_MAGIC, PACK_VERSION = 0x5348504B, 1
+PACK_MAGIC, PACK_VERSION = 0x5348504B, 2
 # FilteringMode: the builder only distinguishes three-point from the rest.
 FILTERS = {'three-point': 1, 'linear': 0}
 
@@ -126,7 +127,7 @@ def build_generator():
 
 
 def generate(executable, keys, filters, jobs):
-    """Shard keys across jobs generator processes; returns {(id0, id1, tp, srgb): source path}."""
+    """Shard keys across jobs generator processes; returns {(id0, id1, tp, srgb): (floats, source path)}."""
     lines = ['%016x %08x %d 0' % (id0, id1, tp) for id0, id1 in sorted(keys) for tp in filters]
     folder = OUT / 'generate'
     folder.mkdir(parents=True, exist_ok=True)
@@ -147,9 +148,10 @@ def generate(executable, keys, filters, jobs):
         if process.returncode:
             raise RuntimeError('shader source generator failed: ' + stderr)
         for line in stdout.splitlines():
-            parts = line.split(' ', 5)
+            parts = line.split(' ', 6)
             if parts[0] == 'K':
-                sources[(int(parts[1], 16), int(parts[2], 16), int(parts[3]), int(parts[4]))] = out / (parts[5] + '.hlsl')
+                sources[(int(parts[1], 16), int(parts[2], 16), int(parts[3]), int(parts[4]))] = \
+                    (int(parts[5]), out / (parts[6] + '.hlsl'))
             elif parts[0] == 'F':
                 failures.append(line)
     (OUT / 'lowering-failures.txt').write_text('\n'.join(failures) + '\n', encoding='utf-8')
@@ -188,39 +190,53 @@ def compile_sources(paths, jobs):
     return code
 
 
-def pack_digest(key):
-    sha = hashlib.sha256(key).digest()
-    first, second = struct.unpack('>QQ', sha[:16])
-    return first, second, len(key)
+def program_checksum(id0, id1, flags, floats, vertex, pixel):
+    """CRC-32 over the key, float count and both blobs, as shader_cache.cpp verifies it."""
+    crc = zlib.crc32(struct.pack('>QIII', id0, id1, flags, floats))
+    crc = zlib.crc32(vertex, crc)
+    return zlib.crc32(pixel, crc) & 0xFFFFFFFF
 
 
-def write_pack(entries, path):
-    """entries: {runtime cache key bytes: microcode}."""
-    header_bytes, entry_bytes = 32, 32
-    index, blobs, offsets = [], [], {}
-    position = header_bytes + entry_bytes * len(entries)
-    for key, code in entries.items():
+def write_pack(programs, path):
+    """programs: {(shaderId0, shaderId1, flags): (floats, vertex code, pixel code, lowered source)}.
+
+    Layout per Shipyard sources/xenos/shader_pack.h (version 2). The smallest
+    key is the probe: its lowered source's SHA-256 lets the runtime prove the
+    XEX still generates what the pack was compiled from.
+    """
+    header_bytes, entry_bytes = 64, 40
+    keys = sorted(programs)
+    if not keys:
+        raise ValueError('no shader programs to pack')
+    offsets, blobs = {}, []
+    position = header_bytes + entry_bytes * len(keys)
+
+    def place(code):
+        nonlocal position
         if len(code) % 4:
             raise ValueError('microcode size is not a multiple of 4')
-        blob = hashlib.sha256(code).digest()
-        if blob not in offsets:
-            offsets[blob] = position
+        digest = hashlib.sha256(code).digest()
+        if digest not in offsets:
+            offsets[digest] = position
             blobs.append(code)
             position += len(code)
-        index.append((pack_digest(key), offsets[blob], len(code), zlib.crc32(code) & 0xFFFFFFFF))
-    index.sort()
-    for a, b in zip(index, index[1:]):
-        if a[0] == b[0]:
-            raise ValueError('shader pack digest collision')
+        return offsets[digest]
+
+    index = bytearray()
+    for id0, id1, flags in keys:
+        floats, vertex, pixel, _ = programs[(id0, id1, flags)]
+        index += struct.pack('>QIIIIIIII', id0, id1, flags, floats, place(vertex), len(vertex), place(pixel),
+                             len(pixel), program_checksum(id0, id1, flags, floats, vertex, pixel))
+    probe_source = programs[keys[0]][3]
     data = bytearray(struct.pack('>8I', PACK_MAGIC, PACK_VERSION, sdk_define('include/xbox/xdk.h', '_XDK_VER'),
-                                 sdk_define('include/xbox/d3dx9core.h', 'D3DX_SDK_VERSION'), len(index), 0, 0, 0))
-    for (first, second, length), offset, size, checksum in index:
-        data += struct.pack('>QQIIII', first, second, length, offset, size, checksum)
+                                 sdk_define('include/xbox/d3dx9core.h', 'D3DX_SDK_VERSION'), len(keys), 0, 0, 0))
+    data += hashlib.sha256(probe_source).digest()
+    data += index
     for blob in blobs:
         data += blob
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(bytes(data))
-    return len(index), len(blobs), len(data)
+    return len(keys), len(blobs), len(data)
 
 
 def main():
@@ -244,20 +260,21 @@ def main():
     print('shader keys: %d' % len(keys))
     executable = build_generator()
     sources = generate(executable, keys, filters, args.jobs)
-    code = compile_sources(set(sources.values()), args.jobs)
-    entries = {}
-    for path in sorted(set(sources.values())):
-        text = path.read_bytes()
-        for profile, entry in PROFILES:
-            microcode = code.get((path.stem, profile))
-            if microcode is not None:
-                entries[profile.encode() + b'\0' + entry.encode() + b'\0' + text] = microcode
-    count, blobs, size = write_pack(entries, args.out)
+    code = compile_sources(set(path for _, path in sources.values()), args.jobs)
+    programs, incomplete = {}, 0
+    for (id0, id1, tp, srgb), (floats, path) in sources.items():
+        vertex, pixel = code.get((path.stem, 'vs_3_0')), code.get((path.stem, 'ps_3_0'))
+        if vertex is None or pixel is None:
+            incomplete += 1
+            continue
+        programs[(id0, id1, tp | (srgb << 1))] = (floats, vertex, pixel, path.read_bytes())
+    count, blobs, size = write_pack(programs, args.out)
     report = dict(archives=args.archive, display_lists=lists, draw_states=len(records), keys=len(keys),
-                  sources=len(set(sources.values())), entries=count, unique_microcode=blobs, bytes=size,
+                  sources=len(set(path for _, path in sources.values())), programs=count,
+                  programs_without_code=incomplete, unique_microcode=blobs, bytes=size,
                   filters=args.filters, jobs=args.jobs)
     (OUT / 'report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
-    print('shader pack: %d entries, %d unique microcode blobs, %.1f MiB -> %s' %
+    print('shader pack: %d programs, %d unique microcode blobs, %.1f MiB -> %s' %
           (count, blobs, size / 1048576.0, args.out))
 
 

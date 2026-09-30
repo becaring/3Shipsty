@@ -1,6 +1,6 @@
 {
   "base": "../../../LibUltraShip+Fast3D360/scratch/claude-source-integration",
-  "git_revision": "e5aa7ff6072265003c11ce95896539b840486846",
+  "git_revision": "f70622bdac2eb2eabb6aa122c83132bb5782aad5",
   "api_version": 6,
-  "baseline_sha256": "09743ed8d528dd7d69518ab9595cf519e8865e3a29db0251c57351212128d2fc"
+  "baseline_sha256": "a2e96143ef9410fe5593e797d7699b5bdd1512a08b4c165ff03713fefd8a1961"
 }

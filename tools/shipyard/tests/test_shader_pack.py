@@ -123,59 +123,80 @@ class ShaderPackTests(unittest.TestCase):
 
     def test_pack_matches_shipyard_header(self):
         rng = random.Random(3)
-        entries = {}
+        programs = {}
         for i in range(64):
+            key = (rng.getrandbits(64), rng.getrandbits(32), rng.randrange(0, 4))
             source = ('// shader %d\n' % i + 'x' * rng.randrange(0, 9000)).encode()
-            for profile, entry in pack.PROFILES:
-                entries[profile.encode() + b'\0' + entry.encode() + b'\0' + source] = \
-                    bytes(rng.getrandbits(8) for _ in range(4 * rng.randrange(1, 300)))
+            programs[key] = (rng.randrange(4, 40), bytes(rng.getrandbits(8) for _ in range(4 * rng.randrange(1, 300))),
+                             bytes(rng.getrandbits(8) for _ in range(4 * rng.randrange(1, 300))), source)
         # Shared microcode is stored once.
-        first = next(iter(entries))
-        entries[b'vs_3_0\0VSMain\0shared'] = entries[first]
+        first = next(iter(programs))
+        shared = (first[0], first[1] ^ 1, first[2])
+        programs[shared] = (5, programs[first][1], programs[first][2], b'shared')
         with tempfile.TemporaryDirectory() as folder:
             folder = Path(folder)
             path = folder / 'test.shaderpack'
-            count, blobs, size = pack.write_pack(entries, path)
-            self.assertEqual((count, blobs), (len(entries), len(entries) - 1))
-            listing = folder / 'keys.bin'
-            with open(listing, 'wb') as out:
-                for key, code in entries.items():
-                    out.write(struct.pack('<II', len(key), zlib.crc32(code) & 0xFFFFFFFF) + key)
+            count, blobs, size = pack.write_pack(programs, path)
+            self.assertEqual((count, blobs), (len(programs), 2 * len(programs) - 2))
+            listing = folder / 'programs.txt'
+            with open(listing, 'w', encoding='ascii') as out:
+                for (id0, id1, flags), (floats, vertex, pixel, _) in programs.items():
+                    out.write('%016x %08x %u %u %08x %08x\n' % (id0, id1, flags, floats,
+                                                             zlib.crc32(vertex) & 0xFFFFFFFF,
+                                                             zlib.crc32(pixel) & 0xFFFFFFFF))
+            probe = folder / 'probe.hlsl'
+            probe.write_bytes(programs[min(programs)][3])
             source = r'''#include "xenos/shader_pack.h"
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <iterator>
+#include <string>
 #include <vector>
-#include <algorithm>
 using namespace Shipyard::Xenos;
 static std::vector<unsigned char> Read(const char* path) {
     std::ifstream file(path, std::ios::binary);
     return std::vector<unsigned char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 }
-static bool Less(const ShaderPackEntry& e, const ShaderPackDigest& d) { return ShaderPackBefore(e.digest, d); }
 int main(int, char** argv) {
-    std::vector<unsigned char> pack = Read(argv[1]), keys = Read(argv[2]);
+    std::vector<unsigned char> pack = Read(argv[1]), probe = Read(argv[3]);
     if (ShaderPackRead32(&pack[0]) != ShaderPackMagic || ShaderPackRead32(&pack[4]) != ShaderPackVersion) return 2;
     const uint32_t count = ShaderPackRead32(&pack[16]);
-    std::vector<ShaderPackEntry> index;
+    std::vector<ShaderPackProgram> index;
     for (uint32_t i = 0; i < count; ++i) {
-        index.push_back(ShaderPackParseEntry(&pack[ShaderPackHeaderBytes + i * ShaderPackEntryBytes]));
-        if (i && !ShaderPackBefore(index[i - 1].digest, index[i].digest)) return 3;
+        index.push_back(ShaderPackParseProgram(&pack[ShaderPackHeaderBytes + i * ShaderPackEntryBytes]));
+        const ShaderPackProgram& e = index.back();
+        if (i && !ShaderPackBefore(index[i - 1].shaderId0, index[i - 1].shaderId1, index[i - 1].flags,
+                                   e.shaderId0, e.shaderId1, e.flags)) return 3;
+        // The runtime's per-entry check (shader_cache.cpp Intact).
+        unsigned char head[20];
+        for (int b = 0; b < 8; ++b) head[b] = (unsigned char)(e.shaderId0 >> (56 - 8 * b));
+        const uint32_t fields[3] = {e.shaderId1, e.flags, e.floats};
+        for (int f = 0; f < 3; ++f)
+            for (int b = 0; b < 4; ++b) head[8 + f * 4 + b] = (unsigned char)(fields[f] >> (24 - 8 * b));
+        uint32_t crc = ShaderPackChecksum(head, sizeof(head));
+        crc = ShaderPackChecksum(&pack[e.vertexOffset], e.vertexSize, crc);
+        crc = ShaderPackChecksum(&pack[e.pixelOffset], e.pixelSize, crc);
+        if (crc != e.checksum || (e.vertexOffset & 3) || (e.pixelOffset & 3)) return 4;
     }
+    const uint32_t probeIndex = ShaderPackRead32(&pack[20]);
+    unsigned char digest[32];
+    ShaderPackSha256(std::string(probe.begin(), probe.end()), digest);
+    if (probeIndex >= count || memcmp(digest, &pack[32], 32)) return 5;
     unsigned found = 0;
-    for (size_t at = 0; at < keys.size();) {
-        const uint32_t length = keys[at] | keys[at + 1] << 8 | keys[at + 2] << 16 | (uint32_t)keys[at + 3] << 24;
-        const uint32_t crc = keys[at + 4] | keys[at + 5] << 8 | keys[at + 6] << 16 | (uint32_t)keys[at + 7] << 24;
-        const std::string key((const char*)&keys[at + 8], length);
-        at += 8 + length;
-        const ShaderPackDigest digest = DigestShaderKey(key);
-        std::vector<ShaderPackEntry>::const_iterator it = std::lower_bound(index.begin(), index.end(), digest, Less);
-        if (it == index.end() || !ShaderPackSame(it->digest, digest)) return 4;
-        if (it->checksum != crc || ShaderPackChecksum(&pack[it->offset], it->size) != crc) return 5;
+    std::ifstream listing(argv[2]);
+    unsigned long long id0;
+    unsigned id1, flags, floats, vertexCrc, pixelCrc;
+    while (listing >> std::hex >> id0 >> id1 >> std::dec >> flags >> floats >> std::hex >> vertexCrc >> pixelCrc) {
+        size_t i = 0;
+        while (i < count && !(index[i].shaderId0 == id0 && index[i].shaderId1 == id1 && index[i].flags == flags)) ++i;
+        if (i == count || index[i].floats != floats ||
+            ShaderPackChecksum(&pack[index[i].vertexOffset], index[i].vertexSize) != vertexCrc ||
+            ShaderPackChecksum(&pack[index[i].pixelOffset], index[i].pixelSize) != pixelCrc) return 6;
         ++found;
     }
     std::printf("%u\n", found);
-    return found == count ? 0 : 6;
+    return found == count ? 0 : 7;
 }
 '''
             env = runpy.run_path(str(TOOLS / 'tests/test_binary.py'))
@@ -185,8 +206,8 @@ int main(int, char** argv) {
             env['invoke']([compiler, '/nologo', '/std:c++20', '/EHsc', '/MD', '/O2',
                            '/I' + str(platform_base / 'sources'), folder / 'reader.cpp',
                            '/Fe:' + str(folder / 'reader.exe')], folder, 'build', environment)
-            result = env['invoke']([folder / 'reader.exe', path, listing], folder, 'run', environment)
-            self.assertEqual(result['stdout'].strip(), str(len(entries)))
+            result = env['invoke']([folder / 'reader.exe', path, listing, probe], folder, 'run', environment)
+            self.assertEqual(result['stdout'].strip(), str(len(programs)))
 
 
 if __name__ == '__main__':

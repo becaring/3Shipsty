@@ -2,7 +2,8 @@
 // what the runtime's CreateShader runs before compiling: gfx_cc_get_features,
 // the projected Prism builder (no root signature, three-point filtering and
 // sRGB from the key) and Shipyard_LowerShader. Each distinct lowered source is
-// written once, named by its FNV-1a 64 hash; stdout maps keys to names.
+// written once, named by its FNV-1a 64 hash; stdout maps keys to their vertex
+// float count and source name ("K id0 id1 tp srgb floats name").
 //
 // usage: shader_pack_sources <template> <keys> <out-dir>
 // keys: one "<id0 hex> <id1 hex> <three-point 0|1> <srgb 0|1>" per line
@@ -72,7 +73,8 @@ int main(int argc, char** argv) {
                 if (!file.good())
                     throw std::runtime_error("writing " + path);
             }
-            std::printf("K %016llx %08lx %d %d %s\n", id0, id1, threePoint, srgb, name);
+            std::printf("K %016llx %08lx %d %d %u %s\n", id0, id1, threePoint, srgb,
+                        static_cast<unsigned>(floats), name);
         }
         return 0;
     } catch (const std::exception& failure) {

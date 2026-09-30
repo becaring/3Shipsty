@@ -4,7 +4,9 @@
 #include "native_display.h"
 #include "services.h"
 #include "xenos/shader_cache.h"
+#include "xenos/shader_pack.h"
 #include "io/shader_worker.h"
+#include <string.h>
 
 namespace Fast {
 namespace {
@@ -45,21 +47,55 @@ void GfxRenderingAPIXenos::SetViewport(int x,int y,int w,int h){ShipyardXenos::S
 void GfxRenderingAPIXenos::SetScissor(int x,int y,int w,int h){ShipyardXenos::SetScissor(x,y,w,h);}
 void GfxRenderingAPIXenos::SetUseAlpha(bool alpha){ShipyardXenos::SetUseAlpha(alpha);}
 void GfxRenderingAPIXenos::DrawTriangles(float v[],size_t count,size_t tris){ShipyardXenos::DrawTriangles(v,count,tris);}
+namespace {
+// Packed programs are used only after this build regenerates the pack's probe
+// program to the exact lowered source (same template, Prism builder and
+// lowering) and float count; otherwise every program compiles as before.
+int packState=0; // 0 unchecked, 1 usable, -1 unusable
+bool PackMatchesBuild(){
+    if(packState)return packState>0;
+    packState=-1;
+    uint64_t first=0;uint32_t second=0;bool threePoint=false,srgb=false;size_t packedFloats=0;
+    unsigned char expected[32];
+    if(!Shipyard::Xenos::GetShaderPackProbe(&first,&second,&threePoint,&srgb,&packedFloats,expected))return false;
+    const ShaderProgramKey probe={first,second,threePoint?FILTER_THREE_POINT:FILTER_LINEAR,srgb};
+    CCFeatures features;size_t floats=0;std::string hlsl,lowered,error;unsigned char actual[32];
+    if(Shipyard_BuildFast3DShader(probe,features,floats,hlsl,error)&&Shipyard_LowerShader(hlsl,lowered,error)){
+        Shipyard::Xenos::ShaderPackSha256(lowered,actual);
+        if(floats==packedFloats&&!memcmp(actual,expected,sizeof(actual))){
+            packState=1;
+            Shipyard_Log("shader pack verified against this build");
+            return true;
+        }
+    }
+    Shipyard_Log("shader pack does not match this build; compiling shaders at runtime");
+    return false;
+}
+bool PackedProgram(const ShaderProgramKey& key,ShipyardXenos::ShaderProgramCode* code){
+    Shipyard::Xenos::PackedShaderProgram packed;
+    if(!PackMatchesBuild()||!Shipyard::Xenos::FindPackedProgram(key.shaderId0,key.shaderId1,
+            key.filteringMode==FILTER_THREE_POINT,key.srgbMode,&packed))return false;
+    code->vertex=packed.vertex;code->vertexBytes=packed.vertexBytes;
+    code->pixel=packed.pixel;code->pixelBytes=packed.pixelBytes;code->floats=packed.floats;
+    return true;
+}
+}
 void InitializeGuiForXenos();
 void GfxRenderingAPIXenos::Init(){
     const Shipyard::IO::ShaderWorkerConfig worker={"shader-cache",3,
         Shipyard::Xenos::WriteShaderCacheRecord,Shipyard_Log,Shipyard_Fatal};
     if(!Shipyard::IO::ConfigureShaderWorker(&worker))
         Shipyard_Fatal("shader worker configuration",E_UNEXPECTED);
-    // Offline-compiled shaders (tools/shipyard/build_shader_pack.py); combinations
-    // it lacks compile once and persist in the appendable cache below.
+    // Offline-compiled programs (tools/shipyard/build_shader_pack.py), resident
+    // and keyed by program; combinations it lacks compile once and persist in
+    // the appendable cache below.
     Shipyard::Xenos::ConfigureShaderPack("game:\\shaders\\3shipsty.shaderpack");
     const Shipyard::Xenos::ShaderCacheConfig config={"game:\\config\\3shipsty-shaders.cache",2,
         Shipyard::IO::QueueShaderRecord};
     if(!Shipyard::Xenos::ConfigureShaderCache(config))
         Shipyard_Fatal("shader cache configuration",E_UNEXPECTED);
     const ShipyardXenos::ShaderCacheOps cache={Shipyard::Xenos::LoadShaderCode,
-        Shipyard::Xenos::StoreShaderCode};
+        Shipyard::Xenos::StoreShaderCode,PackedProgram};
     ShipyardXenos::SetShaderCache(&cache);
     ShipyardXenos::Init();InitializeGuiForXenos();
 }

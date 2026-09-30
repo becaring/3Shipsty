@@ -53,7 +53,14 @@ int main(){
     assert 'voidDestroyFramebufferNative(intid)' in core
     assert 'voidClearRegion(floatx0,floaty0,floatx1,floaty1)' in core
     assert 'Smash360_' not in core and 'SoH_' not in core
-    assert 'ShipyardXenos::SetShaderCache(NULL)' in re.sub(r'\s+', '', (OWN/'api.cpp').read_text())
+    api=re.sub(r'\s+', '', (OWN/'api.cpp').read_text())
+    assert 'ShipyardXenos::SetShaderCache(NULL)' not in api
+    assert 'ShipyardXenos::SetShaderCache(&cache)' in api
+    assert 'Shipyard::Xenos::LoadShaderCode' in api and 'Shipyard::Xenos::StoreShaderCode' in api
+    # Prebuilt programs by key, gated on the probe regenerating the pack's source.
+    assert 'Shipyard::Xenos::StoreShaderCode,PackedProgram}' in api
+    assert 'PackMatchesBuild()||!Shipyard::Xenos::FindPackedProgram(' in api
+    assert api.index('Shipyard::IO::ShutdownShaderWrites()') < api.index('ShipyardXenos::Shutdown()')
     assert not (OUT/'generated/native.cpp').exists()
     stable(OUT/'verification.json',json.dumps(dict(host_output=result['stdout'],
                                                   target_runtime_executed=False,
