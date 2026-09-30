@@ -23,8 +23,7 @@ def git(repository, *args):
     return subprocess.check_output(command, text=True).strip()
 
 
-def acquire(name, entry):
-    repository = REPOSITORIES / name
+def checkout(repository, name, entry):
     if not repository.exists():
         repository.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "clone", entry["url"], str(repository)], check=True)
@@ -41,7 +40,12 @@ def acquire(name, entry):
     git(repository, "checkout", "--detach", revision)
     if git(repository, "rev-parse", "HEAD") != revision:
         raise ValueError("Dependency revision drift: " + name)
-    snapshot(repository, name, revision)
+
+
+def acquire(name, entry):
+    repository = REPOSITORIES / name
+    checkout(repository, name, entry)
+    snapshot(repository, name, entry['commit'])
 
 
 def main():
@@ -57,6 +61,16 @@ def main():
                 acquire(name, entry)
         verified(name)
         print(name + ": locked snapshot verified", flush=True)
+    speech = json.loads((ROOT / 'platform/shipyard/speech/dependencies.lock.json').read_text())
+    for name, entry in speech.items():
+        repository = ROOT / 'scratch/speech-xdk' / name
+        if not args.verify_only:
+            checkout(repository, name, entry)
+        if (git(repository, 'rev-parse', 'HEAD') != entry['commit'] or
+                git(repository, 'remote', 'get-url', 'origin') != entry['url'] or
+                git(repository, 'status', '--porcelain')):
+            raise ValueError('Speech dependency differs: ' + name)
+        print(name + ': locked checkout verified', flush=True)
 
 
 if __name__ == "__main__":

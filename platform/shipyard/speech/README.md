@@ -109,13 +109,12 @@ manager independently of the engine's standard voice/dictionary data.
 ## Build and integration
 
 Prerequisites: existing canonical application/randomizer-content projections,
-XDK, VS2022 host compiler/Windows SDK, CMake, and Ninja. Initialize dependency
-checkouts only in this owned scratch directory:
+XDK, VS2022 host compiler/Windows SDK, CMake, and Ninja. The main dependency setup
+acquires the checkouts pinned by `dependencies.lock.json` in the owned speech
+scratch directory, which clean regeneration preserves:
 
 ```powershell
-git clone --depth 1 --branch 1.52.0 https://github.com/espeak-ng/espeak-ng scratch/speech-xdk/espeak-ng
-git clone https://github.com/waywardgeek/sonic scratch/speech-xdk/sonic
-git -C scratch/speech-xdk/sonic checkout --detach fbf75c3d6d846bad3bb3d456cbc5d07d9fd8c104
+python -B tools/shipyard/setup_dependencies.py
 C:\Python313\python.exe -B tools/shipyard/test_speech.py
 ```
 

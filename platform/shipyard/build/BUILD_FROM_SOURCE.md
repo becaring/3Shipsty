@@ -3,7 +3,9 @@
 The source revision, its Git submodules, and the separate Shipyard
 checkout are the source authority. `platform-base.lock.json` selects Shipyard's
 exact commit and byte manifest. `platform/shipyard/dependencies.lock.json` pins
-the 16 external Git archives used by the Xbox generators. No files from the
+the 16 external Git archives used by the Xbox generators. The speech dependency
+lock supplies the eSpeak and Sonic checkouts required by the speech generator and
+its host contracts. No files from the
 SoH 4.0.5 tree are used.
 
 On Windows with Git, Python 3, Visual Studio 2022 host C++ tools, and Xbox
@@ -23,6 +25,9 @@ python -B tools/shipyard/link_xdk_application.py
 
 The dependency setup script accepts `--verify-only` for an existing prepared
 checkout. Its receipts verify the pinned Git archives and every copied byte.
+It also acquires and verifies the two pinned speech checkouts; clean regeneration
+preserves those inputs under `scratch/speech-xdk`. Git for Windows' `usr/bin` and
+`mingw64/bin` must be on PATH for recursive submodule shell helpers.
 The regeneration driver has an inspectable `--list` mode. Its empty-output mode
 first preserves the old XEX and receipts under `scratch/final-preclean/`, then
 removes only directories selected by the canonical subsystem inventory. It
