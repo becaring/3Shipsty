@@ -16,7 +16,12 @@ from cpp_ast import PARSER, walk
 from platform_base import resolve as resolve_platform_base
 
 resolve_platform_base(ROOT)
-from xbox360_platform import combiner_lookup, fast3d_opcode, fast3d_triangle_split, matrix_product
+from xbox360_platform import (
+    combiner_lookup,
+    fast3d_opcode,
+    fast3d_triangle_split,
+    matrix_product,
+)
 from xbox360_platform.resource_lookup import (
     texture_hash_lookup,
     stateless_signature,
@@ -35,7 +40,9 @@ from xbox360_platform.cpp_syntax import collect_member_defaults
 
 OUT = ROOT / "scratch/fast3d-xdk"
 OWN = ROOT / "platform/shipyard/fast3d"
-TRIANGLE_SPLIT_BOUNDARY = "    bool depth_test = (mRsp->geometry_mode & G_ZBUFFER) == G_ZBUFFER;"
+TRIANGLE_SPLIT_BOUNDARY = (
+    "    bool depth_test = (mRsp->geometry_mode & G_ZBUFFER) == G_ZBUFFER;"
+)
 
 
 def member_defaults(text, classname):
@@ -67,8 +74,7 @@ def header(text):
     text = texture_state.metadata_reference(text)
     text = (
         '#include "resources/texture_hash_cache.h"\n#include "fast3d/texture_bindings.h"\n#include'
-        ' "fast3d/command_stack.h"\n#include "fast3d/coordinate.h"\n'
-        + text
+        ' "fast3d/command_stack.h"\n#include "fast3d/coordinate.h"\n' + text
     )
     text = runpy.run_path(str(OWN / "shader_metadata_projection.py"))["header"](text)
     text = fast3d_triangle_split.header(text)
@@ -99,7 +105,9 @@ def header(text):
         "    float mXboxClampT[2];\n"
         "    unsigned mXboxPipelineCertified;",
     )
-    text = runpy.run_path(str(OWN / "resource_resolution_projection.py"))["header"](text)
+    text = runpy.run_path(str(OWN / "resource_resolution_projection.py"))["header"](
+        text
+    )
     text = game_fill_discard_projection.header(text)
     text = once(
         text,
@@ -177,7 +185,9 @@ bool operator<(const ColorCombinerKey &rhs) const {
 
 
 def opcode_tables(text):
-    return fast3d_opcode.lower(text, PARSER, walk, fast3d_opcode.FAST3D_TABLES, composed_dispatch=True)
+    return fast3d_opcode.lower(
+        text, PARSER, walk, fast3d_opcode.FAST3D_TABLES, composed_dispatch=True
+    )
 
 
 def triangle_split(text):
@@ -313,7 +323,9 @@ def texture_bindings(text):
         "void Interpreter::SpReset() {\n    mXboxTextureBindings.Invalidate();",
     )
     text = once(
-        text, "    mRapi = rapi;", "    mRapi = rapi;\n    mXboxTextureBindings.Invalidate();"
+        text,
+        "    mRapi = rapi;",
+        "    mRapi = rapi;\n    mXboxTextureBindings.Invalidate();",
     )
     text = once(
         text,
@@ -391,7 +403,9 @@ def static_arrays(text):
     source = text.encode()
     edits = []
     for node in walk(PARSER.parse(source).root_node):
-        if node.type != "declaration" or not node.text.startswith(b"static constexpr std::array "):
+        if node.type != "declaration" or not node.text.startswith(
+            b"static constexpr std::array "
+        ):
             continue
         decl = node.child_by_field_name("declarator")
         name = decl.child_by_field_name("declarator").text.decode()
@@ -435,7 +449,12 @@ def local_array_initializers(text):
             continue
         decl = node.child_by_field_name("declarator")
         value = node.child_by_field_name("value")
-        if decl and value and decl.type == "array_declarator" and value.type == "initializer_list":
+        if (
+            decl
+            and value
+            and decl.type == "array_declarator"
+            and value.type == "initializer_list"
+        ):
             gap = source[decl.end_byte : value.start_byte]
             if b"=" not in gap:
                 edits.append((decl.end_byte, value.start_byte, b" = "))
@@ -480,7 +499,9 @@ def aggregate_assignments(text):
             + lhs
             + " = shipyardAggregate; }"
         )
-        edits.append((node.parent.start_byte, node.parent.end_byte, replacement.encode()))
+        edits.append(
+            (node.parent.start_byte, node.parent.end_byte, replacement.encode())
+        )
     if len(edits) != 13:
         raise ValueError("Current aggregate assignment inventory drift")
     for start, end, replacement in sorted(edits, reverse=True):
@@ -490,7 +511,9 @@ def aggregate_assignments(text):
 
 def prepare():
     sources = {}
-    for name, expected in json.loads((OWN / "sources.lock.json").read_text())["sources"].items():
+    for name, expected in json.loads((OWN / "sources.lock.json").read_text())[
+        "sources"
+    ].items():
         text = (ROOT / "libultraship" / name).read_text(encoding="utf-8-sig")
         if hashlib.sha256(text.encode()).hexdigest() != expected:
             raise ValueError("Fast3D input drift: " + name)
@@ -515,7 +538,13 @@ def prepare():
         "Light(std::shared_ptr<Ship::ResourceInitData> initData) :"
         " Resource<LightEntry>(initData) {}",
     ).replace(" final :", " :")
-    text = matrix_product.source(sources["src/fast/interpreter.cpp"])
+    from overlap_lifetime_projection import project as overlap_lifetime
+
+    text = matrix_product.source(
+        overlap_lifetime(
+            "libultraship/src/fast/interpreter.cpp", sources["src/fast/interpreter.cpp"]
+        )
+    )
     # CreateShader passes only the path to LoadFile. The upstream local
     # ResourceInitData is never observed by that call or any later branch.
     text = once(
@@ -534,10 +563,21 @@ def prepare():
     text = once(
         text,
         "Interpreter::Interpreter() {",
-        "Interpreter::Interpreter() : " + ", ".join(defaults) + " {\n" + "\n".join(arrays),
+        "Interpreter::Interpreter() : "
+        + ", ".join(defaults)
+        + " {\n"
+        + "\n".join(arrays),
     )
-    text = once(text, "mRsp = new RSP();", "mRsp = Shipyard::Fast3D::NewValueInitialized<RSP>();")
-    text = once(text, "mRdp = new RDP();", "mRdp = Shipyard::Fast3D::NewValueInitialized<RDP>();")
+    text = once(
+        text,
+        "mRsp = new RSP();",
+        "mRsp = Shipyard::Fast3D::NewValueInitialized<RSP>();",
+    )
+    text = once(
+        text,
+        "mRdp = new RDP();",
+        "mRdp = Shipyard::Fast3D::NewValueInitialized<RDP>();",
+    )
     text, tables = opcode_tables(text)
     text = static_arrays(text)
     text = local_array_initializers(text)
@@ -547,7 +587,9 @@ def prepare():
     text = lower_if_initializers(text, PARSER, walk, expected=2)
     text = aggregate_assignments(text)
     text, count = re.subn(
-        r"RawTexMetadata (rawTexMetadata|rawTexMetdata) = \{\};", r"RawTexMetadata \1;", text
+        r"RawTexMetadata (rawTexMetadata|rawTexMetdata) = \{\};",
+        r"RawTexMetadata \1;",
+        text,
     )
     if count != 5:
         raise ValueError("Raw texture local initialization inventory drift")
@@ -594,10 +636,16 @@ def prepare():
     text = once(text, "switch (type) {", "switch (type.GetValue()) {")
     text = text.replace("[[fallthrough]]", "/* fall through */")
     text = once(text, "#include <spdlog/fmt/fmt.h>", "#include <spdlog/spdlog.h>")
-    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
-    text = lower(text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end").decode()
+    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+        "lower_ranges"
+    ]
+    text = lower(
+        text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
+    ).decode()
     text = text.replace("constexpr size_t", "const size_t")
-    text = re.sub(r"using (\w+) = ([^;]+?)\(\*\)(\([^;]*\));", r"typedef \2 (*\1)\3;", text)
+    text = re.sub(
+        r"using (\w+) = ([^;]+?)\(\*\)(\([^;]*\));", r"typedef \2 (*\1)\3;", text
+    )
     vertex_packing = runpy.run_path(str(OWN / "vertex_packing.py"))
     vertex_transform = runpy.run_path(str(OWN / "vertex_transform.py"))
     text = vertex_transform["transform"](text)
@@ -691,7 +739,9 @@ def prepare():
         "    auto dbg = Ship::Context::GetInstance()->GetGfxDebugger();\n"
         "    const bool xboxDebugging = dbg->IsDebugging();",
     )
-    body = once(body, "        if (dbg->IsDebugging()) {", "        if (xboxDebugging) {")
+    body = once(
+        body, "        if (dbg->IsDebugging()) {", "        if (xboxDebugging) {"
+    )
     text = text[:start] + body + text[end:]
     text = once(
         text,
@@ -731,9 +781,14 @@ def prepare():
     text = profile_interpreter(text)
     text = texture_hash_borrowed_handler(text)
     text = texture_hash_epoch_handler(text)
-    text = runpy.run_path(str(OWN / "resource_resolution_projection.py"))["transform"](text)
+    text = runpy.run_path(str(OWN / "resource_resolution_projection.py"))["transform"](
+        text
+    )
     text = tri2_pair_projection.transform(text)
     text = tri2_column_pack_projection.transform(text)
+    from render_details_projection import transform as render_details
+
+    text = render_details(text)
     pending["src/fast/interpreter.cpp"] = text
     pending["include/stdbool.h"] = (
         "#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C"
@@ -748,7 +803,10 @@ def prepare():
         OUT / "manifest.json",
         json.dumps(
             dict(
-                outputs={n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+                outputs={
+                    n: hashlib.sha256(t.encode()).hexdigest()
+                    for n, t in pending.items()
+                },
                 interpreter_initializers=defaults,
                 interpreter_array_initialization=arrays,
                 opcode_tables=tables,
@@ -778,7 +836,10 @@ def build():
         "/DNOMINMAX",
         "/DSPDLOG_ACTIVE_LEVEL=0",
         "/Dnssv_CONFIG_SELECT_STRING_VIEW=1",
-        "/FI" + str(ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"),
+        "/FI"
+        + str(
+            ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"
+        ),
         "/I" + str(sdk / "include/xbox"),
     ]
     flags += [
@@ -800,14 +861,20 @@ def build():
         folder / "build.json",
         json.dumps(
             dict(
-                source=source.relative_to(ROOT).as_posix(), exit=result.returncode, command=command
+                source=source.relative_to(ROOT).as_posix(),
+                exit=result.returncode,
+                command=command,
             ),
             indent=2,
         )
         + "\n",
     )
     if result.returncode:
-        print("\n".join(line for line in result.stdout.splitlines() if "error " in line)[:4500])
+        print(
+            "\n".join(line for line in result.stdout.splitlines() if "error " in line)[
+                :4500
+            ]
+        )
         raise SystemExit(result.returncode)
     if struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
         raise ValueError("Not a Xenon object")
@@ -828,7 +895,9 @@ def build():
     result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
     stable(folder / "endian_contract.log", result.stdout + result.stderr)
     if result.returncode:
-        raise RuntimeError("Actual interpreter endian composition failed; see endian_contract.log")
+        raise RuntimeError(
+            "Actual interpreter endian composition failed; see endian_contract.log"
+        )
     print("Complete current Fast3D interpreter compiles for Xenon")
 
 

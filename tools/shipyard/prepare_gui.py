@@ -63,7 +63,8 @@ def inherited_window(text, classname):
             (
                 n.start_byte,
                 n.end_byte,
-                n.text[: value.start_byte - n.start_byte] + (helper + "();" + replacement).encode(),
+                n.text[: value.start_byte - n.start_byte]
+                + (helper + "();" + replacement).encode(),
             )
         )
     for start, end, value in sorted(edits, reverse=True):
@@ -113,7 +114,9 @@ def cache_viewport_interpreter_locks(text):
             anchor = "    GetGameOverlay()->Draw();"
             if body.index(anchor) > body.index("mInterpreter.lock()"):
                 raise ValueError("DrawGame interpreter used before overlay callback")
-            body = once(body, anchor, anchor + "\n    auto interpreter = mInterpreter.lock();")
+            body = once(
+                body, anchor, anchor + "\n    auto interpreter = mInterpreter.lock();"
+            )
         elif method == "GetIntegerScaleFactor":
             body = once(
                 body,
@@ -130,7 +133,11 @@ def cache_viewport_interpreter_locks(text):
         else:
             first = body.index("mInterpreter.lock()")
             line = body.rfind("\n", 0, first) + 1
-            body = body[:line] + "    auto interpreter = mInterpreter.lock();\n" + body[line:]
+            body = (
+                body[:line]
+                + "    auto interpreter = mInterpreter.lock();\n"
+                + body[line:]
+            )
         # Only references after the declaration are replaced. The two
         # integer-scale branches each own an independent local lifetime.
         marker = "auto interpreter = mInterpreter.lock();"
@@ -141,6 +148,9 @@ def cache_viewport_interpreter_locks(text):
 
 
 def transform(name, text):
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    text = overlap_gui_work(name, text)
     if name.endswith("/Fonts.h"):
         # XDK's concatenated string limit is 65535 bytes. Keep the exact same
         # base85 font (including its terminator) as a numeric static initializer.
@@ -186,7 +196,9 @@ def transform(name, text):
             text = once(
                 text,
                 "struct ConsoleLine {",
-                "struct ConsoleLine {\n        ConsoleLine() : " + ",".join(defaults) + " {}",
+                "struct ConsoleLine {\n        ConsoleLine() : "
+                + ",".join(defaults)
+                + " {}",
             )
             text = once(
                 text,
@@ -287,9 +299,9 @@ def transform(name, text):
             "ShutDownImGui": "Shipyard_ImGuiPlatformShutdown(); Shipyard_ImGuiRendererShutdown();",
             "ImGuiWMNewFrame": (
                 (
-                    'Shipyard_ImGuiPlatformNewFrame(Context::GetInstance()->GetWindow()->GetWidth(),C'
-                    'ontext::GetInstance()->GetWindow()->GetHeight(),GetMenuOrMenubarVisible() || ImG'
-                    'ui::GetTopMostPopupModal()!=NULL);'
+                    "Shipyard_ImGuiPlatformNewFrame(Context::GetInstance()->GetWindow()->GetWidth(),C"
+                    "ontext::GetInstance()->GetWindow()->GetHeight(),GetMenuOrMenubarVisible() || ImG"
+                    "ui::GetTopMostPopupModal()!=NULL);"
                 )
             ),
             "ImGuiRenderDrawData": "Shipyard_ImGuiRender(data);",
@@ -356,19 +368,24 @@ def transform(name, text):
         # The renderer NewFrame hook rebuilds the atlas only when modern SoH
         # adds fonts after backend initialization and invalidates it.
         text = text.replace(
-            "mGuiTextures.contains(name)", "Shipyard::Resources::contains(mGuiTextures,name)"
+            "mGuiTextures.contains(name)",
+            "Shipyard::Resources::contains(mGuiTextures,name)",
         )
         text = text.replace(
             "mGuiWindows.contains(guiWindow->GetName())",
             "Shipyard::Resources::contains(mGuiWindows,guiWindow->GetName())",
         )
         text = text.replace(
-            "mGuiWindows.contains(name)", "Shipyard::Resources::contains(mGuiWindows,name)"
+            "mGuiWindows.contains(name)",
+            "Shipyard::Resources::contains(mGuiWindows,name)",
         )
         text = text.replace(
-            "std::reinterpret_pointer_cast<", "Shipyard::GuiCompat::ReinterpretPointerCast<"
+            "std::reinterpret_pointer_cast<",
+            "Shipyard::GuiCompat::ReinterpretPointerCast<",
         )
-        text = re.sub(r"(?<!::)\bdynamic_pointer_cast<", "std::dynamic_pointer_cast<", text)
+        text = re.sub(
+            r"(?<!::)\bdynamic_pointer_cast<", "std::dynamic_pointer_cast<", text
+        )
         text = once(text, "switch (res.Type)", "switch (res.Type.GetValue())")
         text = re.sub(r"\b0b([01]+)\b", lambda m: str(int(m[1], 2)), text)
         text = cache_viewport_interpreter_locks(text)
@@ -499,7 +516,10 @@ def transform(name, text):
                 ):
                     right = node.child_by_field_name("right")
                     value = right.text.decode()
-                    if "std::make_pair<uint8_t, std::shared_ptr<ControllerStick>>" not in value:
+                    if (
+                        "std::make_pair<uint8_t, std::shared_ptr<ControllerStick>>"
+                        not in value
+                    ):
                         raise ValueError("Unexpected GUI range")
                     text = (
                         source[: node.start_byte].decode()
@@ -514,21 +534,34 @@ def transform(name, text):
                         + source[node.end_byte :].decode()
                     )
                     break
-        text = re.sub(r"ImVec4 color = \{(.*?)\};", r"ImVec4 color(\1);", text, flags=re.S)
-        text = re.sub(r"Color_RGB8\(\{(.*?)\}\)", r"Shipyard::GuiCompat::Rgb(\1)", text, flags=re.S)
+        text = re.sub(
+            r"ImVec4 color = \{(.*?)\};", r"ImVec4 color(\1);", text, flags=re.S
+        )
+        text = re.sub(
+            r"Color_RGB8\(\{(.*?)\}\)",
+            r"Shipyard::GuiCompat::Rgb(\1)",
+            text,
+            flags=re.S,
+        )
     elif name.endswith("/GfxDebuggerWindow.cpp"):
         text = '#include "ship/resource/ResourceManager.h"\n' + text
         text = once(text, "#include <optional>", '#include "xbox_compat/optional.h"')
         text = text.replace("std::optional<", "xbox_compat::optional<").replace(
             "std::nullopt", "xbox_compat::nullopt"
         )
-        text = re.sub(r"(?<!::)\bdynamic_pointer_cast<", "std::dynamic_pointer_cast<", text)
+        text = re.sub(
+            r"(?<!::)\bdynamic_pointer_cast<", "std::dynamic_pointer_cast<", text
+        )
         text = re.sub(r"ImVec([24])\{([^{}]+)\}", r"ImVec\1(\2)", text)
         text = once(text, "switch (type)", "switch (type.GetValue())")
         text = text.replace("SDL_SetClipboardText(", "ImGui::SetClipboardText(")
         # XDK both rejects lambda default arguments (C3486) and can ICE before
         # reporting that diagnostic. Make the same default explicit at each use.
-        text = once(text, "const F3DGfx* sub = nullptr) mutable {", "const F3DGfx* sub) mutable {")
+        text = once(
+            text,
+            "const F3DGfx* sub = nullptr) mutable {",
+            "const F3DGfx* sub) mutable {",
+        )
         source = text.encode()
         positions = []
         for node in walk(PARSER.parse(source).root_node):
@@ -544,21 +577,32 @@ def transform(name, text):
         for pos in sorted(positions, reverse=True):
             source = source[:pos] + b", nullptr" + source[pos:]
         text = source.decode()
-    if name.endswith(("/ConsoleWindow.cpp", "/InputEditorWindow.cpp", "/GfxDebuggerWindow.cpp")):
+    if name.endswith(
+        ("/ConsoleWindow.cpp", "/InputEditorWindow.cpp", "/GfxDebuggerWindow.cpp")
+    ):
         general = runpy.run_path(str(ROOT / "platform/shipyard/input/lowering.py"))
         text = '#include "input/compiler.h"\n' + general["syntax"](text, set())
-    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
+    from gui_overlap_projection import project as project_overlap_gui
+
+    text = project_overlap_gui(name, text)
+    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+        "lower_ranges"
+    ]
     return (
         '#include "gui/compat.h"\n'
         + lower(
-            syntax(text).encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
+            syntax(text).encode(),
+            "Shipyard::Resources::begin",
+            "Shipyard::Resources::end",
         ).decode()
     )
 
 
 def prepare():
     pending = {}
-    for name, sha in json.loads((OWN / "sources.lock.json").read_text())["sources"].items():
+    for name, sha in json.loads((OWN / "sources.lock.json").read_text())[
+        "sources"
+    ].items():
         text = (ROOT / "libultraship" / name).read_text(encoding="utf-8-sig")
         if hashlib.sha256(text.encode()).hexdigest() != sha:
             raise ValueError("GUI source drift " + name)
@@ -568,7 +612,8 @@ def prepare():
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()}, indent=2
+            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+            indent=2,
         )
         + "\n",
     )
@@ -608,7 +653,10 @@ def build():
         "/DSPDLOG_ACTIVE_LEVEL=0",
         "/DCONTROLLERBUTTONS_T=uint32_t",
         "/Dnssv_CONFIG_SELECT_STRING_VIEW=1",
-        "/FI" + str(ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"),
+        "/FI"
+        + str(
+            ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"
+        ),
         "/I" + str(sdk / "include/xbox"),
     ]
     flags += ["/I" + str(p) for p in includes()]
@@ -621,17 +669,23 @@ def build():
     sources += [ROOT / "platform/shipyard/native-imgui/gui_init.cpp"]
     for source in sources:
         obj = folder / (source.stem + ".obj")
-        command = [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        command = (
+            [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        )
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         rows.append(
             dict(
-                source=source.relative_to(ROOT).as_posix(), exit=result.returncode, command=command
+                source=source.relative_to(ROOT).as_posix(),
+                exit=result.returncode,
+                command=command,
             )
         )
         print(source.name + ": " + str(result.returncode))
         if result.returncode:
-            print("\n".join(l for l in result.stdout.splitlines() if "error " in l)[:4500])
+            print(
+                "\n".join(l for l in result.stdout.splitlines() if "error " in l)[:4500]
+            )
         elif struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
             raise ValueError("Not Xenon")
     stable(folder / "build.json", json.dumps(rows, indent=2) + "\n")

@@ -19,22 +19,44 @@ def transform(relative, text):
     from xbox360_platform.controller_routes import project as project_routes
 
     text = project_routes(relative, text)
-    text = re.sub(r"#include <(?:SDL2/)?SDL(?:_events)?\.h>", '#include "input/sdl_bridge.h"', text)
+    if relative == "src/ship/controller/controldeck/ControlDeck.cpp":
+        text = '#include "application/overlap.h"\n' + text
+        for kind, method in enumerate(("Gamepad", "Keyboard", "Mouse")):
+            signature = "bool ControlDeck::" + method + "GameInputBlocked() {"
+            text = once(
+                text,
+                signature,
+                signature + "\n    int blocked;\n"
+                "    if (Shipyard_OverlapInputBlocked(" + str(kind) + ", &blocked))\n"
+                "        return AllGameInputBlocked() || blocked != 0;",
+            )
+    text = re.sub(
+        r"#include <(?:SDL2/)?SDL(?:_events)?\.h>",
+        '#include "input/sdl_bridge.h"',
+        text,
+    )
     if relative.endswith(".cpp") and '#include "ship/Context.h"' in text:
         text = (
             '#include "ship/controller/controldeck/ControlDeck.h"\n#include'
-            ' "ship/window/Window.h"\n'
-            + text
+            ' "ship/window/Window.h"\n' + text
         )
-    if relative == "include/ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.h":
+    if (
+        relative
+        == "include/ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.h"
+    ):
         text = once(
             text,
             "    void RefreshConnectedSDLGamepads();",
             "    void RefreshConnectedSDLGamepads();\n    void RefreshNativeGamepads(bool"
             " presentation = false);",
         )
-        text = once(text, "  private:", "  private:\n    uint32_t mNativeTopologyGeneration;")
-    if relative == "src/ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.cpp":
+        text = once(
+            text, "  private:", "  private:\n    uint32_t mNativeTopologyGeneration;"
+        )
+    if (
+        relative
+        == "src/ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.cpp"
+    ):
         text = once(
             text,
             "ConnectedPhysicalDeviceManager::ConnectedPhysicalDeviceManager() {",
@@ -60,7 +82,10 @@ def transform(relative, text):
 }
 } // namespace Ship""",
         )
-    if relative == "src/ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.cpp":
+    if (
+        relative
+        == "src/ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.cpp"
+    ):
         a = text.index("    SDL_PumpEvents();")
         b = text.index("\n}\n} // namespace Ship", a)
         text = (
@@ -68,7 +93,19 @@ def transform(relative, text):
             + "    Context::GetInstance()->GetControlDeck()->GetConnectedPhysicalDeviceManager()->RefreshNativeGamepads(true);"
             + text[b:]
         )
-    if relative == "include/ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h":
+    if (
+        relative
+        == "include/ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h"
+    ):
+        from overlap_gui_work_projection import public_method
+
+        text = public_method(
+            text,
+            "SDLAddRemoveDeviceEventHandler",
+            """bool XboxHasPendingFrameWork() override {
+        return !IsInitialized() || IsVisible();
+    }""",
+        )
         signatures = [
             ("", ""),
             (
@@ -77,7 +114,10 @@ def transform(relative, text):
             ),
             ("const std::string& c, bool v, const std::string& n, ImVec2 s", "c,v,n,s"),
             ("const std::string& c, bool v, const std::string& n", "c,v,n"),
-            ("const std::string& c, const std::string& n, ImVec2 s, uint32_t f", "c,n,s,f"),
+            (
+                "const std::string& c, const std::string& n, ImVec2 s, uint32_t f",
+                "c,n,s,f",
+            ),
             ("const std::string& c, const std::string& n, ImVec2 s", "c,n,s"),
             ("const std::string& c, const std::string& n", "c,n"),
         ]
@@ -85,7 +125,11 @@ def transform(relative, text):
             text,
             "    using GuiWindow::GuiWindow;",
             "\n".join(
-                "    SDLAddRemoveDeviceEventHandler(" + p + ") : GuiWindow(" + a + ") {}"
+                "    SDLAddRemoveDeviceEventHandler("
+                + p
+                + ") : GuiWindow("
+                + a
+                + ") {}"
                 for p, a in signatures
             ),
         )
@@ -252,7 +296,8 @@ def prepare():
                 if name:
                     enums.add(name.text.decode())
     pending = {
-        name: '#include "input/compiler.h"\n' + LOWER["syntax"](transform(name, text), enums)
+        name: '#include "input/compiler.h"\n'
+        + LOWER["syntax"](transform(name, text), enums)
         for name, text in originals.items()
     }
     for name, text in pending.items():
@@ -260,7 +305,8 @@ def prepare():
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()}, indent=2
+            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+            indent=2,
         )
         + "\n",
     )
@@ -287,7 +333,9 @@ def build():
     stable(
         cvars,
         "#pragma once\n"
-        + "".join("#define " + n + ' "' + v + '"\n' for n, v in release_cvars().items()),
+        + "".join(
+            "#define " + n + ' "' + v + '"\n' for n, v in release_cvars().items()
+        ),
     )
     sdk = Path("C:/Program Files (x86)/Microsoft Xbox 360 SDK")
     flags = [
@@ -311,11 +359,16 @@ def build():
         OUT / "generated" / n
         for n in json.loads((OWN / "sources.lock.json").read_text())["sources"]
         if n.endswith(".cpp")
-    ] + [platform_base / "sources/input/physical.cpp", platform_base / "sources/input/xinput.cpp"]
+    ] + [
+        platform_base / "sources/input/physical.cpp",
+        platform_base / "sources/input/xinput.cpp",
+    ]
     records = []
     for i, source in enumerate(sources):
         obj = folder / (str(i) + "-" + source.stem + ".obj")
-        command = [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        command = (
+            [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        )
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         source_id = (
@@ -324,7 +377,10 @@ def build():
             else source.relative_to(ROOT).as_posix()
         )
         records.append(dict(source=source_id, exit=result.returncode, command=command))
-        if not result.returncode and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
+        if (
+            not result.returncode
+            and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2
+        ):
             raise ValueError("Not a Xenon object")
     stable(folder / "build.json", json.dumps(records, indent=2) + "\n")
     for row in records:

@@ -20,9 +20,16 @@ OWN = ROOT / "platform/shipyard/enhancements"
 
 
 def transform(name, text):
+    from overlap_lifetime_projection import project as overlap_lifetime
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    text = overlap_lifetime(name, text)
+    text = overlap_gui_work(name, text)
     if name.endswith("/ShipInit.hpp"):
         text = once(text, "updatePaths = {}", "updatePaths = std::set<std::string>()")
-        lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
+        lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+            "lower_ranges"
+        ]
         return (
             '#include "resources/runtime_support.h"\n'
             + lower(
@@ -33,7 +40,9 @@ def transform(name, text):
     text = call_sites(text, name)
     if name.endswith("/EasyFrameAdvance.cpp"):
         text = once(
-            text, "#include <libultraship/libultraship.h>", "#include <libultraship/bridge.h>"
+            text,
+            "#include <libultraship/libultraship.h>",
+            "#include <libultraship/bridge.h>",
         )
     if name.endswith("/Cheats/Infinite/Ammo.cpp"):
         text = once(
@@ -49,7 +58,8 @@ def transform(name, text):
             if (
                 init.type == "init_declarator"
                 and init.parent.type == "declaration"
-                and init.parent.child_by_field_name("type").text == b"RegisterShipInitFunc"
+                and init.parent.child_by_field_name("type").text
+                == b"RegisterShipInitFunc"
             ):
                 # XDK rejects __FUNCSIG__ inside a static-initializer lambda.
                 # This real stateless void callback can be a named function;
@@ -59,12 +69,19 @@ def transform(name, text):
                 captures = node.child_by_field_name("captures")
                 body = node.child_by_field_name("body")
                 if captures.text != b"[]":
-                    raise ValueError("Captured ShipInit lambda needs separate projection")
+                    raise ValueError(
+                        "Captured ShipInit lambda needs separate projection"
+                    )
                 declarator = node.child_by_field_name("declarator")
                 if declarator and declarator.text.strip() != b"()":
                     raise ValueError("ShipInit lambda signature changed")
-                if any(n.type == "return_statement" and n.named_children for n in walk(body)):
-                    raise ValueError("Value-returning ShipInit lambda needs separate projection")
+                if any(
+                    n.type == "return_statement" and n.named_children
+                    for n in walk(body)
+                ):
+                    raise ValueError(
+                        "Value-returning ShipInit lambda needs separate projection"
+                    )
                 helper = "ShipyardInitCallback" + str(node.start_byte)
                 function = (
                     "static void "
@@ -77,7 +94,9 @@ def transform(name, text):
                     + json.dumps((ROOT / name).as_posix())
                     + "\n"
                 )
-                edits.append((init.parent.start_byte, init.parent.start_byte, function.encode()))
+                edits.append(
+                    (init.parent.start_byte, init.parent.start_byte, function.encode())
+                )
                 edits.append((node.start_byte, node.end_byte, helper.encode()))
         if node.type != "initializer_list" or node.parent.type != "argument_list":
             continue
@@ -113,29 +132,42 @@ def transform(name, text):
                 + json.dumps((ROOT / name).as_posix())
                 + "\n"
             )
-            edits.append((declaration.start_byte, declaration.start_byte, body.encode()))
+            edits.append(
+                (declaration.start_byte, declaration.start_byte, body.encode())
+            )
             replacement = helper + "()"
         edits.append((node.start_byte, node.end_byte, replacement.encode()))
     for a, b, value in sorted(edits, reverse=True):
         raw = raw[:a] + value + raw[b:]
-    text = syntax(raw.decode()).replace("static constexpr int32_t", "static const int32_t")
+    text = syntax(raw.decode()).replace(
+        "static constexpr int32_t", "static const int32_t"
+    )
     if name.endswith("/Fixes/DirtPathFix.cpp"):
-        text = once(text, "static constexpr ZFightingFixType", "static const ZFightingFixType")
+        text = once(
+            text, "static constexpr ZFightingFixType", "static const ZFightingFixType"
+        )
     if name.endswith("/Fixes/HammerHandFix.cpp"):
         for index, macro in enumerate(
-            ("gsSPDisplayListOTRFilePath(gLinkAdultLeftHandClosedNearDL)", "gsSPEndDisplayList()")
+            (
+                "gsSPDisplayListOTRFilePath(gLinkAdultLeftHandClosedNearDL)",
+                "gsSPEndDisplayList()",
+            )
         ):
             local = "hammerCommand" + str(index)
             line = (
                 "        ResourceMgr_PatchGfxByName(gLinkAdultLeftHandHoldingHammerNearDL,"
-                ' "hammerHand'
-                + str(index + 1)
-                + '"'
+                ' "hammerHand' + str(index + 1) + '"'
             )
             text = once(text, macro, local)
-            text = once(text, line, "        Gfx " + local + " = " + macro + ";\n" + line)
-    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
-    text = lower(text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end").decode()
+            text = once(
+                text, line, "        Gfx " + local + " = " + macro + ";\n" + line
+            )
+    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+        "lower_ranges"
+    ]
+    text = lower(
+        text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
+    ).decode()
     # Macro registration carries a real caller location even after loop/helper
     # lowering changes physical line counts in this generated translation unit.
     pattern = r"\b(?:COND_HOOK|COND_ID_HOOK|COND_VB_SHOULD|REGISTER_VB_SHOULD)\s*\("
@@ -177,7 +209,8 @@ def prepare():
                 upstream_commit=lock["upstream_commit"],
                 source_sha256=lock["sources"],
                 generated_sha256={
-                    n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()
+                    n: hashlib.sha256(t.encode()).hexdigest()
+                    for n, t in pending.items()
                 },
             ),
             indent=2,
@@ -200,9 +233,9 @@ def build(group=None):
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
     rows = []
-    recipe = json.loads((ROOT / "scratch/game-interactor-xdk/xdk/build.json").read_text())[0][
-        "command"
-    ]
+    recipe = json.loads(
+        (ROOT / "scratch/game-interactor-xdk/xdk/build.json").read_text()
+    )[0]["command"]
     flags = recipe[:-2]
     flags[1:1] = ["/I" + str(p) for p in includes()[:3]]
     previous = (
@@ -222,13 +255,17 @@ def build(group=None):
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         rows.append(
             dict(
-                source=source.relative_to(ROOT).as_posix(), command=command, exit=result.returncode
+                source=source.relative_to(ROOT).as_posix(),
+                command=command,
+                exit=result.returncode,
             )
         )
         print(name + ": " + str(result.returncode), flush=True)
         if result.returncode:
             print(
-                "\n".join(line for line in result.stdout.splitlines() if "error " in line)[:1600],
+                "\n".join(
+                    line for line in result.stdout.splitlines() if "error " in line
+                )[:1600],
                 flush=True,
             )
         else:

@@ -36,7 +36,9 @@ def stable(path, data):
 
 def validate_inputs():
     lock = json.loads(
-        (ROOT / "platform/shipyard/game/source-lock.json").read_text(encoding="utf-8-sig")
+        (ROOT / "platform/shipyard/game/source-lock.json").read_text(
+            encoding="utf-8-sig"
+        )
     )
     for name, expected in lock["inputs"].items():
         if digest((ROOT / name).read_bytes()) != expected:
@@ -73,7 +75,9 @@ def summarize_batch(directory):
         stem = row["path"].replace("/", "__")[:-2]
         log = (directory / "logs" / (stem + ".log")).read_text(errors="replace")
         errors = [
-            line for line in log.splitlines() if "error " in line or "Projection rejected:" in line
+            line
+            for line in log.splitlines()
+            if "error " in line or "Projection rejected:" in line
         ]
         first = errors[0] if errors else "No compiler error text; inspect full log"
         if row.get("projection_error"):
@@ -113,9 +117,12 @@ def summarize_batch(directory):
         passed=report.get("passed_count"),
         complete=report.get("complete", False),
         contains_provisional_GBI_FLOATS=any(
-            "/DGBI_FLOATS" in row.get("preprocess_command", []) for row in report["results"]
+            "/DGBI_FLOATS" in row.get("preprocess_command", [])
+            for row in report["results"]
         ),
-        selected_manifest_sha256=digest((directory / "selected-sources.json").read_bytes()),
+        selected_manifest_sha256=digest(
+            (directory / "selected-sources.json").read_bytes()
+        ),
         categories=dict(Counter(item["category"] for item in failures)),
         failures=failures,
         scope=(
@@ -123,7 +130,10 @@ def summarize_batch(directory):
             " link/runtime parity claim"
         ),
     )
-    stable(directory / "compile-summary.json", (json.dumps(summary, indent=2) + "\n").encode())
+    stable(
+        directory / "compile-summary.json",
+        (json.dumps(summary, indent=2) + "\n").encode(),
+    )
     return summary
 
 
@@ -160,7 +170,9 @@ def lower_c(raw):
                         owner = owner.parent
                     if owner is None:
                         raise ValueError("Case declaration without an enclosing block")
-                    case_edits.extend([(child.start_byte, b"{ "), (owner.end_byte - 1, b"} ")])
+                    case_edits.extend(
+                        [(child.start_byte, b"{ "), (owner.end_byte - 1, b"} ")]
+                    )
                     case_scopes += 1
         stack.extend(node.named_children)
     for offset, value in sorted(case_edits, reverse=True):
@@ -185,7 +197,8 @@ def verify_semantics():
     names = re.findall(rb"^(?:_Bool|int|void) (\w+)\(", corpus, re.M)
     for suffix, body in [("native", corpus), ("projected", projected)]:
         prefix = b"".join(
-            b"#define " + name + b" " + name + b"_" + suffix.encode() + b"\n" for name in names
+            b"#define " + name + b" " + name + b"_" + suffix.encode() + b"\n"
+            for name in names
         )
         stable(dest / (suffix + ".c"), prefix + body)
     harness = """#include <stdio.h>
@@ -209,7 +222,9 @@ def verify_semantics():
     ]
     for name in integer:
         harness += "int " + name + "_native(int); int " + name + "_projected(int);\n"
-    harness += "_Bool return_int_native(int); unsigned char return_int_projected(int);\n"
+    harness += (
+        "_Bool return_int_native(int); unsigned char return_int_projected(int);\n"
+    )
     harness += "_Bool return_float_native(double); unsigned char return_float_projected(double);\n"
     harness += (
         "int main(void) { int values[]={-257,-256,-1,0,1,255,256,257}; double"
@@ -249,7 +264,8 @@ def verify_semantics():
         + '" '
     )
     command += " ".join(
-        '"' + str(dest / name) + '"' for name in ["native.c", "projected.c", "harness.c"]
+        '"' + str(dest / name) + '"'
+        for name in ["native.c", "projected.c", "harness.c"]
     )
     command += '\nif errorlevel 1 exit /b 1\n"' + str(executable) + '"\n'
     stable(dest / "run.cmd", command.encode())
@@ -323,7 +339,9 @@ def project_header(name, raw):
         if text.count("static inline ") != 2:
             raise ValueError("Mixer static inline helper drift")
         text = text.replace("static inline ", "static __inline ")
-        changes.append("XDK inline spelling for the two unchanged internal clamp helpers")
+        changes.append(
+            "XDK inline spelling for the two unchanged internal clamp helpers"
+        )
     if name in (
         "soh/soh/Enhancements/randomizer/randomizer_grotto.c",
         "soh/src/code/code_800E4FE0.c",
@@ -358,9 +376,12 @@ def project_header(name, raw):
         if text.count("const SaveFileMetaInfo* restrict meta") != 1:
             raise ValueError("File-select restrict declaration changed")
         text = text.replace(
-            "const SaveFileMetaInfo* restrict meta", "const SaveFileMetaInfo* __restrict meta"
+            "const SaveFileMetaInfo* restrict meta",
+            "const SaveFileMetaInfo* __restrict meta",
         )
-        changes.append("Use XDK pointer-qualifier spelling only on actual current C parameter")
+        changes.append(
+            "Use XDK pointer-qualifier spelling only on actual current C parameter"
+        )
         replace_projected_once(
             '#include "soh/Enhancements/FileSelectEnhancements.h"',
             '#include "soh/Enhancements/FileSelectEnhancements.h"\n\n'
@@ -407,7 +428,9 @@ def project_header(name, raw):
             "Prepare the confirmed save during the fade",
         )
         changes.append("Read and parse the confirmed save during the file-select fade")
-        changes.append("Add bounded file-select fade trace after real update/draw commands")
+        changes.append(
+            "Add bounded file-select fade trace after real update/draw commands"
+        )
         changes.append("Use owner-aware skybox initialization for FileChooseContext")
     if name == "soh/src/code/z_scene.c":
         # Objects spawn when a scene or room loads, before any actor using
@@ -567,7 +590,9 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
             "                              scale, (unsigned)this->rDrawFlags);\n",
             "Count emitted soft-dust draws in the frame profile",
         )
-        changes.append("Count emitted soft-dust draws with position, eye, scale, and draw flags")
+        changes.append(
+            "Count emitted soft-dust draws with position, eye, scale, and draw flags"
+        )
     if name == "soh/src/code/game.c":
         replace_projected_once(
             "void GameState_Update(GameState* gameState) {",
@@ -701,7 +726,9 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
             "    ResourceMgr_ReleasePrefetch();\n}",
             "Release prefetch after scene init",
         )
-        changes.append("Queue scene and object prefetch after scene init instead of during it")
+        changes.append(
+            "Queue scene and object prefetch after scene init instead of during it"
+        )
         # A transition has its destination resolved (randomizer entrance
         # overrides are applied where the exit is taken) before the screen
         # fades out, and its setup reads that same entrance entry for the BGM
@@ -728,7 +755,9 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
             "                       }\n",
             "Prefetch the transition destination during the fade-out",
         )
-        changes.append("Prefetch the resolved transition destination during the fade-out")
+        changes.append(
+            "Prefetch the resolved transition destination during the fade-out"
+        )
         # Before an update records: below the memory floor, drop scene and
         # object directories nothing can still reference (see
         # ResourceMgr_EvictUnusedDirectories). Almost always a counter check.
@@ -746,7 +775,9 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
             "        Shipyard_FrameProfilePlayUpdateEnd();",
             "Gameplay update profile boundary",
         )
-        changes.append("Evict unreferenced scene and object directories below a memory floor")
+        changes.append(
+            "Evict unreferenced scene and object directories below a memory floor"
+        )
         replace_projected_once(
             "    FrameInterpolation_StartRecord();\n"
             "    Play_Draw(play);\n"
@@ -813,7 +844,11 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
         ):
             replace_projected_once(
                 "    " + call,
-                "    " + call + '\n    Shipyard_RuntimeTrace("PLAY_INIT ' + marker + ' end");',
+                "    "
+                + call
+                + '\n    Shipyard_RuntimeTrace("PLAY_INIT '
+                + marker
+                + ' end");',
                 "Gameplay " + marker + " initialization trace",
             )
         replace_projected_once(
@@ -868,7 +903,9 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {""",
             "Gameplay room-load completion trace",
         )
         changes.append("Prime each Xbox PlayState skybox as in the working 4.0.5 port")
-        changes.append("Add bounded Play_Init allocation, scene, actor, and room boundary trace")
+        changes.append(
+            "Add bounded Play_Init allocation, scene, actor, and room boundary trace"
+        )
     if name == "soh/src/code/z_construct.c":
         replace_projected_once(
             "void Message_Init(PlayState* play) {",
@@ -990,7 +1027,9 @@ void Font_LoadOrderedFontNTSC(Font* font) {""",
             "                              gAudioContext.seqPlayers[SEQ_PLAYER_SFX].enabled);",
             "Bounded real game audio update trace",
         )
-        changes.append("Trace bounded native audio logic gate and sequence-player state")
+        changes.append(
+            "Trace bounded native audio logic gate and sequence-player state"
+        )
     if name == "soh/src/code/z_room.c":
         replace_projected_once(
             "    if (BE32SWAP(*(u32*)data) == JPEG_MARKER) {",
@@ -1082,9 +1121,14 @@ void Skybox_Init(GameState* state, SkyboxContext* skyboxCtx, s16 skyboxId) {
 void Skybox_Update(SkyboxContext* skyboxCtx) {""",
             "Separate FileChoose and gameplay skybox environment owners",
         )
-        changes.append("Restore owner-aware skybox initialization from the working 4.0.5 Xbox port")
+        changes.append(
+            "Restore owner-aware skybox initialization from the working 4.0.5 Xbox port"
+        )
     if name == "libultraship/include/ship/utils/color.h":
-        for typ, fields in [("Color_RGB8", ("r", "g", "b")), ("Color_RGBA8", ("r", "g", "b", "a"))]:
+        for typ, fields in [
+            ("Color_RGB8", ("r", "g", "b")),
+            ("Color_RGBA8", ("r", "g", "b", "a")),
+        ]:
             anchor = "} " + typ + ";"
             if text.count(anchor) != 1:
                 raise ValueError("Color layout anchor drift")
@@ -1107,7 +1151,9 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
             "Typed rvalue color factories preserve byte narrowing without compound literals"
         )
     if name == "soh/soh/Enhancements/item-tables/ItemTableTypes.h":
-        body = text[text.index("typedef struct GetItemEntry {") : text.index("} GetItemEntry;")]
+        body = text[
+            text.index("typedef struct GetItemEntry {") : text.index("} GetItemEntry;")
+        ]
         body = re.sub(r"/\*.*?\*/|//[^\n]*", "", body, flags=re.S)
         fields = re.findall(r"\b(\w+)\s+(\w+)\s*;", body)
         if len(fields) != 15:
@@ -1124,17 +1170,20 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
             "Generate actual GetItemEntry rvalue factory from all current field types/order"
         )
     if name == "soh/soh/Enhancements/randomizer/randomizerEnums.h":
-        if digest(raw) != "4bfb12b2cc3b9310ae49161841ac47d82410a38c217fe151590e46ec466fe794":
+        if (
+            digest(raw)
+            != "4bfb12b2cc3b9310ae49161841ac47d82410a38c217fe151590e46ec466fe794"
+        ):
             raise ValueError("Randomizer macro input changed; re-audit")
         old = "#define RANDO_ENUM_ITEM(name, ...) name __VA_OPT__(=) __VA_ARGS__,"
         new = (
-            '#define SHIPYARD_RANDO_APPLY(macro, args) macro args\n'
-            '#define SHIPYARD_RANDO_AUTO(name) name,\n'
-            '#define SHIPYARD_RANDO_VALUE(name, value) name = value,\n'
-            '#define SHIPYARD_RANDO_SELECT(_1, _2, NAME, ...) NAME\n'
-            '#define RANDO_ENUM_ITEM(...) SHIPYARD_RANDO_APPLY(SHIPYARD_RANDO_APPLY(SHIPYARD_'
-            'RANDO_SELECT, (__VA_ARGS__, SHIPYARD_RANDO_VALUE, SHIPYARD_RANDO_AUTO)), (__VA_A'
-            'RGS__))'
+            "#define SHIPYARD_RANDO_APPLY(macro, args) macro args\n"
+            "#define SHIPYARD_RANDO_AUTO(name) name,\n"
+            "#define SHIPYARD_RANDO_VALUE(name, value) name = value,\n"
+            "#define SHIPYARD_RANDO_SELECT(_1, _2, NAME, ...) NAME\n"
+            "#define RANDO_ENUM_ITEM(...) SHIPYARD_RANDO_APPLY(SHIPYARD_RANDO_APPLY(SHIPYARD_"
+            "RANDO_SELECT, (__VA_ARGS__, SHIPYARD_RANDO_VALUE, SHIPYARD_RANDO_AUTO)), (__VA_A"
+            "RGS__))"
         )
         if text.count(old) != 1:
             raise ValueError("Expected one randomizer enum default macro")
@@ -1150,7 +1199,9 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
         if text.count("#ifdef _WIN32") != 2:
             raise ValueError("Expected two desktop entry guards")
         text = text.replace("#ifdef _WIN32", "#if defined(_WIN32) && !defined(_XBOX)")
-        changes.append("Xbox uses actual main body without desktop console/SDL entry setup")
+        changes.append(
+            "Xbox uses actual main body without desktop console/SDL entry setup"
+        )
         replace_projected_once(
             '#include "soh/CrashHandlerExt.h"',
             '#include "soh/CrashHandlerExt.h"\n#ifdef _XBOX\n#include <xtl.h>\nextern void'
@@ -1172,7 +1223,9 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
     if (!Shipyard_TryInitOTR(argc, argv)) return 1;""",
             "Pin the real title/render thread before native startup",
         )
-        changes.append("Match hardware-proven SoH360/Smash360 application-thread placement")
+        changes.append(
+            "Match hardware-proven SoH360/Smash360 application-thread placement"
+        )
     if name == "libultraship/include/libultraship/libultra/message.h":
         helpers = []
         for suffix, typ, field in [
@@ -1194,7 +1247,9 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
                 + field
                 + " = value; return result; }"
             )
-            text = text.replace(old, "#define OS_MESG_" + suffix + "(x) " + function + "(x)")
+            text = text.replace(
+                old, "#define OS_MESG_" + suffix + "(x) " + function + "(x)"
+            )
         text = text.replace("} OSMesg;", "} OSMesg;\n" + "\n".join(helpers))
         changes.append(
             "Typed union-return factories replace message compound literals; argument evaluated"
@@ -1204,8 +1259,12 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
         old = "inline const char* AudioChannelsSettingName("
         if text.count(old) != 1:
             raise ValueError("Audio channel inline helper changed")
-        text = text.replace(old, "static __inline const char* AudioChannelsSettingName(")
-        changes.append("Header-only inline helper uses XDK C spelling and internal linkage")
+        text = text.replace(
+            old, "static __inline const char* AudioChannelsSettingName("
+        )
+        changes.append(
+            "Header-only inline helper uses XDK C spelling and internal linkage"
+        )
     if name == "soh/include/z64math.h":
         old = "#define IS_ZERO(f) (fabsf(f) < 0.008f)"
         if text.count(old) != 1:
@@ -1214,7 +1273,16 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
         changes.append(
             "Avoid XDK preprocessor substituting parameter f inside numeric suffix 0.008f"
         )
-    return text.encode(), changes
+    from overlap_game_projection import project as overlap_game
+    from overlap_depth_projection import project as overlap_depth
+    from overlap_lifetime_projection import project as overlap_lifetime
+
+    projected = overlap_lifetime(name, overlap_depth(name, overlap_game(name, text)))
+    if projected != text:
+        changes.append(
+            "One-frame game/render ownership, depth publication and replay lifetimes"
+        )
+    return projected.encode(), changes
 
 
 def stage(sources):
@@ -1224,11 +1292,18 @@ def stage(sources):
         source_name = pending.pop()
         source_path = ROOT / source_name
         for include in re.findall(
-            r'^\s*#include\s+"([^"\n]+\.c)"', source_path.read_text(encoding="utf-8-sig"), re.M
+            r'^\s*#include\s+"([^"\n]+\.c)"',
+            source_path.read_text(encoding="utf-8-sig"),
+            re.M,
         ):
             dependency = (source_path.parent / include).resolve()
-            if not dependency.is_relative_to(ROOT.resolve()) or not dependency.is_file():
-                raise ValueError("Unresolved textual C dependency: " + source_name + ": " + include)
+            if (
+                not dependency.is_relative_to(ROOT.resolve())
+                or not dependency.is_file()
+            ):
+                raise ValueError(
+                    "Unresolved textual C dependency: " + source_name + ": " + include
+                )
             relative = dependency.relative_to(ROOT).as_posix()
             if relative not in names:
                 names.add(relative)
@@ -1248,7 +1323,12 @@ def stage(sources):
         data = prefix + ('#line 1 "' + (ROOT / name).as_posix() + '"\n').encode() + body
         stable(TREE / name, data)
         result.append(
-            dict(path=name, original_sha256=digest(raw), output_sha256=digest(data), edits=edits)
+            dict(
+                path=name,
+                original_sha256=digest(raw),
+                output_sha256=digest(data),
+                edits=edits,
+            )
         )
     stable(OUT / "staged-inputs.json", (json.dumps(result, indent=2) + "\n").encode())
 
@@ -1262,7 +1342,9 @@ def main():
     parser.add_argument("--preprocess-only", action="store_true")
     parser.add_argument("--verify-semantics", action="store_true")
     parser.add_argument(
-        "--output-full", action="store_true", help="Write this batch below scratch/game-xdk/full"
+        "--output-full",
+        action="store_true",
+        help="Write this batch below scratch/game-xdk/full",
     )
     parser.add_argument(
         "--stage-only",
@@ -1278,7 +1360,10 @@ def main():
     if args.summarize:
         result = summarize_batch(ROOT / "scratch/game-xdk/full")
         print(
-            json.dumps({key: value for key, value in result.items() if key != "failures"}, indent=2)
+            json.dumps(
+                {key: value for key, value in result.items() if key != "failures"},
+                indent=2,
+            )
         )
         return 0
     if args.all or args.output_full:
@@ -1292,7 +1377,9 @@ def main():
         for r in inventory()["files"]
         if r["role"] == "application" and r["path"].endswith(".c")
     }
-    selected = sorted(available if args.all else set(args.source or ["soh/src/code/sys_math.c"]))
+    selected = sorted(
+        available if args.all else set(args.source or ["soh/src/code/sys_math.c"])
+    )
     if set(selected) - available.keys():
         parser.error("Source outside pinned application C selection")
     stage(selected)
@@ -1306,7 +1393,11 @@ def main():
     xdk = Path(os.environ.get("XEDK", r"C:\Program Files (x86)\Microsoft Xbox 360 SDK"))
     cl = xdk / "bin/win32/cl.exe"
     includes = (
-        [INCLUDE, ROOT / "scratch/codec-xdk/include", ROOT / "scratch/deps/opus/include"]
+        [
+            INCLUDE,
+            ROOT / "scratch/codec-xdk/include",
+            ROOT / "scratch/deps/opus/include",
+        ]
         + [
             TREE / p
             for p in (
@@ -1318,7 +1409,7 @@ def main():
                 "ZAPDTR/ZAPD/resource/type",
             )
         ]
-        + [xdk / "include/xbox"]
+        + [ROOT / "platform/shipyard", xdk / "include/xbox"]
     )
     definitions = [
         "_XBOX",
@@ -1337,7 +1428,10 @@ def main():
         cvar_header,
         (
             "#pragma once\n"
-            + "".join("#define " + name + ' "' + value + '"\n' for name, value in cvars.items())
+            + "".join(
+                "#define " + name + ' "' + value + '"\n'
+                for name, value in cvars.items()
+            )
         ).encode(),
     )
     root_cmake = (ROOT / "CMakeLists.txt").read_text()
@@ -1368,7 +1462,11 @@ def main():
         obj.parent.mkdir(parents=True, exist_ok=True)
         preprocess = common + ["/TC", "/E"] + flags + [str(TREE / name)]
         run = subprocess.run(preprocess, cwd=ROOT, capture_output=True)
-        row = dict(available[name], preprocess_command=preprocess, preprocess_exit=run.returncode)
+        row = dict(
+            available[name],
+            preprocess_command=preprocess,
+            preprocess_exit=run.returncode,
+        )
         log = run.stderr
         if run.returncode == 0:
             stable(OUT / "preprocessed" / (stem + ".i"), run.stdout)
@@ -1395,16 +1493,23 @@ def main():
         stable(OUT / "logs" / (stem + ".log"), log)
         report["results"].append(row)
         report["completed_count"] = len(report["results"])
-        report["passed_count"] = sum(r.get("compile_exit") == 0 for r in report["results"])
+        report["passed_count"] = sum(
+            r.get("compile_exit") == 0 for r in report["results"]
+        )
         report["complete"] = len(report["results"]) == len(selected)
-        stable(OUT / "compile-report.json", (json.dumps(report, indent=2) + "\n").encode())
+        stable(
+            OUT / "compile-report.json", (json.dumps(report, indent=2) + "\n").encode()
+        )
         okay = row.get("compile_exit") == 0 or row.get("preprocess_only", False)
         print(("PASS " if okay else "FAIL ") + name, flush=True)
         if not okay and not args.keep_going and not args.all:
             print(log.decode(errors="replace")[:4000])
             return 1
     return int(
-        any(r.get("compile_exit") != 0 and not r.get("preprocess_only") for r in report["results"])
+        any(
+            r.get("compile_exit") != 0 and not r.get("preprocess_only")
+            for r in report["results"]
+        )
     )
 
 

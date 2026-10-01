@@ -10,7 +10,9 @@
 #include <cstdlib>
 #include <algorithm>
 #include "application/frame_profile.h"
+#include "application/thread_profile.h"
 #include "application/command_profile.h"
+#include "application/render_details.h"
 static bool verifyReuse=false;
 void Shipyard_SetGraphicsVerification(bool enabled){verifyReuse=enabled;}
 bool Shipyard_VerifyFast3DReuse(){return verifyReuse;}
@@ -54,9 +56,22 @@ uint64_t Clock() {
     return static_cast<uint64_t>(value.QuadPart);
 }
 Accumulator accumulator(Clock);
+__declspec(thread) ThreadSample* activeThreadSample = NULL;
+uint64_t gamePreviousBegin = 0, gamePeriodTicks = 0, gameWallTicks = 0;
+unsigned gamePeriods = 0, gameOver33 = 0, gameSamples = 0;
 // Coarse cadence/phase timing must not enable per-command or per-vertex probes.
 bool interpreterDetailsEnabled = false;
 bool nativeDetailsEnabled = false;
+RenderDetailsCounts renderDetails;
+ActorInstanceCounts recordingActorInstances;
+ActorInstanceCounts renderedActorInstances;
+__declspec(thread) FlushReason activeFlushReason = FlushFrameEnd;
+const char* flushReasonNames[FlushReasonCount] = {
+    "combiner", "depth", "decal", "viewport", "scissor", "texture_import", "sampler",
+    "shader", "alpha", "buffer_full", "framebuffer_set", "framebuffer_reset", "framebuffer_copy",
+    "framebuffer_read", "blended_texture", "framebuffer_texture", "frame_end", "cache_clear",
+    "cache_delete", "external_api", "texture_select", "texture_miss"
+};
 // Frame reporting uses the already recorded intervals; no extra work is done
 // during a present. Each 120-update window can have at most 120 samples/lane.
 uint64_t presentLaneIntervals[18][120];
@@ -155,7 +170,7 @@ struct ThreadCpu {
     unsigned samples, failures, processorMask, threadId, lastError;
     bool active;
 };
-ThreadCpu renderCpu = {}, audioCpu = {};
+ThreadCpu renderCpu = {}, audioCpu = {}, gameCpu = {};
 uint64_t FileTicks(const FILETIME& value) {
     return (static_cast<uint64_t>(value.dwHighDateTime) << 32) | value.dwLowDateTime;
 }
@@ -184,10 +199,15 @@ void EndCpu(ThreadCpu& cpu) {
     ++cpu.samples;
 }
 void ResetMetadata() {
+    renderDetails.Reset();
+    renderedActorInstances.Begin(false);
     maps = nonemptyMaps = replacements = 0;
     haveSettings = haveDimensions = changed = false;
     memset(&renderCpu,0,sizeof(renderCpu));
     memset(&audioCpu,0,sizeof(audioCpu));
+    memset(&gameCpu,0,sizeof(gameCpu));
+    gamePeriodTicks = gameWallTicks = 0;
+    gamePeriods = gameOver33 = gameSamples = 0;
     memset(&resourceLookups,0,sizeof(resourceLookups));
     memset(&tileState,0,sizeof(tileState));
     memset(&trianglePipeline,0,sizeof(trianglePipeline));
@@ -234,10 +254,74 @@ void RecordTextureHashPhase(TextureHashSample& sample) {
 }
 }
 CommandSampler commandSampler(Clock);
+void BeginThreadSample(ThreadSample& sample, bool enabled, bool wholeCpu) {
+    sample.Reset(enabled);
+    sample.wholeCpu = wholeCpu;
+    activeThreadSample = &sample;
+    resourceWaitDepth = 0;
+    if (!enabled) return;
+    sample.started = Clock();
+    sample.threadId = GetCurrentThreadId();
+    const unsigned processor = GetCurrentProcessorNumber();
+    if (processor < 32) sample.processorMask = 1u << processor;
+    if (wholeCpu) {
+        sample.cpuActive = ReadCpu(sample.cpuStart, sample.cpuLastError);
+        if (!sample.cpuActive) ++sample.cpuFailures;
+    }
+}
+void EndThreadSample() {
+    if (!activeThreadSample) return;
+    ThreadSample& sample = *activeThreadSample;
+    if (sample.enabled) {
+        sample.completed = Clock();
+        for (unsigned phase = 0; phase < PhaseCount; ++phase)
+            sample.End(static_cast<Phase>(phase), sample.completed);
+        if (sample.cpuActive) {
+            uint64_t now;
+            if (ReadCpu(now, sample.cpuLastError) && now >= sample.cpuStart) {
+                sample.cpuTicks = now - sample.cpuStart;
+                ++sample.cpuSamples;
+            } else ++sample.cpuFailures;
+        }
+    }
+    activeThreadSample = NULL;
+    resourceWaitDepth = 0;
+}
+void MergeThreadCpu(ThreadCpu& cpu, const ThreadSample& sample) {
+    cpu.threadId = sample.threadId;
+    cpu.processorMask |= sample.processorMask;
+    cpu.ticks += sample.cpuTicks;
+    cpu.samples += sample.cpuSamples;
+    cpu.failures += sample.cpuFailures;
+    cpu.lastError = sample.cpuLastError;
+}
+void ObserveGameSample(const ThreadSample& sample) {
+    if (!accumulator.enabled || !sample.enabled) return;
+    sample.Merge(accumulator.phases);
+    MergeThreadCpu(gameCpu, sample);
+    if (gamePreviousBegin && sample.started >= gamePreviousBegin) {
+        const uint64_t elapsed = sample.started - gamePreviousBegin;
+        gamePeriodTicks += elapsed;
+        ++gamePeriods;
+        gameOver33 += Milliseconds(elapsed) > 33.0;
+    }
+    gamePreviousBegin = sample.started;
+    gameWallTicks += sample.completed >= sample.started ? sample.completed - sample.started : 0;
+    ++gameSamples;
+}
+void ResetGameSampleCadence() { gamePreviousBegin = 0; }
+void ObserveAudioSample(const ThreadSample& sample) {
+    if (!accumulator.enabled || !sample.enabled) return;
+    sample.Merge(accumulator.phases);
+    MergeThreadCpu(audioCpu, sample);
+}
 void BeginFrame(bool enabled) {
+    if (activeThreadSample) { Begin(Graph); return; }
     onFrameThread = true;
     interpreterDetailsEnabled = enabled &&
         CVarGetInteger("gSettings.XboxInterpreterDetailsProfile", 0) != 0;
+    renderDetails.enabled = interpreterDetailsEnabled;
+    Fast::ShipyardXenos::SetDetailsCountsEnabled(interpreterDetailsEnabled);
     // Native details include full vertex tile-coverage scans and draw timers.
     // Keep them independent of the coarse authentic-update cadence report.
     const bool nativeDetails = enabled &&
@@ -263,6 +347,7 @@ void BeginFrame(bool enabled) {
         ResetMetadata();
         commandSampler.Reset();
         previousReportTicks = 0;
+        gamePreviousBegin = 0;
     }
     if (enabled && !frequency) {
         LARGE_INTEGER value;
@@ -273,12 +358,38 @@ void BeginFrame(bool enabled) {
     commandSampler.enabled=interpreterDetailsEnabled;
 }
 void Begin(Phase phase) {
+    if (activeThreadSample) {
+        ThreadSample& sample = *activeThreadSample;
+        if (sample.enabled) {
+            sample.Begin(phase, Clock());
+            if (!sample.wholeCpu && phase == AudioGenerate) {
+                sample.cpuActive = ReadCpu(sample.cpuStart, sample.cpuLastError);
+                if (!sample.cpuActive) ++sample.cpuFailures;
+            }
+        }
+        return;
+    }
     accumulator.Begin(phase);
     if (!accumulator.enabled) return;
     if (phase==Interpreter) { inInterpreter=true; BeginCpu(renderCpu); }
     else if (phase==AudioGenerate) BeginCpu(audioCpu);
 }
 void End(Phase phase) {
+    if (activeThreadSample) {
+        ThreadSample& sample = *activeThreadSample;
+        if (sample.enabled) {
+            if (!sample.wholeCpu && phase == AudioGenerate && sample.cpuActive) {
+                uint64_t now;
+                if (ReadCpu(now, sample.cpuLastError) && now >= sample.cpuStart) {
+                    sample.cpuTicks += now - sample.cpuStart;
+                    ++sample.cpuSamples;
+                } else ++sample.cpuFailures;
+                sample.cpuActive = false;
+            }
+            sample.End(phase, Clock());
+        }
+        return;
+    }
     if (accumulator.enabled) {
         if (phase==Interpreter) { EndCpu(renderCpu); inInterpreter=false; }
         else if (phase==AudioGenerate) EndCpu(audioCpu);
@@ -286,6 +397,8 @@ void End(Phase phase) {
     accumulator.End(phase);
 }
 uint64_t BeginActorInstance(int actorId) {
+    if (activeThreadSample) return 0;
+    recordingActorInstances.Observe(actorId);
     if (!interpreterDetailsEnabled || actorId < 0 || actorId >= ActorProfileCapacity) return 0;
     ActorDrawCounters& counter = actorDraw[actorId];
     // Every draw is timed while enabled: a one-off slow draw (a single long
@@ -298,7 +411,22 @@ uint64_t BeginActorInstance(int actorId) {
     actorStage = 0;
     return started + 1;
 }
+void SetFlushReason(FlushReason reason) {
+    if (renderDetails.enabled) activeFlushReason = reason;
+}
+void ObserveFlush(unsigned triangles) { renderDetails.Flush(activeFlushReason, triangles); }
+void ObserveTextureLookup(bool hit) { renderDetails.TextureLookup(hit); }
+void ObserveTextureImport(bool mask) { renderDetails.TextureImport(mask); }
+void BeginActorRecording(bool detailsEnabled) { recordingActorInstances.Begin(detailsEnabled); }
+ActorInstanceCounts TakeActorInstances() { return recordingActorInstances.Take(); }
+void ObserveActorInstances(const ActorInstanceCounts& packet) {
+    if (!packet.enabled || !renderDetails.enabled) return;
+    renderedActorInstances.total += packet.total;
+    for (unsigned id = 0; id < ActorInstanceCounts::Capacity; ++id)
+        renderedActorInstances.calls[id] += packet.calls[id];
+}
 void AdvanceActorInstance(int actorId, unsigned nextStage) {
+    if (activeThreadSample) return;
     if (activeActorSampleId != actorId || nextStage != actorStage + 1 || nextStage >= ActorProfileStageCount) return;
     const uint64_t now = Clock();
     if (now >= actorStageStart) actorDraw[actorId].stageTicks[actorStage] += now - actorStageStart;
@@ -306,6 +434,7 @@ void AdvanceActorInstance(int actorId, unsigned nextStage) {
     actorStage = nextStage;
 }
 void EndActorInstance(int actorId, uint64_t started) {
+    if (activeThreadSample) return;
     if (!started || actorId < 0 || actorId >= ActorProfileCapacity) return;
     const uint64_t now = Clock();
     const uint64_t start = started - 1;
@@ -320,12 +449,17 @@ void EndActorInstance(int actorId, uint64_t started) {
     }
 }
 bool BeginResourceWait() {
+    if (activeThreadSample) {
+        if (!activeThreadSample->enabled) return false;
+        if (resourceWaitDepth++ == 0) Begin(ResourceWait);
+        return true;
+    }
     if (!onFrameThread || !accumulator.enabled) return false;
     if (resourceWaitDepth++ == 0) accumulator.Begin(ResourceWait);
     return true;
 }
 void EndResourceWait() {
-    if (resourceWaitDepth && --resourceWaitDepth == 0) accumulator.End(ResourceWait);
+    if (resourceWaitDepth && --resourceWaitDepth == 0) End(ResourceWait);
 }
 bool CaptureResourceLookups() { return inInterpreter && interpreterDetailsEnabled; }
 void ObserveResourceLookup(bool alternate, bool resolved, unsigned probes) {
@@ -527,11 +661,13 @@ void EndTextureHash(TextureHashSample& sample) {
     sample.sampled=false;
 }
 void DustUpdateBegin() {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     dust.current = 0;
     dust.updateActive = true;
 }
 void DustUpdateEnd() {
+    if (activeThreadSample) return;
     if (!dust.updateActive) return;
     dust.updateActive = false;
     if (dust.current) {
@@ -542,6 +678,7 @@ void DustUpdateEnd() {
 }
 void ObserveDustDraw(float px, float py, float pz, float ex, float ey, float ez,
                      float scale, unsigned flags) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled || !dust.updateActive) return;
     (void)flags;
     const float dx = px - ex, dy = py - ey, dz = pz - ez;
@@ -555,12 +692,14 @@ void ObserveDustDraw(float px, float py, float pz, float ex, float ey, float ez,
     ++dust.current;
 }
 void ObserveKokiriMotes(unsigned invisible, unsigned outside, unsigned emitted) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     kokiriMotes.invisible += invisible;
     kokiriMotes.outside += outside;
     kokiriMotes.emitted += emitted;
 }
 void ObserveKokiriFairy(unsigned culled) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     if (culled) ++kokiriFairiesCulled;
     else ++kokiriFairiesVisible;
@@ -573,6 +712,7 @@ void ObserveResourceWorker() {
 }
 void Settings(int requestedFps, int targetFps, int originalFps, int updateRate,
               unsigned refresh, int lowRes, int advanced, int vsync) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     const int values[8] = {requestedFps, targetFps, originalFps, updateRate,
         static_cast<int>(refresh), lowRes, advanced, vsync};
@@ -581,12 +721,14 @@ void Settings(int requestedFps, int targetFps, int originalFps, int updateRate,
     haveSettings = true;
 }
 void Batch(unsigned count, unsigned nonempty, unsigned size) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     maps += count; nonemptyMaps += nonempty; replacements += size;
 }
 void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
                 unsigned viewportHeight, unsigned windowWidth, unsigned windowHeight,
                 unsigned samples, float scale) {
+    if (activeThreadSample) return;
     if (!accumulator.enabled) return;
     const unsigned values[7] = {width, height, viewportWidth, viewportHeight,
         windowWidth, windowHeight, samples};
@@ -596,12 +738,15 @@ void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
     haveDimensions = true;
 }
 void EndFrame() {
+    if (activeThreadSample) { End(Graph); return; }
     if (!accumulator.EndFrame()) return;
     const uint64_t reportBegin = Clock();
     Fast::ShipyardXenos::NativeTimingCounters native;
     Fast::ShipyardXenos::NativeCounters counters;
     Fast::ShipyardXenos::CaptureAndResetTimingCounters(&native);
     Fast::ShipyardXenos::CaptureAndResetCounters(&counters);
+    Fast::ShipyardXenos::DetailsCounts nativeDetails;
+    Fast::ShipyardXenos::CaptureAndResetDetailsCounts(&nativeDetails);
     // This runs after the audio rendezvous. Scopes are inclusive wall time,
     // not CPU utilization or GPU duration; their totals must not be added.
     Shipyard_Log("frame-profile frames=%u periods=%u period_ms=%.3f outside_graph_ms=%.3f mixed=%u requested=%d "
@@ -613,6 +758,16 @@ void EndFrame() {
                  dimensions[2], dimensions[3], dimensions[4], dimensions[5], dimensions[6], multiplier, maps,
                  nonemptyMaps, replacements);
     const unsigned intervalCount = accumulator.presentIntervalCount;
+    if (gameSamples) {
+        Shipyard_Log("frame-profile game_samples=%u game_periods=%u game_hz=%.3f game_over33=%u "
+                    "game_period_ms=%.3f game_wall_ms=%.3f scope=worker_callback_begin_to_begin",
+            gameSamples, gamePeriods, gamePeriodTicks ? double(gamePeriods) * double(frequency) / double(gamePeriodTicks) : 0.0,
+            gameOver33, Milliseconds(gamePeriodTicks), Milliseconds(gameWallTicks));
+        Shipyard_Log("frame-profile thread=game id=%u processor_mask=%x cpu_ms=%.3f wall_ms=%.3f "
+                    "samples=%u failures=%u last_error=%u cpu_clock=GetThreadTimes",
+            gameCpu.threadId, gameCpu.processorMask, double(gameCpu.ticks) / 10000.0,
+            Milliseconds(gameWallTicks), gameCpu.samples, gameCpu.failures, gameCpu.lastError);
+    }
     unsigned over20 = 0, over33 = 0, over50 = 0;
     unsigned laneSamples[3] = {}, laneOver20[3] = {};
     unsigned laneCounts[18] = {}, laneOver8[18] = {}, laneOverflow = 0;
@@ -807,6 +962,52 @@ void EndFrame() {
     }
     Shipyard_Log("frame-profile commands=%u timed_samples=%u sample_probability=1/64 detail=top12_estimated_wall_cost",
                 totalCommands,totalSamples);
+    if (interpreterDetailsEnabled) {
+        using namespace Fast::ShipyardXenos;
+        const unsigned* counts = nativeDetails.values;
+        Shipyard_Log("frame-profile native_detail_counts draws=%u triangles=%u sampler_attempted=%u "
+                     "sampler_written=%u sampler_suppressed=%u constants_attempted=%u constants_written=%u "
+                     "constants_suppressed=%u binding_attempted=%u binding_written=%u binding_suppressed=%u "
+                     "uploads=%u reused=%u saved_bytes=%u scope=fast3d_native_triangle_submissions",
+            counts[DetailsDraws], counts[DetailsTriangles], counts[DetailsSamplerAttempted],
+            counts[DetailsSamplerWritten], counts[DetailsSamplerSuppressed], counts[DetailsConstantsAttempted],
+            counts[DetailsConstantsWritten], counts[DetailsConstantsSuppressed], counts[DetailsBindingAttempted],
+            counts[DetailsBindingWritten], counts[DetailsBindingSuppressed], counts[DetailsUploadRequests],
+            counts[DetailsUploadReused], counts[DetailsUploadSavedBytes]);
+        unsigned rankedCalls[256];
+        for (unsigned i = 0; i < 256; ++i) rankedCalls[i] = commandSampler.commands[i].calls;
+        for (unsigned rank = 0; rank < 12; ++rank) {
+            unsigned best = 256;
+            for (unsigned i = 0; i < 256; ++i)
+                if (rankedCalls[i] && (best == 256 || rankedCalls[i] > rankedCalls[best])) best = i;
+            if (best == 256) break;
+            Shipyard_Log("frame-profile opcode_count rank=%u opcode=%02x calls=%u scope=all_commands",
+                rank, best, rankedCalls[best]);
+            rankedCalls[best] = 0;
+        }
+        const unsigned presents = accumulator.phases[Present].calls;
+        Shipyard_Log("frame-profile render_counts draws=%u triangles=%u presents=%u draws_per_present=%.6f "
+                     "triangles_per_draw=%.6f max_triangles_per_draw=%u scope=interpreter_flush",
+            renderDetails.draws, renderDetails.triangles, presents,
+            presents ? double(renderDetails.draws) / presents : 0.0,
+            renderDetails.draws ? double(renderDetails.triangles) / renderDetails.draws : 0.0,
+            renderDetails.maximumTriangles);
+        for (unsigned reason = 0; reason < FlushReasonCount; ++reason) {
+            const FlushCounts& count = renderDetails.flush[reason];
+            Shipyard_Log("frame-profile flush_reason=%s calls=%u empty=%u draws=%u triangles=%u maximum=%u",
+                flushReasonNames[reason], count.calls, count.empty, count.calls - count.empty,
+                count.triangles, count.maximum);
+        }
+        Shipyard_Log("frame-profile texture_cache lookups=%u hits=%u misses=%u imports=%u mask_imports=%u",
+            renderDetails.textureLookups, renderDetails.textureHits, renderDetails.textureMisses,
+            renderDetails.imports, renderDetails.maskImports);
+        Shipyard_Log("frame-profile actor_instance_counts calls=%u scope=packet_game_draw",
+            renderedActorInstances.total);
+        for (unsigned id = 0; id < ActorInstanceCounts::Capacity; ++id)
+            if (renderedActorInstances.calls[id])
+                Shipyard_Log("frame-profile actor_instance_count id=%u calls=%u scope=packet_game_draw",
+                    id, renderedActorInstances.calls[id]);
+    }
     for (unsigned rank=0;rank<12;++rank) {
         unsigned best=256;
         for (unsigned i=0;i<256;++i)

@@ -1,29 +1,50 @@
 """Run the real coarse frame accumulator on an injected deterministic clock."""
+
 import runpy
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'scratch/frame-profile'
+OUT = ROOT / "scratch/frame-profile"
 
 
 def main():
     OUT.mkdir(exist_ok=True)
-    compiler, env = runpy.run_path(str(ROOT / 'tools/shipyard/tests/test_binary.py'))['host_environment']()
-    command = [str(compiler), '/nologo', '/std:c++20', '/EHsc', '/MD', '/O2',
-               '/I' + str(ROOT / 'platform/shipyard'),
-               str(ROOT / 'platform/shipyard/application/frame_profile_contract.cpp'),
-               '/Fo:' + str(OUT) + '/', '/Fe:' + str(OUT / 'contract.exe')]
+    binary = runpy.run_path(str(ROOT / "tools/shipyard/tests/test_binary.py"))
+    compiler, env = binary["host_environment"]()
+    command = [
+        str(compiler),
+        "/nologo",
+        "/std:c++20",
+        "/EHsc",
+        "/MD",
+        "/O2",
+        "/I" + str(ROOT / "platform/shipyard"),
+        "/I" + str(binary["PLATFORM_BASE"] / "sources"),
+        str(ROOT / "platform/shipyard/application/frame_profile_contract.cpp"),
+        "/Fo:" + str(OUT) + "/",
+        "/Fe:" + str(OUT / "contract.exe"),
+    ]
     result = subprocess.run(command, cwd=OUT, env=env, capture_output=True, text=True)
-    (OUT / 'build.log').write_text(result.stdout + result.stderr)
+    (OUT / "build.log").write_text(result.stdout + result.stderr)
     assert result.returncode == 0, result.stdout + result.stderr
-    result = subprocess.run([str(OUT / 'contract.exe')], cwd=OUT, capture_output=True, text=True)
-    (OUT / 'run.log').write_text(result.stdout + result.stderr)
+    result = subprocess.run(
+        [str(OUT / "contract.exe")], cwd=OUT, capture_output=True, text=True
+    )
+    (OUT / "run.log").write_text(result.stdout + result.stderr)
     assert result.returncode == 0, result.stdout + result.stderr
     print(result.stdout)
-    runtime = (ROOT / 'platform/shipyard/xenos/services.cpp').read_text().split('namespace ModernFrameProfile {', 1)[1]
-    harness = '''#include "application/frame_profile.h"
+    runtime = (
+        (ROOT / "platform/shipyard/xenos/services.cpp")
+        .read_text()
+        .split("namespace ModernFrameProfile {", 1)[1]
+    )
+    harness = (
+        """#include "application/frame_profile.h"
+#include "application/thread_profile.h"
 #include "application/command_profile.h"
+#include "application/render_details.h"
+#include "xenos/details_counts.h"
 #include <cassert>
 #include <cstdarg>
 #include <algorithm>
@@ -61,9 +82,17 @@ unsigned clockReads=0, frequencyReads=0, logCalls=0;
 void QueryPerformanceCounter(LARGE_INTEGER* v) { v->QuadPart=++clockReads; }
 void QueryPerformanceFrequency(LARGE_INTEGER* v) { ++frequencyReads; v->QuadPart=1000; }
 unsigned memoryLogs=0, slowestActorLogs=0, tiledRingLogs=0, ringProbeLogs=0;
+unsigned detailsLogs=0, flushLogs=0, actorCountLogs=0;
 const unsigned expectedTilingPassLimit=4194304, expectedRingSegmentBytes=524288;
 void Shipyard_Log(const char* format, ...) {
     ++logCalls;
+    if (strstr(format,"frame-profile flush_reason=") == format) { ++detailsLogs; ++flushLogs; }
+    if (strstr(format,"frame-profile actor_instance_count ") == format) { ++detailsLogs; ++actorCountLogs; }
+    if (strstr(format,"frame-profile actor_instance_counts ") == format ||
+        strstr(format,"frame-profile render_counts ") == format ||
+        strstr(format,"frame-profile texture_cache ") == format ||
+        strstr(format,"frame-profile native_detail_counts ") == format ||
+        strstr(format,"frame-profile opcode_count ") == format) ++detailsLogs;
     if (strncmp(format,"frame-profile tiled_ring ",25)==0) {
         assert(strstr(format,"guard_bytes=%u"));
         va_list args;
@@ -143,6 +172,11 @@ unsigned alphaDraws[3],alphaTriangles[3],alphaVertices[3];
 };
 unsigned timingTransitions=0,captures=0;
 bool nativeTimingOn=false;
+DetailsCounts nativeDetails;
+void SetDetailsCountsEnabled(bool enabled) {
+    if (nativeDetails.enabled != enabled) nativeDetails.Begin(enabled);
+}
+void CaptureAndResetDetailsCounts(DetailsCounts* counts) { *counts = nativeDetails; nativeDetails.Reset(); }
 void SetTimingEnabled(bool enabled) { ++timingTransitions; nativeTimingOn=enabled; }
 void CaptureAndResetCounters(NativeCounters* p) {
     ++captures; memset(p,0,sizeof(*p));
@@ -152,7 +186,9 @@ void CaptureAndResetCounters(NativeCounters* p) {
 void CaptureAndResetTimingCounters(NativeTimingCounters* p) { ++captures; memset(p,0,sizeof(*p)); }
 }}
 namespace ModernFrameProfile {
-''' + runtime + '''
+"""
+        + runtime
+        + """
 int main() {
     using namespace ModernFrameProfile;
     for(unsigned i=0;i<240;++i) {
@@ -455,7 +491,8 @@ int main() {
     assert(accumulator.phases[ActorLightsGlow].calls==1);
     { PhaseScope recording(RecordingRotate); }
     assert(accumulator.phases[RecordingRotate].calls==1);
-    BeginFrame(true); EndFrame(); assert(logCalls==58+PhaseCount);
+    BeginFrame(true); EndFrame(); assert(logCalls==58+PhaseCount+detailsLogs);
+    assert(flushLogs==FlushReasonCount && actorCountLogs==0);
     assert(memoryReads==1 && memoryLogs==1 && slowestActorLogs==1);
     assert(tiledRingLogs==1 && ringProbeLogs==1);
     assert(actorDraw[17].calls==0 && actorDraw[17].samples==0);
@@ -480,19 +517,64 @@ int main() {
     BeginFrame(true); EndFrame(); assert(logCalls==logs && frequencyReads==1);
     assert(tri2ProfileEnabled && tri2CVarReads==2);
     assert(vtxHashProfileEnabled && vtxCVarReads==2);
+    // The actual service dispatch keeps game and audio samples off render state.
+    ThreadSample gameSample, audioSample, disabledSample;
+    const unsigned beforeDisabledClock = clockReads, beforeDisabledCpu = cpuReads;
+    BeginThreadSample(disabledSample, false);
+    BeginFrame(true); Begin(GameUpdate); End(GameUpdate); EndFrame();
+    EndThreadSample();
+    assert(clockReads == beforeDisabledClock && cpuReads == beforeDisabledCpu);
+    PhaseStats beforeThread[PhaseCount];
+    memcpy(beforeThread, accumulator.phases, sizeof(beforeThread));
+    const unsigned beforeDust = dust.draws;
+    const unsigned beforeActor = actorDraw[17].calls;
+    const unsigned beforeNative = Fast::ShipyardXenos::timingTransitions;
+    std::thread gameWorker([&gameSample]() {
+        BeginThreadSample(gameSample, true);
+        BeginFrame(true);
+        Shipyard_FrameProfileGameUpdateBegin();
+        { ResourceWaitScope outer; ResourceWaitScope inner; }
+        Shipyard_FrameProfileDustDraw(0,0,0,0,0,0,1,0);
+        assert(Shipyard_FrameProfileActorInstanceBegin(17) == 0);
+        Shipyard_FrameProfileActorInstanceAdvance(17, 1);
+        Shipyard_FrameProfileActorInstanceEnd(17, 0);
+        Shipyard_FrameProfileGameUpdateEnd();
+        EndFrame();
+        EndThreadSample();
+    });
+    gameWorker.join();
+    assert(memcmp(beforeThread, accumulator.phases, sizeof(beforeThread)) == 0);
+    assert(dust.draws == beforeDust && actorDraw[17].calls == beforeActor);
+    assert(Fast::ShipyardXenos::timingTransitions == beforeNative);
+    assert(gameSample.phases[GameUpdate].calls == 1);
+    assert(gameSample.phases[ResourceWait].calls == 1);
+    assert(gameSample.cpuSamples == 1 && gameSample.completed > gameSample.started);
+    ObserveGameSample(gameSample);
+    assert(accumulator.phases[GameUpdate].calls == beforeThread[GameUpdate].calls + 1);
+    assert(gameSamples == 1 && gameCpu.samples == 1);
+    BeginThreadSample(audioSample, true, false);
+    Begin(AudioGenerate); End(AudioGenerate); Begin(AudioSubmit); End(AudioSubmit);
+    EndThreadSample();
+    assert(audioSample.cpuSamples == 1 && audioSample.cpuTicks > 0);
+    ObserveAudioSample(audioSample);
+    assert(accumulator.phases[AudioGenerate].calls == beforeThread[AudioGenerate].calls + 1);
+    assert(accumulator.phases[AudioSubmit].calls == beforeThread[AudioSubmit].calls + 1);
 }
-'''
-    generated = OUT / 'runtime_contract.cpp'
+"""
+    )
+    generated = OUT / "runtime_contract.cpp"
     generated.write_text(harness)
     command[-3] = str(generated)
-    command[-1] = '/Fe:' + str(OUT / 'runtime_contract.exe')
+    command[-1] = "/Fe:" + str(OUT / "runtime_contract.exe")
     result = subprocess.run(command, cwd=OUT, env=env, capture_output=True, text=True)
-    (OUT / 'runtime-build.log').write_text(result.stdout + result.stderr)
+    (OUT / "runtime-build.log").write_text(result.stdout + result.stderr)
     assert result.returncode == 0, result.stdout + result.stderr
-    result = subprocess.run([str(OUT / 'runtime_contract.exe')], cwd=OUT)
+    result = subprocess.run([str(OUT / "runtime_contract.exe")], cwd=OUT)
     assert result.returncode == 0
-    print('Actual runtime: disabled zero QPC/frequency/log calls; first report at 120 frames; reenable clean')
+    print(
+        "Actual runtime: disabled zero QPC/frequency/log calls; first report at 120 frames; reenable clean"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

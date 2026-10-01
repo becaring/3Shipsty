@@ -20,7 +20,13 @@ UNITS = [
     "resource/ResourceManager.cpp",
     *[
         "resource/archive/" + n + ".cpp"
-        for n in ("Archive", "ArchiveManager", "O2rArchive", "FolderArchive", "OtrArchive")
+        for n in (
+            "Archive",
+            "ArchiveManager",
+            "O2rArchive",
+            "FolderArchive",
+            "OtrArchive",
+        )
     ],
     "utils/StringHelper.cpp",
     "utils/Utils.cpp",
@@ -84,7 +90,9 @@ def archive_hash_epoch_source(source):
         "}\n\n"
         "const std::string* ArchiveManager::HashToString(uint64_t hash) const {",
     )
-    return "#ifdef _XBOX\n#include <xtl.h>\n#else\n#include <windows.h>\n#endif\n" + source
+    return (
+        "#ifdef _XBOX\n#include <xtl.h>\n#else\n#include <windows.h>\n#endif\n" + source
+    )
 
 
 def syntax(text):
@@ -103,12 +111,12 @@ def syntax(text):
     text = text.replace("std::variant<", "xbox_compat::variant<").replace(
         "std::get<", "xbox_compat::get<"
     )
-    text = text.replace("std::holds_alternative<", "xbox_compat::holds_alternative<").replace(
-        "std::bad_variant_access", "xbox_compat::bad_variant_access"
-    )
-    text = text.replace("#include <variant>", "#include <xbox_compat/variant.h>").replace(
-        "#include <mutex>", '#include "async/native.h"'
-    )
+    text = text.replace(
+        "std::holds_alternative<", "xbox_compat::holds_alternative<"
+    ).replace("std::bad_variant_access", "xbox_compat::bad_variant_access")
+    text = text.replace(
+        "#include <variant>", "#include <xbox_compat/variant.h>"
+    ).replace("#include <mutex>", '#include "async/native.h"')
     text = text.replace("#include <thread>", '#include "thread-pool/native_support.h"')
     for name in ("mutex", "lock_guard", "shared_future", "promise"):
         text = text.replace("std::" + name, "Shipyard::Async::" + name)
@@ -180,13 +188,21 @@ def transform(name, original):
     if name.endswith("/ArchiveManager.cpp"):
         text = archive_hash_epoch_source(text)
     if name.endswith("/Context.h"):
-        text = once(text, '#include "ship/audio/Audio.h"', '#include "ship/audio/AudioSettings.h"')
-        text = once(text, "class Console;", "class Audio;\nclass Console;")
-        text = text.replace("archivePaths = {}", "archivePaths = std::vector<std::string>()")
-        text = text.replace("validHashes = {}", "validHashes = std::unordered_set<uint32_t>()")
-        text = text.replace("audioSettings = {}", "audioSettings = AudioSettings()").replace(
-            "Context() = default;", "Context() {}"
+        text = once(
+            text,
+            '#include "ship/audio/Audio.h"',
+            '#include "ship/audio/AudioSettings.h"',
         )
+        text = once(text, "class Console;", "class Audio;\nclass Console;")
+        text = text.replace(
+            "archivePaths = {}", "archivePaths = std::vector<std::string>()"
+        )
+        text = text.replace(
+            "validHashes = {}", "validHashes = std::unordered_set<uint32_t>()"
+        )
+        text = text.replace(
+            "audioSettings = {}", "audioSettings = AudioSettings()"
+        ).replace("Context() = default;", "Context() {}")
     if name.endswith("/ResourceManager.h"):
         text = once(
             text,
@@ -252,9 +268,9 @@ def transform(name, original):
             "    return cachedResource;\n    }\n    auto resource = LoadResourceAsync(identifier,"
             " loadExact, BS::pr::highest, initData).get();",
         )
-        text = text.replace("std::hash<std::string>{}", "std::hash<std::string>()").replace(
-            "std::hash<std::uintptr_t>{}", "std::hash<uintptr_t>()"
-        )
+        text = text.replace(
+            "std::hash<std::string>{}", "std::hash<std::string>()"
+        ).replace("std::hash<std::uintptr_t>{}", "std::hash<uintptr_t>()")
         text = re.sub(
             r"\{ (\w+), (identifier\.Owner|filter\.Owner|mDefaultCacheOwner),"
             r" (identifier\.Parent|filter\.Parent|mDefaultCacheArchive) \}",
@@ -277,10 +293,13 @@ def transform(name, original):
             "ResourceFactoryKey key = { format, type, version };",
         )
     if name.endswith("/ResourceLoader.h"):
-        text = text.replace('#include "ResourceType.h"', '#include "ship/resource/ResourceType.h"')
+        text = text.replace(
+            '#include "ResourceType.h"', '#include "ship/resource/ResourceType.h"'
+        )
     if name.endswith(("/Archive.cpp", "/O2rArchive.cpp", "/OtrArchive.cpp")):
         text = text.replace(
-            '#include "ship/window/Window.h"', '#include "ship/resource/ResourceManager.h"'
+            '#include "ship/window/Window.h"',
+            '#include "ship/resource/ResourceManager.h"',
         )
     if name.endswith("/O2rArchive.cpp"):
         # libzip may return a positive partial chunk. Keep the pinned upstream
@@ -381,16 +400,20 @@ def transform(name, original):
             " mFileToArchive.rehash(static_cast<size_t>((mFileToArchive.size() + fileList->size())"
             " / mFileToArchive.max_load_factor()) + 1);",
         )
-        text = text.replace("dynamic_pointer_cast<Archive>", "std::dynamic_pointer_cast<Archive>")
+        text = text.replace(
+            "dynamic_pointer_cast<Archive>", "std::dynamic_pointer_cast<Archive>"
+        )
         text = text.replace(
             "mValidGameVersions.contains(archive->GetGameVersion())",
             "Shipyard::Resources::contains(mValidGameVersions, archive->GetGameVersion())",
         )
         text = text.replace(
-            "Init(archivePaths, {});", "Init(archivePaths, std::unordered_set<uint32_t>());"
+            "Init(archivePaths, {});",
+            "Init(archivePaths, std::unordered_set<uint32_t>());",
         )
         text = text.replace(
-            "std::vector<std::string> fileList = {};", "std::vector<std::string> fileList;"
+            "std::vector<std::string> fileList = {};",
+            "std::vector<std::string> fileList;",
         )
         text = text.replace(
             "ListFiles(includes, {});", "ListFiles(includes, std::list<std::string>());"
@@ -421,7 +444,9 @@ def transform(name, original):
             '#include "filesystem.h"', '#include "filesystem/filesystem.h"'
         )
     if name.endswith("/Utils.cpp"):
-        text = once(text, "if constexpr (sizeof(size_t) >= 8)", "if (sizeof(size_t) >= 8)")
+        text = once(
+            text, "if constexpr (sizeof(size_t) >= 8)", "if (sizeof(size_t) >= 8)"
+        )
     if name.endswith("/FileHelper.h"):
         # XDK streams accept native narrow paths, not filesystem::path objects.
         text = text.replace("file(filePath,", "file(filePath.string(),")
@@ -438,9 +463,9 @@ def transform(name, original):
             " {\n        std::ofstream file(filePath.string(),",
         )
     if name.endswith(("/StringHelper.h", "/StringHelper.cpp")):
-        text = text.replace("#include <string_view>", "#include <nonstd/string_view.hpp>").replace(
-            "std::string_view", "nonstd::string_view"
-        )
+        text = text.replace(
+            "#include <string_view>", "#include <nonstd/string_view.hpp>"
+        ).replace("std::string_view", "nonstd::string_view")
         text = text.replace("std::strtoull(", "_strtoui64(")
         text = text.replace(
             "std::equal(a.begin(), a.end(), b.begin(), b.end(),",
@@ -472,7 +497,9 @@ def transform(name, original):
             settled_alternate_header,
         )
 
-        text = settled_alternate_header(lookup_generation_header(borrowed_cache_header(text)))
+        text = settled_alternate_header(
+            lookup_generation_header(borrowed_cache_header(text))
+        )
     if name.endswith("/ResourceManager.cpp"):
         from platform_base import resolve
 
@@ -519,6 +546,9 @@ def transform(name, original):
     }""",
         )
         text = concurrent_cache(text)
+        from overlap_lifetime_projection import resource_manager as overlap_resources
+
+        text = overlap_resources(text)
     return '#include "resources/runtime_support.h"\n' + text
 
 
@@ -527,7 +557,9 @@ def prepare_lifecycle():
     lock = json.loads((OWN / "runtime-sources.lock.json").read_text())
     for name, expected in lock["helpers"].items():
         if (
-            hashlib.sha256((ROOT / name).read_text(encoding="utf-8-sig").encode()).hexdigest()
+            hashlib.sha256(
+                (ROOT / name).read_text(encoding="utf-8-sig").encode()
+            ).hexdigest()
             != expected
         ):
             raise ValueError("Resource projection helper drift: " + name)
@@ -550,7 +582,9 @@ def prepare():
     lock = json.loads((OWN / "runtime-sources.lock.json").read_text())
     for name, expected in lock["helpers"].items():
         if (
-            hashlib.sha256((ROOT / name).read_text(encoding="utf-8-sig").encode()).hexdigest()
+            hashlib.sha256(
+                (ROOT / name).read_text(encoding="utf-8-sig").encode()
+            ).hexdigest()
             != expected
         ):
             raise ValueError("Resource projection helper drift: " + name)
@@ -578,11 +612,11 @@ def prepare():
     )
     pending["include/ship/audio/AudioSettings.h"] = (
         '#pragma once\n#include <stdint.h>\n#include "ship/audio/AudioChannelsSetting.h"\nnamespace'
-        " Ship {\n"
-        + block
-        + "\n}\n"
+        " Ship {\n" + block + "\n}\n"
     )
-    channels = (ROOT / "libultraship/include/ship/audio/AudioChannelsSetting.h").read_text()
+    channels = (
+        ROOT / "libultraship/include/ship/audio/AudioChannelsSetting.h"
+    ).read_text()
     if hashlib.sha256(channels.encode()).hexdigest() != lock["audio_channels_sha256"]:
         raise ValueError("Audio channels declaration drift")
     pending["include/ship/audio/AudioChannelsSetting.h"] = channels
@@ -596,7 +630,10 @@ def prepare():
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {name: hashlib.sha256(text.encode()).hexdigest() for name, text in pending.items()},
+            {
+                name: hashlib.sha256(text.encode()).hexdigest()
+                for name, text in pending.items()
+            },
             indent=2,
         )
         + "\n",
@@ -646,7 +683,9 @@ def build():
                 + [f for f in flags if f != "/c"]
                 + ["/TC", "/P", "/Fi" + str(preprocessed), str(source)]
             )
-            result = subprocess.run(precommand, cwd=ROOT, capture_output=True, text=True)
+            result = subprocess.run(
+                precommand, cwd=ROOT, capture_output=True, text=True
+            )
             stable(obj.with_suffix(".preprocess.log"), result.stdout + result.stderr)
             if result.returncode:
                 raise RuntimeError("C preprocessing failed: " + name)
@@ -655,11 +694,16 @@ def build():
             projected, statistics = lower_c(preprocessed.read_bytes())
             source = obj.with_suffix(".c")
             source.write_bytes(projected)
-        command = [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        command = (
+            [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        )
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         records.append(dict(source=name, exit=result.returncode, command=command))
-        if not result.returncode and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
+        if (
+            not result.returncode
+            and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2
+        ):
             raise ValueError("Not a Xenon object")
     stable(folder / "report.json", json.dumps(records, indent=2) + "\n")
     for record in records:

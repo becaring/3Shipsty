@@ -21,6 +21,9 @@ def sha(text):
 
 
 def project(name, text):
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    text = overlap_gui_work(name, text)
     if name.endswith(".h"):
         text = once(
             text,
@@ -39,8 +42,7 @@ def project(name, text):
         text = (
             '#include "ship/controller/controldeck/ControlDeck.h"\n#include'
             ' "ship/window/gui/IconsFontAwesome4.h"\n#include "gui/compat.h"\n#include'
-            ' "soh-input-editor/support.h"\n'
-            + text
+            ' "soh-input-editor/support.h"\n' + text
         )
         for member in (
             "mButtonsBitmasks",
@@ -73,7 +75,10 @@ def project(name, text):
                 value = right.text.decode()
                 if value == "{ Ship::LEFT, Ship::RIGHT, Ship::UP, Ship::DOWN }":
                     typ = "Ship::Direction"
-                elif "std::make_pair<uint8_t, std::shared_ptr<Ship::ControllerStick>>" in value:
+                elif (
+                    "std::make_pair<uint8_t, std::shared_ptr<Ship::ControllerStick>>"
+                    in value
+                ):
                     typ = "std::pair<uint8_t,std::shared_ptr<Ship::ControllerStick>>"
                 else:
                     raise ValueError("Unreviewed controller editor temporary range")
@@ -93,7 +98,9 @@ def project(name, text):
                 break
             if not found:
                 break
-        text = re.sub(r"ImVec4 color = \{(.*?)\};", r"ImVec4 color(\1);", text, flags=re.S)
+        text = re.sub(
+            r"ImVec4 color = \{(.*?)\};", r"ImVec4 color(\1);", text, flags=re.S
+        )
         text = re.sub(r"ImVec4 (\w+) = \{([^{};]+)\};", r"ImVec4 \1(\2);", text)
         text = once(
             text,
@@ -109,7 +116,12 @@ def project(name, text):
         )
         if count != 2:
             raise ValueError("Checkbox option aggregate count drift")
-        text = re.sub(r"Color_RGB8\(\{(.*?)\}\)", r"Shipyard::GuiCompat::Rgb(\1)", text, flags=re.S)
+        text = re.sub(
+            r"Color_RGB8\(\{(.*?)\}\)",
+            r"Shipyard::GuiCompat::Rgb(\1)",
+            text,
+            flags=re.S,
+        )
         text = re.sub(
             r"static std::vector<const char\*> ledSources = (\{[\s\S]*?\});",
             r"static const char* ledSourceValues[]=\1;\n                static std::vector<const"
@@ -158,7 +170,11 @@ def prepare():
                 escaped = escape_literal(value)
                 edits.append((n.start_byte, n.end_byte, escaped))
                 literals.append(
-                    dict(original=value, projected=escaped, bytes=literal_bytes(value).hex())
+                    dict(
+                        original=value,
+                        projected=escaped,
+                        bytes=literal_bytes(value).hex(),
+                    )
                 )
         text = edits_apply(raw, edits)
         stable(OUT / "generated" / name, text)
@@ -172,8 +188,12 @@ def prepare():
                 dependencies=lock.get("dependencies", {}),
                 generated=outputs,
                 literals=literals,
-                generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                helper_sha256=hashlib.sha256((OWN / "support.h").read_bytes()).hexdigest(),
+                generator_sha256=hashlib.sha256(
+                    Path(__file__).read_bytes()
+                ).hexdigest(),
+                helper_sha256=hashlib.sha256(
+                    (OWN / "support.h").read_bytes()
+                ).hexdigest(),
             ),
             indent=2,
         )
@@ -198,7 +218,9 @@ def build():
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
-    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0]["command"][:-2]
+    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0][
+        "command"
+    ][:-2]
     flags[1:1] = ["/I" + str(p) for p in includes()]
     source = OUT / "generated" / (BASE + ".cpp")
     obj = folder / "SohInputEditorWindow.obj"
@@ -216,9 +238,9 @@ def build():
         row["object_sha256"] = hashlib.sha256(obj.read_bytes()).hexdigest()
     else:
         print(
-            "\n".join(s for s in (result.stdout + result.stderr).splitlines() if "error " in s)[
-                :6500
-            ],
+            "\n".join(
+                s for s in (result.stdout + result.stderr).splitlines() if "error " in s
+            )[:6500],
             flush=True,
         )
     stable(folder / "build.json", json.dumps([row], indent=2) + "\n")

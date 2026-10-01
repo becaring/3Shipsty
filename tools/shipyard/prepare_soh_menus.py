@@ -2,7 +2,15 @@
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path
-from prepare_soh_ui import ROOT, BASE, common, maps, includes as ui_includes, WIDGETS, constructors
+from prepare_soh_ui import (
+    ROOT,
+    BASE,
+    common,
+    maps,
+    includes as ui_includes,
+    WIDGETS,
+    constructors,
+)
 from prepare_archives import stable
 from prepare_configuration import once
 from prepare_randomizer import edits_apply
@@ -21,7 +29,10 @@ def contains(text):
             continue
         f = n.child_by_field_name("function")
         args = n.child_by_field_name("arguments")
-        if f.type != "field_expression" or f.child_by_field_name("field").text != b"contains":
+        if (
+            f.type != "field_expression"
+            or f.child_by_field_name("field").text != b"contains"
+        ):
             continue
         obj = f.child_by_field_name("argument").text.decode()
         if b"->" in f.text:
@@ -30,33 +41,50 @@ def contains(text):
             (
                 n.start_byte,
                 n.end_byte,
-                "Shipyard::Resources::contains(" + obj + "," + args.text.decode()[1:-1] + ")",
+                "Shipyard::Resources::contains("
+                + obj
+                + ","
+                + args.text.decode()[1:-1]
+                + ")",
             )
         )
     return edits_apply(raw, edits)
 
 
 def inherited(name, extra="", skip_two=False):
-    header = (ROOT / "scratch/window-xdk/generated/include/ship/window/gui/GuiWindow.h").read_text()
+    header = (
+        ROOT / "scratch/window-xdk/generated/include/ship/window/gui/GuiWindow.h"
+    ).read_text()
     result = []
     for signature in re.findall(r"GuiWindow(\([^;{}]*\));", header):
         if skip_two and signature.count(",") == 1:
             continue
         args = [re.search(r"(\w+)\s*$", p)[1] for p in signature[1:-1].split(",")]
-        result.append(name + signature + " : GuiWindow(" + ",".join(args) + ")" + extra + " {}")
+        result.append(
+            name + signature + " : GuiWindow(" + ",".join(args) + ")" + extra + " {}"
+        )
     assert len(result) == (5 if skip_two else 6)
     return "\n".join(result)
 
 
 def project(name, text):
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    if name in ("Notification.h", "Notification.cpp"):
+        text = overlap_gui_work("soh/soh/Notification/" + name, text)
+    if name in ("TimeDisplay.h", "TimeDisplay.cpp"):
+        text = overlap_gui_work("soh/soh/Enhancements/TimeDisplay/" + name, text)
     text = text.replace(
-        "#include <libultraship/libultraship.h>", '#include "UIWidgets.hpp"\n#include <cassert>'
+        "#include <libultraship/libultraship.h>",
+        '#include "UIWidgets.hpp"\n#include <cassert>',
     )
     if name == "SohGui.hpp":
         # These include-only dependencies declare no part of the SohGui API.
         text = (
             "\n".join(
-                l for l in text.splitlines() if not l.startswith('#include "soh/Enhancements/')
+                l
+                for l in text.splitlines()
+                if not l.startswith('#include "soh/Enhancements/')
             )
             + "\n"
         )
@@ -65,7 +93,9 @@ def project(name, text):
             text,
             "using GuiWindow::GuiWindow;",
             inherited(
-                "Menu", ", searchSidebarEntry(MakeSearchSidebarEntry()), allowPopout(true)", True
+                "Menu",
+                ", searchSidebarEntry(MakeSearchSidebarEntry()), allowPopout(true)",
+                True,
             ),
         )
         a = text.index("    const SidebarEntry searchSidebarEntry = {")
@@ -75,13 +105,14 @@ def project(name, text):
         text = (
             text[:a]
             + "    static SidebarEntry MakeSearchSidebarEntry();\n    const SidebarEntry"
-            " searchSidebarEntry;"
-            + text[b:]
+            " searchSidebarEntry;" + text[b:]
         )
         text = once(text, "bool allowPopout = true;", "bool allowPopout;")
     if name == "SohMenu.h":
         text = once(
-            text, "bool mMenuElementsInitialized = false;", "bool mMenuElementsInitialized;"
+            text,
+            "bool mMenuElementsInitialized = false;",
+            "bool mMenuElementsInitialized;",
         )
     if name == "SohModals.h":
         text = text.replace(" final :", " :")
@@ -94,7 +125,9 @@ def project(name, text):
         text = text.replace(" final :", " :")
         cls = "TimeDisplayWindow" if name == "TimeDisplay.h" else "Window"
         text = once(
-            text, "using GuiWindow::GuiWindow;", cls + "() : GuiWindow() {}\n" + inherited(cls)
+            text,
+            "using GuiWindow::GuiWindow;",
+            cls + "() : GuiWindow() {}\n" + inherited(cls),
         )
         if name == "Notification.h":
             text, _ = constructors(text, ["Options"])
@@ -123,7 +156,9 @@ modals.push_back(value);""",
     }
 }
 """
-        text = once(text, "bool closePopup = false;", "bool closePopup = false;\n" + nav)
+        text = once(
+            text, "bool closePopup = false;", "bool closePopup = false;\n" + nav
+        )
         text = once(
             text,
             "    DrawElement();\n    // Sync up the IsVisible flag if it was changed by ImGui",
@@ -145,7 +180,9 @@ modals.push_back(value);""",
             " mMenuElementsInitialized(false) {",
         )
         text = once(
-            text, "SidebarEntry{ .columnCount = columnCount }", "MakeSidebarEntry(columnCount)"
+            text,
+            "SidebarEntry{ .columnCount = columnCount }",
+            "MakeSidebarEntry(columnCount)",
         )
         text = once(text, "push_back({});", "push_back(std::vector<WidgetInfo>());")
         text = once(
@@ -153,8 +190,7 @@ modals.push_back(value);""",
             "entry.columnWidgets.at(column).push_back({ .name = widgetName, .type = widgetType });",
             "entry.columnWidgets.at(column).push_back(MakeWidgetInfo(widgetName,widgetType));",
         )
-        helpers = (
-            """static SidebarEntry MakeSidebarEntry(uint32_t columns) {
+        helpers = """static SidebarEntry MakeSidebarEntry(uint32_t columns) {
     SidebarEntry r((Shipyard::SohUI::ValueInit()));
     r.columnCount = columns;
     return r;
@@ -166,8 +202,9 @@ static WidgetInfo MakeWidgetInfo(const std::string &name, WidgetType type) {
     return r;
 }
 """
+        text = once(
+            text, "using namespace UIWidgets;", "using namespace UIWidgets;\n" + helpers
         )
-        text = once(text, "using namespace UIWidgets;", "using namespace UIWidgets;\n" + helpers)
         for typ in WIDGETS:
             text = text.replace(
                 "std::make_shared<" + typ + ">()",
@@ -194,12 +231,19 @@ static WidgetInfo MakeWidgetInfo(const std::string &name, WidgetType type) {
                 + ")));\n"
             )
         text = edits_apply(
-            raw, [(n.start_byte, n.end_byte, body + "disabledMap=std::move(disabledValues)")]
+            raw,
+            [
+                (
+                    n.start_byte,
+                    n.end_byte,
+                    body + "disabledMap=std::move(disabledValues)",
+                )
+            ],
         )
     if name == "Menu.cpp":
-        text = text.replace("#include <variant>", "#include <xbox_compat/variant.h>").replace(
-            "std::get<", "xbox_compat::get<"
-        )
+        text = text.replace(
+            "#include <variant>", "#include <xbox_compat/variant.h>"
+        ).replace("std::get<", "xbox_compat::get<")
         text = once(
             text,
             "std::vector<ImVec2> windowTypeSizes = { {} };",
@@ -216,8 +260,7 @@ static WidgetInfo MakeWidgetInfo(const std::string &name, WidgetType type) {
             "defaultThemeIndex(defaultThemeIndex_), searchSidebarEntry(MakeSearchSidebarEntry()),"
             " allowPopout(true) {",
         )
-        helper = (
-            """SidebarEntry Menu::MakeSearchSidebarEntry() {
+        helper = """SidebarEntry Menu::MakeSearchSidebarEntry() {
     SidebarEntry r((Shipyard::SohUI::ValueInit()));
     r.columnCount = 1;
     r.columnWidgets.resize(1);
@@ -231,7 +274,6 @@ static WidgetInfo MakeWidgetInfo(const std::string &name, WidgetType type) {
     return r;
 }
 """
-        )
         text = once(text, "namespace Ship {", "namespace Ship {\n" + helper)
         text = once(
             text,
@@ -243,7 +285,9 @@ order.erase(std::remove_if(order.begin(), order.end(),
             order.end());""",
         )
         text = once(
-            text, "MainMenuEntry{ entryName, entryCvar }", "MainMenuEntry(entryName, entryCvar)"
+            text,
+            "MainMenuEntry{ entryName, entryCvar }",
+            "MainMenuEntry(entryName, entryCvar)",
         )
         text = once(
             text,
@@ -257,20 +301,25 @@ order.erase(std::remove_if(order.begin(), order.end(),
             '#include "ship/config/Config.h"\n#include'
             ' "ship/window/gui/IconsFontAwesome4.h"\n#include'
             ' "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n#include'
-            ' "soh-menus/support.h"\n#include "math/color.h"\n'
-            + text
+            ' "soh-menus/support.h"\n#include "math/color.h"\n' + text
         )
-        text = once(text, "(int32_t)(configWindowBackend)", "configWindowBackend.GetValue()")
+        text = once(
+            text, "(int32_t)(configWindowBackend)", "configWindowBackend.GetValue()"
+        )
         text = once(
             text,
             "std::fminf(windowWidth * 0.9f, (windowHeight * 1.77f))",
             "static_cast<float>(Shipyard::Math::FMin(windowWidth * 0.9f, (windowHeight * 1.77f)))",
         )
-        text = text.replace("static_pointer_cast<Menu>", "std::static_pointer_cast<Menu>").replace(
-            "std::reinterpret_pointer_cast<", "Shipyard::GuiCompat::ReinterpretPointerCast<"
+        text = text.replace(
+            "static_pointer_cast<Menu>", "std::static_pointer_cast<Menu>"
+        ).replace(
+            "std::reinterpret_pointer_cast<",
+            "Shipyard::GuiCompat::ReinterpretPointerCast<",
         )
         text = text.replace(
-            'menuEntries["Settings"]', 'Shipyard::SohMenus::ValueIndex(menuEntries,"Settings")'
+            'menuEntries["Settings"]',
+            'Shipyard::SohMenus::ValueIndex(menuEntries,"Settings")',
         )
         text = once(
             text,
@@ -289,7 +338,13 @@ order.erase(std::remove_if(order.begin(), order.end(),
                     and f.child_by_field_name("field").text == b"emplace"
                     and len(a.named_children) == 2
                 ):
-                    edits.append((f.child_by_field_name("field").start_byte, f.end_byte, "insert"))
+                    edits.append(
+                        (
+                            f.child_by_field_name("field").start_byte,
+                            f.end_byte,
+                            "insert",
+                        )
+                    )
                     edits.append(
                         (
                             a.start_byte,
@@ -297,12 +352,16 @@ order.erase(std::remove_if(order.begin(), order.end(),
                             "(std::make_pair(" + a.text.decode()[1:-1] + "))",
                         )
                     )
-            if n.type == "compound_literal_expression" and n.child_by_field_name("type").text in (
+            if n.type == "compound_literal_expression" and n.child_by_field_name(
+                "type"
+            ).text in (
                 b"ImVec2",
                 b"ImVec4",
             ):
                 v = n.child_by_field_name("value")
-                edits.append((v.start_byte, v.end_byte, "(" + v.text.decode()[1:-1] + ")"))
+                edits.append(
+                    (v.start_byte, v.end_byte, "(" + v.text.decode()[1:-1] + ")")
+                )
             if n.type == "initializer_list" and n.parent.type == "argument_list":
                 call = n.parent.parent.child_by_field_name("function").text.decode()
                 vector2 = {
@@ -320,21 +379,44 @@ order.erase(std::remove_if(order.begin(), order.end(),
                     typ = "ImVec4"
                 else:
                     raise ValueError(
-                        "Unmapped menu aggregate argument " + call + ": " + n.text.decode()
+                        "Unmapped menu aggregate argument "
+                        + call
+                        + ": "
+                        + n.text.decode()
                     )
-                edits.append((n.start_byte, n.end_byte, typ + "(" + n.text.decode()[1:-1] + ")"))
+                edits.append(
+                    (n.start_byte, n.end_byte, typ + "(" + n.text.decode()[1:-1] + ")")
+                )
         text = edits_apply(raw, edits)
-    if name in ("SohMenuEnhancements.cpp", "SohMenuSettings.cpp", "SohMenuDevTools.cpp"):
+    if name in (
+        "SohMenuEnhancements.cpp",
+        "SohMenuSettings.cpp",
+        "SohMenuDevTools.cpp",
+    ):
         text = re.sub(r"WidgetPath path = \{([^{}]*)\};", r"WidgetPath path(\1);", text)
     if name == "SohMenuEnhancements.cpp":
+        text = once(
+            text,
+            '    AddMenuEntry("Enhancements", CVAR_SETTING("Menu.EnhancementsSidebarSection"));',
+            """    AddMenuEntry("Enhancements", CVAR_SETTING("Menu.EnhancementsSidebarSection"));
+    {
+        WidgetPath overlapPath("Enhancements", "Gameplay", SECTION_COLUMN_1);
+        AddSidebarEntry("Enhancements", "Gameplay", 1);
+        AddWidget(overlapPath, "Overlap game and render", WIDGET_CVAR_CHECKBOX)
+            .CVar(CVAR_SETTING("OverlapGameAndRender"))
+            .RaceDisable(false)
+            .Options(CheckboxOptions().DefaultValue(true)
+                .Tooltip("Run the next game update while the current frame renders."));
+    }""",
+        )
         text = (
             '#include "soh/Enhancements/randomizer/SeedContext.h"\n#include "macros.h"\n#include'
             ' "ship/window/gui/IconsFontAwesome4.h"\n#include'
-            ' "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n'
-            + text
+            ' "ship/window/gui/ConsoleWindow.h"\n#include "gui/compat.h"\n' + text
         )
         text = text.replace(
-            "std::reinterpret_pointer_cast<", "Shipyard::GuiCompat::ReinterpretPointerCast<"
+            "std::reinterpret_pointer_cast<",
+            "Shipyard::GuiCompat::ReinterpretPointerCast<",
         )
     if name == "SohMenuSettings.cpp":
         # Use the existing float widget's one-percent decrement/increment controls.
@@ -361,8 +443,7 @@ order.erase(std::remove_if(order.begin(), order.end(),
         a = text.index("            Notification::Emit({")
         b = text.index("            });", a) + len("            });")
         text = (
-            text[:a]
-            + "            Notification::Options notification;\n           "
+            text[:a] + "            Notification::Options notification;\n           "
             ' notification.itemIcon="__OTR__textures/icon_item_24_static/gQuestIconGoldSkulltulaTex";\n'
             '            notification.prefix="This";notification.message="is'
             ' a";notification.suffix="test.";\n            Notification::Emit(notification);'
@@ -421,7 +502,14 @@ def prepare():
             return values
 
         original_widgets = widget_inventory(text)
-        assert original_widgets == widget_inventory(projected), path
+        projected_widgets = widget_inventory(projected)
+        if Path(path).name == "SohMenuEnhancements.cpp":
+            (added,) = widget_inventory(
+                'AddWidget(overlapPath, "Overlap game and render", WIDGET_CVAR_CHECKBOX);'
+            )
+            assert projected_widgets.count(added) == 1, path
+            projected_widgets.remove(added)
+        assert original_widgets == projected_widgets, path
         if original_widgets:
             widgets[path] = original_widgets
         target = OUT / "generated" / path
@@ -448,14 +536,18 @@ def build(names):
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
-    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0]["command"][:-2]
+    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0][
+        "command"
+    ][:-2]
     flags[1:1] = [
         "/I" + str(OUT / "generated" / BASE),
         "/I" + str(OUT / "generated/soh"),
         "/I" + str(ROOT / "scratch/soh-ui-xdk/generated" / BASE),
     ]
     previous = (
-        json.loads((folder / "build.json").read_text()) if (folder / "build.json").exists() else []
+        json.loads((folder / "build.json").read_text())
+        if (folder / "build.json").exists()
+        else []
     )
     records = []
     for name in names:

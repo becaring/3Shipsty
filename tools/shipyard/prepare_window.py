@@ -36,7 +36,9 @@ def gui_constructors(text, classname):
         raise ValueError("GUI constructor shape drift")
     target = nodes[0]
     body = target.child_by_field_name("body").text.decode()
-    prefix = source[target.start_byte : target.child_by_field_name("body").start_byte].decode()
+    prefix = source[
+        target.start_byte : target.child_by_field_name("body").start_byte
+    ].decode()
     initializer = prefix[prefix.index("\n    : ") + len("\n    : ") :].strip()
     signatures = []
     if classname == "GuiWindow":
@@ -56,7 +58,11 @@ def gui_constructors(text, classname):
                 "originalSize": "ImVec2(-1, -1)",
                 "windowFlags": "ImGuiWindowFlags_None",
             },
-            {"isVisible": "false", "originalSize": "originalSize", "windowFlags": "windowFlags"},
+            {
+                "isVisible": "false",
+                "originalSize": "originalSize",
+                "windowFlags": "windowFlags",
+            },
             {
                 "isVisible": "false",
                 "originalSize": "originalSize",
@@ -88,6 +94,9 @@ def gui_constructors(text, classname):
 
 
 def transform(name, text):
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    text = overlap_gui_work("libultraship/" + name, text)
     if name.endswith("/Window.h"):
         text = config_transform(name, text)
         text = once(
@@ -145,7 +154,10 @@ def transform(name, text):
             text = once(
                 text,
                 old + " {\n}",
-                new + " : mLastScancode(-1) {\n    InitializeMembers(" + arguments + ");\n}",
+                new
+                + " : mLastScancode(-1) {\n    InitializeMembers("
+                + arguments
+                + ");\n}",
             )
     elif name.endswith("/MouseStateManager.h"):
         text = once(text, "#include <memory>", "#include <memory>\n#include <stdint.h>")
@@ -184,7 +196,9 @@ def transform(name, text):
         ):
             text = once(text, '#include "ship/window/gui/' + header + '"', "")
         text = once(
-            text, '#include "ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h"', ""
+            text,
+            '#include "ship/controller/physicaldevice/SDLAddRemoveDeviceEventHandler.h"',
+            "",
         )
         text = once(text, '#include "fast/resource/type/Texture.h"', "")
         text = once(text, "class Interpreter;", "class Interpreter;\nclass Texture;")
@@ -212,7 +226,9 @@ def transform(name, text):
         )
     elif name.endswith(("/GuiWindow.h", "/GuiMenuBar.h")):
         text = text.replace(" override", "")
-        text = text.replace("GuiWindow() = default;", "GuiWindow() : mWindowFlags(0) {}")
+        text = text.replace(
+            "GuiWindow() = default;", "GuiWindow() : mWindowFlags(0) {}"
+        )
         text = once(text, "  private:", "  private:\n    void InitializeVisibility();")
     elif name.endswith(("/GuiWindow.cpp", "/GuiMenuBar.cpp")):
         text = gui_constructors(text, Path(name).stem)
@@ -233,7 +249,8 @@ def prepare():
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()}, indent=2
+            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+            indent=2,
         )
         + "\n",
     )
@@ -283,15 +300,22 @@ def build():
     ):
         source = OUT / "generated/src/ship/window" / name
         obj = folder / (source.stem + ".obj")
-        command = [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        command = (
+            [str(sdk / "bin/win32/cl.exe")] + flags + [str(source), "/Fo" + str(obj)]
+        )
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         records.append(
             dict(
-                source=source.relative_to(ROOT).as_posix(), exit=result.returncode, command=command
+                source=source.relative_to(ROOT).as_posix(),
+                exit=result.returncode,
+                command=command,
             )
         )
-        if not result.returncode and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
+        if (
+            not result.returncode
+            and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2
+        ):
             raise ValueError("Not a Xenon object")
     stable(folder / "build.json", json.dumps(records, indent=2) + "\n")
     for row in records:

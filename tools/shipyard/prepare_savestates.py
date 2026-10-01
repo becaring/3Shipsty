@@ -20,7 +20,12 @@ def prepare():
             raise ValueError("Savestate source drift: " + name)
         texts[name] = text
     text = texts[BASE + "savestates.cpp"]
-    text = once(text, '#include "savestates.h"', '#include "soh/Enhancements/savestates.h"')
+    from overlap_lifetime_projection import project as overlap_lifetime
+
+    text = overlap_lifetime(BASE + "savestates.cpp", text)
+    text = once(
+        text, '#include "savestates.h"', '#include "soh/Enhancements/savestates.h"'
+    )
     text = text.replace('#include "../../src/overlays/', '#include "src/overlays/')
     text = once(
         text,
@@ -29,7 +34,8 @@ def prepare():
         " <ship/window/gui/Gui.h>\n#include <ship/window/gui/GameOverlay.h>",
     )
     text = text.replace(
-        "std::unique_lock<std::mutex>", "Shipyard::Async::unique_lock<Shipyard::Async::mutex>"
+        "std::unique_lock<std::mutex>",
+        "Shipyard::Async::unique_lock<Shipyard::Async::mutex>",
     )
     assert text.count("switch (request.type)") == 2
     text = text.replace("switch (request.type)", "switch (request.type.GetValue())")
@@ -47,7 +53,11 @@ def prepare():
             "this->states.find(request.slot) != this->states.end()",
             1,
         ),
-        ("states.contains(request.slot)", "states.find(request.slot) != states.end()", 1),
+        (
+            "states.contains(request.slot)",
+            "states.find(request.slot) != states.end()",
+            1,
+        ),
     ]:
         assert text.count(old) == count, old
         text = text.replace(old, new)
@@ -63,7 +73,10 @@ def prepare():
             dict(
                 upstream_commit=lock["upstream_commit"],
                 sources=lock["sources"],
-                generated={n: hashlib.sha256(t.encode()).hexdigest() for n, t in outputs.items()},
+                generated={
+                    n: hashlib.sha256(t.encode()).hexdigest()
+                    for n, t in outputs.items()
+                },
                 native_runtime_executed=False,
             ),
             indent=2,
@@ -76,9 +89,9 @@ def build():
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(parents=True, exist_ok=True)
-    flags = json.loads((ROOT / "scratch/application-xdk/xdk/build.json").read_text())[0]["command"][
-        :-2
-    ]
+    flags = json.loads((ROOT / "scratch/application-xdk/xdk/build.json").read_text())[
+        0
+    ]["command"][:-2]
     flags[1:1] = ["/I" + str(OUT / "generated/soh")]
     source = OUT / "generated" / BASE / "savestates.cpp"
     obj = folder / "savestates.obj"
@@ -96,7 +109,9 @@ def build():
                     production=True,
                     source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                     object_sha256=(
-                        hashlib.sha256(obj.read_bytes()).hexdigest() if not r.returncode else None
+                        hashlib.sha256(obj.read_bytes()).hexdigest()
+                        if not r.returncode
+                        else None
                     ),
                 )
             ],

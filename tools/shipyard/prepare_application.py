@@ -34,7 +34,9 @@ def application_syntax(source):
     assert match
     source = source.replace(
         "    auto controlDeck =",
-        "    const CONTROLLERBUTTONS_T buttonMasks[]=" + match[1] + ";\n    auto controlDeck =",
+        "    const CONTROLLERBUTTONS_T buttonMasks[]="
+        + match[1]
+        + ";\n    auto controlDeck =",
         1,
     )
     source = re.sub(
@@ -91,7 +93,9 @@ def application_syntax(source):
         " const std::string key=it.key(); nlohmann::json& value=it.value();",
     )
     source = source.replace("[[unlikely]]", "")
-    source = re.sub(r"(?<![\w:])(static_pointer_cast|dynamic_pointer_cast)<", r"std::\1<", source)
+    source = re.sub(
+        r"(?<![\w:])(static_pointer_cast|dynamic_pointer_cast)<", r"std::\1<", source
+    )
     source = once(
         source,
         "ExtensionCache[nPath] = { rPath, ext };",
@@ -119,7 +123,9 @@ def application_syntax(source):
         'CVarGetColor24(CVAR_SETTING("LEDPort1Color"), { 255, 255, 255 })',
         'CVarGetColor24(CVAR_SETTING("LEDPort1Color"), Shipyard::GuiCompat::Rgb(255,255,255))',
     )
-    source = re.sub(r"color = \{([^{};]+)\};", r"color = Shipyard::GuiCompat::Rgb(\1);", source)
+    source = re.sub(
+        r"color = \{([^{};]+)\};", r"color = Shipyard::GuiCompat::Rgb(\1);", source
+    )
     source = once(
         source,
         '            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Invalid OTR File",\n          '
@@ -137,7 +143,8 @@ def function(text, name):
         for n in walk(PARSER.parse(text.encode()).root_node)
         if n.type == "function_definition"
         and n.child_by_field_name("declarator") is not None
-        and n.child_by_field_name("declarator").text.decode().split("(")[0].strip() == name
+        and n.child_by_field_name("declarator").text.decode().split("(")[0].strip()
+        == name
     ]
     if len(matches) != 1:
         raise ValueError("Application function inventory changed: " + name)
@@ -154,7 +161,11 @@ def platform_source(source):
     end = body.end_byte - 1
     source = (
         raw[:start]
-        + ("\n#ifdef _XBOX\n" + (OWN / "runtime_preflight.inc").read_text() + "\n#else\n").encode()
+        + (
+            "\n#ifdef _XBOX\n"
+            + (OWN / "runtime_preflight.inc").read_text()
+            + "\n#else\n"
+        ).encode()
         + raw[start:end]
         + b"\n#endif\n"
         + raw[end:]
@@ -213,7 +224,8 @@ def platform_source(source):
             + raw[node.end_byte :]
         ).decode()
     source = source.replace(
-        "std::unique_lock<std::mutex>", "Shipyard::Async::unique_lock<Shipyard::Async::mutex>"
+        "std::unique_lock<std::mutex>",
+        "Shipyard::Async::unique_lock<Shipyard::Async::mutex>",
     )
     source = once(
         source,
@@ -237,11 +249,14 @@ def platform_source(source):
         "    OTRAudio_Exit();",
         "    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();",
     )
-    source = once(source, "#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif", "")
+    source = once(
+        source, "#ifdef ENABLE_REMOTE_CONTROL\n    SDLNet_Init();\n#endif", ""
+    )
     source = once(
         source,
         'extern "C" void InitOTR(int argc, char* argv[]) {',
         """extern "C" void InitOTR(int argc, char* argv[]) {
+    ShipyardAudioSetProcessor(1u << 3);
     Shipyard::Platform::RecordBootStage("entry", false);
     xbox_compat::filesystem::InitWorkingDirectory("game:/");
     if (SDLNet_Init() != 0) throw std::runtime_error(SDLNet_GetError());
@@ -421,6 +436,24 @@ void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>
     from frame_profile_projection import application as profile_application
 
     source = profile_application(source)
+    from overlap_audio_projection import source as overlap_audio_source
+
+    source = overlap_audio_source(source)
+    source = '#include "audio/services.h"\n' + source
+    source = once(
+        source,
+        'extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {',
+        '#include "application/overlap_runtime.inc"\n\n'
+        'extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {\n'
+        "    if (ModernOverlap::PublishCommands(commands)) return;",
+    )
+    from overlap_lifetime_projection import project as overlap_lifetime
+
+    source = overlap_lifetime("soh/soh/OTRGlobals.cpp", source)
+    source = (
+        '#include "ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.h"\n'
+        + source
+    )
     source = once(
         source,
         'extern "C" void DeinitOTR() {\n    SaveManager_ThreadPoolWait();',
@@ -488,7 +521,11 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
         "    DestroyXboxSpeechSynthesizer(SpeechSynthesizer::Instance);\n   "
         " SpeechSynthesizer::Instance = nullptr;\n    SohGui::Destroy();",
     )
-    for remote, cvar in [("CrowdControl", "CROWD_CONTROL"), ("Sail", "SAIL"), ("Anchor", "ANCHOR")]:
+    for remote, cvar in [
+        ("CrowdControl", "CROWD_CONTROL"),
+        ("Sail", "SAIL"),
+        ("Anchor", "ANCHOR"),
+    ]:
         # The shutdown condition follows the real worker state. A changed CVar
         # cannot strand an enabled worker while its dependencies are destroyed.
         source = once(
@@ -512,7 +549,9 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
         "    SaveManager_ThreadPoolWait();\n    delete SaveManager::Instance;\n   "
         " SaveManager::Instance = nullptr;",
     )
-    source = once(source, "    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();\n", "")
+    source = once(
+        source, "    OTRAudio_Exit();\n    Shipyard::Libultra::StopTimers();\n", ""
+    )
     source = once(
         source,
         "    SaveManager_ThreadPoolWait();\n    delete SaveManager::Instance;",
@@ -543,8 +582,7 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
         '#include "application/archive_preflight.h"\n#include "context/platform.h"\n#include'
         ' "libultra/platform.h"\n#include "network/transport.h"\n#include'
         ' "save-storage/storage.h"\n#include "async/native.h"\n#include'
-        ' "async/detached.h"\n#include <exception>\n#include <system_error>\n'
-        + source
+        ' "async/detached.h"\n#include <exception>\n#include <system_error>\n' + source
     )
 
 
@@ -562,7 +600,9 @@ def prepare():
     if len(defaults) != 8:
         raise ValueError("OTRGlobals font default inventory changed")
     for member in defaults:
-        header = once(header, "ImFont* " + member + " = nullptr;", "ImFont* " + member + ";")
+        header = once(
+            header, "ImFont* " + member + " = nullptr;", "ImFont* " + member + ";"
+        )
     header = once(header, '#include "Enhancements/savestates.h"', "class SaveStateMgr;")
     header = once(
         header,
@@ -590,13 +630,16 @@ def prepare():
     audio = syntax(texts["soh/soh/OTRAudio.h"]).replace(
         "#include <condition_variable>", '#include "async/native.h"'
     )
-    audio = audio.replace("std::thread thread", "Shipyard::Async::joining_thread thread").replace(
-        "std::condition_variable", "Shipyard::Async::condition_variable"
-    )
+    audio = audio.replace(
+        "std::thread thread", "Shipyard::Async::joining_thread thread"
+    ).replace("std::condition_variable", "Shipyard::Async::condition_variable")
     # SaveStateMgr locks this same state from another translation unit. The
     # upstream header's internal-linkage instance silently gives it another lock.
     audio = once(audio, "static struct {", "struct OTRAudioState {")
     audio = once(audio, "} audio;", "};\nextern OTRAudioState audio;")
+    from overlap_audio_projection import header as overlap_audio_header
+
+    audio = overlap_audio_header(audio)
     source = once(
         source,
         "OTRGlobals* OTRGlobals::Instance;",
@@ -637,7 +680,9 @@ def prepare():
     source = application_syntax(platform_source(source))
     stable(OUT / "generated/soh/soh/OTRGlobals.cpp", source)
     generated = {
-        p.relative_to(OUT / "generated").as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+        p.relative_to(OUT / "generated")
+        .as_posix(): hashlib.sha256(p.read_bytes())
+        .hexdigest()
         for p in (OUT / "generated").rglob("*")
         if p.is_file()
     }
@@ -676,9 +721,9 @@ def probe():
         source,
         '#include "soh/OTRGlobals.h"\ntypedef char owner_layout[(sizeof(OTRGlobals)==80)?1:-1];\n',
     )
-    recipe = json.loads((ROOT / "scratch/game-interactor-xdk/xdk/build.json").read_text())[0][
-        "command"
-    ][:-2]
+    recipe = json.loads(
+        (ROOT / "scratch/game-interactor-xdk/xdk/build.json").read_text()
+    )[0]["command"][:-2]
     recipe.insert(1, "/I" + str(OUT / "generated/soh"))
     obj = folder / "declaration.obj"
     command = recipe + [str(source), "/Fo" + str(obj)]
@@ -687,7 +732,11 @@ def probe():
     stable(
         folder / "declaration.json",
         json.dumps(
-            dict(command=command, exit=result.returncode, production_application_compiled=False),
+            dict(
+                command=command,
+                exit=result.returncode,
+                production_application_compiled=False,
+            ),
             indent=2,
         )
         + "\n",
@@ -696,7 +745,9 @@ def probe():
         print(result.stdout)
         raise SystemExit(1)
     assert struct.unpack_from("<H", obj.read_bytes())[0] == 0x1F2
-    print("Complete OTRGlobals class declaration: 80-byte Xenon layout; declaration probe only")
+    print(
+        "Complete OTRGlobals class declaration: 80-byte Xenon layout; declaration probe only"
+    )
 
 
 def boundary_probe():
@@ -752,7 +803,9 @@ extern bool sohArchiveVersionMatch;
     bodies = "\n".join(function(source, n).text.decode() for n in names)
     path = folder / "startup_boundaries.cpp"
     stable(path, prelude + bodies + "\n")
-    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0]["command"][:-2]
+    flags = json.loads((ROOT / "scratch/soh-ui-xdk/xdk/build.json").read_text())[0][
+        "command"
+    ][:-2]
     flags[1:1] = [
         "/I" + str(OUT / "generated/soh"),
         "/I" + str(ROOT / "scratch/libzip-xdk/generated"),
@@ -771,14 +824,19 @@ extern bool sohArchiveVersionMatch;
                 production_unit=False,
                 source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 object_sha256=(
-                    hashlib.sha256(obj.read_bytes()).hexdigest() if not result.returncode else None
+                    hashlib.sha256(obj.read_bytes()).hexdigest()
+                    if not result.returncode
+                    else None
                 ),
             ),
             indent=2,
         )
         + "\n",
     )
-    print("Real startup archive boundaries and audio/save-state declarations:", result.returncode)
+    print(
+        "Real startup archive boundaries and audio/save-state declarations:",
+        result.returncode,
+    )
     if result.returncode:
         print("\n".join(s for s in result.stdout.splitlines() if "error " in s)[:5000])
         raise SystemExit(1)
@@ -789,9 +847,9 @@ def build():
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
-    flags = json.loads((ROOT / "scratch/application-gui-xdk/xdk/build.json").read_text())[0][
-        "command"
-    ][:-2]
+    flags = json.loads(
+        (ROOT / "scratch/application-gui-xdk/xdk/build.json").read_text()
+    )[0]["command"][:-2]
     from prepare_soh_input_editor import includes as editor_includes
 
     roots = (

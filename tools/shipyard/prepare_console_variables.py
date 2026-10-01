@@ -14,6 +14,10 @@ from prepare_resource_manager import transform as runtime_transform
 from cpp_ast import PARSER, walk
 from xbox360_platform.console_variable_lookup import transform as borrow_typed_cvars
 from xbox360_platform.console_variable_lookup import header as borrow_cvar_names
+from overlap_cvar_projection import (
+    header as overlap_cvar_header,
+    source as overlap_cvar_source,
+)
 
 OUT = ROOT / "scratch/console-variables-xdk"
 OWN = ROOT / "platform/shipyard/console-variables"
@@ -22,6 +26,7 @@ OWN = ROOT / "platform/shipyard/console-variables"
 def transform(name, text):
     if name.endswith("/ConsoleVariable.h"):
         text = borrow_cvar_names(text)
+        text = overlap_cvar_header(text)
         text = once(
             text,
             "typedef enum class ConsoleVariableType { Integer, Float, String, Color, Color24 }"
@@ -43,6 +48,7 @@ def transform(name, text):
         text = '#include "binary/compat.h"\n' + text
     elif name.endswith("/ConsoleVariable.cpp"):
         text = borrow_typed_cvars(text)
+        text = overlap_cvar_source(text)
         # Load clears defaults installed at GUI startup. Restore the Xbox
         # controller-navigation default after persisted and legacy values load;
         # RegisterInteger leaves an explicit saved zero untouched.
@@ -51,28 +57,35 @@ def transform(name, text):
             "    LoadLegacy();\n}",
             "    LoadLegacy();\n    RegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);\n}",
         )
-        text = once(text, "switch (variableTo->Type)", "switch (variableTo->Type.GetValue())")
+        text = once(
+            text, "switch (variableTo->Type)", "switch (variableTo->Type.GetValue())"
+        )
         text = once(
             text,
             "for (const auto& item : items) {",
             "for (auto cursor=items.begin(), finish=items.end(); cursor!=finish; ++cursor) {\n     "
             "   const auto& item=*cursor;",
         )
-        lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
+        lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+            "lower_ranges"
+        ]
         text = lower(
             text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
         ).decode()
         text = (
             '#include "compile_definitions.h"\n#include "resources/runtime_support.h"\n#include'
-            " <spdlog/spdlog.h>\n"
-            + text
+            " <spdlog/spdlog.h>\n" + text
         )
     elif name.endswith("/Path.h"):
         text = runtime_transform(name, text)
-        text = once(text, '#include "../StringHelper.h"', '#include "ship/utils/StringHelper.h"')
+        text = once(
+            text, '#include "../StringHelper.h"', '#include "ship/utils/StringHelper.h"'
+        )
     elif name.endswith("/DiskFile.h"):
         text = once(
-            text, '#include "Directory.h"', '#include "ship/utils/filesystemtools/Directory.h"'
+            text,
+            '#include "Directory.h"',
+            '#include "ship/utils/filesystemtools/Directory.h"',
         )
         source = text.encode()
         edits = []
@@ -97,7 +110,9 @@ def transform(name, text):
 
 def prepare():
     pending = {}
-    for name, expected in json.loads((OWN / "sources.lock.json").read_text())["sources"].items():
+    for name, expected in json.loads((OWN / "sources.lock.json").read_text())[
+        "sources"
+    ].items():
         text = (ROOT / "libultraship" / name).read_text(encoding="utf-8-sig")
         if hashlib.sha256(text.encode()).hexdigest() != expected:
             raise ValueError("ConsoleVariable input drift: " + name)
@@ -107,7 +122,8 @@ def prepare():
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()}, indent=2
+            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+            indent=2,
         )
         + "\n",
     )

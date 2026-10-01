@@ -24,7 +24,11 @@ METHODS = [
 
 
 def functions(text):
-    return [n for n in walk(PARSER.parse(text.encode()).root_node) if n.type == "function_definition"]
+    return [
+        n
+        for n in walk(PARSER.parse(text.encode()).root_node)
+        if n.type == "function_definition"
+    ]
 
 
 def name(n):
@@ -34,7 +38,9 @@ def name(n):
 def host(projected):
     folder = OUT / ("host-projected" if projected else "host-original")
     folder.mkdir(parents=True, exist_ok=True)
-    text = ((OUT / "generated" if projected else ROOT) / BASE / "savestates.cpp").read_text()
+    text = (
+        (OUT / "generated" if projected else ROOT) / BASE / "savestates.cpp"
+    ).read_text()
     source = text[: text.index("SaveStateMgr::SaveStateMgr()")]
     source = re.sub(
         r"^#include .*?(?:OTRGlobals|OTRAudio|libultraship/libultraship|ship/(?:Context|window/)).*\n",
@@ -42,11 +48,17 @@ def host(projected):
         source,
         flags=re.M,
     )
-    source = source.replace('#include "soh/Enhancements/savestates.h"', '#include "savestates.h"')
+    source = source.replace(
+        '#include "soh/Enhancements/savestates.h"', '#include "savestates.h"'
+    )
     source = source.replace('#include "../../src/overlays/', '#include "src/overlays/')
     source = source.replace("  private:", "  public:")
     header = (
-        ((ROOT / "scratch/application-xdk/generated" if projected else ROOT) / BASE / "savestates.h")
+        (
+            (ROOT / "scratch/application-xdk/generated" if projected else ROOT)
+            / BASE
+            / "savestates.h"
+        )
         .read_text()
         .replace("  private:", "  public:")
     )
@@ -58,9 +70,15 @@ def host(projected):
         body = n.text.decode()
         edits = []
         for call in walk(PARSER.parse(body.encode()).root_node):
-            if call.type == "expression_statement" and call.text.startswith(b"Ship::Context::GetInstance()"):
+            if call.type == "expression_statement" and call.text.startswith(
+                b"Ship::Context::GetInstance()"
+            ):
                 edits.append(
-                    (call.start_byte, call.end_byte, "// Live notification excluded only from host method audit.")
+                    (
+                        call.start_byte,
+                        call.end_byte,
+                        "// Live notification excluded only from host method audit.",
+                    )
                 )
         count += len(edits)
         source += edits_apply(body.encode(), edits) + "\n"
@@ -74,9 +92,9 @@ def host(projected):
     stable(folder / "contract.cpp", source)
     compiler, env = ENV["host_environment"]()
     native = json.loads((OUT / "xdk/build.json").read_text())[0]["command"]
-    roots = [p for p in native if p.startswith("/I") and "Microsoft Xbox 360 SDK" not in p] + [
-        "/I" + str(PLATFORM_BASE / "sources")
-    ]
+    roots = [
+        p for p in native if p.startswith("/I") and "Microsoft Xbox 360 SDK" not in p
+    ] + ["/I" + str(PLATFORM_BASE / "sources")]
     command = (
         [
             compiler,
@@ -95,7 +113,10 @@ def host(projected):
         + roots
         + [folder / "contract.cpp"]
     )
-    command += [PLATFORM_BASE / "sources/async/native.cpp", PLATFORM_BASE / "sources/clock/chrono.cpp"]
+    command += [
+        PLATFORM_BASE / "sources/async/native.cpp",
+        PLATFORM_BASE / "sources/clock/chrono.cpp",
+    ]
     command += ["/Fo:" + str(folder) + "/", "/Fe:" + str(folder / "contract.exe")]
     result = ENV["invoke"](command, folder, "compile", env, success=False)
     assert result["returncode"] == 0, "\n".join(
@@ -113,7 +134,10 @@ class SavestateContracts(unittest.TestCase):
     def test_native_full_tu(self):
         row = json.loads((OUT / "xdk/build.json").read_text())[0]
         self.assertEqual(row["exit"], 0)
-        self.assertEqual(hashlib.sha256((ROOT / row["source"]).read_bytes()).hexdigest(), row["source_sha256"])
+        self.assertEqual(
+            hashlib.sha256((ROOT / row["source"]).read_bytes()).hexdigest(),
+            row["source_sha256"],
+        )
 
     def test_original_projected_contracts(self):
         original = host(False)
@@ -137,14 +161,27 @@ over real game data types in test memory; no production game or service stubs"""
     def test_complete_serialization_and_inventory(self):
         original = (ROOT / BASE / "savestates.cpp").read_text()
         projected = (OUT / "generated" / BASE / "savestates.cpp").read_text()
-        self.assertEqual([name(n) for n in functions(original)], [name(n) for n in functions(projected)])
+        self.assertEqual(
+            [name(n) for n in functions(original)],
+            [name(n) for n in functions(projected)],
+        )
         for before, after in zip(functions(original), functions(projected)):
             if name(before).startswith("SaveState::"):
+                actual = after.text.decode()
+                boundaries = {"SaveState::Save": 0, "SaveState::Load": 1}
+                if name(before) in boundaries:
+                    statement = (
+                        "\n    Shipyard_OverlapSaveStateBoundary(%d);"
+                        % boundaries[name(before)]
+                    )
+                    self.assertEqual(actual.count(statement), 1)
+                    actual = actual.replace(statement, "")
                 self.assertEqual(
                     before.text.decode().replace(
-                        "std::unique_lock<std::mutex>", "Shipyard::Async::unique_lock<Shipyard::Async::mutex>"
+                        "std::unique_lock<std::mutex>",
+                        "Shipyard::Async::unique_lock<Shipyard::Async::mutex>",
                     ),
-                    after.text.decode(),
+                    actual,
                 )
         shape = lambda s: next(
             n.text.decode()

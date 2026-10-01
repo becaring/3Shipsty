@@ -187,7 +187,9 @@ def prepared_load(source):
     source = once(
         source,
         "void SaveManager::StartupCheckAndInitMeta(int fileNum) {",
-        PREPARED_LOAD + META_CACHE + "void SaveManager::StartupCheckAndInitMeta(int fileNum) {",
+        PREPARED_LOAD
+        + META_CACHE
+        + "void SaveManager::StartupCheckAndInitMeta(int fileNum) {",
     )
     source = once(
         source,
@@ -261,7 +263,9 @@ def prepare():
         header = default_arguments(lower_defaults(header, members, []))
         if stem == "entrance":
             condition = re.search(
-                r"^typedef bool \(\*ConditionFn\)\(\);$", texts[BASE + "location_access.h"], re.M
+                r"^typedef bool \(\*ConditionFn\)\(\);$",
+                texts[BASE + "location_access.h"],
+                re.M,
             )[0]
             header = once(
                 header,
@@ -276,23 +280,34 @@ def prepare():
                 header,
                 flags=re.S,
             )
-            header = re.sub(r"using (Entrance\w+) = ([^;]+);", r"typedef \2 \1;", header)
+            header = re.sub(
+                r"using (Entrance\w+) = ([^;]+);", r"typedef \2 \1;", header
+            )
             header = '#include "binary/compat.h"\n' + header
         emit(BASE + stem + ".h", header)
-        emit(BASE + stem + ".cpp", lower_defaults(texts[BASE + stem + ".cpp"], members, []))
+        emit(
+            BASE + stem + ".cpp",
+            lower_defaults(texts[BASE + stem + ".cpp"], members, []),
+        )
+    from overlap_lifetime_projection import project as overlap_lifetime
+
     source = project("soh/soh/SaveManager.cpp", texts["soh/soh/SaveManager.cpp"])
     source = source.replace('#include "Enhancements/', '#include "soh/Enhancements/')
     # The explicit decoder already owns the raw legacy structures and unchanged
     # CopyV0Save in its namespace. Replace that contiguous old parser region with
     # the verified canonical conversion method; retain every modern method.
-    start = source.index("// Functionality required to convert old saves into versioned saves")
+    start = source.index(
+        "// Functionality required to convert old saves into versioned saves"
+    )
     original = function(source, "SaveManager::ConvertFromUnversioned")
     converted = methods(
         (ROOT / "scratch/legacy-save-xdk/generated/LegacyConversion.cpp").read_text()
     )["ConvertFromUnversioned"]
     raw = source.encode()
     source = (
-        raw[: len(source[:start].encode())] + converted.encode() + raw[original.end_byte :]
+        raw[: len(source[:start].encode())]
+        + converted.encode()
+        + raw[original.end_byte :]
     ).decode()
     source = (
         '#include "legacy-save/format.h"\n#include'
@@ -300,14 +315,12 @@ def prepare():
         ' "soh/Enhancements/randomizer/static_data.h"\n#include'
         ' "soh/Enhancements/randomizer/randomizer.h"\n#include'
         ' "soh/Enhancements/randomizer/item_location.h"\n#include'
-        ' "soh/Enhancements/randomizer/item_override.h"\n'
-        + source
+        ' "soh/Enhancements/randomizer/item_override.h"\n' + source
     )
     source = source.replace("#include <Windows.h>", "#include <xtl.h>")
     source = (
         '#include <iomanip>\n#include "soh/Enhancements/randomizer/logic.h"\n#include'
-        ' "soh/Enhancements/randomizer/settings.h"\n'
-        + source
+        ' "soh/Enhancements/randomizer/settings.h"\n' + source
     )
     source = '#include "save-manager/enum_traits.h"\n' + source
     source = once(
@@ -319,7 +332,8 @@ def prepare():
         " rg)));",
     )
     match = re.search(
-        r"std::vector<RandomizerHint> Rando::StaticData::oldVerHintOrder(\{[\s\S]*?\});", source
+        r"std::vector<RandomizerHint> Rando::StaticData::oldVerHintOrder(\{[\s\S]*?\});",
+        source,
     )
     if not match:
         raise ValueError("Old hint order inventory drift")
@@ -333,6 +347,7 @@ def prepare():
     )
     source = load_defaults(source)
     source = prepared_load(source)
+    source = overlap_lifetime("soh/soh/SaveManager.cpp", source)
     emit("soh/soh/SaveManager.cpp", source)
     emit(
         "include/save-manager/enum_traits.h",
@@ -381,9 +396,9 @@ def build():
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
-    flags = json.loads((ROOT / "scratch/application-xdk/xdk/build.json").read_text())[0]["command"][
-        :-2
-    ]
+    flags = json.loads((ROOT / "scratch/application-xdk/xdk/build.json").read_text())[
+        0
+    ]["command"][:-2]
     roots = includes() + [Path(f[2:]) for f in flags if f.startswith("/I")]
     roots = list(dict.fromkeys(roots))
     roots.sort(
@@ -412,7 +427,11 @@ def build():
     stable(folder / "build.json", json.dumps([row], indent=2) + "\n")
     print("Complete SaveManager.cpp:", run.returncode)
     if run.returncode:
-        print("\n".join(s for s in (run.stdout + run.stderr).splitlines() if "error " in s)[:7500])
+        print(
+            "\n".join(
+                s for s in (run.stdout + run.stderr).splitlines() if "error " in s
+            )[:7500]
+        )
         raise SystemExit(1)
 
 

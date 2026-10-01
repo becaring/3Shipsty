@@ -19,6 +19,9 @@ OWN = ROOT / "platform/shipyard/gui-resources"
 
 
 def transform(name, text):
+    from overlap_gui_work_projection import project as overlap_gui_work
+
+    text = overlap_gui_work(name, text)
     if name.endswith("/GuiTexture.h"):
         return window_transform(name, text)
     if name.endswith("/GameOverlay.h"):
@@ -105,11 +108,15 @@ def transform(name, text):
         )
     if name.endswith(("/GuiTexture.cpp", "/GuiTextureFactory.cpp")):
         text = "#include <stb_image.h>\n" + text
-    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))["lower_ranges"]
+    lower = runpy.run_path(str(ROOT / "platform/shipyard/imgui/projection.py"))[
+        "lower_ranges"
+    ]
     return (
         '#include "resources/runtime_support.h"\n'
         + lower(
-            syntax(text).encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
+            syntax(text).encode(),
+            "Shipyard::Resources::begin",
+            "Shipyard::Resources::end",
         ).decode()
     )
 
@@ -117,7 +124,9 @@ def transform(name, text):
 def prepare():
     stb = verified("stb")
     pending = {}
-    for name, expected in json.loads((OWN / "sources.lock.json").read_text())["sources"].items():
+    for name, expected in json.loads((OWN / "sources.lock.json").read_text())[
+        "sources"
+    ].items():
         text = (ROOT / "libultraship" / name).read_text(encoding="utf-8-sig")
         if hashlib.sha256(text.encode()).hexdigest() != expected:
             raise ValueError("GUI resource input drift: " + name)
@@ -125,12 +134,14 @@ def prepare():
     for name, text in pending.items():
         stable(OUT / "generated" / name, text)
     stable(
-        OUT / "generated/stb_impl.c", '#define STB_IMAGE_IMPLEMENTATION\n#include "stb_image.h"\n'
+        OUT / "generated/stb_impl.c",
+        '#define STB_IMAGE_IMPLEMENTATION\n#include "stb_image.h"\n',
     )
     stable(
         OUT / "manifest.json",
         json.dumps(
-            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()}, indent=2
+            {n: hashlib.sha256(t.encode()).hexdigest() for n, t in pending.items()},
+            indent=2,
         )
         + "\n",
     )
@@ -154,7 +165,10 @@ def build():
         "/DNOMINMAX",
         "/DSPDLOG_ACTIVE_LEVEL=0",
         "/Dnssv_CONFIG_SELECT_STRING_VIEW=1",
-        "/FI" + str(ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"),
+        "/FI"
+        + str(
+            ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"
+        ),
         "/I" + str(sdk / "include/xbox"),
     ]
     flags += [
@@ -184,10 +198,15 @@ def build():
         stable(obj.with_suffix(".log"), result.stdout + result.stderr)
         records.append(
             dict(
-                source=source.relative_to(ROOT).as_posix(), exit=result.returncode, command=command
+                source=source.relative_to(ROOT).as_posix(),
+                exit=result.returncode,
+                command=command,
             )
         )
-        if not result.returncode and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
+        if (
+            not result.returncode
+            and struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2
+        ):
             raise ValueError("Not a Xenon object")
     stable(folder / "build.json", json.dumps(records, indent=2) + "\n")
     for row in records:

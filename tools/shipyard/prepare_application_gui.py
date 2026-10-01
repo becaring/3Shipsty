@@ -44,11 +44,16 @@ def classes(text):
                     typ = f.child_by_field_name("type").text.decode()
                     # MessageViewer's single mutable static pointer keeps one definition.
                     assert (
-                        name == "MessageViewer" and member.replace(" ", "") == "*TABLE_ID"
+                        name == "MessageViewer"
+                        and member.replace(" ", "") == "*TABLE_ID"
                     ), f.text
-                    edits.append((f.start_byte, f.end_byte, "static const char* TABLE_ID;"))
+                    edits.append(
+                        (f.start_byte, f.end_byte, "static const char* TABLE_ID;")
+                    )
                     statics.append(
-                        "const char* MessageViewer::TABLE_ID=" + initializer.text.decode() + ";"
+                        "const char* MessageViewer::TABLE_ID="
+                        + initializer.text.decode()
+                        + ";"
                     )
                 continue
             ids = [c for c in walk(d) if c.type == "field_identifier"]
@@ -112,7 +117,13 @@ def vectors(text):
         item = typ.text.decode()[12:-1]
         helper = "ShipyardBuild_" + name
         code = (
-            "static " + typ.text.decode() + " " + helper + "(){" + typ.text.decode() + " result;\n"
+            "static "
+            + typ.text.decode()
+            + " "
+            + helper
+            + "(){"
+            + typ.text.decode()
+            + " result;\n"
         )
         if item == "FlagTable":
             for i, row in enumerate(value.named_children):
@@ -137,10 +148,10 @@ def vectors(text):
       }"""
                     assert fields[3].text.decode() == original, fields[3].text
                     code += (
-                        '#define RANDO_ENUM_ITEM(rand_inf) table.flagDescriptions.insert(std::make_pair(u'
-                        'int16_t(rand_inf), #rand_inf));\n'
+                        "#define RANDO_ENUM_ITEM(rand_inf) table.flagDescriptions.insert(std::make_pair(u"
+                        "int16_t(rand_inf), #rand_inf));\n"
                         '#include "soh/Enhancements/randomizer/randomizerEnums/RandomizerInf.h"\n'
-                        '#undef RANDO_ENUM_ITEM\n'
+                        "#undef RANDO_ENUM_ITEM\n"
                     )
                     code += "result.push_back(table);}\n"
                     continue
@@ -182,7 +193,9 @@ def prepare():
     outputs = {}
     audit = {}
     statics = []
-    audio = (ROOT / "soh/soh/Enhancements/audio/AudioCollection.h").read_text(encoding="utf-8-sig")
+    audio = (ROOT / "soh/soh/Enhancements/audio/AudioCollection.h").read_text(
+        encoding="utf-8-sig"
+    )
     assert hashlib.sha256(audio.encode()).hexdigest() == lock["audio_collection_sha256"]
     # AudioCollection owns the one canonical enum declaration and full class.
     stale = OUT / "generated/soh/soh/Enhancements/audio/sequence_type.h"
@@ -191,15 +204,20 @@ def prepare():
     for path, digest in lock["sources"].items():
         text = (ROOT / path).read_text(encoding="utf-8-sig")
         assert hashlib.sha256(text.encode()).hexdigest() == digest, path
+        from overlap_gui_work_projection import project as overlap_gui_work
+
+        text = overlap_gui_work(path, text)
         text = text.replace(
-            "#include <libultraship/libultraship.h>", '#include "soh/SohGui/UIWidgets.hpp"'
+            "#include <libultraship/libultraship.h>",
+            '#include "soh/SohGui/UIWidgets.hpp"',
         )
         text = text.replace(
             '#include "randomizerTypes.h"',
             '#include "soh/Enhancements/randomizer/randomizerTypes.h"',
         )
         text = text.replace(
-            '#include "AudioCollection.h"', '#include "soh/Enhancements/audio/sequence_type.h"'
+            '#include "AudioCollection.h"',
+            '#include "soh/Enhancements/audio/sequence_type.h"',
         )
         if path.endswith(".h"):
             text, record, definitions = classes(text)
@@ -215,7 +233,8 @@ def prepare():
                 "soh/Enhancements/cosmetics/authenticGfxPatches.h",
             ]:
                 text = text.replace(
-                    '#include "' + unused + '"', "// Unused umbrella dependency: " + unused
+                    '#include "' + unused + '"',
+                    "// Unused umbrella dependency: " + unused,
                 )
             a = text.index(
                 "static const inline std::vector<std::pair<const char*, const char*>>"
@@ -225,11 +244,11 @@ def prepare():
             text = (
                 text[:a]
                 + (
-                    'static std::vector<std::pair<const char*,const char*> > BuildAudioBackends(){\n'
+                    "static std::vector<std::pair<const char*,const char*> > BuildAudioBackends(){\n"
                     'std::vector<std::pair<const char*,const char*> > r;r.push_back(std::make_pair("x'
                     'audio2","XAudio2"));r.push_back(std::make_pair("null","Null"));return r;}\n'
-                    'static const std::vector<std::pair<const char*,const char*> > audioBackends=Buil'
-                    'dAudioBackends();'
+                    "static const std::vector<std::pair<const char*,const char*> > audioBackends=Buil"
+                    "dAudioBackends();"
                 )
                 + text[b:]
             )
@@ -241,7 +260,9 @@ def prepare():
         outputs[path] = hashlib.sha256(target.read_bytes()).hexdigest()
     stable(
         OUT / "generated/WindowStatics.cpp",
-        '#include "soh/Enhancements/debugger/MessageViewer.h"\n' + "\n".join(statics) + "\n",
+        '#include "soh/Enhancements/debugger/MessageViewer.h"\n'
+        + "\n".join(statics)
+        + "\n",
     )
     outputs["WindowStatics.cpp"] = hashlib.sha256(
         (OUT / "generated/WindowStatics.cpp").read_bytes()
@@ -267,9 +288,9 @@ def build():
     prepare()
     folder = OUT / "xdk"
     folder.mkdir(exist_ok=True)
-    flags = json.loads((ROOT / "scratch/soh-menus-xdk/xdk/build.json").read_text())[0]["command"][
-        :-2
-    ]
+    flags = json.loads((ROOT / "scratch/soh-menus-xdk/xdk/build.json").read_text())[0][
+        "command"
+    ][:-2]
     flags[1:1] = ["/DENABLE_REMOTE_CONTROL"] + [
         "/I" + str(p)
         for p in [
@@ -287,7 +308,10 @@ def build():
         for p in json.loads((OWN / "sources.lock.json").read_text())["sources"]
         if p.endswith(".h")
     ]
-    stable(probe, "\n".join('#include "' + p.removeprefix("soh/") + '"' for p in headers) + "\n")
+    stable(
+        probe,
+        "\n".join('#include "' + p.removeprefix("soh/") + '"' for p in headers) + "\n",
+    )
     rows = []
     for source in [
         probe,
@@ -305,7 +329,9 @@ def build():
                 source=source.relative_to(ROOT).as_posix(),
                 source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                 object_sha256=(
-                    hashlib.sha256(obj.read_bytes()).hexdigest() if r.returncode == 0 else None
+                    hashlib.sha256(obj.read_bytes()).hexdigest()
+                    if r.returncode == 0
+                    else None
                 ),
             )
         )

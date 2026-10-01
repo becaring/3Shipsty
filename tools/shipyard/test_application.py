@@ -22,33 +22,53 @@ class ApplicationContracts(unittest.TestCase):
         prepare()
 
     def test_audio_mixer_keeps_native_hardware_placement(self):
-        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
+        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(
+            encoding="utf-8"
+        )
         original = (ROOT / "soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
         self.assertIn("audio.thread = std::thread(OTRAudio_Thread);", original)
         init = function(projected, "OTRAudio_Init").text.decode()
-        self.assertIn("audio.thread = Shipyard::Async::make_thread_on_processor(OTRAudio_Thread, 2);", init)
+        self.assertIn(
+            "audio.thread = Shipyard::Async::make_thread_on_processor(OTRAudio_Thread, 2);",
+            init,
+        )
         self.assertIn('ResourceMgr_LoadDirectory("audio");', init)
-        self.assertEqual(projected.count("make_thread_on_processor(OTRAudio_Thread, 2)"), 1)
+        self.assertEqual(
+            projected.count("make_thread_on_processor(OTRAudio_Thread, 2)"), 1
+        )
 
     def test_all_application_functions_retained(self):
         def names(text):
             return [
                 n.child_by_field_name("declarator").text.decode().split("(")[0].strip()
                 for n in walk(PARSER.parse(text.encode()).root_node)
-                if n.type == "function_definition" and n.child_by_field_name("declarator") is not None
+                if n.type == "function_definition"
+                and n.child_by_field_name("declarator") is not None
             ]
 
         original = (ROOT / "soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
-        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
+        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(
+            encoding="utf-8"
+        )
         generated_helpers = [
             "MakeItemIDtoGetItemIDMap",
             "MakeItemIDtoRandomizerGetMap",
             "Shipyard_ReportStartupFailure",
             "Shipyard_TryInitOTR",
             "XboxRunDeferredDepthRead",
+            "ShipyardNative_Gfx_RegisterBlendedTexture",
+            "ShipyardNative_Gfx_UnregisterBlendedTexture",
+            "ShipyardNative_Gfx_TextureCacheDelete",
+            "Shipyard_OverlapCaptureGraphics",
+            "Run",
         ]
+        self.assertEqual(names(projected).count("Run"), 3)
+        for helper in generated_helpers[-5:-1]:
+            self.assertEqual(names(projected).count(helper), 1)
         self.assertEqual(names(projected).count("XboxRunDeferredDepthRead"), 1)
-        self.assertEqual(names(original), [n for n in names(projected) if n not in generated_helpers])
+        self.assertEqual(
+            names(original), [n for n in names(projected) if n not in generated_helpers]
+        )
 
         # Compare actual resource-registration expressions independently of
         # surrounding platform lifetime and container-construction lowering.
@@ -58,7 +78,9 @@ class ApplicationContracts(unittest.TestCase):
                 n.text
                 for n in walk(body)
                 if n.type == "call_expression"
-                and n.child_by_field_name("function").text.endswith(b"RegisterResourceFactory")
+                and n.child_by_field_name("function").text.endswith(
+                    b"RegisterResourceFactory"
+                )
             ]
 
         self.assertGreater(len(registrations(original)), 20)
@@ -67,9 +89,15 @@ class ApplicationContracts(unittest.TestCase):
         # surrounds them and value construction keeps Anchor's upstream zeros.
         init = function(projected, "InitOTR").text.decode()
         init = re.sub(
-            r'^    Shipyard::Platform::RecordBootStage\("[a-z-]+", (?:true|false)\);\n', "", init, flags=re.MULTILINE
+            r'^    Shipyard::Platform::RecordBootStage\("[a-z-]+", (?:true|false)\);\n',
+            "",
+            init,
+            flags=re.MULTILINE,
         )
-        init = init.replace('    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n', "")
+        init = init.replace(
+            '    xbox_compat::filesystem::InitWorkingDirectory("game:/");\n', ""
+        )
+        init = init.replace("    ShipyardAudioSetProcessor(1u << 3);\n", "")
         init = init.replace(
             "    // Migration v2 reloads CVars and drops defaults registered before it.\n    CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);\n",
             "",
@@ -92,13 +120,16 @@ class ApplicationContracts(unittest.TestCase):
         )
         self.assertEqual(expected, init)
         self.assertEqual(
-            function(original, "ReadPortVersionFromOTR").text, function(projected, "ReadPortVersionFromOTR").text
+            function(original, "ReadPortVersionFromOTR").text,
+            function(projected, "ReadPortVersionFromOTR").text,
         )
 
     def test_generation_is_repeatable(self):
         def snapshot():
             return {
-                p.relative_to(OUT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                p.relative_to(OUT)
+                .as_posix(): hashlib.sha256(p.read_bytes())
+                .hexdigest()
                 for p in (OUT / "generated").rglob("*")
                 if p.is_file()
             }
@@ -108,11 +139,23 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(first, snapshot())
 
     def test_initialize_keeps_real_randomizer_order(self):
-        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
+        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(
+            encoding="utf-8"
+        )
         body = function(projected, "OTRGlobals::Initialize").text.decode()
-        self.assertLess(body.index("if (!context->InitLogging("), body.index("GetLogger()->set_pattern("))
-        initialize_stages = ["logging-ready", "audio-ready", "factories-ready", "randomizer-ready"]
-        stage_positions = [body.index('RecordBootStage("' + stage + '"') for stage in initialize_stages]
+        self.assertLess(
+            body.index("if (!context->InitLogging("),
+            body.index("GetLogger()->set_pattern("),
+        )
+        initialize_stages = [
+            "logging-ready",
+            "audio-ready",
+            "factories-ready",
+            "randomizer-ready",
+        ]
+        stage_positions = [
+            body.index('RecordBootStage("' + stage + '"') for stage in initialize_stages
+        ]
         self.assertEqual(stage_positions, sorted(stage_positions))
         self.assertEqual(body.count("RecordBootStage("), len(initialize_stages))
         landmarks = [
@@ -227,7 +270,9 @@ int main() {
         boundary_probe()
         obj = OUT / "xdk/startup_boundaries.obj"
         self.assertEqual(struct.unpack_from("<H", obj.read_bytes())[0], 0x1F2)
-        self.assertFalse(json.loads((OUT / "xdk/boundary-probe.json").read_text())["production_unit"])
+        self.assertFalse(
+            json.loads((OUT / "xdk/boundary-probe.json").read_text())["production_unit"]
+        )
         self.assertNotIn(b"Extractor", obj.read_bytes())
         self.assertIn(b"O2rArchive", obj.read_bytes())
 
@@ -235,17 +280,24 @@ int main() {
         source = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
         audio = function(source, "OTRAudio_Thread").text.decode()
         self.assertNotIn("while (audio.running)", audio)
-        self.assertLess(audio.index("Lock(audio.mutex)"), audio.index("if (!audio.running)"))
+        self.assertLess(
+            audio.index("Lock(audio.mutex)"), audio.index("if (!audio.running)")
+        )
         self.assertIn("AudioMgr_CreateNextAudioBuffer(", audio)
         self.assertIn("AudioPlayer_Play(", audio)
         stop = function(source, "DeinitOTR").text.decode()
         start = function(source, "InitOTR").text.decode()
         self.assertLess(start.index("SDLNet_Init()"), start.index("new OTRGlobals()"))
-        self.assertLess(start.index("Storage::Mount()"), start.index("new OTRGlobals()"))
-        self.assertIn('xbox_compat::filesystem::InitWorkingDirectory("game:/");', start)
-        self.assertLess(start.index("InitWorkingDirectory("), start.index("Storage::Mount()"))
         self.assertLess(
-            start.index("conf->RunVersionUpdates();"), start.index("CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);")
+            start.index("Storage::Mount()"), start.index("new OTRGlobals()")
+        )
+        self.assertIn('xbox_compat::filesystem::InitWorkingDirectory("game:/");', start)
+        self.assertLess(
+            start.index("InitWorkingDirectory("), start.index("Storage::Mount()")
+        )
+        self.assertLess(
+            start.index("conf->RunVersionUpdates();"),
+            start.index("CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);"),
         )
         self.assertLess(
             start.index("CVarRegisterInteger(CVAR_IMGUI_CONTROLLER_NAV, 1);"),
@@ -254,13 +306,24 @@ int main() {
         # Version 2's ClearBlock reloads CVars, erasing the pre-migration
         # Xbox default on a fresh profile; the post-migration register restores it.
         updater = (ROOT / "soh/soh/config/ConfigUpdaters.cpp").read_text()
-        console = (ROOT / "libultraship/src/ship/config/ConsoleVariable.cpp").read_text()
+        console = (
+            ROOT / "libultraship/src/ship/config/ConsoleVariable.cpp"
+        ).read_text()
         self.assertIn('CVarClearBlock("gAudioEditor.ReplacedSequences")', updater)
         self.assertIn("void ConsoleVariable::ClearBlock(const char* name)", console)
-        self.assertIn("    Load();\n}", console[console.index("void ConsoleVariable::ClearBlock(") :])
+        self.assertIn(
+            "    Load();\n}",
+            console[console.index("void ConsoleVariable::ClearBlock(") :],
+        )
         for remote in ("CrowdControl", "Sail", "Anchor"):
-            self.assertLess(stop.index(remote + "::Instance->Disable();"), stop.index("OTRAudio_Exit();"))
-        self.assertLess(stop.index("OTRAudio_Exit();"), stop.index("Shipyard::Libultra::StopTimers();"))
+            self.assertLess(
+                stop.index(remote + "::Instance->Disable();"),
+                stop.index("OTRAudio_Exit();"),
+            )
+        self.assertLess(
+            stop.index("OTRAudio_Exit();"),
+            stop.index("Shipyard::Libultra::StopTimers();"),
+        )
         order = [
             "JoinRandoGenerationThread();",
             "Shipyard::Libultra::StopTimers();",
@@ -288,22 +351,34 @@ int main() {
         self.assertIn("catch (const std::exception& error)", wrapper)
         self.assertIn("Shipyard::Platform::RecordStartupFailure(message);", source)
         self.assertIn("Shipyard::Platform::ShowError", source)
-        self.assertLess(source.index('extern "C" void InitOTR('), source.index('extern "C" int Shipyard_TryInitOTR('))
+        self.assertLess(
+            source.index('extern "C" void InitOTR('),
+            source.index('extern "C" int Shipyard_TryInitOTR('),
+        )
 
     def test_hardware_fault_receipt_has_dual_sink_and_bounded_boot_checkpoints(self):
         platform = (ROOT / "platform/shipyard/context/platform.cpp").read_text()
         recorder = platform[
-            platform.index("void RecordNativeFault(") : platform.index("LONG WINAPI ShipyardUnhandledFault(")
+            platform.index("void RecordNativeFault(") : platform.index(
+                "LONG WINAPI ShipyardUnhandledFault("
+            )
         ]
         installer = platform[
-            platform.index('extern "C" void Shipyard_InstallStartupFaultHandler()') : platform.index(
-                "namespace Shipyard { namespace Platform"
-            )
+            platform.index(
+                'extern "C" void Shipyard_InstallStartupFaultHandler()'
+            ) : platform.index("namespace Shipyard { namespace Platform")
         ]
         self.assertIn("OutputDebugStringA(line);", recorder)
         self.assertIn('CreateDirectoryA("game:\\\\logs", NULL);', recorder)
-        self.assertEqual(recorder.count('WriteFlushedFile("game:\\\\logs\\\\startup-fault.txt", line, false);'), 1)
-        self.assertLess(recorder.index("CreateDirectoryA("), recorder.index("WriteFlushedFile("))
+        self.assertEqual(
+            recorder.count(
+                'WriteFlushedFile("game:\\\\logs\\\\startup-fault.txt", line, false);'
+            ),
+            1,
+        )
+        self.assertLess(
+            recorder.index("CreateDirectoryA("), recorder.index("WriteFlushedFile(")
+        )
         self.assertIn("FlushFileBuffers(file)", platform)
         self.assertIn("SetUnhandledExceptionFilter(ShipyardUnhandledFault)", installer)
         self.assertIn("std::set_terminate(ShipyardTerminated)", installer)
@@ -331,12 +406,19 @@ int main() {
         self.assertIn('RecordBootStage("mounted", true)', start)
         self.assertIn('RecordBootStage("pre-context", true)', start)
         self.assertEqual(start.count(", true)"), 2)
-        for path in ("platform/shipyard/xenos/services.cpp", "platform/shipyard/audio/audio_log.cpp"):
+        for path in (
+            "platform/shipyard/xenos/services.cpp",
+            "platform/shipyard/audio/audio_log.cpp",
+        ):
             fatal = (ROOT / path).read_text()
-            self.assertLess(fatal.index("RecordStartupFatal("), fatal.index("std::abort()"))
+            self.assertLess(
+                fatal.index("RecordStartupFatal("), fatal.index("std::abort()")
+            )
 
     def test_native_startup_failure_returns_and_reports_code(self):
-        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(encoding="utf-8")
+        projected = (OUT / "generated/soh/soh/OTRGlobals.cpp").read_text(
+            encoding="utf-8"
+        )
         folder = OUT / "host-startup-failure"
         folder.mkdir(exist_ok=True)
         harness = (
@@ -404,7 +486,9 @@ int main() {
             "compile",
             env,
         )
-        result = ENV["invoke"]([folder / "startup_failure_contract.exe"], folder, "run", env)
+        result = ENV["invoke"](
+            [folder / "startup_failure_contract.exe"], folder, "run", env
+        )
         self.assertIn("native startup failure boundary passed", result["stdout"])
 
 
