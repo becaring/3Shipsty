@@ -42,6 +42,12 @@ def native(text, name, fields):
     body = node.child_by_field_name("body")
     signature = raw[node.start_byte : body.start_byte].decode()
     original = raw[body.start_byte : body.end_byte].decode()
+    linkage = node.parent
+    if (
+        linkage.type != "linkage_specification"
+        or raw[linkage.start_byte : node.start_byte].decode().strip() != 'extern "C"'
+    ):
+        raise ValueError("Expected a C graphics export: " + name)
     impl = "ShipyardNative_" + name
     native_signature = signature.replace('extern "C" ', "").replace(
         name + "(", impl + "("
@@ -71,9 +77,16 @@ MEMBERS
     )
     if not fields:
         wrapper = wrapper.replace("RenderJob job = {  };", "RenderJob job;")
-    replacement = "static " + native_signature + original + "\n\n" + signature + wrapper
+    replacement = (
+        "static "
+        + native_signature
+        + original
+        + '\n\nextern "C" '
+        + signature
+        + wrapper
+    )
     return (
-        raw[: node.start_byte] + replacement.encode() + raw[node.end_byte :]
+        raw[: linkage.start_byte] + replacement.encode() + raw[node.end_byte :]
     ).decode()
 
 

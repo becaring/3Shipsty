@@ -16,7 +16,8 @@ def method(text, name):
         n.text.decode()
         for n in walk(PARSER.parse(text.encode()).root_node)
         if n.type == "function_definition"
-        and n.child_by_field_name("declarator").text.decode().split("(")[0].lstrip("* ") == name
+        and n.child_by_field_name("declarator").text.decode().split("(")[0].lstrip("* ")
+        == name
     )
 
 
@@ -30,7 +31,11 @@ def decl(text, name):
         ):
             return n.text.decode()
         for c in n.named_children:
-            if c.type == "init_declarator" and c.child_by_field_name("declarator").text.decode().split("[")[0] == name:
+            if (
+                c.type == "init_declarator"
+                and c.child_by_field_name("declarator").text.decode().split("[")[0]
+                == name
+            ):
                 return n.text.decode()
     raise ValueError(name)
 
@@ -40,7 +45,8 @@ def helpers(text, pattern):
         "\n".join(
             n.text.decode()
             for n in walk(PARSER.parse(text.encode()).root_node)
-            if n.type == "function_definition" and re.match(pattern, n.child_by_field_name("declarator").text.decode())
+            if n.type == "function_definition"
+            and re.match(pattern, n.child_by_field_name("declarator").text.decode())
         )
         + "\n"
     )
@@ -59,7 +65,9 @@ def commands(text, projected):
         fields = args[1]
         if projected:
             assignments = {
-                x.child_by_field_name("left").text.decode(): x.child_by_field_name("right").text.decode()
+                x.child_by_field_name("left")
+                .text.decode(): x.child_by_field_name("right")
+                .text.decode()
                 for x in walk(fields)
                 if x.type == "assignment_expression"
             }
@@ -68,7 +76,8 @@ def commands(text, projected):
             parameters = [
                 x.child_by_field_name("arguments").text.decode()[1:-1].replace(" ", "")
                 for x in walk(fields)
-                if x.type == "call_expression" and x.child_by_field_name("function").text == b"Ship::CommandArgument"
+                if x.type == "call_expression"
+                and x.child_by_field_name("function").text == b"Ship::CommandArgument"
             ]
         else:
             values = [x for x in fields.named_children if x.type != "comment"]
@@ -77,7 +86,11 @@ def commands(text, projected):
             parameters = []
             if len(values) == 3:
                 parameters = [
-                    ",".join(x.text.decode() for x in row.named_children if x.type != "comment").replace(" ", "")
+                    ",".join(
+                        x.text.decode()
+                        for x in row.named_children
+                        if x.type != "comment"
+                    ).replace(" ", "")
                     for row in values[2].named_children
                     if row.type != "comment"
                 ]
@@ -93,15 +106,24 @@ def main():
     for n in units:
         try:
             compared = projected[n]
+            if n.endswith("/TimeDisplay.cpp"):
+                pending = method(compared, "TimeDisplayWindow::XboxHasPendingFrameWork")
+                expected = """bool TimeDisplayWindow::XboxHasPendingFrameWork() {
+    return !IsInitialized() || IsVisible() || CVarGetInteger(CVAR_WINDOW("TimeDisplayEnabled"), 0) != 0;
+}"""
+                assert pending == expected
+                assert compared.count(pending) == 1
+                assert pending not in original[n]
+                compared = compared.replace(pending, "", 1)
             if n.endswith("/InputViewer.cpp"):
                 # The Xbox drag overlay adds one lookup; verify it separately
                 # so the upstream inventory still rejects other differences.
-                drag_overlay = '''            if (Ship::Context::GetInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible() &&
+                drag_overlay = """            if (Ship::Context::GetInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible() &&
                 CVarGetInteger(CVAR_INPUT_VIEWER("EnableDragging"), 1) &&
                 ImGui::GetTopMostPopupModal() == nullptr) {
                 ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
             }
-'''
+"""
                 assert compared.count(drag_overlay) == 1
                 assert drag_overlay not in original[n]
                 compared = compared.replace(drag_overlay, "", 1)
@@ -112,7 +134,9 @@ def main():
     command_inventory = commands(original[console], False)
     assert command_inventory == commands(projected[console], True)
     assert len(command_inventory) > 40
-    compiler, env = runpy.run_path(str(ROOT / "tools/shipyard/tests/test_binary.py"))["host_environment"]()
+    compiler, env = runpy.run_path(str(ROOT / "tools/shipyard/tests/test_binary.py"))[
+        "host_environment"
+    ]()
     rows = []
     for is_projected in (False, True):
         folder = OUT / ("host-projected" if is_projected else "host-original")
@@ -178,7 +202,9 @@ def main():
         data += (
             "\n".join(re.findall(r"^#define COLOR_[^\n]+", split, re.M))
             + "\n"
-            + helpers(split, "(?:Shipyard_popupList_|_Build_(?:popupList|splitObjectList))")
+            + helpers(
+                split, "(?:Shipyard_popupList_|_Build_(?:popupList|splitObjectList))"
+            )
         )
         data += decl(split, "splitObjectList") + "\n" + decl(split, "popupList") + "\n"
         data += (
@@ -210,28 +236,60 @@ def main():
             "/DSHIPYARD_AUDIO_TEST",
             "/DF3DEX_GBI_2",
             "/DCONTROLLERBUTTONS_T=uint32_t",
-            "/FI" + str(ROOT / "scratch/configuration-xdk/generated/include/compile_definitions.h"),
+            "/FI"
+            + str(
+                ROOT
+                / "scratch/configuration-xdk/generated/include/compile_definitions.h"
+            ),
         ]
         if not is_projected:
-            command += ["/Zc:preprocessor", "/I" + str(ROOT / "platform/shipyard/json/upstream/include")]
+            command += [
+                "/Zc:preprocessor",
+                "/I" + str(ROOT / "platform/shipyard/json/upstream/include"),
+            ]
         command += ["/I" + str(p) for p in includes()] + [str(folder / "data.cpp")]
         if is_projected:
             command += [str(PLATFORM_BASE / "sources/json/json.cpp")]
-        command += ["/Fo:" + str(folder) + "/", "/Fe:" + str(folder / "data.exe"), "/link", "/OPT:REF"]
+        command += [
+            "/Fo:" + str(folder) + "/",
+            "/Fe:" + str(folder / "data.exe"),
+            "/link",
+            "/OPT:REF",
+        ]
         r = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
         stable(folder / "data-build.log", r.stdout + r.stderr)
         assert not r.returncode, folder / "data-build.log"
-        r = subprocess.run([str(folder / "data.exe")], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
-        row = dict(projected=is_projected, command=command, exit=r.returncode, stdout=r.stdout, stderr=r.stderr)
+        r = subprocess.run(
+            [str(folder / "data.exe")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        row = dict(
+            projected=is_projected,
+            command=command,
+            exit=r.returncode,
+            stdout=r.stdout,
+            stderr=r.stderr,
+        )
         rows.append(row)
         assert not r.returncode, row
-    assert rows[0]["stdout"] == rows[1]["stdout"], "Original/projected application data/serialization differs"
+    assert (
+        rows[0]["stdout"] == rows[1]["stdout"]
+    ), "Original/projected application data/serialization differs"
     native = json.loads((OUT / "xdk/build.json").read_text())
     assert len(native) == 13
     for row in native:
         assert not row["exit"], row["path"]
-        assert row["source_sha256"] == hashlib.sha256((ROOT / row["source"]).read_bytes()).hexdigest(), row["path"]
-        assert row["object_sha256"] == hashlib.sha256((ROOT / row["object"]).read_bytes()).hexdigest()
+        assert (
+            row["source_sha256"]
+            == hashlib.sha256((ROOT / row["source"]).read_bytes()).hexdigest()
+        ), row["path"]
+        assert (
+            row["object_sha256"]
+            == hashlib.sha256((ROOT / row["object"]).read_bytes()).hexdigest()
+        )
     before = read(OUT / "manifest.json")
     prepare()
     assert read(OUT / "manifest.json") == before
@@ -250,7 +308,9 @@ def main():
         )
         + "\n",
     )
-    print("13 full source/native inventories and original/projected application data contracts pass.")
+    print(
+        "13 full source/native inventories and original/projected application data contracts pass."
+    )
 
 
 if __name__ == "__main__":
