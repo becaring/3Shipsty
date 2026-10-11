@@ -816,7 +816,7 @@ def prepare():
     from deferred_lit_fog import finalize as finalize_deferred_vertices
 
     text = finalize_deferred_vertices(text)
-    from cull_display_list_projection import transform as restore_display_list_culling
+    from xbox360_platform.fast3d_display_list_cull import transform as restore_display_list_culling
 
     text = restore_display_list_culling(text)
     text = compact_triangle_projection.transform(text, compact_triangles)
