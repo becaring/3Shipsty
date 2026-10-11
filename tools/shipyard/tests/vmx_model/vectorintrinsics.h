@@ -16,6 +16,17 @@ inline __vector4 __lvlx(const void* p,int offset) { return __lvx(p,offset); }
 inline __vector4 __lvrx(const void*,int) { __vector4 r={{0,0,0,0}};return r; }
 extern unsigned shipyard_test_vector_stores;
 inline void __stvx(__vector4 v,void* p,int offset) { ++shipyard_test_vector_stores; memcpy((char*)p+offset,&v,16); }
+// Partial stores: the left part fills to the next 16-byte boundary, the right part the bytes before it.
+inline void __stvlx(__vector4 v,void* p,int offset) {
+    ++shipyard_test_vector_stores;
+    char* address=(char*)p+offset;
+    memcpy(address,&v,16-((uintptr_t)address&15));
+}
+inline void __stvrx(__vector4 v,void* p,int offset) {
+    char* address=(char*)p+offset;
+    const unsigned before=(unsigned)((uintptr_t)address&15);
+    memcpy(address-before,(const char*)&v+16-before,before);
+}
 inline void __stvebx(__vector4 v,void* p,int offset) {
     const unsigned selector=(unsigned)((uintptr_t)p+offset)&15;
     *((unsigned char*)p+offset)=(unsigned char)(v.u[selector/4]>>(24-(selector%4)*8));

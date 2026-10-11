@@ -197,6 +197,12 @@ def transform(text):
     from xbox360_platform.interpolation_pairing import project as prepare_pairing
 
     text = prepare_pairing(text, value_expression="{value}.GetValue()")
+    from interpolation_dead_stack import transform as prune_discarded_stack
+
+    text = prune_discarded_stack(text)
+    from interpolation_map_reuse import interpolation as reuse_interpolation_maps
+
+    text = reuse_interpolation_maps(text)
     text = once(
         text,
         "typedef pair<const void*, int> label;",

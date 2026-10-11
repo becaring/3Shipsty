@@ -31,10 +31,15 @@ class TrianglePipelineTests(unittest.TestCase):
         ]
         with tempfile.TemporaryDirectory(dir=ROOT / "scratch") as directory:
             executable = Path(directory) / "triangle_key.exe"
+            fixture = Path(__file__).with_suffix(".cpp").with_name("test_fast3d_triangle_key.cpp").read_text()
+            certificate = runpy.run_path(str(PROJECTION))["TILE_IMPORT_CERTIFICATE"]
+            fixture = fixture.replace("// MODERN TILE IMPORT CERTIFICATE", certificate)
+            fixture_path = Path(directory) / "triangle_key.cpp"
+            fixture_path.write_text(fixture)
             command = [str(compiler), "/nologo", "/std:c++20", "/EHsc", "/MD", "/DNOMINMAX"]
             command += ["/I" + str(path) for path in roots]
             command += [
-                str(Path(__file__).with_suffix(".cpp").with_name("test_fast3d_triangle_key.cpp")),
+                str(fixture_path),
                 "/Fe:" + str(executable),
             ]
             built = subprocess.run(command, cwd=directory, env=environment, capture_output=True, text=True)

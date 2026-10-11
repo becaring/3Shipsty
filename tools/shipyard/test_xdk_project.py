@@ -101,8 +101,9 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('platform/shipyard/xenos/shader_provider.cpp',selected)
         xenos='shipyard/sources/xenos/core.cpp'
         self.assertIn(xenos,selected)
+        self.assertNotIn('scratch/xenos-xdk/generated/core.cpp', selected)
         self.assertEqual(gen.source_path(xenos),gen.PLATFORM_BASE/'sources/xenos/core.cpp')
-        self.assertIn('$(ShipyardPlatformBase)/sources/xenos/core.cpp',includes)
+        self.assertIn('void GetPixelDepthSamples(', gen.source_path(xenos).read_text())
         surface='shipyard/sources/presentation/xenos_surface.cpp'
         self.assertIn(surface,selected)
         self.assertEqual(gen.source_path(surface),gen.PLATFORM_BASE/'sources/presentation/xenos_surface.cpp')

@@ -1,5 +1,7 @@
 """Sparse, opt-in timing of the OTR vertex-hash command and its vertex load."""
 
+import re
+
 
 def _once(source, old, new):
     if source.count(old) != 1:
@@ -16,9 +18,21 @@ def _method(source, signature, edits):
     return source[:start] + body + source[end:]
 
 
+def _sampled_callbacks(source):
+    start = source.index('bool gfx_vtx_hash_handler_custom(F3DGfx** cmd0) {')
+    end = source.index('\n}', start)
+    body = source[start:end]
+    # Avoid the out-of-line profiler's stack saves for unsampled commands.
+    pattern = r'(?m)^( +)(ModernFrameProfile::(?:AdvanceVtxHash\(sample, [^\n]+|EndVtxHash\(sample\);))$'
+    body, count = re.subn(pattern, r'\1if (sample.sampled) \2', body)
+    if count not in (0, 4):
+        raise ValueError('Modern vertex-hash sampled callback anchors changed')
+    return source[:start] + body + source[end:]
+
+
 def transform(source):
     if '// MODERN VTX HASH PHASE PROFILE BEGIN' in source:
-        return source
+        return _sampled_callbacks(source)
     source = _once(source, 'bool Interpreter::XboxTryDeferVertices(',
                    '// MODERN VTX HASH PHASE PROFILE BEGIN\n'
                    'static __declspec(thread) ModernFrameProfile::VtxHashSample* '
@@ -101,4 +115,4 @@ def transform(source):
          '    if (sModernVtxHashSample) sModernVtxHashSample->vmx = shipyardVectorPositions;\n'
          '    bool shipyardAspectReady = false;'),
     ])
-    return source
+    return _sampled_callbacks(source)

@@ -16,11 +16,12 @@
 
 struct Gfx { uint64_t generation; };
 struct Mtx {};
-struct MtxF {};
+struct MtxF { unsigned generation; float fraction; };
 struct GraphicsContext {};
 static std::atomic<unsigned> builds(0), tails(0), audioDone(0), callbacks(0), cacheDraws(0);
 static std::atomic<unsigned> releases(0), nativeJobs(0), depthApplied(0), readyChecks(0);
 static std::atomic<unsigned> cleanupJobs(0);
+static std::atomic<unsigned> recycledMaps(0);
 static unsigned nativeRefreshes;
 static std::atomic<int> requested(1);
 static std::atomic<bool> gameAtHandoff(false);
@@ -55,8 +56,12 @@ static int CVarGetInteger(const char* name, int fallback) {
     return fallback;
 }
 static bool GfxDebuggerIsDebugging() { return false; }
-static std::unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float) {
-    return std::unordered_map<Mtx*, MtxF>();
+static std::unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float fraction) {
+    static Mtx keys[2];
+    std::unordered_map<Mtx*, MtxF> result;
+    MtxF value = { builds.load(), fraction };
+    result[&keys[value.generation % 2]] = value;
+    return result;
 }
 static bool prevAltAssets = true;
 static void gfx_texture_cache_clear() {}
@@ -185,6 +190,15 @@ void ResetGameSampleCadence() {}
 
 #include "application/overlap_runtime.inc"
 
+void FrameInterpolation_Recycle(std::unordered_map<Mtx*, MtxF>& maps) {
+    if (maps.empty()) return;
+    assert(Shipyard_OverlapIsGameWorker());
+    for (const auto& entry : maps)
+        assert(ModernOverlap::session->worker.retiredGeneration() >= entry.second.generation);
+    ++recycledMaps;
+    maps.clear();
+}
+
 static void AssertIdleHandoff() {
     assert(std::this_thread::get_id() == renderThread);
     assert(gameAtHandoff);
@@ -194,6 +208,22 @@ static void AssertIdleHandoff() {
 void Shipyard_Log(const char*, ...) {}
 extern "C" uint32_t ResourceMgr_IsGameMasterQuest() { return 0; }
 extern "C" void Shipyard_OverlapCaptureGraphics() {}
+static bool vertexReuseBatchActive = false;
+static unsigned vertexReuseReplayCount = 0, vertexReuseReplayCalls = 0;
+extern "C" void ModernVertexReuseBeginBatch(unsigned count) {
+    assert(!vertexReuseBatchActive);
+    vertexReuseBatchActive = true;
+    vertexReuseReplayCount = count;
+    vertexReuseReplayCalls = 0;
+}
+extern "C" void ModernVertexReuseBeginReplay(unsigned index) {
+    assert(vertexReuseBatchActive && index == vertexReuseReplayCalls && index < vertexReuseReplayCount);
+    ++vertexReuseReplayCalls;
+}
+extern "C" void ModernVertexReuseEndBatch() {
+    assert(vertexReuseBatchActive && vertexReuseReplayCalls == vertexReuseReplayCount);
+    vertexReuseBatchActive = false;
+}
 extern "C" void OTRGetPixelDepthPrepare(float, float) {}
 extern "C" uint16_t OTRGetPixelDepth(float x, float) { ++depthReads; return static_cast<uint16_t>(x); }
 extern "C" void Shipyard_OverlapApplyDepthResult(const ShipyardOverlapDepthResult* value) {
@@ -206,10 +236,12 @@ bool Shipyard_ImGuiEndCapture() { return true; }
 void Shipyard_ImGuiDrawCache(ModernOverlap::GuiFrameCache&, uintptr_t) { ++cacheDraws; }
 
 bool Fast::Fast3dWindow::DrawAndRunGraphicsCommands(Gfx* commands,
-    const std::unordered_map<Mtx*, MtxF>&) {
+    const std::unordered_map<Mtx*, MtxF>& maps) {
     assert(std::this_thread::get_id() == renderThread);
+    assert(vertexReuseBatchActive && vertexReuseReplayCalls == interpreter->mInterpolationIndex + 1);
     const unsigned check = ++readyChecks;
     renderGeneration = commands->generation;
+    for (const auto& entry : maps) assert(entry.second.generation == commands->generation);
     if (allDropped || check % 3 == 2) { ++dropped; return false; }
     ++accepted;
     const uint64_t original = commands->generation;
@@ -220,6 +252,7 @@ bool Fast::Fast3dWindow::DrawAndRunGraphicsCommands(Gfx* commands,
         assert(builds > original);
     } else Pause(8);
     assert(commands->generation == original);
+    for (const auto& entry : maps) assert(entry.second.generation == original);
     if (builds > original) observedConcurrentBuild = true;
     assert(Shipyard_OverlapDrawGui(0));
     return true;
@@ -334,6 +367,7 @@ int main(int argc, char** argv) {
     }
     assert(ModernOverlap::session == NULL);
     assert(builds == 3 && tails == 3 && audioDone == 3);
+    assert(recycledMaps == (singleReplay ? 0u : 6u));
     assert(readyChecks == (singleReplay ? 3u : 9u) && accepted == (allDropped ? 0u : singleReplay ? 2u : 6u));
     assert(dropped == (allDropped ? 9u : singleReplay ? 1u : 3u) && cacheDraws == accepted);
     assert(preflights == (allDropped ? 0u : singleReplay ? 2u : 3u));

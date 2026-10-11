@@ -35,6 +35,12 @@ import deferred_lit_fog
 import pipeline_phase_profile_projection
 import tri2_pair_projection
 import tri2_column_pack_projection
+import unit_color_rounding_projection
+import tri2_cull_run_projection
+import tri2_indexed_projection
+import compact_triangle_projection
+import texture_replay_projection
+from xbox360_platform import depth_samples as depth_samples_projection
 import game_fill_discard_projection
 from xbox360_platform.cpp_syntax import collect_member_defaults
 
@@ -70,6 +76,7 @@ def member_defaults(text, classname):
 
 
 def header(text):
+    text = depth_samples_projection.header(text)
     text = matrix_product.header(text)
     text = texture_state.metadata_reference(text)
     text = (
@@ -171,6 +178,9 @@ bool operator<(const ColorCombinerKey &rhs) const {
     text, defaults, arrays = member_defaults(text, "Interpreter")
     text = deferred_lit_fog.header(text)
     text = tri2_pair_projection.header(text)
+    text = unit_color_rounding_projection.header(text)
+    text = tri2_indexed_projection.header(text)
+    text = compact_triangle_projection.header(text)
     text = (
         text.replace("constexpr size_t", "const size_t")
         .replace(" noexcept", " throw()")
@@ -690,6 +700,12 @@ def prepare():
         capture_expr="mXboxTileCaptureEnabled",
         observe_expr="ModernFrameProfile::ObserveTileState",
     )
+    # Equal tile fields alone do not prove imports are redundant: palette
+    # loads, TMEM remapping and native invalidation also affect their result.
+    guard = "if (!xboxTileTrial || !xboxSameTileState) {"
+    if text.count(guard) != 2:
+        raise ValueError("Tile dirty guards changed")
+    text = text.replace(guard, "if (!xboxTileTrial || !xboxSameTileState || !XboxCanRetainTextureImports(*this)) {")
     text = texture_state.empty_mask_lookup(texture_state.metadata_reference(text))
     triangle_pipeline = runpy.run_path(str(OWN / "triangle_pipeline_projection.py"))
     text = triangle_pipeline["transform"](text)
@@ -784,11 +800,31 @@ def prepare():
     text = runpy.run_path(str(OWN / "resource_resolution_projection.py"))["transform"](
         text
     )
+    compact_triangles = compact_triangle_projection.capture(text)
     text = tri2_pair_projection.transform(text)
     text = tri2_column_pack_projection.transform(text)
+    text = unit_color_rounding_projection.transform(text)
+    text = tri2_cull_run_projection.transform(text)
     from render_details_projection import transform as render_details
 
     text = render_details(text)
+    from profile_caller_guard_projection import transform as profile_caller_guards
+
+    text = profile_caller_guards(text)
+    text = tri2_indexed_projection.transform(text)
+    text = tri2_pair_projection.fuse_triangle_body(text)
+    from deferred_lit_fog import finalize as finalize_deferred_vertices
+
+    text = finalize_deferred_vertices(text)
+    from cull_display_list_projection import transform as restore_display_list_culling
+
+    text = restore_display_list_culling(text)
+    text = compact_triangle_projection.transform(text, compact_triangles)
+    import material_replay_projection
+
+    text = material_replay_projection.transform(text)
+    text = texture_replay_projection.transform(text)
+    text = depth_samples_projection.transform(text)
     pending["src/fast/interpreter.cpp"] = text
     pending["include/stdbool.h"] = (
         "#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C"

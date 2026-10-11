@@ -27,7 +27,8 @@ class OverlapCvarProjectionTests(unittest.TestCase):
             "copy->String = original.String ? strdup(original.String) : nullptr;",
             source,
         )
-        self.assertIn("snapshot.insert(std::make_pair(cursor->first, copy));", source)
+        self.assertIn("std::shared_ptr<CVar>& copy = snapshot[cursor->first];", source)
+        self.assertNotIn("snapshot.clear();", source)
         self.assertIn("overlapSnapshotOwner == this && overlapSnapshot", source)
 
 

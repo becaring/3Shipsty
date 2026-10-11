@@ -3,6 +3,18 @@
 #include <cstring>
 #include <iostream>
 #include <thread>
+#include <new>
+
+static bool countSnapshotAllocations;
+static unsigned snapshotAllocations;
+void* operator new(size_t size) {
+    if (countSnapshotAllocations) ++snapshotAllocations;
+    void* result = malloc(size ? size : 1);
+    if (!result) throw std::bad_alloc();
+    return result;
+}
+void operator delete(void* pointer) noexcept { free(pointer); }
+void operator delete(void* pointer, size_t) noexcept { free(pointer); }
 
 int main() {
     Ship::ConsoleVariable variables;
@@ -50,5 +62,47 @@ int main() {
     variables.UseSnapshot(NULL);
     assert(variables.GetInteger("integer", 0) == 200);
     assert(std::strcmp(variables.GetString("temporary-key", ""), "worker-string") == 0);
-    std::cout << "CVar snapshot ownership, types, missing keys and thread isolation passed\n";
+    variables.CaptureSnapshot(frozen);
+    variables.UseSnapshot(&frozen);
+    Ship::CVar* reused = variables.Get("float").get();
+    const char* reusedString = variables.GetString("temporary-key", "");
+    std::shared_ptr<Ship::CVar> retained = variables.Get("integer");
+    variables.UseSnapshot(NULL);
+    variables.SetInteger("integer", 300);
+    variables.mVariables.erase("rgba");
+    variables.mVariables.erase("rgb");
+    variables.SetString("rgba", "changed-type");
+    variables.SetInteger("rgb", 17);
+    variables.CaptureSnapshot(frozen);
+    variables.UseSnapshot(&frozen);
+    assert(variables.Get("float").get() == reused);
+    assert(variables.GetString("temporary-key", "") == reusedString);
+    assert(retained->Integer == 200);
+    assert(variables.GetInteger("integer", 0) == 300);
+    assert(std::strcmp(variables.GetString("rgba", ""), "changed-type") == 0);
+    assert(variables.GetInteger("rgb", 0) == 17);
+    variables.UseSnapshot(NULL);
+    variables.mVariables.erase("rgba");
+    variables.mVariables.erase("added-after-capture");
+    variables.mVariables["rgb"].reset();
+    variables.SetFloat("rgba", 2.5f);
+    variables.SetString("temporary-key", "");
+    variables.CaptureSnapshot(frozen);
+    variables.UseSnapshot(&frozen);
+    assert(variables.GetFloat("rgba", 0) == 2.5f);
+    assert(!variables.Get("added-after-capture"));
+    assert(!variables.Get("rgb"));
+    assert(std::strcmp(variables.GetString("temporary-key", "missing"), "") == 0);
+    variables.UseSnapshot(NULL);
+    for (unsigned i = 0; i < 2048; ++i) {
+        std::string modKey = "mod-variable-" + std::to_string(i);
+        variables.SetInteger(modKey.c_str(), i);
+    }
+    variables.CaptureSnapshot(frozen);
+    snapshotAllocations = 0;
+    countSnapshotAllocations = true;
+    for (unsigned i = 0; i < 8; ++i) variables.CaptureSnapshot(frozen);
+    countSnapshotAllocations = false;
+    assert(snapshotAllocations == 0);
+    std::cout << "CVar snapshot ownership, reuse, type changes and thread isolation passed\n";
 }

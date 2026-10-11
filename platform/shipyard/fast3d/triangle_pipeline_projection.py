@@ -65,6 +65,19 @@ NEUTRAL_HANDLERS = (
     'gfx_dl_index_handler', 'gfx_branch_z_otr_handler_f3dex2', 'gfx_tri1_handler_f3dex2',
     'gfx_tri1_otr_handler_f3dex2', 'gfx_tri2_handler_f3dex', 'gfx_quad_handler_f3dex2')
 
+TILE_IMPORT_CERTIFICATE = '''
+// A repeated tile setter must still request imports after native invalidation,
+// palette loads or changes to either TMEM image, including unused shader slots.
+template<class Owner> static __declspec(noinline) bool XboxCanRetainTextureImports(const Owner& owner) {
+    const XboxTrianglePipelineKey& key = owner.mXboxPipelineKey;
+    const RDP& r = *owner.mRdp;
+    return key.Matches(owner) &&
+        key.palettes[0] == r.palettes[0] && key.palettes[1] == r.palettes[1] &&
+        XboxTriangleBytesEqual(key.images[0], &r.loaded_texture[0], sizeof(key.images[0])) &&
+        XboxTriangleBytesEqual(key.images[1], &r.loaded_texture[1], sizeof(key.images[1]));
+}
+'''
+
 CERTIFICATE = '''
 // A key recaptured or fully revalidated at the current stamp stays current
 // until a non-neutral command runs, so runs of VTX/TRI/MTX/DL commands skip
@@ -88,7 +101,7 @@ def pipeline_mutation_stamps(text):
     owner = 'static __declspec(thread) XboxDispatchOwner* sXboxDispatchOwner = 0;\n'
     if text.count(owner) != 1:
         raise ValueError('Dispatch owner anchor changed')
-    text = text.replace(owner, owner + CERTIFICATE)
+    text = text.replace(owner, owner + CERTIFICATE + TILE_IMPORT_CERTIFICATE)
     table = ('// Built from the actual F3DEX2 dispatch, so opcode aliases follow handler identity.\n'
              'static const GfxOpcodeHandlerFunc sXboxPipelineNeutralHandlers[] = {\n    ' +
              ',\n    '.join(NEUTRAL_HANDLERS) + '\n};\n'

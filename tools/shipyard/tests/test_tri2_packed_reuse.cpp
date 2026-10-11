@@ -67,6 +67,73 @@ static int scenario(const uint8_t first[3], const uint8_t second[3],
     return int(copied);
 }
 
+static void runPack(float*& output, uint8_t index, unsigned material,
+                    uint32_t w, bool lod, unsigned width) {
+    // Include non-arithmetic payloads: copying must retain NaN and signed-zero bits.
+    for (unsigned j = 0; j < width; ++j) {
+        uint32_t word = j == 0 ? 0x80000000u : j == 1 ? 0x7fc01234u :
+            (0x3e800000u ^ (unsigned(index) << 12) ^ (material << 4) ^ j);
+        if (lod && j == width - 1) word = w;
+        memcpy(output++, &word, sizeof(word));
+    }
+}
+
+static int runScenario(unsigned run, unsigned* totalCopied) {
+    float baseline[16384], cached[16384];
+    float* plain = baseline;
+    float* fast = cached;
+    ModernTri2PackedReuse reuse;
+    unsigned material = 3, width = 4 + (run % 30);
+    uint32_t w = 0x45678000u;
+    bool lod = (run & 1) != 0;
+    unsigned copied = 0;
+    for (unsigned tri = 0; tri < 128; ++tri) {
+        const unsigned event = next() >> 26;
+        bool pipeline = true;
+        if (event == 0) { ++material; pipeline = false; }
+        if (event == 1) w ^= 0x1000u;
+        if (event == 2) reuse.Reset(); // A non-triangle command or buffer flush.
+        if (event == 3) { width = 4 + (next() >> 24) % 30; pipeline = false; }
+        const bool eligible = reuse.CanReuse(size_t(fast - cached), pipeline, lod, w);
+        if (!eligible) reuse.Reset();
+        uint8_t indices[3];
+        size_t starts[3];
+        for (unsigned i = 0; i < 3; ++i) {
+            indices[i] = uint8_t(next() >> 24);
+            if (run & 2) indices[i] &= 15;
+            starts[i] = size_t(fast - cached);
+            runPack(plain, indices[i], material, w, lod, width);
+            if (eligible && reuse.CopyVertex(indices[i], fast, cached)) ++copied;
+            else runPack(fast, indices[i], material, w, lod, width);
+        }
+        reuse.Capture(indices, starts, size_t(fast - cached), w);
+    }
+    if (size_t(plain - baseline) != size_t(fast - cached) ||
+        memcmp(baseline, cached, size_t(plain - baseline) * sizeof(float))) return 1;
+    *totalCopied += copied;
+    return 0;
+}
+
+static int guards() {
+    ModernTri2PackedReuse reuse;
+    const uint8_t indices[3] = {0, 127, 255};
+    const size_t starts[3] = {0, 4, 8};
+    float buffer[64] = {}, *output = buffer + 12;
+    reuse.Capture(indices, starts, 12, 0);
+    if (reuse.CanReuse(0, true, false, 0) ||
+        reuse.CanReuse(11, true, false, 0)) return 1;
+    reuse.generation = 0xffffffffu;
+    reuse.Reset();
+    if (reuse.CopyVertex(0, output, buffer)) return 2;
+    const uint8_t other[3] = {1, 2, 3};
+    reuse.Capture(other, starts, 12, 0);
+    if (reuse.CopyVertex(255, output, buffer)) return 3;
+    const size_t bad[3] = {12, 16, 21};
+    reuse.Capture(indices, bad, 25, 0);
+    if (reuse.valid || reuse.CopyVertex(1, output, buffer)) return 4;
+    return 0;
+}
+
 int main() {
     const uint8_t first[3] = {1, 2, 3};
     const uint8_t quad[3] = {1, 3, 4};
@@ -95,5 +162,10 @@ int main() {
     }
     printf("PASS TRI2 packed reuse differential cases=%u copied_vertices=%u quad_compute=4/6\n",
            cases, reused);
+    unsigned runCopied = 0;
+    for (unsigned run = 0; run < 2048; ++run)
+        if (runScenario(run, &runCopied)) return 30;
+    if (!runCopied || guards()) return 31;
+    printf("PASS TRI2 run differential triangles=262144 copied_vertices=%u guards=pass\n", runCopied);
     return 0;
 }

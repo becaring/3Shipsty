@@ -70,6 +70,8 @@ def inherited(name, extra="", skip_two=False):
 def project(name, text):
     from overlap_gui_work_projection import project as overlap_gui_work
 
+    if name in ("SohModals.h", "SohModals.cpp"):
+        text = overlap_gui_work("soh/soh/SohGui/" + name, text)
     if name in ("Notification.h", "Notification.cpp"):
         text = overlap_gui_work("soh/soh/Notification/" + name, text)
     if name in ("TimeDisplay.h", "TimeDisplay.cpp"):
@@ -395,6 +397,13 @@ order.erase(std::remove_if(order.begin(), order.end(),
     ):
         text = re.sub(r"WidgetPath path = \{([^{}]*)\};", r"WidgetPath path(\1);", text)
     if name == "SohMenuEnhancements.cpp":
+        # Measured on Xbox 360 in Kokiri Forest: every value above 1x drops below 60 FPS.
+        text = once(
+            text,
+            '"Increases the range in which Actors/Objects are drawn."',
+            '"Increases the range in which Actors/Objects are drawn.\\n\\n"\n'
+            '            "Xbox 360: values above 1x can drop busy areas such as Kokiri Forest below 60 FPS."',
+        )
         text = once(
             text,
             '    AddMenuEntry("Enhancements", CVAR_SETTING("Menu.EnhancementsSidebarSection"));',

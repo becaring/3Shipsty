@@ -57,7 +57,7 @@ class ColumnPackProjection(unittest.TestCase):
             batch.write_text(
                 f'@call "{vcvars}" x86 >nul\n'
                 f'@"{compiler}" /nologo /O2 /EHsc /fp:precise '
-                f'/I"{selected}" "{cpp}" /Fe"{exe}"\n'
+                f'/I"{selected}" /I"{ROOT / "platform/shipyard"}" "{cpp}" /Fe"{exe}"\n'
             )
             built = subprocess.run(["cmd.exe", "/c", str(batch)], capture_output=True, text=True)
             self.assertEqual(0, built.returncode, (built.stdout + built.stderr)[-5000:])
@@ -75,6 +75,8 @@ HOST_FIXTURE = r"""
 #include <time.h>
 #include "fast3d/unit_color.h"
 #include "fast3d/coordinate.h"
+#include "fast3d/projection_cache.h"
+#include "fast3d/unit_color_rounding.h"
 #define G_MDSFT_TEXTFILT 12
 #define G_TF_POINT 0
 #define G_TL_LOD 0x10000u
@@ -108,6 +110,8 @@ struct Runner {
     Shipyard::Fast3D::CoordinateAxis mXboxAxisS[2], mXboxAxisT[2];
     float mXboxClampS[2], mXboxClampT[2];
     void Pack(bool column,const LoadedVertex input[3],bool is_rect) {
+        const uint32_t projectionRounding=Shipyard::Fast3D::ProjectionRoundingMode();
+        const float* const shipyardUnitColors=Shipyard::Fast3D::UnitColorTable(projectionRounding);
         // Mirrors the reconciliation-time derivation for combiner-used slots.
         const XboxTrianglePipelineResult& q=mXboxPipelineResult;
         for(unsigned i=0;i<2;++i) {

@@ -43,7 +43,7 @@ class InterpolationReplayTests(unittest.TestCase):
                 name = "replay" + str(index)
                 (out / (name + ".cpp")).write_text(fixture.replace("// SELECTED RECORDER", source))
                 batch = out / "build.cmd"
-                define = ""
+                define = " /DMODERN_RECYCLE_REPLAY" if index else ""
                 batch.write_text(
                     '@echo off\ncall "'
                     + installation

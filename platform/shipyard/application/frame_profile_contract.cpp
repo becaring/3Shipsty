@@ -7,6 +7,21 @@ static unsigned reads;
 static uint64_t tick;
 static uint64_t Clock() { ++reads; return tick; }
 int main() {
+    ModernFrameProfile::PresentationCadence cadence;
+    assert(cadence.Fps() == 0);
+    cadence.Observe(0, 6000);
+    // Thirty presents across ten three-replay GUI captures still measure 60 FPS.
+    for (unsigned gui = 0; gui < 10; ++gui)
+        for (unsigned replay = 1; replay <= 3; ++replay)
+            cadence.Observe((gui * 3 + replay) * 100, 6000);
+    assert(cadence.Fps() == 60);
+    for (unsigned frame = 1; frame <= 15; ++frame)
+        cadence.Observe(3000 + frame * 200, 6000);
+    assert(cadence.Fps() == 30);
+    cadence.Observe(100, 6000);
+    assert(cadence.Fps() == 0);
+    cadence.Observe(200, 0);
+    assert(cadence.Fps() == 0);
     ModernFrameProfile::CommandSampler sampler(Clock);
     for (unsigned i=0;i<256;++i) sampler.End(sampler.Begin(1,2));
     assert(reads==0 && sampler.commands[1].calls==0);

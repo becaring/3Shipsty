@@ -38,6 +38,10 @@ def main():
         ca, cb = calls(a), calls(b)
         if name.endswith("SohStatsWindow.cpp"):
             cb["ImGui::Text"] -= 1
+            ca["ImGui::GetIO"] -= 2
+        if name.endswith("colViewer.cpp"):
+            assert 'if (!CVarGetInteger(CVAR_DEVELOPER_TOOLS("ColViewer.Enabled"), 0)) return;' in b
+            cb["CVarGetInteger"] -= 1
         assert ca == cb, (name, ca - cb, cb - ca)
         literals = [
             n.text.decode()

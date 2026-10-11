@@ -56,6 +56,7 @@ uint64_t Clock() {
     return static_cast<uint64_t>(value.QuadPart);
 }
 Accumulator accumulator(Clock);
+PresentationCadence presentationCadence;
 __declspec(thread) ThreadSample* activeThreadSample = NULL;
 uint64_t gamePreviousBegin = 0, gamePeriodTicks = 0, gameWallTicks = 0;
 unsigned gamePeriods = 0, gameOver33 = 0, gameSamples = 0;
@@ -254,6 +255,16 @@ void RecordTextureHashPhase(TextureHashSample& sample) {
 }
 }
 CommandSampler commandSampler(Clock);
+void ObservePresentation() {
+    static uint64_t presentationFrequency = 0;
+    if (!presentationFrequency) {
+        LARGE_INTEGER value;
+        QueryPerformanceFrequency(&value);
+        presentationFrequency = static_cast<uint64_t>(value.QuadPart);
+    }
+    presentationCadence.Observe(Clock(), presentationFrequency);
+}
+float PresentationFps() { return presentationCadence.Fps(); }
 void BeginThreadSample(ThreadSample& sample, bool enabled, bool wholeCpu) {
     sample.Reset(enabled);
     sample.wholeCpu = wholeCpu;
@@ -484,6 +495,7 @@ void ObserveTileState(unsigned kind, bool same, bool avoidable) {
     if (avoidable) ++tileState.avoidable[kind];
 }
 bool CaptureTrianglePipeline() { return inInterpreter && interpreterDetailsEnabled; }
+bool TriangleDiagnosticsEnabled() { return tri2ProfileEnabled || interpreterDetailsEnabled; }
 void ObserveTrianglePipeline(bool hit) {
     if (hit) ++trianglePipeline.hits;
     else ++trianglePipeline.misses;
@@ -495,7 +507,7 @@ void ObserveContextSearch(unsigned attempts, unsigned slots, unsigned maximum) {
 }
 void BeginPipelinePreparation(PipelinePreparationSample& sample) {
     sample.sampled=false;
-    if (!inInterpreter || !interpreterDetailsEnabled) return;
+    if (!inInterpreter || (!tri2ProfileEnabled && !interpreterDetailsEnabled)) return;
     ++pipelinePrep.calls;
     pipelineRandomState^=pipelineRandomState<<13;
     pipelineRandomState^=pipelineRandomState>>17;

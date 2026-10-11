@@ -9,14 +9,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from deferred_lit_fog import HEADER_TYPES, SOURCE_METHODS, header, transform
+from deferred_lit_fog import HEADER_TYPES, SOURCE_METHODS, finalize, header, transform
 from platform_base import resolve
+
+
+def normal_cache_fixture(fixture):
+    anchor = '    XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];'
+    return fixture.replace(anchor, anchor + '''
+    XboxDeferredNormalEntry mXboxNormalCache[64];
+    uint32_t mXboxNormalCacheSerial;
+    bool mXboxNormalCacheEnabled;''')
+
+
+def projected_source():
+    source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
+    if '// MODERN DIRECT DEFERRED VERTEX BEGIN' not in source:
+        source = finalize(transform(source))
+    return source
+
+
+def projected_method(source, name):
+    first = source.index(' Interpreter::' + name + '(')
+    first = source.rfind('\n', 0, first) + 1
+    brace = source.index('{', first)
+    depth = 1
+    end = brace + 1
+    while depth:
+        depth += (source[end] == '{') - (source[end] == '}')
+        end += 1
+    return source[first:end] + '\n'
 
 
 class DeferredLitFogProjection(unittest.TestCase):
     def test_projection_keeps_cull_before_attribute_materialization(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        projected = transform(source)
+        projected = projected_source()
         triangle = projected.split('void Interpreter::GfxSpTri1(', 1)[1].split('void Interpreter::XboxPrepareTrianglePipeline(', 1)[0]
         self.assertLess(triangle.index('if (v1->clip_rej & v2->clip_rej & v3->clip_rej)'),
                         triangle.index('XboxMaterializeVertex(vtx1_idx)'))
@@ -24,8 +50,7 @@ class DeferredLitFogProjection(unittest.TestCase):
                         triangle.index('XboxEmitTriangle('))
 
     def test_projected_source_captures_vertices_and_mutable_state(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        projected = transform(source)
+        projected = projected_source()
         self.assertIn('pending.source = vertices[i];', projected)
         self.assertIn('context->fogMul = Shipyard::Fast3D::SignedShortFloat(mRsp->fog_mul);', SOURCE_METHODS)
         self.assertIn('context->scaleS = mRsp->texture_scaling_factor.s;', projected)
@@ -55,10 +80,9 @@ class DeferredLitFogProjection(unittest.TestCase):
         self.assertIn('context ? (unsigned)(context - mXboxDeferredContexts) + 1 : MAX_VERTICES', scan)
 
     def test_branch_and_reset_keep_pending_attributes(self):
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        projected = transform(source)
-        vertex = projected.split('void Interpreter::GfxSpVertex(', 1)[1].split('void Interpreter::GfxSpModifyVertex(', 1)[0]
-        self.assertTrue(vertex.index('if (XboxTryDeferVertices(') < vertex.index('shipyardTransformed'))
+        projected = projected_source()
+        vertex = projected_method(projected, 'GfxSpVertex')
+        self.assertLess(vertex.index('if (XboxTryDeferVertices('), vertex.index('GfxSpVertexEager('))
         reset = projected.split('void Interpreter::SpReset() {', 1)[1].split('\n}', 1)[0]
         self.assertNotIn('mXboxDeferredVertices', reset)
         self.assertNotIn('mXboxDeferredContexts', reset)
@@ -68,8 +92,9 @@ class DeferredLitFogProjection(unittest.TestCase):
         self.assertTrue(triangle.index('v1->w') < triangle.index('XboxMaterializeVertex(vtx1_idx)'))
         self.assertIn('for (size_t i = 0; i < n_vertices; ++i) XboxDiscardVertex(dest_index + i);',
                       projected)
-        self.assertTrue(projected.index('XboxDiscardVertex(dest_index + i)') <
-                        projected.index('context->references = (uint8_t)n_vertices;'))
+        deferred = projected_method(projected, 'XboxTryDeferVertices')
+        self.assertLess(deferred.index('XboxDiscardVertex(dest_index + i)'),
+                        deferred.index('context->references = (uint8_t)(context->references + n_vertices);'))
 
     def test_materializer_matches_eager_x86_fixture(self):
         vcvars = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/vcvarsall.bat')
@@ -82,6 +107,7 @@ class DeferredLitFogProjection(unittest.TestCase):
             'void Interpreter::XboxMaterializeVertex(' +
             SOURCE_METHODS.split('void Interpreter::XboxMaterializeVertex(', 1)[1])
         fixture = '#include "' + (resolve(ROOT) / 'sources/fast3d/numeric.h').as_posix() + '"\n' + fixture
+        fixture = normal_cache_fixture(fixture)
         with tempfile.TemporaryDirectory(prefix='modern-deferred-') as temp:
             cpp = Path(temp) / 'fixture.cpp'
             exe = Path(temp) / 'fixture.exe'
@@ -99,32 +125,32 @@ class DeferredLitFogProjection(unittest.TestCase):
         compiler = Path('C:/Program Files (x86)/Microsoft Visual Studio 10.0/VC/bin/cl.exe')
         if not vcvars.is_file() or not compiler.is_file():
             self.skipTest('VS2010 host compiler unavailable')
-        source = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        source = transform(source)
-        vertex = 'void Interpreter::GfxSpVertex(' + source.split('void Interpreter::GfxSpVertex(', 1)[1].split(
-            'void Interpreter::GfxSpModifyVertex(', 1)[0]
-        begin = vertex.index('    Shipyard::Fast3D::TransformPhaseHook shipyardPhaseHook;')
-        end = vertex.index('    bool shipyardAspectReady = false;', begin)
-        vertex = vertex[:begin] + '''    const bool shipyardVectorPositions = shipyardVectorEligible &&
-        Shipyard::Fast3D::TransformPositions(vertices, n_vertices, mRsp->MP_matrix, shipyardTransformed);
-''' + vertex[end:]
-        vertex = vertex.replace('    if (sModernVtxHashSample && !mXboxDeferredReplay)\n'
-                                '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashDeferred);\n', '')
-        vertex = vertex.replace('    if (sModernVtxHashSample && !mXboxDeferredReplay)\n'
-                                '        ModernFrameProfile::AdvanceVtxHash(*sModernVtxHashSample, ModernFrameProfile::VtxHashTransform);\n', '')
+        source = projected_source()
+        methods = ''.join(projected_method(source, name) for name in (
+            'XboxDiscardVertex', 'XboxTryDeferVertices', 'XboxMaterializeVertex',
+            'XboxTakeContextSearchCounts', 'XboxTransformDeferredPositions',
+            'GfxSpVertex', 'GfxSpVertexEager'))
+        if '// MODERN EXACT VERTEX REPLAY BEGIN' in source:
+            helpers = source.split('// MODERN EXACT VERTEX REPLAY BEGIN', 1)[1]
+            methods = helpers.split('// MODERN EXACT VERTEX REPLAY END', 1)[0] + methods
         fixture = FULL_VERTEX_FIXTURE.replace('/* PROJECTED TYPES */', HEADER_TYPES).replace(
-            '/* PROJECTED METHODS */', SOURCE_METHODS + vertex)
+            '/* PROJECTED METHODS */', methods)
         fixture = '#include "' + (resolve(ROOT) / 'sources/fast3d/numeric.h').as_posix() + '"\n' + fixture
+        fixture = normal_cache_fixture(fixture)
         fixture = fixture.replace('bool NearestRounding() { return false; }',
                                   'static bool nearest = true, transformAvailable = true;\n'
                                   'bool NearestRounding() { return nearest; }')
         fixture = fixture.replace(
-            'bool TransformPositions(const F3DVtx*,size_t,const float [4][4],float [MAX_VERTICES][4]) { return false; }',
-            '''bool TransformPositions(const F3DVtx* source,size_t count,const float m[4][4],float out[MAX_VERTICES][4]) {
+            'bool TransformPositions(const void*,size_t,const float [4][4],void*,bool=false,size_t=16) { return false; }',
+            '''bool TransformPositions(const void* input,size_t count,const float m[4][4],void* output,bool=false,size_t stride=16) {
         if(!transformAvailable) return false;
-        for(size_t i=0;i<count;++i) for(int c=0;c<4;++c) {
-            const short* v=source[i].v.ob;
-            out[i][c]=v[0]*m[0][c]+v[1]*m[1][c]+v[2]*m[2][c]+m[3][c];
+        const F3DVtx* source=(const F3DVtx*)input;
+        for(size_t i=0;i<count;++i) {
+            float* out=(float*)((unsigned char*)output+i*stride);
+            for(int c=0;c<4;++c) {
+                const short* v=source[i].v.ob;
+                out[c]=v[0]*m[0][c]+v[1]*m[1][c]+v[2]*m[2][c]+m[3][c];
+            }
         }
         return true;
     }''')
@@ -215,10 +241,13 @@ static void eager(LoadedVertex* d, const F3DVtx& source, const XboxDeferredConte
 }
 int main() {
     Interpreter p; RSP rsp; memset(&p,0,sizeof(p)); memset(&rsp,0,sizeof(rsp)); p.mRsp=&rsp;
+    unsigned verifiedCacheHits=0;
     for(int trial=0;trial<30000;++trial) {
         int slot=trial%MAX_VERTICES;
         XboxDeferredContext* c=&p.mXboxDeferredContexts[slot];
         memset(c,0,sizeof(*c)); c->count=next()%6; c->references=1;
+        c->normalCacheSerial=++p.mXboxNormalCacheSerial;
+        p.mXboxNormalCacheEnabled=!!(trial&8);
         c->ambient[0]=next()%256; c->ambient[1]=next()%256; c->ambient[2]=next()%256;
         c->scaleS=next()%65536; c->scaleT=next()%65536;
         c->fogMul=(short)(next()%30000); c->fogOffset=(short)(next()%512-256);
@@ -233,10 +262,16 @@ int main() {
         if(floatTrial) {
             c->floatLighting=true; c->normalKey=0xffffffffu;
             for(int j=0;j<3;++j) c->ambientFloat[j]=(float)c->ambient[j];
+            if(c->nearest && c->count>=2 && (trial&4)) {
+                for(int j=0;j<3;++j)
+                    c->lights[c->count-1].coeff[j]=-c->lights[c->count-2].coeff[j];
+                c->opposedLastPair=true;
+            }
         }
         F3DVtx input; memset(&input,0,sizeof(input));
         input.v.tc[0]=(short)next(); input.v.tc[1]=(short)next();
         input.n.n[0]=(signed char)next(); input.n.n[1]=(signed char)next(); input.n.n[2]=(signed char)next();
+        if(trial%13==0) input.n.n[0]=input.n.n[1]=input.n.n[2]=0;
         LoadedVertex original; memset(&original,0,sizeof(original));
         original.x=(float)((int)(next()%2000)-1000);
         original.y=(float)((int)(next()%2000)-1000);
@@ -276,8 +311,53 @@ int main() {
             eager(&again,kept,*c);
             p.XboxMaterializeVertex(other);
             if(memcmp(&again,&rsp.loaded_vertices[other],sizeof(again)) || c->references) return 7;
+            // Compare caching with the same materializer bypassed. The eager
+            // arithmetic contract above remains independent of this cache test.
+            // Revisit normals, collisions, texture coordinates and fog inputs.
+            const unsigned originalSeed=seed;
+            for(unsigned pass=0;pass<96;++pass) {
+                F3DVtx repeated=kept;
+                const unsigned normal=pass%24;
+                repeated.n.n[0]=(signed char)(normal*19-127);
+                repeated.n.n[1]=(signed char)(normal*7-63);
+                repeated.n.n[2]=(signed char)(normal*11-31);
+                repeated.v.tc[0]=(short)next(); repeated.v.tc[1]=(short)next();
+                const uint32_t key=(uint32_t(uint8_t(repeated.n.n[0]))<<16) |
+                    (uint32_t(uint8_t(repeated.n.n[1]))<<8) | uint8_t(repeated.n.n[2]);
+                const XboxDeferredNormalEntry& entry=p.mXboxNormalCache[(key*2654435761u)>>26];
+                if(p.mXboxNormalCacheEnabled && c->nearest && c->normalKey!=key &&
+                   entry.context==c && entry.serial==c->normalCacheSerial && entry.normal==key)
+                    ++verifiedCacheHits;
+                LoadedVertex value=original;
+                value.z=float(int(next()%2000)-1000)/1000.0f;
+                value.w=float(int(next()%2000)-1000)/1000.0f;
+                rsp.loaded_vertices[other]=value;
+                const XboxDeferredContext savedContext=*c;
+                const bool cacheEnabled=p.mXboxNormalCacheEnabled;
+                p.mXboxNormalCacheEnabled=false;c->normalKey=0xffffffffu;
+                p.mXboxDeferredVertices[other].source=repeated;
+                p.mXboxDeferredVertices[other].context=c;c->references=1;
+                p.XboxMaterializeVertex(other);
+                const LoadedVertex uncached=rsp.loaded_vertices[other];
+                *c=savedContext;p.mXboxNormalCacheEnabled=cacheEnabled;
+                rsp.loaded_vertices[other]=value;
+                value=uncached;
+                p.mXboxDeferredVertices[other].source=repeated;
+                p.mXboxDeferredVertices[other].context=c;c->references=1;
+                p.XboxMaterializeVertex(other);
+                if(memcmp(&value,&rsp.loaded_vertices[other],sizeof(value)) || c->references) {
+                    const RGBA& actual=rsp.loaded_vertices[other].color;
+                    printf("normal mismatch trial=%d pass=%u enabled=%u nearest=%u opposed=%u expected=%u,%u,%u,%u actual=%u,%u,%u,%u\n",
+                           trial,pass,unsigned(p.mXboxNormalCacheEnabled),unsigned(c->nearest),unsigned(c->opposedLastPair),
+                           value.color.r,value.color.g,value.color.b,value.color.a,actual.r,actual.g,actual.b,actual.a);
+                    return 8;
+                }
+            }
+            seed=originalSeed;
         }
     }
+    if(verifiedCacheHits<1000) return 9;
+    printf("PASS nonconsecutive normal cache: %u verified hits, eager bytes, collisions, context replacement and live toggle\n",verifiedCacheHits);
     // BranchZ and culling read eager z/w/clip without touching a pending slot.
     XboxDeferredContext* c=&p.mXboxDeferredContexts[0]; c->references=2;
     p.mXboxDeferredVertices[0].context=c;
@@ -343,16 +423,45 @@ namespace Shipyard { namespace Fast3D {
         return x<=y ? y-x>=an : x-y>=bn;
     }
     bool NearestRounding() { return false; }
-    bool TransformPositions(const F3DVtx*,size_t,const float [4][4],float [MAX_VERTICES][4]) { return false; }
+    bool TransformPositions(const void*,size_t,const float [4][4],void*,bool=false,size_t=16) { return false; }
+    struct TransformPhaseHook { void (*enterVertices)(void*); void* context; };
+    bool TransformPositionsProfiled(const void* v,size_t n,const float m[4][4],void* out,
+                                   bool aspect,size_t stride,const TransformPhaseHook* hook) {
+        hook->enterVertices(hook->context);
+        return TransformPositions(v,n,m,out,aspect,stride);
+    }
+    bool TransformPositionsUnaligned(const void* v,size_t n,const float m[4][4],void* out,
+                                    bool aspect,size_t stride) {
+        return TransformPositions(v,n,m,out,aspect,stride);
+    }
+    bool TransformPositionsUnalignedProfiled(const void* v,size_t n,const float m[4][4],void* out,
+                                            bool aspect,size_t stride,const TransformPhaseHook* hook) {
+        return TransformPositionsProfiled(v,n,m,out,aspect,stride,hook);
+    }
     void ClipVertices(LoadedVertex*,size_t,bool) {}
+    void ClipFiniteVertices(LoadedVertex* v,size_t n,bool nearPlane) { ClipVertices(v,n,nearPlane); }
     template<typename T> T Clamp(T v,T lo,T hi) { return v<lo?lo:(v>hi?hi:v); }
 } }
 /* PROJECTED TYPES */
+namespace ModernFrameProfile {
+    struct VtxHashSample { bool vmx, deferred; };
+    enum VtxHashPhase { VtxHashDeferred, VtxHashTransform, VtxHashInsert };
+    static void AdvanceVtxHash(VtxHashSample&,VtxHashPhase) {}
+    static void BeginVtxTransform(VtxHashSample&,unsigned) {}
+    static void EndVtxTransform(VtxHashSample&,bool) {}
+    static void EnterVtxTransformLoop(void*) {}
+}
+static ModernFrameProfile::VtxHashSample* sModernVtxHashSample=NULL;
+static struct { bool active; } gModernVertexReuseCensus={false};
+static void ModernVertexReuseCapture(const XboxDeferredContext*,const F3DVtx*,size_t,
+                                    const void*,bool,unsigned,unsigned) {}
 class Interpreter {
 public:
     RSP* mRsp;
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
+    XboxDeferredContext* mXboxCurrentDeferredContext;
+    uint32_t mXboxCurrentDeferredFog;
     bool mXboxDeferredReplay, mFbActive;
     bool mXboxContextProbeCapture;
     unsigned mXboxContextSearchAttempts, mXboxContextSlotsScanned, mXboxContextMaxScan;
@@ -369,12 +478,15 @@ public:
     void XboxMaterializeVertex(size_t);
     void XboxTakeContextSearchCounts(unsigned*, unsigned*, unsigned*);
     void GfxSpVertex(size_t,size_t,const F3DVtx*);
+    void GfxSpVertexEager(size_t,size_t,const F3DVtx*);
+    bool XboxTransformDeferredPositions(size_t,size_t,const F3DVtx*,bool);
 };
 /* PROJECTED METHODS */
 static unsigned seed=0x67329eab;
 static unsigned next() { seed=seed*1664525u+1013904223u; return seed; }
 static void initialize(Interpreter& p,RSP& rsp) {
     memset(&p,0,sizeof(p)); memset(&rsp,0,sizeof(rsp)); p.mRsp=&rsp;
+    p.mXboxNormalCacheEnabled=true;
     p.mCurDimensions.width=320; p.mCurDimensions.height=240;
     rsp.modelview_matrix_stack_size=1;
     for(int i=0;i<4;++i) rsp.MP_matrix[i][i]=1;
@@ -398,6 +510,12 @@ int main() {
         Shipyard::Fast3D::transformAvailable=(trial%3)==2;
         initialize(deferred,deferredRsp);
         initialize(eager,eagerRsp);
+        if(trial%11==0) deferred.mXboxNormalCacheSerial=0xffffffffu;
+        if(trial&4) {
+            deferred.mCurDimensions.width=eager.mCurDimensions.width=1280;
+            deferred.mCurDimensions.height=eager.mCurDimensions.height=720;
+        }
+        deferred.mFbActive=eager.mFbActive=(trial%7)==0;
         // Both command streams must start with exactly the same state.
         eagerRsp=deferredRsp;
         deferredRsp.lights_changed=eagerRsp.lights_changed=(trial&1)!=0;
@@ -466,6 +584,19 @@ int main() {
     if(deferred.mXboxDeferredVertices[0].context ||
        memcmp(&eagerRsp.loaded_vertices[0],&deferredRsp.loaded_vertices[0],sizeof(LoadedVertex)) ||
        memcmp(&eagerRsp.loaded_vertices[1],&deferredRsp.loaded_vertices[1],sizeof(LoadedVertex))) return 6;
+    // The final projection retains one context across loads and partial overwrites.
+    initialize(deferred,deferredRsp); initialize(eager,eagerRsp); eagerRsp=deferredRsp;
+    Shipyard::Fast3D::nearest=Shipyard::Fast3D::transformAvailable=true;
+    deferred.GfxSpVertex(1,0,&source);
+    XboxDeferredContext* retained=deferred.mXboxDeferredVertices[0].context;
+    if(!retained || retained->references!=1) return 12;
+    deferred.GfxSpVertex(1,1,&source);
+    if(deferred.mXboxDeferredVertices[1].context!=retained || retained->references!=2) return 13;
+    deferred.GfxSpVertex(1,0,&source);
+    if(deferred.mXboxDeferredVertices[0].context!=retained || retained->references!=2) return 14;
+    eager.GfxSpVertexEager(1,0,&source); eager.GfxSpVertexEager(1,1,&source);
+    deferred.XboxMaterializeVertex(0); deferred.XboxMaterializeVertex(1);
+    if(retained->references || memcmp(eagerRsp.loaded_vertices,deferredRsp.loaded_vertices,2*sizeof(LoadedVertex))) return 15;
     // Count one successful search at slot 7, a fully occupied search, and
     // verify the accessor drains all counters. No per-iteration counter work.
     initialize(deferred,deferredRsp);

@@ -5,6 +5,7 @@ queued message actions keep their update cadence until that work finishes.
 """
 
 from cpp_ast import PARSER, walk
+from prepare_configuration import once
 
 
 def public_method(text, name, code):
@@ -38,9 +39,18 @@ def project(name, text):
         return public_method(
             text,
             "GuiWindow",
-            """virtual bool XboxHasPendingFrameWork() {
-        return !IsInitialized() || IsVisible();
+            """virtual bool XboxCanDrawDuringOverlap() { return false; }
+    virtual bool XboxHasPendingFrameWork() {
+        return !IsInitialized() || (IsVisible() && !XboxCanDrawDuringOverlap());
     }""",
+        )
+    if name.endswith("/ship/window/gui/StatsWindow.h"):
+        return public_method(
+            text, "StatsWindow", "bool XboxCanDrawDuringOverlap() override { return true; }"
+        )
+    if name.endswith("/Enhancements/debugger/SohStatsWindow.h"):
+        return public_method(
+            text, "SohStatsWindow", "bool XboxCanDrawDuringOverlap() override { return true; }"
         )
     if name.endswith("/ship/window/gui/GameOverlay.h"):
         return public_method(
@@ -49,6 +59,24 @@ def project(name, text):
             """bool XboxHasPendingDraw() const {
         return !mRegisteredOverlays.empty() || mNeedsCleanup;
     }""",
+        )
+    if name.endswith("/ship/window/gui/GameOverlay.cpp"):
+        return once(
+            text,
+            "            overlay.duration -= .05f;",
+            """            overlay.duration -= .05f;
+            if (overlay.duration <= 0.0f) mNeedsCleanup = true;""",
+        )
+    if name.endswith("/SohGui/SohModals.h"):
+        return public_method(text, "SohModalWindow", "bool XboxHasPendingFrameWork() override;")
+    if name.endswith("/SohGui/SohModals.cpp"):
+        return (
+            text
+            + """
+bool SohModalWindow::XboxHasPendingFrameWork() {
+    return !IsInitialized() || !modals.empty() || closePopup;
+}
+"""
         )
     if name.endswith("/ship/window/gui/ConsoleWindow.h"):
         return public_method(

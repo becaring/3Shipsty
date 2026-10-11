@@ -436,6 +436,9 @@ void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>
     from frame_profile_projection import application as profile_application
 
     source = profile_application(source)
+    from interpolation_map_reuse import application as recycle_interpolation_maps
+
+    source = recycle_interpolation_maps(source)
     from overlap_audio_projection import source as overlap_audio_source
 
     source = overlap_audio_source(source)

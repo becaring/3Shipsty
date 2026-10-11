@@ -1,6 +1,8 @@
 """Exercise lifetime boundaries against the selected source, including no-op paths."""
 
 from pathlib import Path
+import runpy
+import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +42,31 @@ class LifetimeProjectionTests(unittest.TestCase):
         self.assertIn(
             "if (!opaDl.empty() || !xluDl.empty()) Shipyard_OverlapFence();", text
         )
+
+    def test_disabled_viewer_preserves_borrowed_lists_and_reenable_fences(self):
+        from overlap_lifetime_projection import functions
+
+        text = self.source("soh/soh/Enhancements/debugger/colViewer.cpp")
+        (function,) = functions(text, "DrawColViewer")
+        fixture = ROOT / "tools/shipyard/tests/col_viewer_lifetime_fixture.cpp"
+        source = fixture.read_text().replace("// DRAW_COL_VIEWER", function.text.decode())
+        folder = ROOT / "scratch/col-viewer-lifetime"
+        folder.mkdir(parents=True, exist_ok=True)
+        unit = folder / "contract.cpp"
+        unit.write_text(source)
+        compiler, env = runpy.run_path(str(ROOT / "tools/shipyard/tests/test_binary.py"))[
+            "host_environment"
+        ]()
+        executable = folder / "contract.exe"
+        build = subprocess.run(
+            [str(compiler), "/nologo", "/std:c++20", "/EHsc", "/MD", "/O2", str(unit),
+             "/Fo:" + str(folder) + "/", "/Fe:" + str(executable)],
+            cwd=folder, env=env, capture_output=True, text=True,
+        )
+        (folder / "build.log").write_text(build.stdout + build.stderr)
+        self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
+        result = subprocess.run([str(executable)], cwd=folder, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_graphics_reads_use_snapshot_and_native_mutations_dispatch(self):
         text = self.source("soh/soh/OTRGlobals.cpp")

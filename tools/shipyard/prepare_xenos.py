@@ -91,6 +91,7 @@ def build():
             PLATFORM_BASE / "sources/xenos",
             OUT / "generated",
             OWN,
+            ROOT / "platform/shipyard",
             ROOT / "scratch/fast3d-xdk/generated/include",
             ROOT / "scratch/imgui-xdk/generated",
             PLATFORM_BASE / "sources/graphics",

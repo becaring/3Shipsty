@@ -386,6 +386,15 @@ def project(name, text):
         text = edits_apply(raw, edits)
         text = once(text, "// clang-format off", "\n".join(helpers) + "\n// clang-format off")
     if name.endswith("SohStatsWindow.cpp"):
+        text = '#include "application/frame_profile.h"\n' + text
+        text = once(
+            text, "const float framerate = ImGui::GetIO().Framerate;",
+            "const float framerate = ModernFrameProfile::PresentationFps();",
+        )
+        text = once(
+            text, "const float deltatime = ImGui::GetIO().DeltaTime;",
+            "const float deltatime = framerate > 0.0f ? 1.0f / framerate : 0.0f;",
+        )
         text = once(
             text,
             "#if defined(_WIN32)",

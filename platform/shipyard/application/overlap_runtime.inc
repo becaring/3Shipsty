@@ -16,6 +16,10 @@ extern "C" void OTRGetPixelDepthPrepare(float x, float y);
 extern "C" uint16_t OTRGetPixelDepth(float x, float y);
 extern "C" void Shipyard_OverlapCaptureGraphics(void);
 extern "C" int Shipyard_OverlapNeedsFullSync(void);
+extern "C" void ModernVertexReuseBeginBatch(unsigned replayCount);
+extern "C" void ModernVertexReuseBeginReplay(unsigned replayIndex);
+extern "C" void ModernVertexReuseEndBatch(void);
+void FrameInterpolation_Recycle(std::unordered_map<Mtx*, MtxF>& replacements);
 void Shipyard_Log(const char* format, ...);
 
 namespace ModernOverlap {
@@ -32,6 +36,21 @@ struct FramePacket {
     bool profile;
     FramePacket() : commands(NULL), masterQuest(0), requestedFps(20), profile(false) {
         memset(&depth, 0, sizeof(depth));
+    }
+    FramePacket& operator=(const FramePacket& other) {
+        if (this == &other) return *this;
+        // FrameChannel resets retired packets on the producer before reuse.
+        for (size_t i = 0; i < replay.maps.size(); ++i)
+            FrameInterpolation_Recycle(replay.maps[i]);
+        commands = other.commands;
+        replay = other.replay;
+        gameProfile = other.gameProfile;
+        depth = other.depth;
+        resources = other.resources;
+        masterQuest = other.masterQuest;
+        requestedFps = other.requestedFps;
+        profile = other.profile;
+        return *this;
     }
 };
 typedef FrameWorker<FramePacket> GameWorker;
@@ -93,6 +112,7 @@ struct Session {
     ReplayCadence cadence;
     DeferredStorage storage;
     WritableSpans writableSpans;
+    Ship::ConsoleVariable::Snapshot frozenVariables;
     ModernFrameProfile::ThreadSample tailProfile;
     Shipyard::Async::mutex depthGate;
     std::deque<ShipyardOverlapDepthResult> depthResults;
@@ -172,9 +192,13 @@ static bool PublishCommands(Gfx* commands) {
     const int rate = R_UPDATE_RATE;
     if (rate < 1 || rate > 3) throw std::runtime_error("Unsupported overlap frame divisor");
     ModernFrameProfile::Begin(ModernFrameProfile::Interpolation);
-    packet.replay = session->cadence.prepare<ReplacementMap>(
+    ReplayBatch<ReplacementMap> prepared = session->cadence.prepare<ReplacementMap>(
         OTRGlobals::Instance->GetInterpolationFPS(), rate, GfxDebuggerIsDebugging(),
         [](float fraction) { return FrameInterpolation_Interpolate(fraction); });
+    packet.replay.fps = prepared.fps;
+    packet.replay.gameFps = prepared.gameFps;
+    packet.replay.updateRate = prepared.updateRate;
+    packet.replay.maps.swap(prepared.maps);
     ModernFrameProfile::End(ModernFrameProfile::Interpolation);
     packet.depth.generation = generation;
     ModernFrameProfile::EndThreadSample();
@@ -202,12 +226,13 @@ struct ReplayHandoff {
     const FramePacket& packet;
     std::shared_ptr<Ship::Gui> gui;
     std::shared_ptr<Ship::ConsoleVariable> variables;
-    Ship::ConsoleVariable::Snapshot frozenVariables;
+    Ship::ConsoleVariable::Snapshot& frozenVariables;
     bool forceStop, started, submitted;
     ReplayHandoff(Session& value, const GameWorker::Ticket& frame, const FramePacket& data, bool stop)
         : owner(value), ticket(frame), packet(data),
           gui(Ship::Context::GetInstance()->GetWindow()->GetGui()),
           variables(Ship::Context::GetInstance()->GetConsoleVariables()),
+          frozenVariables(value.frozenVariables),
           forceStop(stop), started(false), submitted(false) {}
     void Submit() {
         if (submitted) return;
@@ -274,17 +299,24 @@ static bool RenderPacket(Session& owner, const GameWorker::Ticket& ticket,
         interpreter->XboxRetireGameDepth();
         sampled = true;
     }
-    for (size_t index = 0; index < packet.replay.maps.size(); ++index) {
-        interpreter->mXboxDiscardGameDepth = index + 1 < packet.replay.maps.size();
-        window->DrawAndRunGraphicsCommands(packet.commands, packet.replay.maps[index]);
-        if (index == 0) {
-            if (!sampled) {
-                Shipyard_OverlapSampleDepth(&packet.depth, &depth, PrepareDepth, ReadDepth, NULL);
-                sampled = true;
+    {
+        struct VertexReuseBatchScope {
+            explicit VertexReuseBatchScope(unsigned count) { ModernVertexReuseBeginBatch(count); }
+            ~VertexReuseBatchScope() { ModernVertexReuseEndBatch(); }
+        } vertexReuseBatch(static_cast<unsigned>(packet.replay.maps.size()));
+        for (size_t index = 0; index < packet.replay.maps.size(); ++index) {
+            ModernVertexReuseBeginReplay(static_cast<unsigned>(index));
+            interpreter->mXboxDiscardGameDepth = index + 1 < packet.replay.maps.size();
+            window->DrawAndRunGraphicsCommands(packet.commands, packet.replay.maps[index]);
+            if (index == 0) {
+                if (!sampled) {
+                    Shipyard_OverlapSampleDepth(&packet.depth, &depth, PrepareDepth, ReadDepth, NULL);
+                    sampled = true;
+                }
+                interpreter->XboxRetireGameDepth();
             }
-            interpreter->XboxRetireGameDepth();
+            ++interpreter->mInterpolationIndex;
         }
-        ++interpreter->mInterpolationIndex;
     }
     interpreter->XboxRetireGameDepth();
     interpreter->XboxPublishGameDepth();

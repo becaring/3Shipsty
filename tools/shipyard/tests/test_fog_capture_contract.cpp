@@ -17,6 +17,9 @@ public:
     RSP* mRsp;
     XboxDeferredVertex mXboxDeferredVertices[MAX_VERTICES];
     XboxDeferredContext mXboxDeferredContexts[MAX_VERTICES];
+    XboxDeferredNormalEntry mXboxNormalCache[64] = {};
+    uint32_t mXboxNormalCacheSerial = 0;
+    bool mXboxNormalCacheEnabled = false;
     unsigned mXboxContextSearchAttempts,mXboxContextSlotsScanned,mXboxContextMaxScan;
     void XboxDiscardVertex(size_t);
     void XboxMaterializeVertex(size_t);

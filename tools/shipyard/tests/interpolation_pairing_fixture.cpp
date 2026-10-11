@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 #include "interpolation/recording_memory.h"
 #include "binary/compat.h"
 typedef float f32;
@@ -91,6 +92,10 @@ static void Check(float step) {
         std::printf("%a ",double(result.at(&destinations[i]).mf[r][c]));
     for(int r=0;r<4;r++)for(int c=0;c<4;c++)std::printf("%a ",double(current.mf[r][c]));
     std::puts("");
+#ifdef MODERN_RECYCLE_REPLAY
+    FrameInterpolation_Recycle(result);
+    assert(result.empty());
+#endif
 }
 int main() {
     for(int old=0;old<2;old++)for(int now=0;now<2;now++) {
@@ -100,6 +105,53 @@ int main() {
     Record(3,10,7,true);Record(5,30,8,true);
     Check(.25f);Check(.5f);Check(.75f);
     Record(3,10,7,false);Record(5,30,7,false,true);Check(.5f);
+    Record(3,10,7,true);Record(5,30,7,true);
+    auto heldFirst=FrameInterpolation_Interpolate(.25f);
+    auto heldLast=FrameInterpolation_Interpolate(.75f);
+    auto expectedFirst=heldFirst; auto expectedLast=heldLast;
+    Record(7,50,7,true);Record(9,70,7,true);Check(.5f);
+    for(int i=0;i<3;++i) {
+        assert(!memcmp(&heldFirst.at(&destinations[i]),&expectedFirst.at(&destinations[i]),sizeof(MtxF)));
+        assert(!memcmp(&heldLast.at(&destinations[i]),&expectedLast.at(&destinations[i]),sizeof(MtxF)));
+    }
+#ifdef MODERN_RECYCLE_REPLAY
+    FrameInterpolation_Recycle(heldFirst);FrameInterpolation_Recycle(heldLast);
+    RecycledInterpolationMaps pool;
+    Mtx keys[6145]={};
+    typedef std::unordered_map<Mtx*,MtxF> Map;
+    Map partial,match,output;
+    std::vector<Mtx*> wanted;
+    std::vector<MtxF*> slots;
+    for(int i=0;i<3;++i) {
+        partial[&keys[i]]=translated(11);
+        wanted.push_back(&keys[i==2?3:i]);
+        match[wanted.back()]=translated(22);
+    }
+    pool.Recycle(partial);pool.Recycle(match);
+    assert(pool.Acquire(output,wanted,slots)&&slots.size()==3&&output.size()==3);
+    for(int i=0;i<3;++i)assert(slots[i]==&output.at(wanted[i])&&slots[i]->mf[3][0]==22);
+    output.clear();wanted[2]=&keys[4];
+    assert(!pool.Acquire(output,wanted,slots)&&output.empty()&&slots.empty());
+    Map oversized;
+    for(int i=0;i<1025;++i)oversized[&keys[i]]=translated(33);
+    pool.Recycle(oversized);assert(oversized.size()==1025);
+    RecycledInterpolationMaps bounded;
+    for(int bank=0;bank<8;++bank) {
+        Map input;
+        for(int i=0;i<768;++i)input[&keys[bank*768+i]]=translated(float(bank));
+        bounded.Recycle(input);assert(input.empty());
+    }
+    unsigned retained=0;
+    for(int bank=0;bank<8;++bank) {
+        wanted.clear();slots.clear();output.clear();
+        for(int i=0;i<768;++i)wanted.push_back(&keys[bank*768+i]);
+        if(bounded.Acquire(output,wanted,slots)) {
+            retained+=unsigned(output.size());
+            for(int i=0;i<768;++i)assert(slots[i]->mf[3][0]==float(bank));
+        }
+    }
+    assert(retained>0&&retained<=4096);
+#endif
     FrameInterpolation_StartRecord();FrameInterpolation_StopRecord();
     assert(FrameInterpolation_Interpolate(.5f).empty());
 }

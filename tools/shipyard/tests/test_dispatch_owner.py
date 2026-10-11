@@ -28,7 +28,8 @@ class DispatchOwnerTests(unittest.TestCase):
         for helper in ('XboxResolveResourceHash', 'XboxResolveResourcePath'):
             body = selected.split('static void* ' + helper + '(', 1)[1].split('\n}', 1)[0]
             self.assertEqual(body.count(borrow), 1)
-        self.assertEqual(selected.count(borrow), 84 + 2)
+        # Two resource helpers, the texture replay wrapper, two TRI2 variants and the restored DL cull.
+        self.assertEqual(selected.count(borrow), 84 + 2 + 1 + 2 + 1)
         self.assertEqual(selected.count('mInstance.lock().get()'), 2)
         self.assertIn('typedef Shipyard::Fast3D::DispatchOwner<Interpreter> XboxDispatchOwner;', selected)
         self.assertIn('    mInstance = gfx;\n    XboxDispatchOwner::Invalidate(sXboxDispatchOwner);', selected)

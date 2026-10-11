@@ -42,6 +42,9 @@ def audit_source(text):
     if "struct UcodeEntry {" in text:
         start = text.index("struct UcodeEntry {")
     limit = re.search(r"^(?:constexpr|const) size_t MAX_TRI_BUFFER = [0-9]+;", text, re.M).group(0)
+    if "ModernReleaseMaterialMemos();" in text:
+        # Replay memo teardown has its own tests; the audit covers member state only.
+        limit += "\nstatic void ModernReleaseMaterialMemos() {}\nstatic int* sModernTextureReplays = NULL;"
     return (
         '#include "fast/interpreter.h"\n#include "fast3d/value_init.h"\n#include "fast3d/math_compat.h"\n#include <cmath>\n#include <limits>\n'
         + limit

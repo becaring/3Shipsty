@@ -7,13 +7,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pipeline_phase_profile_projection import transform, remove_instrumentation, METHOD_START, METHOD_END
+from profile_caller_guard_projection import remove_instrumentation as remove_caller_guards
 
 
 class PipelinePhaseProjection(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         generated = (ROOT / 'scratch/fast3d-xdk/generated/src/fast/interpreter.cpp').read_text()
-        cls.source = remove_instrumentation(generated)
+        cls.source = remove_instrumentation(remove_caller_guards(generated))
 
     def test_stage_boundaries_and_roundtrip(self):
         changed = transform(self.source)

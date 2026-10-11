@@ -17,7 +17,7 @@ class Tri2PairProjection(unittest.TestCase):
     def test_pair_scope_and_flush_guard(self):
         source = (ROOT / "scratch/fast3d-xdk/generated/src/fast/interpreter.cpp").read_text()
         projected = transform(source)
-        handler = projected.split("bool gfx_tri2_handler_f3dex(", 1)[1].split("\n}", 1)[0]
+        handler = projected.split("bool XboxTri2ReferenceHandler(", 1)[1].split("\n}", 1)[0]
         self.assertIn("mXboxTrianglePairActive = true;", handler)
         self.assertIn("mXboxTrianglePairPrepared = false;", handler)
         self.assertIn("mXboxTrianglePairActive = false;", handler)

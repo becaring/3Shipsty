@@ -78,6 +78,12 @@ void Gui::XboxFinishPassiveDraw() {
     interpreter->mCurDimensions.aspect_ratio =
         (float)interpreter->mCurDimensions.width / (float)interpreter->mCurDimensions.height;
     XboxDrawPassiveGame();
+    // Window drawing and visibility writes finish before the next game worker starts.
+    for (std::map<std::string, std::shared_ptr<GuiWindow>>::const_iterator window = mGuiWindows.begin();
+         window != mGuiWindows.end(); ++window) {
+        if (window->second->IsInitialized() && window->second->XboxCanDrawDuringOverlap())
+            window->second->Draw();
+    }
     EndFrame();
 }
 """

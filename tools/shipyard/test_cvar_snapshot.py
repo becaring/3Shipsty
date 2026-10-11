@@ -23,6 +23,8 @@ def main():
     )
     # Config persistence is outside this getter/ownership contract.
     header = header.replace("#include <nlohmann/json.hpp>\n", "")
+    # Exercise reload/removal without bringing config persistence into this fixture.
+    header = header.replace("  private:", "  public:")
     header = header.replace(
         "    void LoadFromPath(std::string path,\n"
         "                      nlohmann::detail::iteration_proxy<nlohmann::detail::iter_impl<nlohmann::json>> items);\n",

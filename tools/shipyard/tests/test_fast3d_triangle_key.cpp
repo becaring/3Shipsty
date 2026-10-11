@@ -24,6 +24,7 @@ struct TestOwner {
     RenderingState &mRenderingState;
     TestBackend *mRapi;
     GfxClipParameters mXboxClipParameters;
+    XboxTrianglePipelineKey mXboxPipelineKey;
     void Init(TestBackend *next) {
         mRapi = next;
         mXboxClipParameters = mRapi->GetClipParameters();
@@ -43,6 +44,7 @@ static void require(bool ok, const char *message) {
     }
 }
 
+// MODERN TILE IMPORT CERTIFICATE
 int main() {
     TestOwner owner;
     ColorCombiner comb = {};
@@ -50,13 +52,26 @@ int main() {
     comb.usedTextures[1] = false;
     XboxTrianglePipelineResult result = {};
     result.comb = &comb;
-    XboxTrianglePipelineKey key;
+    XboxTrianglePipelineKey& key = owner.mXboxPipelineKey;
     require((reinterpret_cast<uintptr_t>(key.rendering) & 3) == 0, "rendering certificate bytes are not word aligned");
     require((reinterpret_cast<uintptr_t>(key.tiles[0]) & 3) == 0 &&
                 (reinterpret_cast<uintptr_t>(key.tiles[1]) & 3) == 0,
             "tile certificate bytes are not word aligned");
     key.Capture(owner, result);
     require(key.Matches(owner), "unchanged modern state did not certify");
+    require(XboxCanRetainTextureImports(owner), "unchanged texture imports not retained");
+    key.valid = false;
+    require(!XboxCanRetainTextureImports(owner), "native invalidation suppressed texture imports");
+    key.Capture(owner, result);
+    for (unsigned half = 0; half < 2; ++half) {
+        owner.rdp.palettes[half] = reinterpret_cast<const uint8_t*>(&owner);
+        require(!XboxCanRetainTextureImports(owner), "clean palette load suppressed texture imports");
+        owner.rdp.palettes[half] = NULL;
+        owner.rdp.loaded_texture[half].addr = reinterpret_cast<const uint8_t*>(&owner);
+        require(!XboxCanRetainTextureImports(owner), "clean TMEM load suppressed texture imports");
+        owner.rdp.loaded_texture[half].addr = NULL;
+    }
+    require(XboxCanRetainTextureImports(owner), "restored texture imports not retained");
     for (int i = 0; i < 100; ++i)
         require(key.Matches(owner), "cached clip changed");
     require(owner.backend.clipReads == 1, "clip lookup repeated on key hit");

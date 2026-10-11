@@ -153,6 +153,12 @@ def presentation(source):
         )
     source = once(
         source,
+        "    ModernFrameProfile::End(ModernFrameProfile::Present);",
+        "    ModernFrameProfile::End(ModernFrameProfile::Present);\n"
+        "    ModernFrameProfile::ObservePresentation();",
+    )
+    source = once(
+        source,
         "    mInterpreter->Run(commands, mtxReplacements);\n    ModernFrameProfile::End(ModernFrameProfile::Interpreter);",
         """    mInterpreter->Run(commands, mtxReplacements);
     if (ModernFrameProfile::CaptureTrianglePipeline()) {

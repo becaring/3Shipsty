@@ -390,6 +390,15 @@ def transform(name, text):
         text = re.sub(r"\b0b([01]+)\b", lambda m: str(int(m[1], 2)), text)
         text = cache_viewport_interpreter_locks(text)
     elif name.endswith("/StatsWindow.cpp"):
+        text = '#include "application/frame_profile.h"\n' + text
+        text = once(
+            text, "const float framerate = ImGui::GetIO().Framerate;",
+            "const float framerate = ModernFrameProfile::PresentationFps();",
+        )
+        text = once(
+            text, "const float deltatime = ImGui::GetIO().DeltaTime;",
+            "const float deltatime = framerate > 0.0f ? 1.0f / framerate : 0.0f;",
+        )
         text = once(
             text,
             "#if defined(_WIN32)",

@@ -16,11 +16,25 @@ void ConsoleVariable::UseSnapshot(const Snapshot* snapshot) const {
     overlapSnapshot = snapshot;
 }
 void ConsoleVariable::CaptureSnapshot(Snapshot& snapshot) const {
-    snapshot.clear();
+    // Keep all names, including mod CVars. Reuse storage only after replay retires.
+    for (Snapshot::iterator cursor = snapshot.begin(); cursor != snapshot.end();) {
+        Snapshot::const_iterator live = mVariables.find(cursor->first);
+        if (live == mVariables.end() || !live->second) cursor = snapshot.erase(cursor);
+        else ++cursor;
+    }
     for (Snapshot::const_iterator cursor = mVariables.begin(); cursor != mVariables.end(); ++cursor) {
         if (!cursor->second) continue;
         const CVar& original = *cursor->second;
-        std::shared_ptr<CVar> copy = std::make_shared<CVar>();
+        std::shared_ptr<CVar>& copy = snapshot[cursor->first];
+        // Get() may have handed ownership to a caller beyond the previous replay.
+        if (!copy || copy.use_count() != 1) copy = std::make_shared<CVar>();
+        if (copy->Type == ConsoleVariableType::String) {
+            if (original.Type == ConsoleVariableType::String &&
+                (copy->String == original.String || (copy->String && original.String &&
+                 strcmp(copy->String, original.String) == 0))) continue;
+            free(copy->String);
+            copy->String = nullptr;
+        }
         copy->Type = original.Type;
         switch (original.Type.GetValue()) {
             case ConsoleVariableType::Integer: copy->Integer = original.Integer; break;
@@ -31,7 +45,6 @@ void ConsoleVariable::CaptureSnapshot(Snapshot& snapshot) const {
             case ConsoleVariableType::Color: copy->Color = original.Color; break;
             case ConsoleVariableType::Color24: copy->Color24 = original.Color24; break;
         }
-        snapshot.insert(std::make_pair(cursor->first, copy));
     }
 }
 """

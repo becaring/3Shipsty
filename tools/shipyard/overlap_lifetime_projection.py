@@ -280,6 +280,12 @@ def project(name, text):
             "    if (!nameTagDl.empty()) Shipyard_OverlapFence();\n    nameTagDl.clear();",
         )
     if name == "soh/soh/Enhancements/debugger/colViewer.cpp":
+        text = before(
+            text,
+            "DrawColViewer",
+            """// Pending replays may still borrow these lists while the viewer is disabled.
+    if (!CVarGetInteger(CVAR_DEVELOPER_TOOLS("ColViewer.Enabled"), 0)) return;""",
+        )
         text = (
             once(
                 text,
