@@ -27,6 +27,23 @@ class LifetimeProjectionTests(unittest.TestCase):
         self.assertNotIn("Graph_Alloc(gfxCtx, data->totalVtxCount * sizeof(Vtx))", text)
         self.assertNotIn("Shipyard_OverlapFence();", text)
 
+    def test_font_slot_writes_wait_only_when_bytes_change(self):
+        text = self.source("soh/src/code/z_kanfont.c")
+        self.assertEqual(text.count("Shipyard_OverlapFence();"), 5)
+        self.assertIn(
+            "if (memcmp(font->iconBuf, msgStaticTbl[4 + icon], strlen(msgStaticTbl[4 + icon]) + 1) != 0) {"
+            " Shipyard_OverlapFence(); memcpy(font->iconBuf,",
+            text,
+        )
+        text = self.source("soh/src/code/z_message_PAL.c")
+        self.assertEqual(
+            text.count(
+                "if (font->charTexBuf[0] != messageTableEntry->typePos) { Shipyard_OverlapFence();"
+                " font->charTexBuf[0] = messageTableEntry->typePos; }"
+            ),
+            5,
+        )
+
     def test_actor_destroy_waits_before_callback(self):
         text = self.source("soh/src/code/z_actor.c")
         start = text.index("void Actor_Destroy(")

@@ -371,6 +371,30 @@ def project(name, text):
             "        free(mapRightTexModifiedRaw);",
             "        Shipyard_OverlapFence();\n        free(mapRightTexModifiedRaw);",
         )
+    if name == "soh/src/code/z_kanfont.c":
+        # Glyph and icon slots hold texture paths that later frames keep drawing.
+        text, count = re.subn(
+            r"memcpy\(([^,]+), ([^,]+), strlen\(\2\) \+ 1\);",
+            r"if (memcmp(\1, \2, strlen(\2) + 1) != 0) {"
+            r" Shipyard_OverlapFence(); memcpy(\1, \2, strlen(\2) + 1); }",
+            text,
+        )
+        if count != 5:
+            raise ValueError("Font texture path copy inventory changed")
+    if name == "soh/src/code/z_message_PAL.c":
+        # Message lookup stores typePos in glyph slot 0 while the previous text may still replay.
+        old = "font->charTexBuf[0] = messageTableEntry->typePos;"
+        if text.count(old) != 5:
+            raise ValueError("Message type position inventory changed")
+        text = text.replace(
+            old,
+            "if (font->charTexBuf[0] != messageTableEntry->typePos) {"
+            " Shipyard_OverlapFence(); " + old + " }",
+        )
+        old = "for (j = 0; j < FONT_CHAR_TEX_SIZE; j += 4) {"
+        if text.count(old) != 5:
+            raise ValueError("Name glyph copy inventory changed")
+        text = text.replace(old, "Shipyard_OverlapFence();\n" + old)
     if text != original:
         text = '#include "application/overlap.h"\n' + text
     return text
