@@ -1,11 +1,11 @@
 // Included by the projected OTR bridge after the original audio helpers.
 // Game owns whole RunFrame callbacks; render owns device work and idle GUI.
 #include "application/overlap.h"
-#include "application/frame_worker.h"
-#include "application/replay_batch.h"
-#include "application/deferred_storage.h"
-#include "application/writable_spans.h"
-#include "application/overlap_depth.h"
+#include "overlap/frame_worker.h"
+#include "overlap/replay_batch.h"
+#include "overlap/deferred_storage.h"
+#include "overlap/writable_spans.h"
+#include "overlap/depth.h"
 #include "application/gui_frame_cache.h"
 #include "application/thread_profile.h"
 #include "native-imgui/gui_capture.h"
@@ -23,6 +23,11 @@ void FrameInterpolation_Recycle(std::unordered_map<Mtx*, MtxF>& replacements);
 void Shipyard_Log(const char* format, ...);
 
 namespace ModernOverlap {
+using Shipyard::Overlap::DeferredStorage;
+using Shipyard::Overlap::FrameWorker;
+using Shipyard::Overlap::ReplayBatch;
+using Shipyard::Overlap::ReplayCadence;
+using Shipyard::Overlap::WritableSpans;
 typedef std::unordered_map<Mtx*, MtxF> ReplacementMap;
 typedef std::vector<std::shared_ptr<Ship::IResource> > ResourceOwners;
 struct FramePacket {
@@ -457,7 +462,8 @@ static int Shipyard_OverlapRunFrameInternal(void (*runFrame)(void)) {
         deferredGuiIntent = false;
         session->CaptureInput();
         Shipyard_OverlapCaptureGraphics();
-        session->worker.start();
+        // Render stays on processor 0; the mixer and XAudio engine use 2 and 3.
+        session->worker.start(4);
     }
     GameWorker::Ticket ticket;
     const FramePacket* packet;

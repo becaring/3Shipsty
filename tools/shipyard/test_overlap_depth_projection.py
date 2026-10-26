@@ -6,6 +6,7 @@ import re
 import subprocess
 import tempfile
 import unittest
+from platform_base import resolve
 
 ROOT = Path(__file__).resolve().parents[2]
 VCVARS = Path(
@@ -49,7 +50,7 @@ class OverlapDepthProjectionTests(unittest.TestCase):
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
-#include "application/overlap_depth.h"
+#include "overlap/depth.h"
 typedef int s32; typedef unsigned int u32; typedef float f32; typedef unsigned char u8;
 #define LIGHTS_BUFFER_SIZE 32
 #define LIGHT_POINT_GLOW 2
@@ -156,7 +157,8 @@ int main(void) {
             directory = Path(temporary)
             source = directory / "fixture.c"
             source.write_text(fixture, encoding="utf-8")
-            command = f'call "{VCVARS}" >nul && cl /nologo /TC /W3 /I"{ROOT / "platform/shipyard"}" "{source}" /Fe:"{directory / "fixture.exe"}"'
+            includes = f'/I"{ROOT / "platform/shipyard"}" /I"{resolve(ROOT) / "sources"}"'
+            command = f'call "{VCVARS}" >nul && cl /nologo /TC /W3 {includes} "{source}" /Fe:"{directory / "fixture.exe"}"'
             compiled = subprocess.run(
                 'cmd /d /s /c "' + command + '"',
                 cwd=directory,

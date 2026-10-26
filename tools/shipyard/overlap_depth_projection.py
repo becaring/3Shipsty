@@ -112,10 +112,10 @@ def project(name, text):
             "void LightContext_DestroyList(PlayState* play, LightContext* lightCtx) {",
             "void LightContext_DestroyList(PlayState* play, LightContext* lightCtx) {\n    ++sShipyardDepthSceneEpoch;",
         )
-        return '#include "application/overlap_depth.h"\n' + text + LIGHT_HOOKS
+        return '#include "overlap/depth.h"\n' + text + LIGHT_HOOKS
     if name == "soh/src/code/z_kankyo.c":
         declarations = """
-#include "application/overlap_depth.h"
+#include "overlap/depth.h"
 extern int Shipyard_OverlapIsGameWorker(void);
 extern uint64_t Shipyard_OverlapDepthSceneEpoch(void);
 extern void Shipyard_OverlapCaptureLights(PlayState*, ShipyardOverlapDepthRequest*);

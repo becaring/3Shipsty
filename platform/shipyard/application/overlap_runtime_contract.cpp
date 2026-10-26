@@ -12,7 +12,7 @@
 #include "async/native.h"
 #include "application/overlap.h"
 #include "application/overlap_audio.h"
-#include "application/overlap_depth.h"
+#include "overlap/depth.h"
 
 struct Gfx { uint64_t generation; };
 struct Mtx {};
