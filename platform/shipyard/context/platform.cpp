@@ -20,6 +20,11 @@ extern "C" const char gGitCommitHash[];
 namespace {
 volatile LONG faultReceiptClaimed = 0;
 LPTOP_LEVEL_EXCEPTION_FILTER previousFaultFilter = NULL;
+// A flushed file write takes ~40 ms on the console, so boot stages collect here
+// and are written once, at the first completed frame or with a fault receipt.
+// ponytail: a boot that hangs leaves no boot.txt; the debugger still gets each line.
+char bootStages[4096];
+size_t bootStagesLength = 0;
 
 DWORD WriteFlushedFile(const char* path, const char* line, bool append) {
     HANDLE file = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
@@ -46,6 +51,7 @@ void RecordNativeFault(const char* kind, DWORD code, const void* address, const 
                 GetCurrentThreadId(), detail ? detail : "");
     OutputDebugStringA(line);
     CreateDirectoryA("game:\\logs", NULL);
+    if (bootStagesLength) WriteFlushedFile("game:\\logs\\boot.txt", bootStages, false);
     WriteFlushedFile("game:\\logs\\startup-fault.txt", line, false);
 }
 
@@ -78,12 +84,16 @@ namespace Shipyard { namespace Platform {
 void RecordBootStage(const char* stage, bool commitToSave) {
 #ifdef _XBOX
     (void)commitToSave;
-    if (strcmp(stage, "entry") == 0) CreateDirectoryA("game:\\logs", NULL);
-    char line[256];
-    _snprintf_s(line, sizeof(line), _TRUNCATE, "commit=%s stage=%s tick=%lu thread=%lu\n",
-                gGitCommitHash, stage, GetTickCount(), GetCurrentThreadId());
+    char* line = bootStages + bootStagesLength;
+    const int length = _snprintf_s(line, sizeof(bootStages) - bootStagesLength, _TRUNCATE,
+                                   "commit=%s stage=%s tick=%lu thread=%lu\n", gGitCommitHash,
+                                   stage, GetTickCount(), GetCurrentThreadId());
     OutputDebugStringA(line);
-    WriteFlushedFile("game:\\logs\\boot.txt", line, strcmp(stage, "entry") != 0);
+    if (length > 0) bootStagesLength += length;
+    if (strcmp(stage, "first-audio-complete") == 0) {
+        CreateDirectoryA("game:\\logs", NULL);
+        WriteFlushedFile("game:\\logs\\boot.txt", bootStages, false);
+    }
 #else
     (void)stage;
     (void)commitToSave;

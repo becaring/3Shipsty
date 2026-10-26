@@ -15,8 +15,11 @@ def transform(text):
                 '#include "fast3d/game_fill_discard_certificate.h"\n')
     text = once(text,
                 '    (mXboxPipelineKey.valid=false, mRapi->ClearFramebuffer(xboxFullColorClear, true));',
-                '    mXboxCanDiscardGameColor =\n'
-                '        mRendersToFb && mMsaaLevel == 1 && !xboxFullColorClear;\n'
+                '    // Direct rendering qualifies only when the game viewport is the whole target.\n'
+                '    mXboxCanDiscardGameColor = mMsaaLevel == 1 && !xboxFullColorClear &&\n'
+                '        (mRendersToFb || (mGameWindowViewport.x == 0 && mGameWindowViewport.y == 0 &&\n'
+                '            mGameWindowViewport.width == mGfxCurrentWindowDimensions.width &&\n'
+                '            mGameWindowViewport.height == mGfxCurrentWindowDimensions.height));\n'
                 '    mXboxPipelineKey.valid = false;\n'
                 '    if (mXboxCanDiscardGameColor)\n'
                 '        Fast::ShipyardXenos::BeginGameFramebufferDepthClear();\n'
@@ -42,7 +45,7 @@ def transform(text):
     // This consumer proves its first color operation overwrites every pixel.
     if (mXboxCanDiscardGameColor) {
         const LoadedVertex* corners = &mRsp->loaded_vertices[MAX_VERTICES];
-        const bool fullOpaqueFill = !mFbActive && mRendersToFb &&
+        const bool fullOpaqueFill = !mFbActive &&
             mMsaaLevel == 1 && mBufVboLen == 0 && mBufVboNumTris == 0 &&
             mode == G_CYC_FILL && mRdp->other_mode_l ==
                 (G_AC_NONE | G_ZS_PIXEL | G_RM_NOOP | G_RM_NOOP2) &&

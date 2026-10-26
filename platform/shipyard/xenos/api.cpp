@@ -24,6 +24,7 @@ ShaderProgram* CurrentVariant(ShaderProgram* program) {
 }
 }
 void InitializeNativeDisplay(){ShipyardXenos::InitializeDisplay();}
+void NativeDisplaySize(uint32_t* w,uint32_t* h){ShipyardXenos::GetDisplaySize(w,h);}
 HRESULT PresentNativeStartupUI(){return ShipyardXenos::PresentStartupUI();}
 void BeginNativeGuiDraw(){ShipyardXenos::BeginGuiDraw();}
 void InvalidateNativeGuiState(){ShipyardXenos::InvalidateGuiState();}

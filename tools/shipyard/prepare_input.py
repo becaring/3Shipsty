@@ -19,6 +19,9 @@ def transform(relative, text):
     from xbox360_platform.controller_routes import project as project_routes
 
     text = project_routes(relative, text)
+    from input_cpu import project as input_cpu
+
+    text = input_cpu(relative, text)
     if relative == "src/ship/controller/controldeck/ControlDeck.cpp":
         text = '#include "application/overlap.h"\n' + text
         for kind, method in enumerate(("Gamepad", "Keyboard", "Mouse")):

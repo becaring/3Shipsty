@@ -1,7 +1,7 @@
 """Inventory real projected sources and emit an inspectable compile-only XDK project.
 
-Consumes the declarative subsystem report list, never executes a projection or
-links old objects. Every application source remains selected or explicitly pending.
+Consumes the declarative subsystem report list and reviewed CPU projections;
+never links old objects. Every application source stays selected or explicitly pending.
 """
 
 import argparse
@@ -213,6 +213,9 @@ def collect(config=None):
     if actual != config["libultraship_commit"]:
         raise ValueError("LUS submodule differs from the stable release pin")
     current = inventory()
+    from cpu_source_projections import materialize_headers
+
+    cpu_include, cpu_header = materialize_headers(ROOT)
     known = {r["path"] for r in current["files"]}
     selected, exclusions, missing, seen_reports = {}, [], [], []
     for subsystem, patterns in config["reports"].items():
@@ -233,12 +236,18 @@ def collect(config=None):
                     options.extend(compiler_options())
                 if language == "cpp":
                     canonical_headers(options, config.get("canonical_header_providers", []))
+                    options.insert(0, "/I$(ShipyardRoot)/" + cpu_include)
                 reason = config["production_exclusions"].get(source)
                 if source.startswith("tools/") or "/tests/" in source:
                     reason = "Contract/test source, outside the production source set"
                 if reason:
                     exclusions.append(dict(source=source, reason=reason))
                     continue
+                from cpu_source_projections import materialize
+
+                source, projection_input = materialize(source, ROOT, PLATFORM_BASE)
+                if projection_input:
+                    options.insert(0, "/I" + portable(projection_input["include_directory"]))
                 if not source_path(source).is_file():
                     raise ValueError("Missing generated production source: " + source)
                 row = dict(
@@ -253,6 +262,8 @@ def collect(config=None):
                     prior_compile_exit=record.get("compile_exit", record.get("exit", record.get("returncode"))),
                 )
                 row["target_definition_corrections"] = target_definitions(config, subsystem, record, source, options)
+                if projection_input:
+                    row["projection_input"] = projection_input
                 if source in config.get("source_fragments", {}):
                     row["upstream_fragment"] = config["source_fragments"][source]
                 # Reports supply recipes, not proof that current mutable inputs compiled.
@@ -302,6 +313,7 @@ def collect(config=None):
         missing_subsystem_recipes=missing,
         compile_only=True,
         sources=rows,
+        cpu_header_projection=cpu_header,
         coverage=cov,
         production_exclusions=sorted(exclusions, key=lambda r: r["source"]),
         recipe_reports=seen_reports,

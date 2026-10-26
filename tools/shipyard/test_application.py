@@ -8,6 +8,7 @@ import struct
 import subprocess
 import unittest
 from prepare_application import ROOT, OUT, OWN, prepare, probe, boundary_probe, function
+from prepare_application import mount_archives_once
 from platform_base import resolve as resolve_platform_base
 
 PLATFORM_BASE = resolve_platform_base(ROOT)
@@ -66,8 +67,12 @@ class ApplicationContracts(unittest.TestCase):
         for helper in generated_helpers[-5:-1]:
             self.assertEqual(names(projected).count(helper), 1)
         self.assertEqual(names(projected).count("XboxRunDeferredDepthRead"), 1)
+        # The overlap runtime is inlined ahead of Graph_ProcessGfxCommands.
+        start = projected.index("// Included by the projected OTR bridge")
+        end = projected.index('extern "C" void Graph_ProcessGfxCommands(', start)
         self.assertEqual(
-            names(original), [n for n in names(projected) if n not in generated_helpers]
+            names(original),
+            [n for n in names(projected[:start] + projected[end:]) if n not in generated_helpers],
         )
 
         # Compare actual resource-registration expressions independently of
@@ -120,7 +125,7 @@ class ApplicationContracts(unittest.TestCase):
         )
         self.assertEqual(expected, init)
         self.assertEqual(
-            function(original, "ReadPortVersionFromOTR").text,
+            function(mount_archives_once(original), "ReadPortVersionFromOTR").text,
             function(projected, "ReadPortVersionFromOTR").text,
         )
 

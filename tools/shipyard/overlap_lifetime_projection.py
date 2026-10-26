@@ -27,6 +27,16 @@ def functions(text, name):
     ]
 
 
+# Functions whose only hazard writes are per-frame resource vertices.
+SHADOWED = {"EnGanonMant_UpdateVertices", "func_809034E4"}
+# These draws only invalidate the cached texture; their writers stay fenced.
+HAZARD_READERS = {"BossGanon_Draw", "EnGanonMant_DrawCloak"}
+
+
+def declared(node):
+    return re.search(r"(\w+)\s*\(", node.child_by_field_name("declarator").text.decode()).group(1)
+
+
 def before(text, name, code):
     nodes = functions(text, name)
     if len(nodes) != 1:
@@ -193,7 +203,6 @@ def resource_manager(text):
 
 
 FENCED = {
-    "soh/src/code/z_actor.c": ("Actor_Destroy", "Actor_FreeOverlay"),
     "soh/src/code/z_play.c": ("Play_Init", "Play_Destroy"),
     "soh/src/code/game.c": ("GameState_Init", "GameState_Destroy", "GameState_Realloc"),
     "soh/src/code/z_scene.c": ("Scene_ExecuteCommands",),
@@ -241,6 +250,14 @@ def project(name, text):
         )
     for function in FENCED.get(name, ()):
         text = before(text, function, "Shipyard_OverlapFence();")
+    if name == "soh/src/code/z_actor.c":
+        # Destroy callbacks only release deferred arena memory; overlay resets
+        # rewrite static draw data the previous replay may still read.
+        text = once(
+            text,
+            "            dbEntry->reset();",
+            "            Shipyard_OverlapFence();\n            dbEntry->reset();",
+        )
     if name == "soh/src/code/z_skin.c":
         text = once(
             text,
@@ -326,6 +343,13 @@ def project(name, text):
             if "ResourceMgr_LoadVtxByName(" not in body.text.decode():
                 continue
             raw = text.encode()
+            if declared(node) in SHADOWED:
+                # Per-frame writers stage into the packet; render applies it before replay.
+                staged = body.text.replace(
+                    b"ResourceMgr_LoadVtxByName(", b"(Vtx*)Shipyard_OverlapShadowResource((const char*)"
+                )
+                text = (raw[: body.start_byte] + staged + raw[body.end_byte :]).decode()
+                continue
             text = (
                 raw[: body.start_byte + 1]
                 + b"\n    Shipyard_OverlapFence();"
@@ -349,6 +373,8 @@ def project(name, text):
         for node in reversed(nodes):
             body = node.child_by_field_name("body")
             content = body.text.decode()
+            if declared(node) in SHADOWED | HAZARD_READERS:
+                continue
             if not re.search(
                 r"sMaskTex|sLava|sDecayTex|sClearPixelTex|sWindowShatterTex|sVertices|gMantVtx",
                 content,
@@ -395,6 +421,52 @@ def project(name, text):
         if text.count(old) != 5:
             raise ValueError("Name glyph copy inventory changed")
         text = text.replace(old, "Shipyard_OverlapFence();\n" + old)
+    if "Shipyard_OverlapShadowResource(" in text:
+        text = "void* Shipyard_OverlapShadowResource(const char* name);\n" + text
     if text != original:
         text = '#include "application/overlap.h"\n' + text
     return text
+
+
+def shadow_runtime(text):
+    """Stage per-frame resource writes in the packet; render applies them first."""
+    text = once(text, "struct FramePacket {\n", """\
+struct ShadowWrite {
+    void* live;
+    unsigned generation;
+    std::vector<unsigned char> bytes;
+};
+struct FramePacket {
+""")
+    text = once(text, "    ResourceOwners resources;\n",
+                "    ResourceOwners resources;\n    std::deque<ShadowWrite> shadows;\n")
+    text = once(text, "        resources = other.resources;\n",
+                "        resources = other.resources;\n        shadows = other.shadows;\n")
+    text = once(text, "    ReplayHandoff handoff(owner, ticket, packet, forceStop);\n", """\
+    ReplayHandoff handoff(owner, ticket, packet, forceStop);
+    const unsigned shadowGeneration = Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration();
+    for (size_t index = 0; index < packet.shadows.size(); ++index) {
+        const ShadowWrite& write = packet.shadows[index];
+        if (write.generation == shadowGeneration) memcpy(write.live, &write.bytes[0], write.bytes.size());
+    }
+""")
+    return once(text, 'extern "C" void Shipyard_OverlapSaveStateBoundary(int restoring) {', """\
+extern "C" void* ResourceGetDataByName(const char* name);
+extern "C" size_t ResourceGetSizeByName(const char* name);
+extern "C" void* Shipyard_OverlapShadowResource(const char* name) {
+    void* live = ResourceGetDataByName(name);
+    if (!ModernOverlap::onGameWorker || !live) return live;
+    const size_t bytes = ResourceGetSizeByName(name);
+    if (!bytes) return live;
+    std::deque<ModernOverlap::ShadowWrite>& writes = ModernOverlap::session->worker.buildingPacket().shadows;
+    for (size_t index = 0; index < writes.size(); ++index)
+        if (writes[index].live == live) return &writes[index].bytes[0];
+    writes.push_back(ModernOverlap::ShadowWrite());
+    ModernOverlap::ShadowWrite& write = writes.back();
+    write.live = live;
+    write.generation = Ship::Context::GetInstance()->GetResourceManager()->GetXboxLookupGeneration();
+    // Earlier packets applied their writes before render permitted this frame.
+    write.bytes.assign(static_cast<unsigned char*>(live), static_cast<unsigned char*>(live) + bytes);
+    return &write.bytes[0];
+}
+extern "C" void Shipyard_OverlapSaveStateBoundary(int restoring) {""")

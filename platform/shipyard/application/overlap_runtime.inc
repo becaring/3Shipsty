@@ -82,6 +82,12 @@ static void AbortRuntime(const char* operation) {
     Shipyard_Log("Game/render overlap stopped: %s", operation);
     std::abort();
 }
+// Call only inside a catch block.
+static void LogException(const char* where) {
+    try { throw; }
+    catch (const std::exception& e) { Shipyard_Log("%s: %s", where, e.what()); }
+    catch (...) { Shipyard_Log("%s: non-standard exception", where); }
+}
 
 static void WaitAudio(uint64_t generation, ModernFrameProfile::ThreadSample* sample = NULL) {
     Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(audio.mutex);
@@ -133,6 +139,7 @@ struct Session {
             owner.storage.collect();
             owner.runFrame();
         } catch (...) {
+            LogException("Game frame threw");
             ModernFrameProfile::EndThreadSample();
             ModernFrameProfile::BeginThreadSample(owner.tailProfile, false);
             throw;
@@ -488,13 +495,35 @@ static void Shipyard_OverlapShutdownInternal(void) {
     passiveGui.reset();
 }
 
+#ifdef _XBOX
+// catch(...) also takes hardware faults here; log the code and address while
+// the faulting frame is still on the stack, then let the catch handle it.
+static int LogFrameFault(EXCEPTION_POINTERS* info) {
+    Shipyard_Log("Frame handoff fault: code=%08lx address=%p", info->ExceptionRecord->ExceptionCode,
+                 info->ExceptionRecord->ExceptionAddress);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+static int RunFrameLoggingFaults(void (*runFrame)(void)) {
+    __try { return Shipyard_OverlapRunFrameInternal(runFrame); }
+    __except (LogFrameFault(GetExceptionInformation())) { return 1; }
+}
+#else
+static int RunFrameLoggingFaults(void (*runFrame)(void)) { return Shipyard_OverlapRunFrameInternal(runFrame); }
+#endif
+
 extern "C" int Shipyard_OverlapRunFrame(void (*runFrame)(void)) {
-    try { return Shipyard_OverlapRunFrameInternal(runFrame); }
-    catch (...) { ModernOverlap::AbortRuntime("Frame handoff failed"); }
+    try { return RunFrameLoggingFaults(runFrame); }
+    catch (...) {
+        ModernOverlap::LogException("Frame handoff threw");
+        ModernOverlap::AbortRuntime("Frame handoff failed");
+    }
     return 1;
 }
 
 extern "C" void Shipyard_OverlapShutdown(void) {
     try { Shipyard_OverlapShutdownInternal(); }
-    catch (...) { ModernOverlap::AbortRuntime("Frame shutdown failed"); }
+    catch (...) {
+        ModernOverlap::LogException("Frame shutdown threw");
+        ModernOverlap::AbortRuntime("Frame shutdown failed");
+    }
 }

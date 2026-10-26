@@ -1282,7 +1282,15 @@ void Skybox_Update(SkyboxContext* skyboxCtx) {""",
         changes.append(
             "One-frame game/render ownership, depth publication and replay lifetimes"
         )
-    return projected.encode(), changes
+    from game_cpu_projection import project as game_cpu
+    from audio_cpu_projection import game as audio_cpu
+
+    from overlap_audio_barrier_projection import game as audio_barrier
+
+    cpu_projected = audio_barrier(name, audio_cpu(name, game_cpu(name, projected)))
+    if cpu_projected != projected:
+        changes.append("Skip redundant game work and use exact native audio lanes")
+    return cpu_projected.encode(), changes
 
 
 def stage(sources):

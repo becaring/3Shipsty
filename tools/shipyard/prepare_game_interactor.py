@@ -51,6 +51,9 @@ def call_sites(text, name):
 
 
 def header(text, max_arity):
+    from hook_removal_projection import project as project_hook_removal
+
+    text = project_hook_removal(text)
     # A dispatch miss must not allocate a permanent empty outer group. The
     # registry never erases outer groups; a reference to its mapped group also
     # survives outer-table rehash when a callback registers another key.
@@ -68,7 +71,7 @@ def header(text, max_arity):
         end = text.index("\n    }", start) + len("\n    }")
         body = text[start:end]
         access = "RegisteredGameHooks<H>::functionsFor" + suffix + "[" + key + "]"
-        if body.count(access) != 5:
+        if body.count(access) != 3:
             raise ValueError("Keyed hook dispatch access inventory changed: " + suffix)
         body = body.replace(access, "group")
         entry = (

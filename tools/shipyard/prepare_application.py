@@ -96,12 +96,6 @@ def application_syntax(source):
     source = re.sub(
         r"(?<![\w:])(static_pointer_cast|dynamic_pointer_cast)<", r"std::\1<", source
     )
-    source = once(
-        source,
-        "ExtensionCache[nPath] = { rPath, ext };",
-        "ExtensionEntry extensionEntry; extensionEntry.path=rPath; extensionEntry.ext=ext;"
-        " ExtensionCache[nPath]=extensionEntry;",
-    )
     for kind in ["SAVE", "LOAD"]:
         source = once(
             source,
@@ -447,6 +441,9 @@ void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>
     from overlap_audio_projection import source as overlap_audio_source
 
     source = overlap_audio_source(source)
+    from audio_cpu_projection import application as audio_cpu
+
+    source = audio_cpu(source)
     source = '#include "audio/services.h"\n' + source
     source = once(
         source,
@@ -458,6 +455,18 @@ void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>
     from overlap_lifetime_projection import project as overlap_lifetime
 
     source = overlap_lifetime("soh/soh/OTRGlobals.cpp", source)
+    from overlap_resource_cpu_projection import application as resource_owners
+
+    source = resource_owners(source)
+    from overlap_audio_barrier_projection import runtime as audio_barrier
+
+    source = audio_barrier(source)
+    from overlap_lifetime_projection import shadow_runtime
+
+    source = shadow_runtime(source)
+    from overlap_depth_runtime_projection import runtime as deferred_depth
+
+    source = deferred_depth(source)
     source = (
         '#include "ship/controller/physicaldevice/ConnectedPhysicalDeviceManager.h"\n'
         + source
@@ -594,6 +603,83 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
     )
 
 
+ARCHIVE_MOUNTS = """    std::string mqPath = Ship::Context::LocateFileAcrossAppDirs("oot-mq.o2r", appShortName);
+    if (std::filesystem::exists(mqPath)) {
+        context->GetResourceManager()->GetArchiveManager()->AddArchive(mqPath);
+    }
+    std::string ootPath = Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName);
+    if (std::filesystem::exists(ootPath)) {
+        context->GetResourceManager()->GetArchiveManager()->AddArchive(ootPath);
+    }
+"""
+
+
+def mount_archives_once(source):
+    # Opening an O2R parses its zip directory and hashes every entry. Version
+    # checks read the mounted archives instead of opening temporary copies:
+    # soh.o2r is checked after InitResourceManager mounts it, and the Xbox
+    # preflight (runtime_preflight.inc) mounts the ROM archives Initialize() did.
+    version = """    OTRVersion portArchiveVersion = DetectOTRVersion("soh.o2r", false);
+    sohArchiveVersionMatch = portArchiveVersion.major == gBuildVersionMajor &&
+                             portArchiveVersion.minor == gBuildVersionMinor &&
+                             portArchiveVersion.patch == gBuildVersionPatch;
+"""
+    source = once(source, version, "")
+    mount = "    context->InitResourceManager({ portArchivePath }, {}, 3, true);\n"
+    source = once(source, mount, mount + version)
+    source = once(
+        source,
+        "void OTRGlobals::Initialize() {\n" + ARCHIVE_MOUNTS,
+        "void OTRGlobals::Initialize() {\n#ifndef _XBOX\n" + ARCHIVE_MOUNTS + "#endif\n",
+    )
+    return once(
+        source,
+        """    // Use a temporary archive instance to load the otr and read the version file
+    auto archive = std::make_shared<Ship::O2rArchive>(otrPath);
+    if (archive->Open()) {""",
+        """    // Opening an archive indexes every entry; prefer the mounted instance.
+    std::shared_ptr<Ship::Archive> archive;
+    const auto mounted = Ship::Context::GetInstance()->GetResourceManager()->GetArchiveManager()->GetArchives();
+    for (size_t i = 0; i < mounted->size() && !archive; ++i)
+        if ((*mounted)[i]->IsLoaded() && (*mounted)[i]->GetPath() == otrPath) archive = (*mounted)[i];
+    if (!archive) {
+        archive = std::make_shared<Ship::O2rArchive>(otrPath);
+        if (!archive->Open()) archive = nullptr;
+    }
+    if (archive) {""",
+    )
+
+
+def scan_extensions_once(source):
+    # Same keys and entries, without copying the archive file list or splitting
+    # every path into a vector of parts.
+    return once(
+        source,
+        """    auto lst = *Ship::Context::GetInstance()->GetResourceManager()->GetArchiveManager()->ListFiles().get();
+
+    for (auto& rPath : lst) {
+        std::vector<std::string> raw = StringHelper::Split(rPath, ".");
+        std::string ext = raw[raw.size() - 1];
+        std::string nPath = rPath.substr(0, rPath.size() - (ext.size() + 1));
+        replace(nPath.begin(), nPath.end(), '\\\\', '/');
+
+        ExtensionCache[nPath] = { rPath, ext };
+    }""",
+        """    const auto files = Ship::Context::GetInstance()->GetResourceManager()->GetArchiveManager()->ListFiles();
+    ExtensionCache.rehash(files->size());
+    for (size_t i = 0; i < files->size(); ++i) {
+        const std::string& rPath = (*files)[i];
+        const size_t dot = rPath.rfind('.');
+        std::string nPath = dot == std::string::npos ? rPath : rPath.substr(0, dot);
+        replace(nPath.begin(), nPath.end(), '\\\\', '/');
+        ExtensionEntry value;
+        value.path = rPath;
+        value.ext = dot == std::string::npos ? rPath : rPath.substr(dot + 1);
+        ExtensionCache[nPath] = value;
+    }""",
+    )
+
+
 def prepare():
     lock = json.loads((OWN / "sources.lock.json").read_text())
     texts = {}
@@ -685,6 +771,7 @@ def prepare():
         '        fontJapanese = CreateFontWithSize(24.0f, "fonts/NotoSansJP-Regular.ttf", true);',
         "        fontJapanese = fontStandardLargest;",
     )
+    source = scan_extensions_once(mount_archives_once(source))
     source = application_syntax(platform_source(source))
     stable(OUT / "generated/soh/soh/OTRGlobals.cpp", source)
     generated = {
@@ -784,6 +871,8 @@ def boundary_probe():
 #include "soh/OTRAudio.h"
 #include "soh/Enhancements/savestates.h"
 #include <ship/resource/archive/O2rArchive.h>
+#include <ship/resource/archive/ArchiveManager.h>
+#include <ship/resource/ResourceManager.h>
 #include <ship/utils/binarytools/MemoryStream.h>
 #include <ship/utils/binarytools/BinaryReader.h>
 #include "filesystem/filesystem.h"

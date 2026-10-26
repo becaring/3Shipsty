@@ -23,6 +23,10 @@ def sha(text):
 
 
 def project(name, text):
+    if name.endswith("/Autosave.cpp"):
+        from autosave_cpu_projection import project as autosave_cpu
+
+        text = autosave_cpu(text)
     if name.endswith("/WeirdAnimation.h"):
         text = (
             text.replace("#include <optional>", "#include <xbox_compat/optional.h>")

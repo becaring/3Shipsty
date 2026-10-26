@@ -368,6 +368,9 @@ def project(name, text):
         )
     if name.endswith("/ResourceManagerHelpers.cpp"):
         text = once(text, "->LoadResource(Path.c_str());", "->LoadResource(Path);")
+        from resource_return_projection import resource_helpers
+
+        text = resource_helpers(text)
         text = once(
             text,
             'extern "C" Gfx* ResourceMgr_LoadGfxByName(const char* path) {',
@@ -521,6 +524,10 @@ extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {"""
     if name.endswith("/z_scene_otr.cpp"):
         text = text.replace("(int)cmdCode", "static_cast<int>(cmdCode.GetValue())")
     text = containers(text)
+    if name.endswith("/ResourceManagerHelpers.cpp"):
+        from lookup_cost_projection import helpers as lookup_cost
+
+        text = lookup_cost(text)
     text = SYNTAX(text, set())
     raw = text.encode()
     edits = []

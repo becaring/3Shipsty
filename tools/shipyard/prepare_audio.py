@@ -24,6 +24,10 @@ def once(text, old, new):
 
 
 def transform(name, text):
+    if name.endswith("/SoundMatrixDecoder.cpp"):
+        from audio_cpu_projection import matrix
+
+        text = matrix(text)
     if name.endswith("/Audio.h"):
         text = once(
             text,

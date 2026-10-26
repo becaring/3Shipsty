@@ -37,7 +37,7 @@ void GfxWindowBackendXenos::GetMouseWheel(float* x,float* y){*x=*y=0;}
 bool GfxWindowBackendXenos::GetMouseState(uint32_t){return false;}
 void GfxWindowBackendXenos::SetMouseCapture(bool){}
 bool GfxWindowBackendXenos::IsMouseCaptured(){return false;}
-void GfxWindowBackendXenos::GetDimensions(uint32_t* w,uint32_t* h,int32_t* x,int32_t* y){*w=1280;*h=720;*x=*y=0;}
+void GfxWindowBackendXenos::GetDimensions(uint32_t* w,uint32_t* h,int32_t* x,int32_t* y){NativeDisplaySize(w,h);*x=*y=0;}
 void GfxWindowBackendXenos::HandleEvents(){ShipyardInput_PumpGamepads();}
 bool GfxWindowBackendXenos::IsFrameReady(){
     if(!mIsRunning)return false;

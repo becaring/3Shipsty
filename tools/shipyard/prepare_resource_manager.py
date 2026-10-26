@@ -549,6 +549,15 @@ def transform(name, original):
         from overlap_lifetime_projection import resource_manager as overlap_resources
 
         text = overlap_resources(text)
+        from resource_return_projection import resource_manager as resource_returns
+
+        text = resource_returns(text)
+        from resource_cpu_projection import source as resource_cpu
+
+        text = resource_cpu(text)
+        from lookup_cost_projection import resource_manager as lookup_cost
+
+        text = lookup_cost(text)
     return '#include "resources/runtime_support.h"\n' + text
 
 

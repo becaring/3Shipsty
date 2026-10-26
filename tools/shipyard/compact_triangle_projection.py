@@ -9,6 +9,7 @@ Indexed rows may be shared only inside consecutive TRI2 commands and before a fl
 import re
 
 from prepare_configuration import once
+from compact_row_plan_projection import emitter as defer_cached_row_plan
 
 
 def method(source, signature):
@@ -244,7 +245,7 @@ def capture(source):
             RGBA tmp;''', INPUT_PLAN_PACK + '''        for (int j = 0; j < numInputs; j++) {
             RGBA* color;
             RGBA tmp;''')
-    return work, emitter
+    return work, defer_cached_row_plan(emitter)
 
 
 def profiled_kernels(work, emitter):

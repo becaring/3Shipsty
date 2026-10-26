@@ -68,7 +68,9 @@ def transform(name, text):
             "Shipyard::Libultra::AddTimer(16, &__lusViCallback, NULL);",
         )
     if name.endswith("/resourcebridge.cpp"):
-        text = '#include "ship/resource/ResourceManager.h"\n' + text
+        from lookup_cost_projection import resource_bridge
+
+        text = resource_bridge('#include "ship/resource/ResourceManager.h"\n' + text)
     if name.endswith("/gfxbridge.cpp"):
         # XDK does not find this explicit-template call through ADL.
         text = once(

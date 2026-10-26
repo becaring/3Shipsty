@@ -44,15 +44,12 @@ class LifetimeProjectionTests(unittest.TestCase):
             5,
         )
 
-    def test_actor_destroy_waits_before_callback(self):
+    def test_actor_overlay_reset_waits_but_destroy_does_not(self):
         text = self.source("soh/src/code/z_actor.c")
         start = text.index("void Actor_Destroy(")
         end = text.index("void Actor_UpdatePos", start)
-        body = text[start:end]
-        self.assertLess(
-            body.index("Shipyard_OverlapFence();"),
-            body.index("actor->destroy(actor, play)"),
-        )
+        self.assertNotIn("Shipyard_OverlapFence();", text[start:end])
+        self.assertIn("Shipyard_OverlapFence();\n            dbEntry->reset();", text)
 
     def test_empty_debug_vectors_do_not_fence(self):
         text = self.source("soh/soh/Enhancements/debugger/colViewer.cpp")

@@ -825,6 +825,12 @@ def prepare():
     text = material_replay_projection.transform(text)
     text = texture_replay_projection.transform(text)
     text = depth_samples_projection.transform(text)
+    from render_state_work_projection import transform as render_cpu
+
+    text = render_cpu(text)
+    from lookup_cost_projection import interpreter as lookup_cost
+
+    text = lookup_cost(text)
     pending["src/fast/interpreter.cpp"] = text
     pending["include/stdbool.h"] = (
         "#pragma once\n#ifndef __cplusplus\n#error Use the application C boolean projection for C"
