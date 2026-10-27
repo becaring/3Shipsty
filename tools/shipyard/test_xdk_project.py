@@ -99,12 +99,10 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(gen.source_path(provider),gen.PLATFORM_BASE/'sources/graphics/shader_provider.cpp')
         self.assertIn('$(ShipyardPlatformBase)/sources/graphics/shader_provider.cpp',includes)
         self.assertIn('platform/shipyard/xenos/shader_provider.cpp',selected)
-        xenos='scratch/cpu-source-xdk/generated/shipyard__sources__xenos__core.cpp'
+        xenos='shipyard/sources/xenos/core.cpp'
         self.assertIn(xenos,selected)
-        self.assertNotIn('scratch/xenos-xdk/generated/core.cpp', selected)
-        self.assertEqual(selected[xenos]['projection_input']['source'], 'shipyard/sources/xenos/core.cpp')
-        self.assertEqual(selected[xenos]['projection_input']['sha256'],
-                         gen.digest(gen.PLATFORM_BASE/'sources/xenos/core.cpp'))
+        self.assertEqual(gen.source_path(xenos),gen.PLATFORM_BASE/'sources/xenos/core.cpp')
+        self.assertIn('$(ShipyardPlatformBase)/sources/xenos/core.cpp',includes)
         self.assertIn('void GetPixelDepthSamples(', gen.source_path(xenos).read_text())
         surface='shipyard/sources/presentation/xenos_surface.cpp'
         self.assertIn(surface,selected)
@@ -142,18 +140,9 @@ class ProjectTests(unittest.TestCase):
                              for row in self.manifest['sources']))
         for name in ('native.cpp', 'detached.cpp'):
             source='shipyard/sources/async/'+name
-            if name == 'native.cpp':
-                projected='scratch/cpu-source-xdk/generated/shipyard__sources__async__native.cpp'
-                self.assertIn(projected, selected)
-                self.assertNotIn(source, selected)
-                self.assertEqual(selected[projected]['projection_input']['source'], source)
-                self.assertEqual(selected[projected]['projection_input']['sha256'],
-                                 gen.digest(gen.PLATFORM_BASE/'sources/async'/name))
-                self.assertIn('$(ShipyardRoot)/'+projected, includes)
-            else:
-                self.assertIn(source, selected)
-                self.assertEqual(gen.source_path(source), gen.PLATFORM_BASE/'sources/async'/name)
-                self.assertIn('$(ShipyardPlatformBase)/sources/async/'+name, includes)
+            self.assertIn(source, selected)
+            self.assertEqual(gen.source_path(source), gen.PLATFORM_BASE/'sources/async'/name)
+            self.assertIn('$(ShipyardPlatformBase)/sources/async/'+name, includes)
             self.assertFalse((gen.ROOT/'platform/shipyard/async'/name).exists())
         for name in ('native.h', 'future.h', 'detached.h'):
             self.assertFalse((gen.ROOT/'platform/shipyard/async'/name).exists())

@@ -5,7 +5,7 @@ const-key value_type so binding a reference cannot create a converting pair.
 """
 import re
 
-from backend_cpu import replace_once
+from source_anchor import replace_once
 
 
 def project(relative, source):

@@ -1,6 +1,6 @@
 {
   "base": "../Shipyard",
-  "git_revision": "e895dcfcef09980a84cfb0af7b989a663d882b90",
+  "git_revision": "24796da87ffd8e3ace54f71233d0eb374678773c",
   "api_version": 7,
-  "baseline_sha256": "5f578911ee04e38ad625e5ca6f1ec1eea710f7f84962432ce979a6136e6068b8"
+  "baseline_sha256": "281a4e996d28550c0cc68feb39e783bd8927b8fd2c7acdc40a023f37854fe6af"
 }

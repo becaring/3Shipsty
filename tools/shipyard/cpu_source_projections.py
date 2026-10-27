@@ -26,11 +26,7 @@ def materialize_headers(root):
 
 
 def materialize(name, root, platform):
-    if name == "shipyard/sources/xenos/core.cpp":
-        from backend_cpu import project
-    elif name == "shipyard/sources/async/native.cpp":
-        from async_wait_cpu_projection import source as project
-    elif name == "platform/shipyard/xenos/services.cpp":
+    if name == "platform/shipyard/xenos/services.cpp":
         from services_cpu_projection import project
     else:
         return name, None

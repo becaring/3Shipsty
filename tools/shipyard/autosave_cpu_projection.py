@@ -3,7 +3,7 @@
 Interval saves require an unpaused loaded game; soft resets retain their pause
 policy. Eligible attempts still check disk so file deletion remains visible.
 """
-from backend_cpu import replace_once
+from source_anchor import replace_once
 
 
 def project(source):

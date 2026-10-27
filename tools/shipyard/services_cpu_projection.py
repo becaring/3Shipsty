@@ -3,7 +3,7 @@
 Interlocked publication keeps the 64-bit frequency initialized on Xenon before
 another thread reads it. Tick sampling and seconds conversion stay unchanged.
 """
-from backend_cpu import replace_once
+from source_anchor import replace_once
 
 
 def project(source):

@@ -10,16 +10,12 @@ import generate_xdk_project as gen
 
 class CpuSourceTests(unittest.TestCase):
     def test_materialized_sources_retain_verified_input_provenance(self):
-        names = (
-            'shipyard/sources/xenos/core.cpp',
-            'shipyard/sources/async/native.cpp',
-            'platform/shipyard/xenos/services.cpp',
-        )
+        names = ('platform/shipyard/xenos/services.cpp',)
         with tempfile.TemporaryDirectory(dir=gen.ROOT / 'scratch') as directory:
             root = Path(directory)
-            service = root / names[2]
+            service = root / names[0]
             service.parent.mkdir(parents=True)
-            service.write_bytes((gen.ROOT / names[2]).read_bytes())
+            service.write_bytes((gen.ROOT / names[0]).read_bytes())
             for name in names:
                 original = gen.PLATFORM_BASE / name[9:] if name.startswith('shipyard/') else root / name
                 before = original.read_bytes()
@@ -33,10 +29,10 @@ class CpuSourceTests(unittest.TestCase):
                 stamp = projected.stat().st_mtime_ns
                 self.assertEqual(cpu.materialize(name, root, gen.PLATFORM_BASE), (output, provenance))
                 self.assertEqual(projected.stat().st_mtime_ns, stamp)
-            native = (root / cpu.materialize(names[1], root, gen.PLATFORM_BASE)[0]).read_text()
-            self.assertIn('WaitEventScope waitEventScope;', native)
-            self.assertIn('InterlockedCompareExchangePointer', native)
-            self.assertIn('#include "native.h"', native)
+            # Shipyard's native.cpp owns wait-event reuse; it compiles unprojected.
+            native = 'shipyard/sources/async/native.cpp'
+            self.assertEqual(cpu.materialize(native, root, gen.PLATFORM_BASE), (native, None))
+            self.assertIn('WaitEventScope waitEventScope;', (gen.PLATFORM_BASE / 'sources/async/native.cpp').read_text())
             self.assertEqual(cpu.materialize('unmodified.cpp', root, gen.PLATFORM_BASE), ('unmodified.cpp', None))
 
     def test_profile_header_preserves_declarations_and_layout(self):
