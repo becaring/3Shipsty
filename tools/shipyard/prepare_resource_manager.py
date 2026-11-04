@@ -511,8 +511,9 @@ def transform(name, original):
             settled_alternate_source,
         )
 
+        # lookup_cost_projection applies this game's settled fills to the per-load form.
         text = settled_alternate_source(
-            lookup_generation_source(borrowed_cache_source(path_hash(text)))
+            lookup_generation_source(borrowed_cache_source(path_hash(text)), stable_fills=False)
         )
         from frame_profile_projection import resource_lookup as profile_resource_lookup
 
