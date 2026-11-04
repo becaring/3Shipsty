@@ -1418,6 +1418,8 @@ def main():
             )
         ]
         + [ROOT / "platform/shipyard", xdk / "include/xbox"]
+        # Shared overlap packets such as overlap/depth.h; searched last so game headers win.
+        + [resolve_platform_base(ROOT) / "sources"]
     )
     definitions = [
         "_XBOX",
