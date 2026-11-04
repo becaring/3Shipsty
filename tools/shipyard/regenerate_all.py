@@ -52,6 +52,7 @@ STAGES = [
     ("prepare_presentation.py", ["--build"]),
     ("prepare_native_imgui.py", ["--build"]),
     ("prepare_gfxd.py", ["--build"]),
+    ("prepare_extractor.py", ["--build"]),
     ("prepare_resources.py", []), ("tests/test_resources.py", []),
     ("prepare_resource_manager.py", ["--build"]),
     ("prepare_configuration.py", ["--build"]),

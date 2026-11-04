@@ -53,7 +53,9 @@ def main():
         # Keep every application initializer linked. LUS and dependencies use
         # ordinary static archive extraction, including the os_pi/cache members
         # whose inactive symbols are already owned by modern application stubs.
-        (application if (row['upstream_source'] or '').startswith('soh/') else library).append(obj)
+        # ZAPD registers its resource types from static initializers, so extractor objects link directly.
+        direct=(row['upstream_source'] or '').startswith('soh/') or row['subsystem']=='extractor'
+        (application if direct else library).append(obj)
     archive=OUT/'Shipyard.lib'
     result=dict(manifest_sha256=sha(gen.OUT/'manifest.json'),application_objects=len(application),
                 archive_objects=len(library),runtime_executed=False)

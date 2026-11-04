@@ -167,6 +167,7 @@ def platform_source(source):
     source = once(
         source,
         '#if not defined(__SWITCH__) && not defined(__WIIU__)\n#include "Extractor/Extract.h"',
+        "#ifdef _XBOX\n#include <rom/rom.h>\n#include <zapd/extract.h>\n#endif\n"
         "#if !defined(_XBOX) && !defined(__SWITCH__) && !defined(__WIIU__)\n#include"
         ' "Extractor/Extract.h"',
     )

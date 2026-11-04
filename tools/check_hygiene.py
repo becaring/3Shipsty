@@ -14,7 +14,6 @@ EXCLUDE = [
 ]
 
 DEFERRED = [
-    "platform/shipyard/application/runtime_preflight.inc",
     "platform/shipyard/network-app/support.h",
     "platform/shipyard/presentation/window_xenos.cpp",
     "platform/shipyard/randomizer-application/support.h",

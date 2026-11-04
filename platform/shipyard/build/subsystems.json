@@ -205,6 +205,9 @@
     "gfxd": [
       "scratch/gfxd-xdk/xdk/build.json"
     ],
+    "extractor": [
+      "scratch/extractor-xdk/xdk/build.json"
+    ],
     "vorbis": [
       "scratch/vorbis-xdk/xdk/build.json"
     ],
