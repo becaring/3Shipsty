@@ -56,10 +56,10 @@ int packState=0; // 0 unchecked, 1 usable, -1 unusable
 bool PackMatchesBuild(){
     if(packState)return packState>0;
     packState=-1;
-    uint64_t first=0;uint32_t second=0;bool threePoint=false,srgb=false;size_t packedFloats=0;
+    uint64_t first=0,second=0;bool threePoint=false,srgb=false;size_t packedFloats=0;
     unsigned char expected[32];
     if(!Shipyard::Xenos::GetShaderPackProbe(&first,&second,&threePoint,&srgb,&packedFloats,expected))return false;
-    const ShaderProgramKey probe={first,second,threePoint?FILTER_THREE_POINT:FILTER_LINEAR,srgb};
+    const ShaderProgramKey probe={first,(uint32_t)second,threePoint?FILTER_THREE_POINT:FILTER_LINEAR,srgb};
     CCFeatures features;size_t floats=0;std::string hlsl,lowered,error;unsigned char actual[32];
     if(Shipyard_BuildFast3DShader(probe,features,floats,hlsl,error)&&Shipyard_LowerShader(hlsl,lowered,error,2)){
         Shipyard::Xenos::ShaderPackSha256(lowered,actual);
@@ -105,18 +105,29 @@ void GfxRenderingAPIXenos::StartFrame(){Shipyard::IO::PollShaderWrites();Shipyar
 void GfxRenderingAPIXenos::EndFrame(){ShipyardXenos::EndFrame();}
 void GfxRenderingAPIXenos::FinishRender(){ShipyardXenos::FinishRender();}
 int GfxRenderingAPIXenos::CreateFramebuffer(){return ShipyardXenos::CreateFramebuffer();}
-void GfxRenderingAPIXenos::UpdateFramebufferParameters(int id,uint32_t w,uint32_t h,uint32_t msaa,bool flip,bool target,bool depth,bool read){ShipyardXenos::UpdateFramebuffer(id,w,h,msaa,flip,target,depth,read);}
+void GfxRenderingAPIXenos::UpdateFramebufferParameters(int id,uint32_t w,uint32_t h,uint32_t msaa,bool flip,bool target,bool depth,bool read){
+    ShipyardXenos::UpdateFramebuffer(id,w,h,msaa,flip,target,depth,read);
+}
 void GfxRenderingAPIXenos::StartDrawToFramebuffer(int id,float noise){ShipyardXenos::StartDrawToFramebuffer(id,noise);}
-void GfxRenderingAPIXenos::CopyFramebuffer(int dst,int src,int sx0,int sy0,int sx1,int sy1,int dx0,int dy0,int dx1,int dy1){ShipyardXenos::CopyFramebuffer(dst,src,sx0,sy0,sx1,sy1,dx0,dy0,dx1,dy1);}
+void GfxRenderingAPIXenos::CopyFramebuffer(int dst,int src,int sx0,int sy0,int sx1,int sy1,int dx0,int dy0,int dx1,int dy1){
+    ShipyardXenos::CopyFramebuffer(dst,src,sx0,sy0,sx1,sy1,dx0,dy0,dx1,dy1);
+}
 void GfxRenderingAPIXenos::ClearFramebuffer(bool color,bool depth){ShipyardXenos::ClearFramebuffer(color,depth);}
 void GfxRenderingAPIXenos::ReadFramebufferToCPU(int id,uint32_t w,uint32_t h,uint16_t* p){ShipyardXenos::ReadFramebufferToCPU(id,w,h,p);}
 void GfxRenderingAPIXenos::ResolveMSAAColorBuffer(int dst,int src){ShipyardXenos::ResolveMSAAColorBuffer(dst,src);}
-std::unordered_map<std::pair<float,float>,uint16_t,hash_pair_ff> GfxRenderingAPIXenos::GetPixelDepth(int id,const std::set<std::pair<float,float> >& xy){return ShipyardXenos::GetPixelDepth(id,xy);}
+std::unordered_map<std::pair<float,float>,uint16_t,hash_pair_ff> GfxRenderingAPIXenos::GetPixelDepth(int id,
+                                                                                       const std::set<std::pair<float,float> >& xy){
+    return ShipyardXenos::GetPixelDepth(id,xy);
+}
 void* GfxRenderingAPIXenos::GetFramebufferTextureId(int id){return ShipyardXenos::GetFramebufferTextureId(id);}
 void GfxRenderingAPIXenos::SelectTextureFb(int id){ShipyardXenos::SelectTextureFb(id);}
 void GfxRenderingAPIXenos::DeleteTexture(uint32_t id){ShipyardXenos::DeleteTexture(id);}
 extern "C" void gfx_texture_cache_clear();
-void GfxRenderingAPIXenos::SetTextureFilter(FilteringMode mode){ShipyardXenos::SetTextureFilter(mode);gfx_texture_cache_clear();if(ShipyardXenos::CurrentShader())LoadShader(ShipyardXenos::CurrentShader());}
+void GfxRenderingAPIXenos::SetTextureFilter(FilteringMode mode){
+    ShipyardXenos::SetTextureFilter(mode);
+    gfx_texture_cache_clear();
+    if(ShipyardXenos::CurrentShader())LoadShader(ShipyardXenos::CurrentShader());
+}
 FilteringMode GfxRenderingAPIXenos::GetTextureFilter(){return ShipyardXenos::GetTextureFilter();}
 void GfxRenderingAPIXenos::SetSrgbMode(){mSrgbMode=true;shaderSrgb=true;if(ShipyardXenos::CurrentShader())LoadShader(ShipyardXenos::CurrentShader());}
 ImTextureID GfxRenderingAPIXenos::GetTextureById(int id){return ShipyardXenos::GetTextureById(id);}
