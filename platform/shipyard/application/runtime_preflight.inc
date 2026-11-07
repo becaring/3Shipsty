@@ -93,9 +93,15 @@
             job.request.log = &Extraction::Log;
             std::string stages;
             job.request.stages = &stages;
+            job.request.helpers = 3;
             job.finished = 0;
             job.result = -1;
             const DWORD start = GetTickCount();
+            // Free memory before and at its lowest during extraction, for the boot log.
+            MEMORYSTATUS memory;
+            GlobalMemoryStatus(&memory);
+            const SIZE_T freeBefore = memory.dwAvailPhys;
+            SIZE_T freeLeast = freeBefore;
             // A desktop-sized stack, on the hardware thread Shipyard::Async::ServiceProcessor names.
             HANDLE thread = CreateThread(NULL, 1024 * 1024, &Extraction::Run, &job, CREATE_SUSPENDED, NULL);
             if (thread == NULL) {
@@ -110,6 +116,9 @@
                 sohFast3dWindow->HandleEvents();
                 if (!sohFast3dWindow->IsFrameReady())
                     continue;
+                GlobalMemoryStatus(&memory);
+                if (memory.dwAvailPhys < freeLeast)
+                    freeLeast = memory.dwAvailPhys;
                 gui->StartDraw();
                 sohFast3dWindow->StartFrame();
                 sohFast3dWindow->RunGuiOnly();
@@ -132,8 +141,9 @@
             WaitForSingleObject(thread, INFINITE);
             CloseHandle(thread);
             char stage[1024];
-            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d %s", archive, name.c_str(),
-                        (GetTickCount() - start) / 1000.0f, job.result, stages.c_str());
+            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d free=%u/%u MB %s", archive,
+                        name.c_str(), (GetTickCount() - start) / 1000.0f, job.result, (unsigned)(freeLeast >> 20),
+                        (unsigned)(freeBefore >> 20), stages.c_str());
             Shipyard::Platform::RecordBootStage(stage, false);
             built[version->mq] = true;
             if (job.result != 0) {
