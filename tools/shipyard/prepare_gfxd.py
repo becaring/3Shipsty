@@ -122,6 +122,10 @@ def prepare():
             text = text.replace("_Alignas(8)", "__declspec(align(8))")
         if file.name == "priv.h":
             text = text.replace("#define UCFUNC static inline", "#define UCFUNC static __inline")
+            # Extraction threads each disassemble display lists, so gfxd keeps its state per thread.
+            if text.count("#ifdef CONFIG_MT\n") != 1:
+                raise ValueError("gfxd thread-local switch drift")
+            text = text.replace("#ifdef CONFIG_MT\n", "#define CONFIG_MT\n#ifdef CONFIG_MT\n")
         if file.name == "uc_argfn.c":
             macros = dict(
                 re.findall(
