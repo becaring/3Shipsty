@@ -2,7 +2,7 @@
   "imgui_xenos.cpp": {
     "platform_base": "sources/imgui/imgui_xenos.cpp",
     "origin": "SoH360/platform/xbox360/imgui_xenos.cpp",
-    "sha256": "9a393b645a85492725bd65b5a5761e62e3353c797fc10725f7e3101adfbc1117",
+    "sha256": "6d1c00a1b90ca6d553acaf927f44af9f300c77bca8e16986bbeae87a5bad38a4",
     "classification": "generic Xbox platform; renderer full, platform bindings selected only"
   }
 }
