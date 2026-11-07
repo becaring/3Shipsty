@@ -26,7 +26,7 @@ Mods go in a `mods` folder beside `3Shipsty.xex`.
 
 ## Controls
 
-Ship of Harkinian's controls apply and can be remapped in its menu. 3Shipsty adds:
+The game's controls can be remapped in Ship of Harkinian's controller menu. 3Shipsty adds:
 
 | Input | Action |
 |---|---|
