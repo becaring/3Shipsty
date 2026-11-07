@@ -85,9 +85,12 @@ void RecordBootStage(const char* stage, bool commitToSave) {
 #ifdef _XBOX
     (void)commitToSave;
     char* line = bootStages + bootStagesLength;
+    // Free memory per stage shows which startup step a mod's resources exhaust.
+    MEMORYSTATUS memory;
+    GlobalMemoryStatus(&memory);
     const int length = _snprintf_s(line, sizeof(bootStages) - bootStagesLength, _TRUNCATE,
-                                   "commit=%s stage=%s tick=%lu thread=%lu\n", gGitCommitHash,
-                                   stage, GetTickCount(), GetCurrentThreadId());
+                                   "commit=%s stage=%s tick=%lu thread=%lu free=%luMB\n", gGitCommitHash, stage,
+                                   GetTickCount(), GetCurrentThreadId(), (unsigned long)(memory.dwAvailPhys >> 20));
     OutputDebugStringA(line);
     if (length > 0) bootStagesLength += length;
     if (strcmp(stage, "first-audio-complete") == 0) {
