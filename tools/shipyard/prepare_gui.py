@@ -147,6 +147,57 @@ def cache_viewport_interpreter_locks(text):
     return text
 
 
+def defer_path_textures(text):
+    # SoH registers every item icon at boot, twice; with an HD pack that was 69 MB before the first frame.
+    # Each path texture now loads, still in HD, the first time a window asks for it.
+    text = once(
+        text,
+        "bool Gui::HasTextureByName(const std::string& name) {\n",
+        """namespace {
+std::unordered_map<std::string, std::pair<std::string, ImVec4> > sDeferredGuiTextures;
+
+void LoadDeferredGuiTexture(Gui* gui, const std::string& name) {
+    const auto found = sDeferredGuiTextures.find(name);
+    if (found == sDeferredGuiTextures.end()) {
+        return;
+    }
+    const std::pair<std::string, ImVec4> request = found->second;
+    sDeferredGuiTextures.erase(found);
+    const auto res = static_cast<Fast::Texture*>(
+        Context::GetInstance()->GetResourceManager()->LoadResource(request.first, true).get());
+    if (res != nullptr) {
+        gui->LoadGuiTexture(name, *res, request.second);
+    }
+}
+} // namespace
+
+bool Gui::HasTextureByName(const std::string& name) {
+    if (sDeferredGuiTextures.count(name) != 0) {
+        return true;
+    }
+""",
+    )
+    for signature in (
+        "ImTextureID Gui::GetTextureByName(const std::string& name) {\n",
+        "ImVec2 Gui::GetTextureSize(const std::string& name) {\n",
+    ):
+        text = once(text, signature, signature + "    LoadDeferredGuiTexture(this, name);\n")
+    text = once(
+        text,
+        "void Gui::UnloadTexture(const std::string& name) {\n",
+        "void Gui::UnloadTexture(const std::string& name) {\n    sDeferredGuiTextures.erase(name);\n",
+    )
+    return once(
+        text,
+        """    const auto res =
+        static_cast<Fast::Texture*>(Context::GetInstance()->GetResourceManager()->LoadResource(path, true).get());
+
+    LoadGuiTexture(name, *res, tint);
+}""",
+        "    sDeferredGuiTextures[name] = std::make_pair(path, tint);\n}",
+    )
+
+
 def transform(name, text):
     from overlap_gui_work_projection import project as overlap_gui_work
 
@@ -210,6 +261,7 @@ def transform(name, text):
             text = text.replace("static constexpr size_t", "static const size_t")
     elif name.endswith("/Gui.cpp"):
         text = snapshot_mouse_capture(text)
+        text = defer_path_textures(text)
         # Retain ImGui's native window settings persistence beside application config.
         text = once(
             text,

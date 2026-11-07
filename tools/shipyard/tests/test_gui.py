@@ -35,6 +35,15 @@ def main():
     projected = functions((OUT / "generated/src/ship/window/gui/Gui.cpp").read_text())
     for name in unchanged:
         assert current["Gui::" + name] == projected["Gui::" + name], name
+    # Path textures load on first lookup, through the same exact-path load, so HD icons stay HD.
+    generated = (OUT / "generated/src/ship/window/gui/Gui.cpp").read_text()
+    assert generated.count("sDeferredGuiTextures[name] = std::make_pair(path, tint);") == 1
+    assert generated.count("LoadResource(request.first, true)") == 1
+    for name in ("GetTextureByName", "GetTextureSize"):
+        assert "LoadDeferredGuiTexture(this, name);" in projected["Gui::" + name], name
+    assert "sDeferredGuiTextures.count(name)" in projected["Gui::HasTextureByName"]
+    assert "sDeferredGuiTextures.erase(name);" in projected["Gui::UnloadTexture"]
+    print("deferred path textures: ok")
     reduced = {"ApplyResolutionChanges": 7, "GetIntegerScaleFactor": 20, "CalculateGameViewport": 16, "DrawGame": 8}
     for name, original_locks in reduced.items():
         old = current["Gui::" + name]
