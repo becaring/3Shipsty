@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="media/3Shipsty-on-light.svg">
+  <img src="media/3Shipsty.svg" alt="3Shipsty" width="520">
+</picture>
+
 # 3Shipsty
 
 **Ocarina of Time on Xbox 360, powered by Shipyard.**
