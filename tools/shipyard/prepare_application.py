@@ -350,8 +350,8 @@ def platform_source(source):
         "    gRandomizer = std::make_shared<Randomizer>();\n   "
         ' Shipyard::Platform::RecordBootStage("randomizer-ready", false);',
     )
-    # The startup log previously stopped before the first presentation/audio wait.
-    # Record each boundary once on the game thread; never log ongoing frame work.
+    # Record each startup boundary through the first presentation and audio wait, once, on the game thread;
+    # never log ongoing frame work.
     source = once(
         source,
         'extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {',

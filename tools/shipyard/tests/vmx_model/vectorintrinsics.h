@@ -1,5 +1,5 @@
-// Adapted from Smash360/tests/fast3d-xdk/vmx_model/vectorintrinsics.h for
-// this Modern composition proof; only the store counter was added.
+// Adapted from Smash360/tests/fast3d-xdk/vmx_model/vectorintrinsics.h, with a
+// store counter for 3Shipsty's composition test.
 // Test-only lane model for the imported transform/clip source. This is not a
 // production backend or evidence of native execution. Inputs use host layouts;
 // stvebx explicitly models Xenon's big-endian byte selector.
