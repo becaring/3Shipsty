@@ -20,7 +20,8 @@ directory.
 from the linked XEX, the 9.2.3 release `soh.o2r` and `assets`, the speech data,
 the shader pack and the license files listed in `release-licenses.json`. It
 refuses uncommitted changes unless `--allow-dirty` is given, because `SOURCE.txt`
-names the commits that are the release's GPL source. Saves go to the selected
+names the commits that are the release's GPL source. `--zip` also writes
+`<new folder>.zip`. Saves go to the selected
 `shipyard:` container; configuration and logs stay under `game:`. Speech uses
 the `espeak-ng-data` described in the
 [architecture guide](ARCHITECTURE.md#speech-and-shutdown).

@@ -1,11 +1,11 @@
 """Assemble a 3Shipsty release folder from the linked XEX, the SoH 9.2.3 release files and the speech data.
 
-    python -B tools/package.py --destination <new folder> [--release <SoH 9.2.3 folder>] [--allow-dirty]
+    python -B tools/package.py --destination <new folder> [--release <SoH 9.2.3 folder>] [--allow-dirty] [--zip]
 
 Writes <destination>/3Shipsty/ (XEX, soh.o2r, assets.zip, espeak-ng-data, shaders), and beside it README.txt,
-SOURCE.txt, licenses/ and SHA256SUMS.txt. The package holds no ROM archives: the console builds them from the
-player's ROM. The release links GPL eSpeak NG, so SOURCE.txt names the commits that are its corresponding source
-and a dirty tree is refused unless --allow-dirty is given.
+SOURCE.txt, licenses/ and SHA256SUMS.txt; --zip also writes <destination>.zip with that content. The package holds
+no ROM archives: the console builds them from the player's ROM. The release links GPL eSpeak NG, so SOURCE.txt
+names the commits that are its corresponding source and a dirty tree is refused unless --allow-dirty is given.
 """
 
 import argparse
@@ -69,10 +69,11 @@ def main():
     parser.add_argument("--destination", type=Path, required=True)
     parser.add_argument("--release", type=Path, default=ROOT / "scratch/assets/official-9.2.3")
     parser.add_argument("--allow-dirty", action="store_true")
+    parser.add_argument("--zip", action="store_true")
     args = parser.parse_args()
     out = args.destination.resolve()
-    if out.exists():
-        raise SystemExit("package folder exists: " + str(out))
+    if out.exists() or (args.zip and out.with_suffix(".zip").exists()):
+        raise SystemExit("package folder or zip exists: " + str(out))
     platform = resolve_platform_base(ROOT)
     dirty = [root for root in (ROOT, platform) if git(root, "status", "--porcelain", "--untracked-files=no")]
     if dirty and not args.allow_dirty:
@@ -121,6 +122,8 @@ def main():
     with open(out / "SHA256SUMS.txt", "w", encoding="utf-8", newline="\n") as sums:
         for path in files:
             sums.write(sha256(path) + "  " + path.relative_to(out).as_posix() + "\n")
+    if args.zip:
+        print(shutil.make_archive(str(out), "zip", out))
     if dirty:
         print("warning: packaged with uncommitted changes; this package is for testing, not release")
     print(out)
