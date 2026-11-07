@@ -22,7 +22,7 @@ when lowering syntax for the XDK.
 | Module | Responsibility and constraint |
 | --- | --- |
 | `app-services` | ActorDB retains actor registrations and description ordering; ConfigUpdaters retains all six migrations and their copy/clear order. |
-| `application` | OTRGlobals owns startup, resource registration, audio processing, and teardown. Mount storage before writable paths are selected; start XNet before its consumers. |
+| `application` | OTRGlobals owns startup, resource registration, audio processing, and teardown. Mount storage before writable paths are selected; start XNet before its consumers. Startup builds a missing `oot.o2r` or `oot-mq.o2r` from a ROM beside the XEX with Shipyard's ZAPD extractor on four threads, reading its XMLs from `assets.zip` or `assets`. |
 | `application-core` | Scene, message, resource, GBI, utility, notification, and crash bridges use the modern resource types. JPEG conversion writes explicit RGBA16 high/low bytes. |
 | `application-editors` | Audio and cosmetics editors retain tables, widget defaults, search references, and graphics patch arguments. Keep their static registrations in the link. |
 | `application-extras` | Presets, time displays/splits, boss rush, input viewer, equipment, console, mods, names, and statistics retain their application hooks and JSON fields. |
@@ -46,7 +46,7 @@ when lowering syntax for the XDK.
 | `game` | Application C stays under /TC. Scoped lowering preserves declaration execution and boolean conversion; unsupported boolean shapes reject explicitly. |
 | `game-interactor` | Hooks retain registry, dispatch, removal, forwarding, and cross-unit template storage. Explicit original source locations replace unavailable call-site intrinsics. |
 | `gameplay-features` | Complete selected feature translation units retain game rules, hooks, callbacks, and registrations; source locks cover their shared declarations. |
-| `gfxd` | The graphics disassembler keeps all five ucode targets and its public I/O and formatting APIs. Each source selects its own ucode definitions. |
+| `gfxd` | The graphics disassembler keeps all five ucode targets and its public I/O and formatting APIs. Each source selects its own ucode definitions; disassembly state is per thread (`CONFIG_MT`). |
 | `graphics` | Modern rendering interfaces and the combiner decoder feed shared shader generation. Shader and vertex layouts must match the selected interpreter. |
 | `gui` | Native dispatch handles ImGui setup, events, draws, and shutdown. Xbox has no independent desktop viewports; the clipboard is application-local. |
 | `gui-resources` | Font, texture, overlay, and stb decoding retain buffer ownership, validation, failures, dimensions, and allocation/free pairs. |
@@ -62,7 +62,7 @@ when lowering syntax for the XDK.
 | `network` | ENABLE_REMOTE_CONTROL must be consistent across all Network consumers. XDK transport owns sockets, synchronization, framing, and receive lifetimes. |
 | `network-app` | Anchor, Sail, Crowd Control, and their menus retain packet handlers, game hooks, actors, effects, and registrations. Stop their producers before transport teardown. |
 | `object-extension` | Object registry identities and payload types remain upstream-owned. The any compatibility subset uses RTTI, clones on copy, and preserves the destination if copying fails. |
-| `presentation` | Native display creation precedes rendering and system UI. Output is 1280x720 fullscreen; upstream owns internal resolution, GUI, framebuffer, and interpolation policy. |
+| `presentation` | Native display creation precedes rendering and system UI. Output is fullscreen at the console's video mode; upstream owns internal resolution, GUI, framebuffer, and interpolation policy. |
 | `prism` | The pinned Prism projector retains the modern shader resource loader and include policy. Missing defaults and unsupported expressions fail explicitly. |
 | `randomizer` | Complete Context, message, trial, hint, and item-location declarations preserve field order, defaults, and type identity across providers. |
 | `randomizer-application` | Initialization, gameplay hooks, entrance handling, plandomizer, trackers, saves, and menu remain game-owned. JSON right-hand values complete before assignment. |
@@ -80,7 +80,7 @@ when lowering syntax for the XDK.
 | `resource-shutdown` | Stop producers, retain Context, drain resource jobs, then drain detached codec jobs. Barriers cannot run on a waited-for worker or under a lock that worker needs. |
 | `resources` | Leaf resource types and binary/XML factories retain type/version handling. Archive, loader, and manager providers keep cache, mod precedence, and ownership policies. |
 | `save-manager` | Full SaveManager owns serialization, section registration, versions, randomizer metadata, and workers. Link LegacyDecode but exclude the obsolete serialization fragment. |
-| `save-storage` | Mount the 16 MiB 3Shipsty XContent package as shipyard: before SaveManager starts. Drain writers before flush/close; serialize atomic replacements per destination. |
+| `save-storage` | Mount the 16 MiB per-profile XContent container chosen in the storage popup as shipyard: before SaveManager starts; config and logs stay under game:. Drain writers before flush/close; serialize atomic replacements per destination. |
 | `savestates` | SaveStateMgr preserves complete snapshots and request handling. Shared audio locking spans Save/Load; the application provider owns its declarations. |
 | `ship-utils` | ShipUtils and randomizer RNG retain complete source bodies and entropy behavior. Link their native entropy provider with the generated units. |
 | `soh-input-editor` | The SoH editor retains controller configuration, raw remapping, deadzones, rumble, and D-pad menus. Native queries must not claim unsupported gyro or LED features. |
@@ -117,8 +117,11 @@ single-worker pool.
 
 ## Storage and legacy import
 
-Packaged archives live under `game:`. Writable saves use
-`shipyard:\Save\fileN.sav` and `global.sav`. Background writes own serialized
+Packaged and console-built archives live under `game:`, with configuration in
+`game:\config` and logs, including the boot log `boot.txt`, in `game:\logs`.
+Saves use `shipyard:\Save\fileN.sav` and `global.sav` in the player's
+per-profile container, selected in the storage popup at startup. The first
+mount copies saves found in `game:\Save` into it. Background writes own serialized
 bytes. Complete writes, file flushes, replacement, and XContent completion are
 separate operations; enqueue is not persistence. A failure after replacement
 reports an error without promising rollback or power-loss recovery.

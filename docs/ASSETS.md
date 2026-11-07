@@ -4,20 +4,26 @@
 repository does not provide ROMs or extracted game assets. Supported ROM hashes
 are listed in [supportedHashes.json](supportedHashes.json).
 
-Use the matching Ship of Harkinian 9.2.3 PC release to extract assets. Xbox
-startup consumes the resulting archives; it does not run the desktop extraction
-tools. The runtime uses `soh.o2r`, `oot.o2r`, and optionally `oot-mq.o2r`.
-Mods use the OTR/O2R resource system and a `mods` directory.
+Place the ROM beside the application. When `oot.o2r` or `oot-mq.o2r` is
+missing, startup builds it from each supported ROM there: a vanilla ROM gives
+`oot.o2r` and a Master Quest ROM gives `oot-mq.o2r`. A Master Quest ROM holds
+only the Master Quest dungeons, so playing both dungeon sets needs both ROMs.
+Extraction reads the extraction XMLs from `assets.zip`, or from the `assets`
+folder when no zip is present. `python -B tools/shipyard/pack_assets.py`
+packs the 9.2.3 release `assets` folder into that uncompressed zip, which
+copies to the console as one file. The runtime uses `soh.o2r`, `oot.o2r`, and
+optionally `oot-mq.o2r`. Mods use the OTR/O2R resource system and a `mods`
+directory.
 
-Package the application and its matching archives together. Preserve the
-runtime's selected writable storage for configuration and saves. Speech also
+Package the application and its matching archives together. Saves go to the
+selected `shipyard:` container; configuration and logs stay under `game:`. Speech also
 requires the standard `espeak-ng-data` package described by the
 [architecture guide](ARCHITECTURE.md#speech-and-shutdown).
 
 ## Archive format
 
 A ZIP/MPQ container has no single scalar byte order. Resource records carry
-their own markers. PC-generated regular binary resource headers and payloads
+their own markers. Desktop- and console-built regular binary resource headers and payloads
 are little endian; the version records below are explicitly big endian.
 Xenon's native endianness must not replace these per-record rules.
 

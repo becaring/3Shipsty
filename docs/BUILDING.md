@@ -20,8 +20,8 @@ python -B tools/shipyard/setup_dependencies.py
 ```
 
 The dependency lock and each module's source lock define the required inputs.
-Keep dependency licenses with their snapshots. Game archives and the SDK must
-be supplied separately. See [assets](ASSETS.md) and [upstream](UPSTREAM.md).
+Keep dependency licenses with their snapshots. A ROM and the SDK must be
+supplied separately. See [assets](ASSETS.md) and [upstream](UPSTREAM.md).
 
 ## Xbox build
 
@@ -61,15 +61,15 @@ compiler. Native-object assertions also require matching build records.
 Use precise floating-point compilation. Preserve source locks, numeric
 behavior, object lifetimes, and original C/C++ language selection.
 
-## Desktop extraction build
+## Desktop build
 
 The pinned desktop application supports CMake. On Windows, use Visual Studio
 2022 with Desktop development with C++, the v143 toolset, and a Windows SDK.
 Initialize submodules, then configure `cmake -S . -B build/x64 -A x64`.
 Build `GenerateSohOtr` for the application archive and build the application
 with `cmake --build build/x64 --config Release`. Linux/macOS use the dependency
-requirements in the pinned CMake configuration. Desktop extraction produces
-the archives consumed by the Xbox application.
+requirements in the pinned CMake configuration. The Xbox application builds its
+own archives from a ROM, so this desktop build is optional.
 
 ## Mods and music
 

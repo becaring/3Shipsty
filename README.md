@@ -5,8 +5,9 @@ using native Xenon/Xenos services from [Shipyard](https://github.com/becaring/Sh
 It retains the game's resource system, randomizer, configuration, saves, and
 frame interpolation.
 
-You need a supported Ocarina of Time ROM to create the game archives on a PC.
-ROMs, extracted assets, and the Xbox SDK are external inputs.
+You need a supported Ocarina of Time ROM. Place it beside the XEX and the console
+builds `oot.o2r` or `oot-mq.o2r` on first start. ROMs, extracted assets, and the
+Xbox SDK are external inputs.
 
 - [Build and contribute](docs/BUILDING.md)
 - [Assets and packaging](docs/ASSETS.md)
