@@ -61,6 +61,7 @@ def build(jobs):
     flags = [
         "/nologo",
         "/c",
+        "/O2",
         "/EHsc",
         "/GR",
         "/MT",
