@@ -1,9 +1,9 @@
 # 3Shipsty
 
-3Shipsty brings **Ship of Harkinian 9.2.3 (Ackbar Delta)** to Xbox 360,
-using native Xenon/Xenos services from [Shipyard](https://github.com/becaring/Shipyard).
-It retains the game's resource system, randomizer, configuration, saves, and
-frame interpolation.
+3Shipsty is a port of Ship of Harkinian 9.2.3 (Ackbar Delta) to Xbox 360. It runs
+on native Xenon/Xenos services from [Shipyard](https://github.com/becaring/Shipyard)
+and keeps the game's resource system, randomizer, configuration, saves, and frame
+interpolation.
 
 You need a supported Ocarina of Time ROM. Place it beside the XEX and the console
 builds `oot.o2r` or `oot-mq.o2r` on first start. ROMs, extracted assets, and the
@@ -16,7 +16,7 @@ Xbox SDK are external inputs.
 
 ## Credits
 
-Xbox integration is maintained by **becaring**. The project builds on
+becaring maintains the Xbox integration. The project builds on
 [Harbour Masters](https://github.com/HarbourMasters),
 [Ocarina of Time decompilation](https://github.com/zeldaret/oot), libultraship,
 ZAPDTR, OTRExporter, and their dependencies. See [upstream credits](docs/CREDITS.md).
