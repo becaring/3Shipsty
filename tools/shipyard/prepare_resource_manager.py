@@ -475,6 +475,16 @@ def transform(name, original):
         text = text.replace("std::string_view", "nonstd::string_view").replace(
             "std::string(line);", "std::string(line.data(), line.size());"
         )
+        # XDK CreateFile rejects '/', and mod paths arrive as game:/mods/...;
+        # libzip gets the same conversion in Shipyard's native boundary.
+        text = once(
+            text,
+            "    const bool opened = SFileOpenArchive(GetPath().c_str(), 0, MPQ_OPEN_READ_ONLY, &mHandle);",
+            "    std::string nativePath = GetPath();\n"
+            "    std::replace(nativePath.begin(), nativePath.end(), '/', '\\\\');\n"
+            "    const bool opened = SFileOpenArchive(nativePath.c_str(), 0, MPQ_OPEN_READ_ONLY, &mHandle);",
+        )
+        text = once(text, '#include "spdlog/spdlog.h"', '#include "spdlog/spdlog.h"\n#include <algorithm>')
     # Only container lookups (not JSON) in these locked current TUs.
     text = re.sub(
         r"\b(mResourceTypes|mFactories|mResourceCache|mValidGameVersions|mHashes|mFileToArchive|mDirectories)\.contains\(([^()]*)\)",
