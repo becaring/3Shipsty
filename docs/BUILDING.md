@@ -81,8 +81,7 @@ Custom sequences use matching `.seq` and `.meta` files. The metadata has two
 lines: the display name, then the instrument-set number in hexadecimal. In Retro,
 choose Create OTR, Custom Sequences, the sequence folder, Stage Files, Finalize
 OTR, then Generate OTR. Put the result in `mods` beside `oot.o2r` and select
-sequences in the Audio Editor. The limit is 1,024 sequences including the
-original music. Sound-effect and instrument replacement are unsupported.
+sequences in the Audio Editor.
 
 Desktop SDL controller mappings come from SDL_GameControllerDB through the
 pinned CMake build. Xbox physical input goes through its native controller
