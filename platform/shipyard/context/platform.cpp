@@ -70,6 +70,8 @@ void ShipyardTerminated() {
 
 void __cdecl ShipyardAborted(int) {
     RecordNativeFault("abort", SIGABRT, NULL, "CRT abort signal");
+    // A retail abort powers the console off; the receipts are written, so return to the dashboard instead.
+    XLaunchNewImage(XLAUNCH_KEYWORD_DEFAULT_APP, 0);
 }
 }
 
