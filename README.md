@@ -68,4 +68,4 @@ Developed with AI coding assistants; design, integration and hardware validation
 
 ## License
 
-Original 3Shipsty code is [MIT](LICENSE). Releases link eSpeak NG, which is GPL-3.0-or-later, so a release as a whole is GPL-3.0-or-later with this repository as its source. Upstream components keep their own licenses; [Upstream](docs/UPSTREAM.md) lists them. 3Shipsty is an unofficial fan project, unaffiliated with Nintendo, Harbour Masters or Microsoft, and contains no ROMs or game assets.
+Original 3Shipsty code is [MIT](LICENSE). Releases link eSpeak NG, which is GPL-3.0-or-later, so a release as a whole is GPL-3.0-or-later with this repository as its source. Upstream components keep their own licenses; [Upstream](docs/UPSTREAM.md) lists them. 3Shipsty is an unofficial fan project, unaffiliated with Nintendo, Harbour Masters or Microsoft. The repository contains no ROMs or ROM-extracted retail game assets.
