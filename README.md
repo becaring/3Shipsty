@@ -2,7 +2,7 @@
 
 **Ocarina of Time on Xbox 360, powered by Shipyard.**
 
-3Shipsty brings [Ship of Harkinian](https://github.com/HarbourMasters/Shipwright) 9.2.3 (Ackbar Delta), the native port of The Legend of Zelda: Ocarina of Time, to Xbox 360 hardware. It keeps Ship of Harkinian's enhancements, randomizer, frame interpolation and mod support, and it builds its game data from your own ROM the first time it starts, so the release contains no Nintendo data.
+3Shipsty brings [Ship of Harkinian](https://github.com/HarbourMasters/Shipwright) 9.2.3 (Ackbar Delta), the native port of The Legend of Zelda: Ocarina of Time, to Xbox 360 hardware. It runs at 1080p and 60 FPS, and full 100% TAS runs have played through on real hardware many times. It keeps Ship of Harkinian's enhancements, randomizer, frame interpolation and mod support, and it builds its game data from your own ROM the first time it starts, so the release contains no Nintendo data.
 
 ## Requirements
 
