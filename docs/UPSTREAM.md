@@ -32,9 +32,9 @@ commit `fbf75c3d6d846bad3bb3d456cbc5d07d9fd8c104` is a build dependency and is
 not linked into this Xbox runtime.
 
 The [architecture guide](ARCHITECTURE.md#speech-and-shutdown) covers speech data
-packaging and shutdown. Keep all other dependency licenses, copyright notices,
-and source-authority files too. ROMs, extracted game assets, and the Xbox SDK
-are external inputs.
+packaging and shutdown. Keep every dependency's license and copyright notice;
+`release-licenses.json` lists the ones a release ships. ROMs, extracted game
+assets, and the Xbox SDK are external inputs.
 
 ## Credits
 

@@ -10,8 +10,7 @@ Clone Shipyard as a sibling named `Shipyard`. The game lock uses
 `"base": "../Shipyard"`. Check out the revision recorded in
 `platform-base.lock.json`; the resolver verifies its API version and baseline
 digest before loading shared tools. For another location, set
-`$env:XBOX360_PLATFORM_BASE = 'D:/path/to/Shipyard'`. This changes only the
-location; the revision and baseline requirements still apply.
+`$env:XBOX360_PLATFORM_BASE = 'D:/path/to/Shipyard'`. The revision and baseline checks still apply.
 
 ```powershell
 git submodule update --init --recursive
@@ -34,7 +33,7 @@ python -B tools/shipyard/build_xdk_project.py --jobs 8
 python -B tools/shipyard/link_xdk_application.py
 ```
 
-Regeneration puts the providers in order. `--list` prints the stages; `--resume`
+Regeneration runs the providers in order. `--list` prints the stages; `--resume`
 continues only when the recorded source identity matches. The compile driver
 builds independent shards and checks object hashes. The linker checks source,
 object, manifest, and header identities, then produces
@@ -97,7 +96,7 @@ changes, and restart affected Serena servers after configuration changes.
 A partial index that shows no references does not prove a file is unused.
 
 `tools/code_nav/nav.py` and `launch_serena.py` contain maintainer workstation
-paths. These tools are optional and are not build dependencies. The navigation
+paths. These tools are optional. The navigation
 runtime lives in the primary 3Shipsty checkout's `scratch/code-nav`.
 To remove it, take only its five MCP registrations (`serena_shipyard`,
 `serena_modern`, `serena_smash`, `serena_majora`, `shipyard_nav`) and navigation

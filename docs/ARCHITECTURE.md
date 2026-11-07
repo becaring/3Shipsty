@@ -123,8 +123,7 @@ Saves use `shipyard:\Save\fileN.sav` and `global.sav` in the player's
 per-profile container, which the player picks in the storage popup at startup.
 The first mount copies saves found in `game:\Save` into it. Background writes
 own their serialized bytes. Complete writes, file flushes, replacement, and
-XContent completion are separate operations, and enqueueing a write is not
-persistence. A failure after replacement reports an error without promising
+XContent completion are separate operations; enqueueing a write does not persist it. A failure after replacement reports an error without promising
 rollback or power-loss recovery.
 
 Unversioned `oot_save.sav` stores producer-native structures with no endian
@@ -136,7 +135,7 @@ a unique ordinary vanilla health capacity can break the tie.
 
 | Legacy property | Value |
 | --- | --- |
-| Header size / identity at bytes 3–11 | `0x10` / `98 09 10 21 5A 45 4C 44 41` |
+| Header size / identity at bytes 3 to 11 | `0x10` / `98 09 10 21 5A 45 4C 44 41` |
 | Context size / slot stride | `0x1428` / `0x1450` |
 | Primary offsets | `0x0020`, `0x1470`, `0x28C0` |
 | Backup offsets | `0x3D10`, `0x5160`, `0x65B0` |

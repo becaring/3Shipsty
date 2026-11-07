@@ -28,7 +28,7 @@ the `espeak-ng-data` described in the
 ## Archive format
 
 A ZIP/MPQ container has no single scalar byte order. Resource records carry
-their own markers. Desktop- and console-built regular binary resource headers and payloads
+their own markers. Regular binary resource headers and payloads, whether desktop- or console-built,
 are little endian; the version records below are big endian. Xenon's native
 endianness must not replace these per-record rules.
 
