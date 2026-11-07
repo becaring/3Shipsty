@@ -196,7 +196,6 @@ def build():
             "/nologo",
             "/MT",
             "/TC",
-            "/O2",
             "/c",
             str(generated),
             "/Fo" + str(obj),
