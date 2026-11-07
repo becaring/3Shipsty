@@ -24,14 +24,16 @@ separately. See [assets](ASSETS.md) and [upstream](UPSTREAM.md).
 
 ## Xbox build
 
-Run from the game repository root, stopping on failure:
+Run from the game repository root:
 
 ```powershell
-python -B tools/shipyard/regenerate_all.py
-python -B tools/shipyard/generate_xdk_project.py
-python -B tools/shipyard/build_xdk_project.py --jobs 8
-python -B tools/shipyard/link_xdk_application.py
+python -B tools/build.py
 ```
+
+It refreshes the build metadata, compiles only the objects whose sources or
+headers changed, and links. Add `--regenerate` after changing Shipyard sources,
+projectors or pinned inputs; it first runs `tools/shipyard/regenerate_all.py`,
+which reruns and recompiles every stage, so a full build takes much longer.
 
 Regeneration runs the providers in order. `--list` prints the stages; `--resume`
 continues only when the recorded source identity matches. The compile driver
