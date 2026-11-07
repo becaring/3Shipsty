@@ -45,7 +45,7 @@ The game's controls can be remapped in Ship of Harkinian's controller menu. 3Shi
 
 ## Logs
 
-3Shipsty writes `boot.txt` and the game log to the `logs` folder beside `3Shipsty.xex`.
+3Shipsty writes its logs to the `logs` folder beside `3Shipsty.xex`.
 
 ## Reporting a problem
 

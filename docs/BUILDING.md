@@ -40,8 +40,8 @@ builds independent shards and checks object hashes. The linker checks source,
 object, manifest, and header identities, then produces
 `scratch/link-integration/3Shipsty.xex`. Build records include the Git revision.
 
-For a module, run `tools/shipyard/prepare_<module>.py` with hyphens replaced by
-underscores, then its matching `test_<module>.py` or test under
+For most modules, run `tools/shipyard/prepare_<module>.py` with hyphens replaced
+by underscores (libzip uses `prepare_archives.py`), then its matching `test_<module>.py` or test under
 `tools/shipyard/tests`. Read the command's options before using `--build`,
 because some providers have separate compilation switches. Prepare shared
 dependencies first. Edit adapters and projectors, then regenerate their output.
@@ -81,7 +81,7 @@ Custom sequences use matching `.seq` and `.meta` files. The metadata has two
 lines: the display name, then the instrument-set number in hexadecimal. In Retro,
 choose Create OTR, Custom Sequences, the sequence folder, Stage Files, Finalize
 OTR, then Generate OTR. Put the result in `mods` beside `oot.o2r` and select
-sequences in the SFX Editor. The limit is 1,024 sequences including the
+sequences in the Audio Editor. The limit is 1,024 sequences including the
 original music. Sound-effect and instrument replacement are unsupported.
 
 Desktop SDL controller mappings come from SDL_GameControllerDB through the

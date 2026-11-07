@@ -17,8 +17,9 @@ remote does not change that selection.
 
 `platform/shipyard/dependencies.lock.json`, the subsystem `sources.lock.json`
 files, and the subsystem provenance records hold the other dependency identities:
-libzip, zlib, tinyxml2, Prism, ImGui, StormLib, libgfxd, stb, thread-pool, JSON,
-spdlog, and fmt. The pinned release extracts with ZAPDTR/OTRExporter; Torch is
+zlib, libzip, tinyxml2, Prism, ImGui, spdlog, fmt, Opus, Opusfile, Ogg, Vorbis,
+StormLib, string-view-lite, stb, libgfxd and dr_libs in `dependencies.lock.json`,
+and thread-pool and JSON in their subsystem provenance records. The pinned release extracts with ZAPDTR/OTRExporter; Torch is
 not a dependency.
 
 ## Speech and distribution

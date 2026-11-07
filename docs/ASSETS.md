@@ -9,15 +9,20 @@ missing, startup builds it from each supported ROM there: a vanilla ROM gives
 `oot.o2r` and a Master Quest ROM gives `oot-mq.o2r`. A Master Quest ROM holds
 only the Master Quest dungeons, so playing both dungeon sets takes both ROMs.
 Extraction reads the extraction XMLs from `assets.zip`, or from the `assets`
-folder when no zip is present. `python -B tools/shipyard/pack_assets.py`
+folder when no zip is present.
+`python -B tools/shipyard/pack_assets.py <release>/assets <output>/assets.zip`
 packs the 9.2.3 release `assets` folder into that uncompressed zip, which
-copies to the console as one file. The runtime uses `soh.o2r`, `oot.o2r`, and
+copies to the console as one file; `tools/package.py` runs it for a release. The runtime uses `soh.o2r`, `oot.o2r`, and
 optionally `oot-mq.o2r`. Mods use the OTR/O2R resource system and a `mods`
 directory.
 
-Package the application with its matching archives. Saves go to the selected
-`shipyard:` container; configuration and logs stay under `game:`. Speech also
-needs the standard `espeak-ng-data` package described in the
+`python -B tools/package.py --destination <new folder>` assembles a release
+from the linked XEX, the 9.2.3 release `soh.o2r` and `assets`, the speech data,
+the shader pack and the license files listed in `release-licenses.json`. It
+refuses uncommitted changes unless `--allow-dirty` is given, because `SOURCE.txt`
+names the commits that are the release's GPL source. Saves go to the selected
+`shipyard:` container; configuration and logs stay under `game:`. Speech uses
+the `espeak-ng-data` described in the
 [architecture guide](ARCHITECTURE.md#speech-and-shutdown).
 
 ## Archive format
@@ -28,9 +33,9 @@ are little endian; the version records below are big endian. Xenon's native
 endianness must not replace these per-record rules.
 
 The 9.2.3 `portVersion` record is `01 0009 0002 0003`. A game-version record
-contains its own marker and game CRC. `OTRExporter/Main.cpp` selects big endian
-for version records, while `OTRExporter/Exporter.cpp` selects little endian for
-regular headers.
+contains its own marker and game CRC. `OTRExporter/OTRExporter/Main.cpp` selects
+big endian for version records, while `OTRExporter/OTRExporter/Exporter.cpp`
+selects little endian for regular headers.
 
 ## Checking archives
 

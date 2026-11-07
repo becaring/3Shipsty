@@ -53,7 +53,7 @@ module.exports = run;
 if (require.main === module) {
   const assert = require('assert');
   const log = '[game.log](https://github.com/user-attachments/files/123/game.log)';
-  const good = '### What happened?\n\nThe game froze on character select right after I picked a fighter.\n\n### Log\n\n' + log;
+  const good = '### What happened?\n\nThe game froze when I entered Hyrule Field from Kakariko Village.\n\n### Log\n\n' + log;
   assert.deepStrictEqual(problems(good), []);
   assert.strictEqual(problems('### What happened?\n\nbroken\n\n### Log\n\n_No response_').length, 2);
   assert.strictEqual(problems(good.replace(log, 'pasted log text')).length, 1);
