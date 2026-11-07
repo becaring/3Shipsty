@@ -98,7 +98,7 @@ A partial index that shows no references does not prove a file is unused.
 
 `tools/code_nav/nav.py` and `launch_serena.py` contain maintainer workstation
 paths. These tools are optional and are not build dependencies. The navigation
-runtime lives in the primary Modern checkout's `scratch/code-nav`.
+runtime lives in the primary 3Shipsty checkout's `scratch/code-nav`.
 To remove it, take only its five MCP registrations (`serena_shipyard`,
 `serena_modern`, `serena_smash`, `serena_majora`, `shipyard_nav`) and navigation
 instructions out of the local Codex configuration, restart Codex, and delete the

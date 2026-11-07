@@ -29,7 +29,7 @@ lowering syntax for the XDK.
 | `application-gui` | SohGui owns the full window registration set. Window declarations keep fields, defaults, and shared ownership; AudioCollection supplies AudioSeqType. |
 | `application-windows` | Debugger windows, ImGuiUtils, and ResolutionEditor keep their rendering bodies and current interfaces. Temporary aggregate backing storage remains in factory scope. |
 | `async` | Native workers, mutexes, events, condition variables, joining threads, and futures keep blocking and ownership. A worker must not join itself. |
-| `audio` | XAudio2 keeps buffers through callback completion and destroys voices before freeing storage. Modern audio settings come from AudioPlayer; the factory keeps derived deletion. |
+| `audio` | XAudio2 keeps buffers through callback completion and destroys voices before freeing storage. 3Shipsty audio settings come from AudioPlayer; the factory keeps derived deletion. |
 | `audio-collection` | Sequence tables insert in source order with first-key behavior. Collection sets keep pointers into the owning map; filename handling uses the filesystem adapter. |
 | `binary` | BinaryReader and BinaryWriter use each record's byte-order marker. Native endian detection and unconditional byte swaps remain separate operations. |
 | `build` | Subsystem configuration selects source providers and compile records. Generated source, header, and object identities must agree before linking. |
@@ -47,7 +47,7 @@ lowering syntax for the XDK.
 | `game-interactor` | Hooks keep registry, dispatch, removal, forwarding, and cross-unit template storage. Explicit original source locations replace unavailable call-site intrinsics. |
 | `gameplay-features` | Complete selected feature translation units keep game rules, hooks, callbacks, and registrations; source locks cover their shared declarations. |
 | `gfxd` | The graphics disassembler keeps all five ucode targets and its public I/O and formatting APIs. Each source selects its own ucode definitions; disassembly state is per thread (`CONFIG_MT`). |
-| `graphics` | Modern rendering interfaces and the combiner decoder feed shared shader generation. Shader and vertex layouts must match the selected interpreter. |
+| `graphics` | 3Shipsty's rendering interfaces and the combiner decoder feed shared shader generation. Shader and vertex layouts must match the selected interpreter. |
 | `gui` | Native dispatch handles ImGui setup, events, draws, and shutdown. Xbox has no independent desktop viewports; the clipboard is application-local. |
 | `gui-resources` | Font, texture, overlay, and stb decoding keep buffer ownership, validation, failures, dimensions, and allocation/free pairs. |
 | `imgui` | Pinned docking ImGui uses the LUS math and pointer ImTextureID configuration. Constructor and callback lowering rejects unaudited shapes. |
@@ -91,7 +91,7 @@ lowering syntax for the XDK.
 | `thread-pool` | Pinned BS v4.1.0 keeps blocking futures, priority/pause policy, captured task ownership, and drain semantics for resources and saves. |
 | `vorbis` | The full pinned libvorbisfile decoder and Ogg dependency keep format handling. Host SIMD and PPC fallback can differ in least-significant PCM rounding. |
 | `window` | Window and GUI classes keep full ownership and lifecycle. Constructors keep original defaults, including mLastScancode=-1 and value-initialized flags. |
-| `xenos` | Shared Xenos uses shader ABI 2, six samplers, independent clears, framebuffer copies, and native RGB5551 reads. Modern adapts its uint64/uint32 shader IDs. |
+| `xenos` | Shared Xenos uses shader ABI 2, six samplers, independent clears, framebuffer copies, and native RGB5551 reads. 3Shipsty adapts its uint64/uint32 shader IDs. |
 
 ## Rendering and resources
 
@@ -108,7 +108,7 @@ StormLib applies the pinned LUS patch and keeps its compression and signature
 algorithms. Its integer records are little endian, and the Xbox platform
 selects StormLib's big-endian conversion paths and portable crypto operations.
 
-Modern resource loading strips the legacy header from its buffer. Keep
+3Shipsty resource loading strips the legacy header from its buffer. Keep
 modern factory versions, alternate-resource identities, and mod precedence.
 Do not import another game's blob offsets, MIDI padding, or archive schema.
 Remove cache entries under the cache lock, and destroy resources after
