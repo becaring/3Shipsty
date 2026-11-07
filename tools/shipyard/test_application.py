@@ -403,6 +403,9 @@ int main() {
             "gui-windows-ready",
             "gui-ready",
             "speech-ready",
+            "mods-ready",
+            "item-icons-ready",
+            "ship-init-ready",
             "init-complete",
         ]
         positions = [start.index('RecordBootStage("' + stage + '"') for stage in stages]

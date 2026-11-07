@@ -310,6 +310,13 @@ def platform_source(source):
         "    SpeechSynthesizer::Instance->Init();\n   "
         ' Shipyard::Platform::RecordBootStage("speech-ready", false);',
     )
+    # Mod archives and alternate assets load in this stretch; free memory per step shows which one costs it.
+    for call, stage in (
+        ("    InitMods();", "mods-ready"),
+        ("    RegisterImGuiItemIcons();", "item-icons-ready"),
+        ("    ShipInit::InitAll();", "ship-init-ready"),
+    ):
+        source = once(source, call, call + '\n    Shipyard::Platform::RecordBootStage("' + stage + '", false);')
     source = once(
         source,
         "    OTRGlobals::Instance->gRandoContext->AddExcludedOptions();",
