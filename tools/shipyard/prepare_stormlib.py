@@ -1,4 +1,4 @@
-"""Generate exact LUS-patched StormLib with explicit Xenon platform boundaries."""
+"""Generate StormLib with the LUS patches and explicit Xenon platform boundaries."""
 
 import hashlib
 import json

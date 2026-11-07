@@ -1,4 +1,4 @@
-"""Execute the actual interpolation scheduling block with counted vector storage."""
+"""Execute the interpolation scheduling block with counted vector storage."""
 import json
 import runpy
 import subprocess

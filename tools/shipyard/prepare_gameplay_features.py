@@ -1,4 +1,4 @@
-"""Complete pinned gameplay enhancement batch against canonical native providers."""
+"""Pinned gameplay enhancements, built on the native implementations."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,7 +61,7 @@ def project(name, text):
         "shipyard_original_overrideBlueWarpDestinations", "overrideBlueWarpDestinations"
     )
     text = re.sub(r"\bconstexpr\b", "const", text)
-    # The umbrella imports desktop backends; these actual subsystem headers
+    # The umbrella imports desktop backends; these subsystem headers
     # retain the current LUS platform interfaces without a replacement facade.
     text = text.replace(
         "#include <libultraship/libultraship.h>",
@@ -515,7 +515,7 @@ def prepare():
         assert scope.count(declaration) == 2
         scope = scope.replace(declaration, "")
     # XDK loses C linkage for a block-scope declaration inside a lambda. Use
-    # the actual namespace-scope C declarations; retain both original macro
+    # the namespace-scope C declarations; retain both original macro
     # bodies, including recording, debug scopes, source location and ordering.
     scope = (
         '#pragma once\n#include "macros.h"\n#include "soh/frame_interpolation.h"\n#undef'

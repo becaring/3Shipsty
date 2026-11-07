@@ -1,4 +1,4 @@
-"""Project current shared window/GUI declarations and common window ownership."""
+"""Generate the shared window and GUI declarations and the common window ownership."""
 
 import argparse
 import hashlib
@@ -183,7 +183,7 @@ def transform(name, text):
         )
     elif name.endswith("/Gui.h"):
         # These headers supply implementation types, not stored values. Retain
-        # every method/member and supply complete metadata from its real header.
+        # every method/member and supply complete metadata from its header.
         text = once(text, "#include <SDL2/SDL.h>", "struct SDL_Renderer;")
         for header in (
             "ConsoleWindow.h",
@@ -216,7 +216,7 @@ def transform(name, text):
         )
         text = text.replace(" override", "")
     elif name.endswith("/GuiElement.cpp"):
-        # Neither header is used by this TU; this is the actual full class body.
+        # Neither header is used by this TU; this is the full class body.
         text = once(text, '#include "ship/Context.h"', "")
         text = once(text, '#include "ship/config/ConsoleVariable.h"', "")
         text = once(

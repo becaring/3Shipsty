@@ -1,4 +1,4 @@
-"""Full current Fast3dWindow and native presentation, without another game loop."""
+"""Fast3dWindow and native presentation, without a second game loop."""
 
 import argparse
 import hashlib

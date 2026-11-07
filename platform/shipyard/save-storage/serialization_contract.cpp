@@ -13,7 +13,7 @@ struct SaveSerializationAccess {
         }
         manager.ThreadPoolWait();
         assert(completed == 1024);
-        // Destruction joins the same real pool after the upstream barrier.
+        // Destruction joins the same pool after the upstream barrier.
         manager.smThreadPool.reset();
     }
     static void Use(SaveManager& manager, nlohmann::json& value) { manager.currentJsonContext = &value; }
@@ -32,7 +32,7 @@ struct SaveSerializationAccess {
     }
 };
 int main() { try {
-    // Fixture constructor is injected ONLY into the test's exact class copy.
+    // Fixture constructor is injected only into the test's copy of the class.
     // It creates no game services and bypasses no production execution path.
     SaveManager manager(SaveSerializationFixtureTag());
     SaveManager::Instance = &manager;

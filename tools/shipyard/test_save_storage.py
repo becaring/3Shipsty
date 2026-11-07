@@ -1,4 +1,4 @@
-"""Actual modern save schema/migration differential plus native recipe checks."""
+"""Modern save schema/migration differential plus native recipe checks."""
 
 import json, runpy, subprocess, hashlib, re
 from prepare_save_storage import ROOT, OUT, OWN, prepare, methods, includes, METHODS

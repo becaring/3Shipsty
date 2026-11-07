@@ -1,4 +1,4 @@
-"""Startup boundary evidence; deliberately does not claim full application coverage."""
+"""Startup boundary checks; they do not cover the whole application."""
 
 import hashlib
 import json
@@ -75,7 +75,7 @@ class ApplicationContracts(unittest.TestCase):
             [n for n in names(projected[:start] + projected[end:]) if n not in generated_helpers],
         )
 
-        # Compare actual resource-registration expressions independently of
+        # Compare resource-registration expressions independently of
         # surrounding platform lifetime and container-construction lowering.
         def registrations(text):
             body = function(text, "OTRGlobals::Initialize")

@@ -1,4 +1,4 @@
-"""Execute real widget value/menu methods and bounded implementation contracts."""
+"""Execute widget value/menu methods and bounded implementation contracts."""
 
 import hashlib
 import json

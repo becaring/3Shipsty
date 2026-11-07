@@ -58,7 +58,7 @@ int main() {
             if(nan) require((bits(b)&0x80400000U)==((input&0x80000000U)|0x00400000U),"NaN sign/quiet",input,mode);
             hash(bits(b));++cases;
         }
-        // Existing sticky inexact must survive, and finite rounding must add
+        // A sticky inexact flag that is already set must survive, and finite rounding must add
         // no flags when it was clear. Probe all directed modes and signed zero.
         std::feclearexcept(FE_ALL_EXCEPT); std::feraiseexcept(FE_INEXACT|FE_DIVBYZERO);
         const int before=std::fetestexcept(FE_ALL_EXCEPT);

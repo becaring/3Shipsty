@@ -1,4 +1,4 @@
-"""Reproduce the complete pinned Settings implementation for XDK."""
+"""Reproduce the pinned Settings implementation for XDK."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Bounded actual skeleton methods; real player/Context patching stays a runtime gate."""
+"""Bounded skeleton methods; player and Context patching stays a runtime gate."""
 
 import json
 import runpy

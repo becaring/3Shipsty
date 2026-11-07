@@ -1,9 +1,9 @@
-"""Project owned pinned LUS binarytools into XDK-compatible source; never edit upstream.
+"""Convert the pinned LUS binarytools into XDK-compatible source; upstream is never edited.
 
-The explicit transforms are adapted from the read-only Smash360 binary generator;
+The transforms are adapted from the read-only Smash360 binary generator;
 provenance and semantic differences are recorded in platform/shipyard/binary.
-Locks hash UTF-8 text after BOM removal and CRLF-to-LF normalization, allowing
-normal Git checkout newline differences without accepting source changes.
+Locks hash UTF-8 text after BOM removal and CRLF-to-LF normalization, so newline
+differences from a Git checkout pass while source changes still fail.
 """
 
 import argparse

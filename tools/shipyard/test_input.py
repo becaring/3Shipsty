@@ -1,5 +1,5 @@
-"""Host differential for retained input math/defaults plus physical contract fixtures.
-The host fixture supplies physical bytes; it does not prove native controller I/O.
+"""Host differential for the retained input math and defaults, plus physical contract fixtures.
+The host fixture supplies the physical bytes, so native controller I/O is not tested.
 """
 
 import json, runpy, subprocess
@@ -16,7 +16,7 @@ def host(projected):
     folder.mkdir(parents=True, exist_ok=True)
     source = OUT / "generated" if projected else ROOT / "libultraship"
     if not projected:
-        # Only replace the physical API include; real original declarations and
+        # Only replace the physical API include; original declarations and
         # method bodies remain modern C++ for differential syntax validation.
         for name in json.loads((OWN / "sources.lock.json").read_text())["sources"]:
             if name.startswith("include/"):

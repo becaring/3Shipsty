@@ -1,8 +1,8 @@
-"""Snapshot an exact clean Git dependency into owned scratch, read-only donor.
+"""Snapshot a clean Git dependency into scratch, treating the source checkout as a read-only donor.
 
 Git archive reads committed blobs, so generators never run in reference trees.
-The resulting receipt records the commit and every copied byte hash. Local
-snapshotting is an acquisition optimization, not dependency ownership by donor.
+The receipt records the commit and the hash of every copied byte. Snapshotting
+from a local checkout only speeds up acquisition; the donor does not own the dependency.
 """
 import argparse
 import hashlib

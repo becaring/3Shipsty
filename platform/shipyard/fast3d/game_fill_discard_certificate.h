@@ -5,7 +5,7 @@
 namespace ModernFast3D {
 
 // Coordinates are the exact U10.2 values passed to GfxDrawRectangle, after
-// FILL's inclusive lower/right edge and the existing widescreen expansion.
+// FILL's inclusive lower/right edge and the widescreen expansion.
 inline bool FullGameFillCovers(uint32_t nativeWidth, uint32_t nativeHeight,
                               uint32_t targetWidth, uint32_t targetHeight,
                               int32_t ulx, int32_t uly, int32_t lrx, int32_t lry,
@@ -16,7 +16,7 @@ inline bool FullGameFillCovers(uint32_t nativeWidth, uint32_t nativeHeight,
     if (nativeWidth < 2 || nativeHeight < 2 || targetWidth == 0 || targetHeight == 0 ||
         targetWidth > 16384 || targetHeight > 16384)
         return false;
-    // GfxSpTri1 tests these existing reserved-vertex rejection bits even for
+    // GfxSpTri1 tests these reserved-vertex rejection bits even for
     // rectangles. An omitted half would not overwrite the whole target.
     if ((clip0 & clip1 & clip3) || (clip1 & clip2 & clip3))
         return false;

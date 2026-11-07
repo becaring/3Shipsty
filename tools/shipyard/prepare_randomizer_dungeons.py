@@ -1,4 +1,4 @@
-"""Complete pinned dungeon and trial units against canonical application classes."""
+"""Pinned dungeon and trial units, built on the application classes."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Full-source inventory plus actual entrance/tracker table and JSON contracts."""
+"""Full-source inventory plus entrance/tracker table and JSON contracts."""
 
 import collections, hashlib, json, re, runpy, struct, subprocess
 from prepare_randomizer_application import ROOT, OUT, OWN, BASE, includes, prepare, kids
@@ -139,7 +139,7 @@ void string(const std::string& value){number(value.size());for(unsigned char c:v
 void dungeon(const std::vector<ItemTrackerDungeon>& rows){number(rows.size());for(const auto& \
 row:rows){number(row.id);number(row.items.size());for(auto item:row.items)number(item);}}
 """
-    # Use actual RHS projections with explicit inputs; no application services
+    # Use RHS projections with explicit inputs; no application services
     # are replaced. Original JSON gets the official upstream implementation.
     plando = (root / BASE / "Plandomizer.cpp").read_text()
     assignments = []

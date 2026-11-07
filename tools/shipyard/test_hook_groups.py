@@ -1,4 +1,4 @@
-"""Run original/projected real hook headers without changing selected outputs."""
+"""Run original and projected hook headers without changing selected outputs."""
 import runpy
 import subprocess
 import json

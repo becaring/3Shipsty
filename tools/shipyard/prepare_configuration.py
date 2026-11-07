@@ -1,4 +1,4 @@
-"""Current Config with narrow declarations and native backend registration."""
+"""Config with narrow declarations and native backend registration."""
 
 import argparse
 import hashlib

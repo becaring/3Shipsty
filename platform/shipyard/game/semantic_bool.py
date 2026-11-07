@@ -107,7 +107,7 @@ def lower(source, parser, pointer_boundaries=()):
                     raise ValueError('Boolean function-pointer declarations require an indirect-call audit')
                 if node.type == 'type_definition':
                     # Function pointers returning bool need no caller input
-                    # conversion; every real bool definition normalizes return.
+                    # conversion; every bool definition normalizes return.
                     continue
                 contract = (dtype, params)
                 relevant = typ == 'bool' or any(p[0] == 'bool' for p in params)

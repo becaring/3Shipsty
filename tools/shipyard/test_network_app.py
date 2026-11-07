@@ -1,4 +1,4 @@
-"""Original/current packet JSON contracts, including in-place partial updates."""
+"""Original and current packet JSON contracts, including in-place partial updates."""
 
 import collections, hashlib, json, re, runpy, subprocess
 from prepare_network_app import ROOT, OUT, OWN, BASE, prepare, includes

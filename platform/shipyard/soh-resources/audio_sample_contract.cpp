@@ -1,5 +1,5 @@
 // Appended after the complete service-independent original/projected factory
-// methods. Only XML's real Context/archive acquisition is outside this host audit.
+// methods. Only XML's Context/archive acquisition is outside this host audit.
 #include "ship/utils/binarytools/MemoryStream.h"
 #include <cassert>
 #include <fstream>
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     memset(&ogg->sample, 0, sizeof(ogg->sample));
     OggDecoderWorker(ogg, oggFile, init);
     pcm(ogg->sample.sampleAddr, 8192 * 2);
-    // The production worker now asks for native order. Prove the Vorbis API's
+    // The production worker asks for native order. Prove the Vorbis API's
     // BE and LE modes represent exactly the same numeric signed samples.
     std::vector<char> orders[2];
     for (int big = 0; big < 2; ++big) {

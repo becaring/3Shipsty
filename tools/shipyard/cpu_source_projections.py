@@ -1,4 +1,4 @@
-"""Materialize reviewed CPU source projections while preserving pinned inputs.
+"""Write the reviewed CPU source projections without changing the pinned inputs.
 Build records name and hash both the shared input and the compiled projection.
 """
 

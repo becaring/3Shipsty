@@ -1,4 +1,4 @@
-"""Project the full current Gui and its current concrete window declarations."""
+"""Generate Gui and its window declarations."""
 
 import argparse
 import ast

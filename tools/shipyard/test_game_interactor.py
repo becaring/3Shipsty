@@ -1,4 +1,4 @@
-"""Execute the actual current registry algorithms on original/projected headers."""
+"""Execute the registry algorithms on original and projected headers."""
 
 import json
 import runpy

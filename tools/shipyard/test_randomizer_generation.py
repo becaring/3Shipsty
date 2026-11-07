@@ -1,4 +1,4 @@
-"""Seed-generation source inventories and actual bounded algorithm contracts."""
+"""Seed-generation source inventories and bounded algorithm contracts."""
 
 import collections, hashlib, json, re, runpy, struct, subprocess
 from prepare_randomizer_generation import *
@@ -110,7 +110,7 @@ def inventory_check(manifest):
     assert len(origrows) == len(projrows) == 4
     helpers = {fname(n): n for n in methods(projected)}
 
-    # Keep all twelve real predicates, including their ordering and check IDs.
+    # Keep all twelve predicates, including their ordering and check IDs.
     # The old XDK silently omitted most nontrivial aggregate initializers; the
     # generated callback table must instead use explicitly constructed elements.
     def conditional(text):

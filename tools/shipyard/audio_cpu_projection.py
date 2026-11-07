@@ -1,5 +1,5 @@
-"""Freeze audio controls during synthesis and use exact VMX saturated lanes.
-Scalar DSP stays authoritative for partial overlap, unaligned data and gain mixes.
+"""Freeze audio controls during synthesis and use VMX saturated lanes with exact results.
+Scalar DSP handles partial overlap, unaligned data and gain mixes.
 """
 
 def once(text, old, new):

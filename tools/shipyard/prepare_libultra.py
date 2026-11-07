@@ -1,4 +1,4 @@
-"""Project complete pinned LUS libultra and remaining C bridges; no upstream edits."""
+"""Generate the pinned LUS libultra and the remaining C bridges; upstream is never edited."""
 
 import argparse
 import hashlib

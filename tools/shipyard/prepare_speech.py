@@ -1,4 +1,4 @@
-"""Pinned eSpeak NG and modern SoH speech platform projection."""
+"""Pinned eSpeak NG and the modern SoH speech platform sources."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

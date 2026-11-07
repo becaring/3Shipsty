@@ -1,7 +1,7 @@
-"""Full declaration audits, native object receipts, and bounded value differentials.
+"""Full declaration audits, native object build records, and bounded value differentials.
 
-The method harness uses exact complete class definitions with private test access.
-It never supplies fake services or constructs a substitute Rando::Context.
+The method harness uses the complete class definitions with private test access.
+It supplies no fake services and builds no substitute Rando::Context.
 """
 import hashlib
 import json
@@ -52,7 +52,7 @@ def class_signatures(text, name):
         if decl is None or not any(c.type in ('function_declarator', 'operator_cast') for c in walk(decl)):
             continue
         signature = decl.text.decode()
-        # Parameter default spellings differ, but their actual default values
+        # Parameter default spellings differ, but their default values
         # are audited separately. Normalize only those expression spans.
         ranges = []
         for arg in walk(decl):
@@ -303,7 +303,7 @@ class RandomizerFoundation(unittest.TestCase):
             path = OUT / 'xdk' / (Path(row['source']).stem + '.obj')
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), row['object_sha256'])
             self.assertEqual(struct.unpack_from('<H', path.read_bytes())[0], 0x1f2)
-        # Extract target layout constants from the real COFF symbol, never infer
+        # Extract target layout constants from the COFF symbol, never infer
         # Xbox sizes from the host ABI or synthesize an alternate class layout.
         raw = (OUT / 'xdk/xdk_abi.obj').read_bytes()
         _, count, _, symbols, symbol_count, optional, _ = struct.unpack_from('<HHIIIHH', raw)

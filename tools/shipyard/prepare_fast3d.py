@@ -1,4 +1,4 @@
-"""Bring the complete pinned Fast3D interpreter through the native compiler."""
+"""Prepare the pinned Fast3D interpreter for the native compiler."""
 
 import argparse
 import hashlib
@@ -128,7 +128,7 @@ def header(text):
         "std::stack<F3DGfx*> cmd_stack = {};",
         "Shipyard::Fast3D::CommandStack<F3DGfx*> cmd_stack = {};",
     )
-    # Share the real current shader constants/features with the decoder/backend.
+    # Share the current shader constants/features with the decoder/backend.
     start = text.index("enum {\n    SHADER_0,")
     end = text.index("\nunion Gfx;", start)
     key_start = text.index("struct ColorCombinerKey {", start)
@@ -920,7 +920,7 @@ def build():
         raise SystemExit(result.returncode)
     if struct.unpack_from("<H", obj.read_bytes())[0] != 0x1F2:
         raise ValueError("Not a Xenon object")
-    # Check the actual include composition, not a standalone forced endian flag.
+    # Check the include composition, not a standalone forced endian flag.
     probe = folder / "endian_contract.cpp"
     stable(
         probe,

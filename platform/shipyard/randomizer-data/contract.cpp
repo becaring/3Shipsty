@@ -88,7 +88,7 @@ int main() {
     translated = Rando::StaticData::PopulateTranslationMap(collision);
     CHECK(translated.begin()->second == first);
     std::cout << "collision-first:" << first << "\n";
-    // Fill actual table slots with real HintText values for the second overload.
+    // Fill table slots with HintText values for the second overload.
     Rando::StaticData::hintTextTable[0] = HintText(CustomMessage("First"));
     Rando::StaticData::hintTextTable[1] = HintText(CustomMessage("Second"));
     std::unordered_map<uint32_t, RandomizerHintTextKey> keys;

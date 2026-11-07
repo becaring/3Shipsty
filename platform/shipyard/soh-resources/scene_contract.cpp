@@ -167,7 +167,7 @@ int main() {
             assert(mesh->meshHeader.polygon2.start == mesh->dlists2.data() && mesh->dlists2[0].pos.x == -32768);
         LogMeshAsXML(mesh);
     }
-    // Service-dependent factories are not replaced. Their real types and
+    // Service-dependent factories are not replaced. Their types and
     // loggers can still be exercised with directly owned resource references.
     std::shared_ptr<Ship::ResourceInitData> init = actors->GetInitData();
     std::shared_ptr<Scene> scene = std::make_shared<Scene>(init);

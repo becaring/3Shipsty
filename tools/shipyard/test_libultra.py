@@ -1,4 +1,4 @@
-"""Execute real queue/DMA methods, native timer ownership and clock conversion."""
+"""Execute queue/DMA methods, native timer ownership and clock conversion."""
 
 import hashlib
 import json

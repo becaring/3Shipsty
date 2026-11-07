@@ -1,4 +1,4 @@
-"""Compare actual debugger/tracker tables and preserve application registrations."""
+"""Compare the debugger and tracker tables and check that application registrations are preserved."""
 
 import hashlib, json, runpy, subprocess, struct
 from pathlib import Path
@@ -12,7 +12,7 @@ def main():
     env = runpy.run_path(str(ROOT / "tools/shipyard/tests/test_binary.py"))
     compiler, environment = env["host_environment"]()
     results = []
-    # These are the real namespace-scope application tables. Exclude classes,
+    # These are the namespace-scope application tables. Exclude classes,
     # whose service-backed methods need the linked application to execute.
     for projected in [False, True]:
         folder = OUT / ("host-projected" if projected else "host-original")

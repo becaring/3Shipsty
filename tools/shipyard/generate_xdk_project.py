@@ -1,7 +1,7 @@
-"""Inventory real projected sources and emit an inspectable compile-only XDK project.
+"""List the generated sources and emit an inspectable compile-only XDK project.
 
-Consumes the declarative subsystem report list and reviewed CPU projections;
-never links old objects. Every application source stays selected or explicitly pending.
+Reads the declarative subsystem report list and the reviewed CPU projections, and
+never links old objects. Every application source is either selected or explicitly pending.
 """
 
 import argparse

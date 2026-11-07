@@ -1,4 +1,4 @@
-"""Complete current randomizer hooks, messages, gameplay and tracker application."""
+"""Randomizer hooks, messages, gameplay and tracker application."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed

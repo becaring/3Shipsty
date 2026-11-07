@@ -1,4 +1,4 @@
-"""Exercise the actual runtime loop with the native channel and controlled I/O."""
+"""Exercise the runtime loop with the native channel and controlled I/O."""
 
 import json
 from pathlib import Path

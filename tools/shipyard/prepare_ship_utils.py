@@ -1,4 +1,4 @@
-"""Generate complete current ShipUtils and 3drando RNG units for XDK."""
+"""Generate the ShipUtils and 3drando RNG units for XDK."""
 
 import argparse
 import hashlib
@@ -38,7 +38,7 @@ def project(name, text):
 #include "ship-utils/support.h"
 #endif""",
         )
-        # Tag spellings expose the same actual game types to C consumers without
+        # Tag spellings expose the same game types to C consumers without
         # requiring a prior typedef from a different game header.
         text = text.replace("(Actor* actor)", "(struct Actor* actor)")
         text = text.replace(

@@ -1,16 +1,12 @@
 """Resolve per-presentation OTR resource commands without upstream's lookup chain.
 
-Every replayed G_DL_OTR_HASH, G_BRANCH_Z_OTR, G_MTX_OTR, G_MOVEMEM (OTR) and
-OTR file-path command calls ResourceManager::GetResourceRawPointer, which
-locks Context, copies the manager, resolves the CRC to a path, builds owning
-ResourceIdentifier strings (plus an "alt/" string and second identifier while
-alternate assets are enabled), locks the cache mutex per probe and copies the
-result shared_ptr. Interpolation replays each display list per presentation.
+Every replayed G_DL_OTR_HASH, G_BRANCH_Z_OTR, G_MTX_OTR, G_MOVEMEM (OTR) and OTR file-path command calls ResourceManager::GetResourceRawPointer,
+which locks Context, copies the manager, resolves the CRC to a path, builds owning ResourceIdentifier strings (plus an "alt/" string and second
+identifier while alternate assets are enabled), locks the cache mutex per probe and copies the result shared_ptr. Interpolation replays each
+display list per presentation.
 
-Hits are certified exactly like the existing Xbox texture hash cache: the
-archive hash-table epoch covers hash->path, and the manager lookup generation
-plus the resource's dirty flag cover path->resource. Misses call upstream's
-LoadResource unchanged. The G_VTX_OTR_HASH handler is left alone; it already
+Hits are certified like the Xbox texture hash cache: the archive hash-table epoch covers hash->path, and the manager lookup generation plus the
+resource's dirty flag cover path->resource. Misses call upstream's LoadResource unchanged. The G_VTX_OTR_HASH handler is left alone; it already
 patches its own command with the resolved pointer after the first lookup.
 """
 
@@ -160,7 +156,7 @@ def transform(text):
     for signature in ('bool gfx_vtx_otr_filepath_handler_custom(F3DGfx** cmd0) {',
                       'bool gfx_dl_otr_filepath_handler_custom(F3DGfx** cmd0) {'):
         text = _edit_method(text, signature, [(UPSTREAM_PATH, 'XboxResolveResourcePath((const char*)fileName)', 1)])
-    # Texture commands keep their existing cache; only the per-command manager
+    # Texture commands keep their cache; only the per-command manager
     # acquisitions become the Run-scoped borrows.
     text = _edit_method(text, 'bool gfx_set_timg_otr_hash_handler_custom(F3DGfx** cmd0) {', [
         ('    const auto resourceManager = Ship::Context::GetInstance()->GetResourceManager();',

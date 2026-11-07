@@ -1,4 +1,4 @@
-"""Audit complete pure methods without inventing Context/archive/CVar services."""
+"""Audit the pure methods without inventing Context/archive/CVar services."""
 
 import hashlib
 import json

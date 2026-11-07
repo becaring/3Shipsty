@@ -1,4 +1,4 @@
-"""Complete stable Hint implementation on the canonical randomizer declarations."""
+"""Hint implementation on the randomizer declarations."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from dependency_sources import ROOT
@@ -84,7 +84,7 @@ def prepare():
     source = lower(
         source.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
     ).decode()
-    # Complete real static-hint record; canonical HintText remains item-owned.
+    # Complete static-hint record; HintText remains item-owned.
     header = texts[BASE + "3drando/hints.hpp"]
     declaration = (
         next(

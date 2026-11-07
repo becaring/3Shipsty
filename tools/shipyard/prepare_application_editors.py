@@ -1,4 +1,4 @@
-"""Complete pinned audio and cosmetics editors on canonical native providers."""
+"""Build the pinned audio and cosmetics editors on the native implementations."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

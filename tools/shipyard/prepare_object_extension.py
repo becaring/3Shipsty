@@ -1,4 +1,4 @@
-"""Compile the actual application object-extension registry and actor fields."""
+"""Compile the application object-extension registry and actor fields."""
 
 import argparse
 import hashlib

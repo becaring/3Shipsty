@@ -1,4 +1,4 @@
-"""Source-locked complete current randomizer Item, with real dependency declarations."""
+"""Source-locked randomizer Item, with its dependency declarations."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path
@@ -97,7 +97,7 @@ def prepare():
         raise ValueError("Expected both real GI-entry constructor branches")
     source = source.replace("[[fallthrough]]", "/* fall through */")
     emit(BASE + "item.cpp", source)
-    # Source-accurate complete Logic declaration. Emit the real constructor with
+    # Source-accurate complete Logic declaration. Emit the constructor with
     # its relocated defaults, so downstream consumers cannot silently lose them.
     logic = texts[BASE + "logic.h"]
     ld = inventory(logic)
@@ -128,8 +128,8 @@ def prepare():
         "LogicConstructor.cpp",
         '#include "soh/Enhancements/randomizer/logic.h"\nnamespace Rando {\n' + ctor[0] + "\n}\n",
     )
-    # GetHint requires complete real HintText layout. Other hint types are not
-    # instantiated here: extract the entire genuine class to one named header.
+    # GetHint requires complete HintText layout. Other hint types are not
+    # instantiated here: extract the entire class to one named header.
     hints = texts[BASE + "3drando/hints.hpp"]
     cls = next(
         n

@@ -1,4 +1,4 @@
-"""Deterministic inventory, omission guards, and optional real MSBuild XDK smoke build."""
+"""Deterministic inventory, omission guards, and an optional MSBuild XDK smoke build."""
 import argparse
 import copy
 import hashlib
@@ -312,7 +312,7 @@ class ProjectTests(unittest.TestCase):
 
 def native():
     manifest=gen.collect()
-    # Current binary classes, actual native support, and a genuine preprocessed C
+    # Current binary classes, native support, and a preprocessed C
     # game TU exercise /GR, path quoting, unique objects, and language separation.
     sources=[r for r in manifest['sources'] if r['subsystem'] in ('binary','logging')]
     sources += [next(r for r in manifest['sources'] if r['upstream_source']=='soh/src/code/sys_math.c')]

@@ -1,4 +1,4 @@
-"""Preserve the current application's complete registered window declarations."""
+"""Keep every registered window declaration of the application."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path
@@ -197,7 +197,7 @@ def prepare():
         encoding="utf-8-sig"
     )
     assert hashlib.sha256(audio.encode()).hexdigest() == lock["audio_collection_sha256"]
-    # AudioCollection owns the one canonical enum declaration and full class.
+    # AudioCollection owns the one enum declaration and full class.
     stale = OUT / "generated/soh/soh/Enhancements/audio/sequence_type.h"
     if stale.exists():
         stale.unlink()

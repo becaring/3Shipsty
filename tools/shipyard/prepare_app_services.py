@@ -1,4 +1,4 @@
-"""Generate complete current ActorDB and configuration migration units for XDK."""
+"""Generate the ActorDB and configuration migration units for XDK."""
 
 import argparse
 import hashlib

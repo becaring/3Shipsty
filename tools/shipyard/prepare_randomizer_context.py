@@ -1,4 +1,4 @@
-"""Complete pinned seed/location/fish/collectibles runtime batch for XDK."""
+"""Pinned seed, location, fish and collectibles runtime sources for XDK."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

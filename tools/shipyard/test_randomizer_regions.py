@@ -1,4 +1,4 @@
-"""Full graph preservation and bounded genuine original/projected runtime parity."""
+"""Full graph preservation and bounded original versus projected runtime parity."""
 
 import hashlib, json, re, runpy, struct, subprocess
 from prepare_randomizer_regions import *
@@ -90,8 +90,8 @@ def preservation(manifest):
                 actual = restore(gens[key].text.decode(), audit)
                 assert tokens(actual) == tokens(node.text.decode()), (name, key)
                 table_count += 1
-        # Every real pointer function has exactly the source predicate body,
-        # except nested captureless callbacks replaced by their own real pointer.
+        # Every pointer function has exactly the source predicate body,
+        # except nested captureless callbacks replaced by their own pointer.
         for row in audit["predicates"]:
             node = gens[row["name"] + "()"]
             body = node.child_by_field_name("body").text.decode()
@@ -265,7 +265,7 @@ def runtime(manifest):
                     code += nodes[row["name"]] + "\n"
                 else:
                     body = restore(row["source"], dict(containers=[], predicates=manifest["audit"][name]["predicates"]))
-                    # Current host enum is canonical unscoped RandomizerRegion.
+                    # Current host enum is unscoped RandomizerRegion.
                     # Use exact pointer macro body, with only qualification removed.
                     code += """#undef ENTRANCE
 #define ENTRANCE(check, condition, ...) Entrance(check, [] { return condition; }, \

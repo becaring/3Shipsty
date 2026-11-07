@@ -1,4 +1,4 @@
-"""Complete actual debugger, resolution and icon application UI implementations."""
+"""Debugger, resolution and icon UI implementations of the application."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Complete pinned Fast3D resource factories, retaining binary/XML command paths."""
+"""Pinned Fast3D resource factories, keeping the binary and XML command paths."""
 
 import argparse
 import hashlib

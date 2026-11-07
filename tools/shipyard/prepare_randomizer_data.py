@@ -1,4 +1,4 @@
-"""Complete stable Location factories and StaticData table implementation."""
+"""Location factories and the StaticData table implementation."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from dependency_sources import ROOT

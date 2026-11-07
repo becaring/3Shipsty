@@ -1,4 +1,4 @@
-"""Real Settings constructor and every list value; full source registration audit."""
+"""Settings constructor and every list value; full source registration audit."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_randomizer_settings import ROOT, OUT, OWN, BASE, prepare, includes, methods

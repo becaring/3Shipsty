@@ -1,4 +1,4 @@
-"""Actual startup tables, audio settings and Unicode/game-print differentials."""
+"""Startup tables, audio settings and Unicode and game-print differentials."""
 
 import hashlib, json, re, runpy, struct, subprocess
 from prepare_application import ROOT, OUT, prepare, function

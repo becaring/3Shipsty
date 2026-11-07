@@ -1,7 +1,7 @@
-"""Differential audit of real sequence, pool, CVar, and notification construction code.
+"""Differential audit of the sequence, pool, CVar and notification construction code.
 
-The host audit excludes live-Gui scheduling, Config erase dispatch and Notification::Emit;
-production retains them and compiles the complete TU. CVar storage/operations and
+The host audit skips live-Gui scheduling, Config erase dispatch and Notification::Emit;
+production keeps them and compiles the whole TU. CVar storage/operations and
 StringHelper operations are extracted unchanged from the pinned implementation,
 with only member qualification rebased for this isolated method audit.
 """
@@ -84,7 +84,7 @@ typedef int32_t s32;
     for name, replacement in [("Get", "Get"), ("GetInteger", "CVarGetInteger"), ("SetInteger", "CVarSetInteger")]:
         prefix += select(cvar, "ConsoleVariable::" + name).replace("ConsoleVariable::" + name, replacement) + "\n"
     string = (ROOT / "libultraship/src/ship/utils/StringHelper.cpp").read_text()
-    # Keep actual overload body and exact Replace behavior, avoiding unrelated APIs.
+    # Keep overload body and exact Replace behavior, avoiding unrelated APIs.
     prefix += "namespace StringHelper {\n"
     split = next(
         n.text.decode()

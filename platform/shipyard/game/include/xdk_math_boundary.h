@@ -2,7 +2,7 @@
 #include <math.h>
 /* Capture XDK's own double-operation/float-conversion semantics before its
  * function-like macros can bind to game locals named sin/cos or expand inside
- * declarations. Each argument is evaluated once at the actual function call. */
+ * declarations. Each argument is evaluated once at the function call. */
 static __inline float Shipyard_XdkSinf(float value) { return sinf(value); }
 static __inline float Shipyard_XdkCosf(float value) { return cosf(value); }
 static __inline float Shipyard_XdkFloorf(float value) { return floorf(value); }

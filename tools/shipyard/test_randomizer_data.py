@@ -102,7 +102,7 @@ def host(projected):
     )
     static_header = (ROOT / "scratch/randomizer-item-xdk/generated" / BASE / "static_data.h").read_text()
     source += cls(static_header, "StaticData") + ";\n}\n"
-    # These already-tested canonical Option dependencies are real implementations,
+    # These already-tested Option dependencies use the production code,
     # shared on both sides; this audit changes only Location/data and message source.
     option = (ROOT / "scratch/randomizer-options-xdk/generated" / BASE / "option.cpp").read_text()
     source += "namespace Rando {\n"

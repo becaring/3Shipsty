@@ -1,8 +1,8 @@
-"""True C compilation projection for XDK; never writes release sources.
+"""Compile the game as C for XDK; it never writes release sources.
 
-The failed C-as-C++ experiment is removed. Preprocess and compile with /TC,
-preserving C pointer conversions and identifiers. Canonicalize audited _Bool
-conversions before using byte storage, and fail closed for unaudited contexts.
+It preprocesses and compiles with /TC, which keeps C pointer conversions and identifiers.
+_Bool conversions that were reviewed are normalized before byte storage is used;
+any other context fails the run.
 """
 
 import argparse

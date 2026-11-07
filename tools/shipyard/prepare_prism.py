@@ -1,4 +1,4 @@
-"""Pinned Prism and genuine current DX shader builder, preserving resources."""
+"""Pinned Prism and the DX shader builder, keeping resources."""
 
 import argparse
 import hashlib

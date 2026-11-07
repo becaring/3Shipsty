@@ -1,4 +1,4 @@
-"""Actual savestate methods against typed memory fixtures; no game/service stubs."""
+"""Savestate methods against typed memory fixtures; no game or service stubs."""
 
 import hashlib, json, re, runpy, struct, unittest
 from prepare_savestates import ROOT, OUT, OWN, BASE, prepare, build

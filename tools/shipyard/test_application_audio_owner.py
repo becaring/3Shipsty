@@ -1,4 +1,4 @@
-"""Check that save states and the worker share the actual OTRAudio state."""
+"""Check that save states and the worker share the OTRAudio state."""
 
 import json, re, runpy, subprocess
 from prepare_application import ROOT, OUT, prepare

@@ -1,4 +1,4 @@
-"""Current sample factory binary and codec-worker methods, no fake archive service."""
+"""Sample factory binary and codec-worker methods, no fake archive service."""
 
 import hashlib
 import json
@@ -45,7 +45,7 @@ def main():
         dest.mkdir(exist_ok=True)
         base = OUT / "generated" if projected else ROOT
         text = (base / "soh/soh/resource/importer/AudioSampleFactory.cpp").read_text()
-        # Exactly one XML method acquires real Context/archive files. All actual
+        # Exactly one XML method acquires Context/archive files. All
         # codec workers, binary parser and codec-name method remain in this audit.
         nodes = [
             n

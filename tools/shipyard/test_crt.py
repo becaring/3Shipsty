@@ -1,4 +1,4 @@
-"""Compare actual CRT providers to the host standard library; inspect PPC output."""
+"""Compare the CRT replacements to the host standard library; inspect PPC output."""
 import json, runpy, subprocess
 from prepare_crt import ROOT, OWN, OUT, SDK, UNITS, sha, stable, build
 

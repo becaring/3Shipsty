@@ -1,4 +1,4 @@
-"""Reproduce pinned spdlog core/queue projection for Shipyard XDK."""
+"""Generate the pinned spdlog core and queue sources for Shipyard XDK."""
 
 from pathlib import Path
 import runpy

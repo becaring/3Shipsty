@@ -1,4 +1,4 @@
-"""Project the complete stable AudioCollection and its canonical sequence enum."""
+"""Generate AudioCollection and its sequence enum."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from dependency_sources import ROOT

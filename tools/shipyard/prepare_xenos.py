@@ -1,4 +1,4 @@
-"""Current SoH Xenos API adapter and physical Shipyard core compile receipt."""
+"""SoH Xenos API adapter and the build record for the compiled Shipyard core."""
 
 import argparse
 import hashlib

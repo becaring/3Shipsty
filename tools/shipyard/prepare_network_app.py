@@ -1,4 +1,4 @@
-"""Complete current Anchor, Sail, Crowd Control and network menu projection."""
+"""Generate Anchor, Sail, Crowd Control and the network menu."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from concurrent.futures import ThreadPoolExecutor

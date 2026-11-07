@@ -1,4 +1,4 @@
-// Compile the actual runtime with a controlled presentation surface and mixer.
+// Compile the runtime with a controlled presentation surface and mixer.
 // Native channel/worker synchronization and the replay loop remain production code.
 #include <atomic>
 #include <cassert>

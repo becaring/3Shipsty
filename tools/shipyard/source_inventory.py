@@ -1,7 +1,7 @@
 """Inventory pinned runtime/host sources; reproduce the release's C selection.
 
-This records unresolved platform selections rather than excluding compilation
-failures. It is not a substitute application or a claim that sources compile.
+Unresolved platform selections are recorded instead of dropping sources that
+fail to compile. Listing a source does not mean it compiles.
 """
 import argparse
 from collections import Counter

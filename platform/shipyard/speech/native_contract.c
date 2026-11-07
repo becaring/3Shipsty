@@ -5,7 +5,7 @@
 #ifndef ARCH_BIG
 #error Xenon eSpeak must use its existing big-endian dictionary reader
 #endif
-/* Read the actual PPC COFF initializers; do not infer target layout from x64. */
+/* Read the PPC COFF initializers; do not infer target layout from x64. */
 unsigned int ShipyardSpeechABI[] = {
     sizeof(PHONEME_TAB), offsetof(PHONEME_TAB, mnemonic),
     offsetof(PHONEME_TAB, phflags), offsetof(PHONEME_TAB, program),

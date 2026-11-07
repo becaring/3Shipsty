@@ -1,4 +1,4 @@
-"""Fail-closed projection of the complete pinned modern controller core for XDK."""
+"""Fail-closed generation of the pinned modern controller core for XDK."""
 
 import argparse, hashlib, json, runpy, re, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Real collision geometry, icon tables and UI source-inventory differential."""
+"""Collision geometry, icon tables and UI source-inventory differential."""
 
 import collections, hashlib, json, re, runpy, subprocess
 from prepare_application_windows import ROOT, OUT, OWN, DEBUG, GUI, UNITS, prepare, includes
@@ -79,7 +79,7 @@ def main():
         stable(folder / "performanceTimer.h", (base / (DEBUG + "performanceTimer.h")).read_text(encoding="utf-8"))
         inv = (ROOT / "soh/src/code/z_inventory.c").read_text()
         icon_decl = re.search(r"void\* gItemIcons\[\] = \{[\s\S]*?\n\};", inv)[0]
-        # Match C's existing pointer conversion while compiling this actual C table in a C++ fixture.
+        # Match C's existing pointer conversion while compiling this C table in a C++ fixture.
         icon_decl = re.sub(r"(?m)^(\s*)(g\w+)(,?)$", r"\1(void*)\2\3", icon_decl)
         icon_decl = icon_decl.replace('""', '(void*)""')
         source = (

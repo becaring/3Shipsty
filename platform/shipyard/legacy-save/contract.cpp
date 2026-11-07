@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
         Producer::backing.context.linkAge = 1;
         Producer::Sram_WriteSave(NULL);
         assert(Shipyard::LegacySave::Validate(Bytes(Producer::capture, sizeof(Producer::capture))) == Little);
-        // Real stdio producer archive and real runtime read, without an alternate
+        // Archive written through stdio and read by the runtime, with no alternate
         // filesystem. Verify validation never changes the source bytes.
         {
             std::ofstream out(argv[1], std::ios::binary);

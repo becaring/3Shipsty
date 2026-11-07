@@ -1,4 +1,4 @@
-"""Complete feature inventory and real original/projected data/lifetime contracts."""
+"""Feature inventory and original versus projected data and lifetime contracts."""
 
 import collections, hashlib, json, re, runpy, subprocess
 from prepare_gameplay_features import ROOT, OUT, OWN, prepare, includes
@@ -169,7 +169,7 @@ def main():
         )
         data += (OWN / "data_contract.cpp").read_text()
         stable(folder / "data.cpp", data)
-        # Full actual WeirdAnimation declaration and its actual neighbor table.
+        # Full WeirdAnimation declaration and its neighbor table.
         header = read(
             (OUT / "generated" if projected_flag else ROOT) / (BASE + "Restorations/N64WeirdFrames/WeirdAnimation.h")
         )
@@ -261,7 +261,7 @@ j.get<std::map<std::string,WarpPoint>>();}
         assert row["source_sha256"] == hashlib.sha256((ROOT / row["source"]).read_bytes()).hexdigest(), row["path"]
         assert row["object_sha256"] == hashlib.sha256((ROOT / row["object"]).read_bytes()).hexdigest()
     # The XDK lambda used to turn redundant block-scope declarations in the
-    # display macros into C++ imports. Verify the actual complete object imports
+    # display macros into C++ imports. Verify the complete object imports
     # the real C implementations, rather than supplying duplicate wrappers.
     file_select = next(row for row in native if row["path"].endswith("/FileSelectMoreInfo.cpp"))
     symbols = subprocess.check_output(

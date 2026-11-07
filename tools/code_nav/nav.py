@@ -1,8 +1,8 @@
-"""Maintainer-local relationships for the fixed Xbox development checkouts.
+"""Maintainer-local lookups across the fixed Xbox development checkouts.
 
-No source is parsed or copied here. Compiler inputs and provenance come from
+It does not parse or copy source. Compiler inputs and provenance come from
 the selected build manifests, source locks, project file, and #line records.
-Workstation paths are intentional; this module is not a portable build input.
+It uses workstation paths and is not a portable build input.
 """
 
 from __future__ import annotations

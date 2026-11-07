@@ -1,4 +1,4 @@
-"""Canonical complete option/settings declarations and real option implementation."""
+"""Option and settings declarations and the option implementation."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path
@@ -15,7 +15,7 @@ OUT = ROOT / "scratch/randomizer-options-xdk"
 BASE = "soh/soh/Enhancements/randomizer/"
 NAMES = ["Option", "LocationOption", "TrickSetting", "OptionGroup"]
 
-# The canonical 9.2.3 Option copies raw pointers into its own strings. A Settings
+# The 9.2.3 Option copies raw pointers into its own strings. A Settings
 # assignment from an Option::U8 temporary then destroys the strings they name.
 # Keep the source hash-locked and repair ownership in the projected class only.
 COPY_DECLARATIONS = """    Option(const Option& other);
@@ -229,7 +229,7 @@ def project_option_source(text, defaults, gui_header):
         '#include "soh/Enhancements/randomizer/settings.h"',
         "// This TU does not use Settings.",
     )
-    # Full SohMenu is supplied by the canonical menu provider. These are the only
+    # Full SohMenu is supplied by the menu provider. These are the only
     # two SohGui.hpp contracts used here; no implementation or class is replaced.
     declaration = re.findall(r"^UIWidgets::Colors GetMenuThemeColor\(\);$", gui_header, re.M)
     macro = re.findall(r"^#define THEME_COLOR .+$", gui_header, re.M)

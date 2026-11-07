@@ -1,4 +1,4 @@
-"""Full pinned randomizer Logic translation unit for the native XDK compiler."""
+"""Pinned randomizer Logic translation unit for the native XDK compiler."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Bounded real editor algorithms/defaults; full TU and member inventory audit."""
+"""Bounded editor algorithms and defaults; full TU and member inventory audit."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_soh_input_editor import ROOT, OUT, OWN, BASE, prepare, includes
@@ -70,7 +70,7 @@ def main():
     for projected_flag in (False, True):
         folder = OUT / ("host-projected" if projected_flag else "host-original")
         folder.mkdir(exist_ok=True)
-        # This fixture binds the exact four method bodies to their actual field
+        # This fixture binds the exact four method bodies to their field
         # declarations. It does not instantiate, replace or render a game window.
         code = projected if projected_flag else original
         state = '#include "soh/Enhancements/controls/SohInputEditorWindow.h"\n#include "z64.h"\n#include "soh/OTRGlobals.h"\n#include <iterator>\n'
@@ -87,7 +87,7 @@ void GetButtonColorsForDeviceType(Ship::PhysicalDeviceType,ImVec4&,ImVec4&);
         )
         stable(folder / "state.cpp", state)
         # Exact upstream widget declarations isolated from rendering includes,
-        # as in the canonical UI value test. No dependency generators run here.
+        # as in the UI value test. No dependency generators run here.
         if not projected_flag:
             ui = (ROOT / "soh/soh/SohGui/UIWidgets.hpp").read_text()
             a = ui.index("namespace UIWidgets {")

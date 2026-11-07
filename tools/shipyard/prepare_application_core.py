@@ -1,4 +1,4 @@
-"""Project complete modern scene/message/resource bridges and application utilities."""
+"""Generate the modern scene, message and resource bridges and the application utilities."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Actual application extras data and serialization parity, plus full source/native checks."""
+"""Application extras data and serialization parity, plus full source and native checks."""
 
 import collections, hashlib, json, re, runpy, subprocess
 from prepare_application_extras import ROOT, OUT, OWN, prepare, includes

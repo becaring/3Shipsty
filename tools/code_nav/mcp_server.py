@@ -1,4 +1,4 @@
-"""Bounded build, projection, and checkout relationships beside Serena."""
+"""Bounded lookups of build, generated-source, and checkout relationships, beside Serena."""
 from __future__ import annotations
 
 import json

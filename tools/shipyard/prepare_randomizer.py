@@ -1,7 +1,7 @@
-"""Hash-locked current randomizer value/header foundation for the XDK frontend.
+"""Hash-locked randomizer value and header base for the XDK frontend.
 
-Full feature sources are retained with constructor defaults lowered, but only
-the explicitly listed production units are native build inputs.
+Full feature sources are kept with constructor defaults lowered; only the
+listed production units are native build inputs.
 """
 
 import argparse
@@ -257,7 +257,7 @@ def prepare():
         # Full UI Option types are a declared scope gate. Keep their DMIs and
         # defaulted constructors intact: replacing Option()/TrickSetting() with
         # user-provided constructors would suppress value-initialization of
-        # their OTHER scalar members. The canonical OptionValue is fully lowered.
+        # their OTHER scalar members. The OptionValue is fully lowered.
         if name != BASE + "option.h":
             text = lower_defaults(text, defaults, records)
         audit[name] = records
@@ -330,8 +330,8 @@ def prepare():
         if name.endswith((".h", ".hpp")):
             text = default_arguments(text)
         emit(name, text)
-    # Extract complete, real value methods from option.cpp. The full projected
-    # option.cpp delegates these symbols to this canonical production unit.
+    # Extract complete value methods from option.cpp. The full projected
+    # option.cpp delegates these symbols to this production unit.
     original = (OUT / "generated" / (BASE + "option.cpp")).read_text()
     methods = function_nodes(original, "OptionValue::")
     if len(methods) != 4:

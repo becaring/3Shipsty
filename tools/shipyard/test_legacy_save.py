@@ -1,4 +1,4 @@
-"""Independent historical raw-writer fixtures against the actual modern CopyV0Save."""
+"""Independent historical raw-writer fixtures against the modern CopyV0Save."""
 
 import hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

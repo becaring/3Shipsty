@@ -1,4 +1,4 @@
-"""Real ResourceManager/BS pool and detached-worker ownership/drain checks."""
+"""ResourceManager/BS pool and detached-worker ownership and drain checks."""
 
 import hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

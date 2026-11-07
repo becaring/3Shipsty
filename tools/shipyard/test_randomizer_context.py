@@ -1,4 +1,4 @@
-"""Compare real location state, item tables, and fish helpers from both source trees."""
+"""Compare location state, item tables, and fish helpers from both source trees."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_randomizer_context import ROOT, OUT, OWN, BASE, TABLE, KALEIDO, UNITS, prepare, includes, methods

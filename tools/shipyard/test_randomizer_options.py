@@ -1,4 +1,4 @@
-"""Actual option constructors and class contracts, original versus projected."""
+"""Option constructors and class contracts, original versus projected."""
 
 import hashlib, json, runpy, struct, subprocess, unittest
 from pathlib import Path

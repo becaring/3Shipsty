@@ -1,7 +1,7 @@
-"""Link the complete current application with normal native archive extraction.
+"""Link the current application with normal native archive extraction.
 
-No alternate entry point, unresolved-symbol suppression or old application
-objects. Link errors remain errors and are saved for the integration audit.
+It uses no alternate entry point, no unresolved-symbol suppression and no old
+application objects. Link errors fail the link and are saved for the integration audit.
 """
 import hashlib
 import json

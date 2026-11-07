@@ -43,7 +43,7 @@ significand_type significand; int exponent; };
         impl.index("namespace dragonbox {") : impl.index("}  // namespace dragonbox") + len("}  // namespace dragonbox")
     ]
     # Select the upstream full-cache configuration, avoiding runtime compressed
-    # cache reconstruction. The entire authoritative 634-entry table is kept.
+    # cache reconstruction. The entire 634-entry table is kept.
     start = body.index("#if FMT_USE_FULL_CACHE_DRAGONBOX")
     end = body.index("#endif", start)
     block = body[start:end]

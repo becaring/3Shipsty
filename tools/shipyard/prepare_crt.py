@@ -1,4 +1,4 @@
-"""Compile narrow genuine C runtime providers absent from the Xbox 360 CRT."""
+"""Compile narrow C runtime replacements for functions the Xbox 360 CRT lacks."""
 
 import argparse, hashlib, json, struct, subprocess
 from pathlib import Path

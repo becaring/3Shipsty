@@ -1,4 +1,4 @@
-"""Compare actual menu initializer and modal queue bodies without fake UI services."""
+"""Compare menu initializer and modal queue bodies without fake UI services."""
 
 import json, hashlib, runpy, subprocess, struct
 from pathlib import Path

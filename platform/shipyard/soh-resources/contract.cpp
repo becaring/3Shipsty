@@ -21,7 +21,7 @@
 #include <cstdio>
 
 // The original libultra umbrella exposes scalar shorthand macros after Array's
-// definition; the serialization assertions address the actual union members.
+// definition; the serialization assertions address the union members.
 #undef s16
 #undef u16
 

@@ -1,4 +1,4 @@
-"""Full current CustomMessageManager implementation projection; no methods omitted."""
+"""Generate the full CustomMessageManager implementation; no methods are omitted."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path
@@ -282,7 +282,7 @@ def prepare():
         p = generated / name
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, newline="\n")
-    # Compile the actual projected literal spellings to target arrays; independently
+    # Compile the projected literal spellings to target arrays; independently
     # decoded original bytes are checked against their COFF data by the tests.
     literal_probe = "".join(
         'extern "C" const char shipyard_message_literal_'

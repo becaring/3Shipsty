@@ -1,4 +1,4 @@
-"""Hash-locked full SoH leaf resource TUs for XDK, preserving archive formats."""
+"""Hash-locked SoH leaf resource translation units for XDK, keeping the archive formats."""
 
 import argparse
 import hashlib

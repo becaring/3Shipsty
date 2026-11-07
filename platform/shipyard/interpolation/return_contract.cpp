@@ -4,7 +4,7 @@
 #include <utility>
 
 // Only map production is substituted: execute the extracted return function
-// against real unordered_map storage and instrument each 4x4 payload copy.
+// against unordered_map storage and instrument each 4x4 payload copy.
 struct Mtx {};
 struct MtxF {
     float values[4][4];

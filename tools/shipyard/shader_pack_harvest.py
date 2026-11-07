@@ -7,7 +7,7 @@ No game code runs. Two sources feed the key set:
     left unknown and filled from the C-side seeds;
   * the game's C sources: the setup display lists in z_rcp.c and every
     constant gDPSetCombine*/RenderMode/OtherMode/CycleType/AlphaCompare call,
-    compiled with the real gbi.h macros by a host dump program.
+    compiled with the gbi.h macros by a host dump program.
 The result is a superset of the runtime keys. Misses still compile at runtime
 and persist in the appendable cache.
 """

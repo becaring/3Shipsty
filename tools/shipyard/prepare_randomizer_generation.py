@@ -1,4 +1,4 @@
-"""Complete pinned seed-generation translation units for the native XDK."""
+"""Pinned seed-generation translation units for the native XDK."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path
@@ -180,7 +180,7 @@ class Lists:
         return edits_apply(raw, edits)
 
     def calls(self, text):
-        # Parameter types come from the full actual local declarations. Hint's
+        # Parameter types come from the full local declarations. Hint's
         # overloads are disambiguated by their upstream argument positions.
         raw = text.encode()
         types = {
@@ -494,7 +494,7 @@ def prepare():
         "Region": "scratch/randomizer-regions-xdk/generated/" + BASE + "location_access.h",
         "Entrance": "scratch/save-manager-xdk/generated/" + BASE + "entrance.h",
     }
-    # Context's full declaration may be canonical in the earlier foundation.
+    # Context's full declaration may be in the earlier foundation.
     if not (ROOT / canonical["Context"]).exists():
         canonical["Context"] = "scratch/randomizer-xdk/generated/" + BASE + "SeedContext.h"
     for provider in ("randomizer-item", "randomizer-hints"):

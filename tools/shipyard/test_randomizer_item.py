@@ -1,4 +1,4 @@
-"""Compare actual upstream/projected Item constructors and value methods."""
+"""Compare upstream and projected Item constructors and value methods."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_randomizer_item import ROOT, OUT, OWN, BASE, prepare, includes, methods

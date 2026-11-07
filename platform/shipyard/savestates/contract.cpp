@@ -1,5 +1,5 @@
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"line %d: %s\n",__LINE__,#x);return 1;}}while(0)
-// Data fixtures use actual game declarations. No game/service functions are supplied.
+// Data fixtures use the game's declarations. No game/service functions are supplied.
 extern "C" { AudioContext gAudioContext; u8* gAudioHeap; PlayState* gPlayState; }
 int main() {
     spdlog::set_pattern("%v");

@@ -1,7 +1,7 @@
-"""Hash-locked current LUS resource leaf projection. Never writes upstream.
+"""Hash-locked LUS resource leaf sources; upstream is never written.
 
-The independently owned two-alternative variant is deliberately narrower than
-std::variant. Archive/Loader/Manager are not projected by this bounded increment.
+The variant implemented here has two alternatives and is deliberately narrower
+than std::variant. Archive, Loader and Manager are not handled here.
 """
 
 import argparse

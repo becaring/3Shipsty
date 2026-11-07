@@ -1,4 +1,4 @@
-"""Explicit lowering of the three audited delegating-constructor families."""
+"""Explicit lowering of the three supported delegating-constructor families."""
 
 MAPTYPE = "std::unordered_map<CONTROLLERBUTTONS_T, std::string>"
 

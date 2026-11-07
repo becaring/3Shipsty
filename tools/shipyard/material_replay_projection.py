@@ -1,6 +1,6 @@
 """Reuse material calculations across draws and interpolation replays.
 
-Native state reconciliation remains live. Mode keys cover every decoded input;
+Native state reconciliation still runs on every replay. Mode keys cover every decoded input;
 geometry keys retain the original arithmetic and rounding mode. Texture nodes
 are borrowed only until cache removal, backend initialization or owner teardown.
 """

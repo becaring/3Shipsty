@@ -1,4 +1,4 @@
-"""Assemble the complete modern SaveManager with canonical native storage/legacy boundaries."""
+"""Assemble the modern SaveManager with the native storage and legacy boundaries."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path
@@ -249,7 +249,7 @@ def prepare():
         stable(OUT / "generated" / name, text)
         generated[name] = hashlib.sha256(text.encode()).hexdigest()
 
-    # Hint and Trial already have full canonical declarations/default projections
+    # Hint and Trial already have full declarations/default projections
     # in randomizer-xdk. Do not create second class definitions for those types.
     for stem in ["trial", "hint"]:
         for suffix in [".h", ".cpp"]:
@@ -295,7 +295,7 @@ def prepare():
     source = source.replace('#include "Enhancements/', '#include "soh/Enhancements/')
     # The explicit decoder already owns the raw legacy structures and unchanged
     # CopyV0Save in its namespace. Replace that contiguous old parser region with
-    # the verified canonical conversion method; retain every modern method.
+    # the verified conversion method; retain every modern method.
     start = source.index(
         "// Functionality required to convert old saves into versioned saves"
     )

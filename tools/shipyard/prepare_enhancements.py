@@ -1,4 +1,4 @@
-"""Project current enhancement units and their real ShipInit registration path."""
+"""Generate the enhancement units and their ShipInit registration path."""
 
 import argparse
 import hashlib
@@ -62,7 +62,7 @@ def transform(name, text):
                 == b"RegisterShipInitFunc"
             ):
                 # XDK rejects __FUNCSIG__ inside a static-initializer lambda.
-                # This real stateless void callback can be a named function;
+                # This stateless void callback can be a named function;
                 # registration still stores it and executes it at the same time.
                 if init.parent.parent.type != "translation_unit":
                     raise ValueError("Local ShipInit lambda needs separate scope audit")
@@ -124,7 +124,7 @@ def transform(name, text):
                 + "}; return std::set<std::string>(paths,paths+sizeof(paths)/sizeof(paths[0])); }\n"
             )
             # Restore caller source lines after the generated helper. It retains
-            # temporary-string lifetime and actual set deduplication/order.
+            # temporary-string lifetime and set deduplication/order.
             body += (
                 "#line "
                 + str(declaration.start_point.row + 1)
@@ -168,7 +168,7 @@ def transform(name, text):
     text = lower(
         text.encode(), "Shipyard::Resources::begin", "Shipyard::Resources::end"
     ).decode()
-    # Macro registration carries a real caller location even after loop/helper
+    # Macro registration carries a caller location even after loop/helper
     # lowering changes physical line counts in this generated translation unit.
     pattern = r"\b(?:COND_HOOK|COND_ID_HOOK|COND_VB_SHOULD|REGISTER_VB_SHOULD)\s*\("
     before = list(re.finditer(pattern, original))

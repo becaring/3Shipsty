@@ -7,7 +7,7 @@
 #include <string>
 #include <type_traits>
 
-uint32_t next32(); // Exact existing wrapper definition in random.cpp.
+uint32_t next32(); // Wrapper definition from random.cpp.
 
 static uint64_t digest = 1469598103934665603ULL;
 static void record(uint64_t value) {
@@ -156,7 +156,7 @@ int main() {
     }
 
     // The original default generator initializes lazily even after RandInit.
-    // Initialize it using the real device once, then exercise deterministic
+    // Initialize it using the device once, then exercise deterministic
     // explicit default-state seeding without recording the entropy value.
     ShipUtils::next32();
     ShipUtils::RandInit(73); direct = 73;

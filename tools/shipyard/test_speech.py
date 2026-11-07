@@ -1,4 +1,4 @@
-"""Real synthesis, native application/engine compilation and endian/lifetime contracts."""
+"""Speech synthesis, native application and engine compilation, and endian and lifetime contracts."""
 
 import ctypes, hashlib, json, re, runpy, struct, subprocess, unittest
 from pathlib import Path

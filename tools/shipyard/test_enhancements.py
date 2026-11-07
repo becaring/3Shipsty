@@ -1,4 +1,4 @@
-"""Real ShipInit and native variadic boundary contracts, without game substitutes."""
+"""ShipInit and native variadic boundary contracts, without game substitutes."""
 
 import json
 import runpy

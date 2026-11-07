@@ -1,4 +1,4 @@
-"""Project the complete release-pinned ImGui core for XDK, preserving LUS config."""
+"""Generate the release-pinned ImGui core for XDK, keeping the LUS config."""
 
 import argparse
 import hashlib

@@ -1,4 +1,4 @@
-"""Keep current typed CVar storage, recursive JSON load/save and legacy migration."""
+"""Keep typed CVar storage, recursive JSON load/save and legacy migration."""
 
 import argparse
 import hashlib

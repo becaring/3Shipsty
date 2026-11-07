@@ -1,4 +1,4 @@
-"""Full SaveManager ownership/schema audit and real nontrivial JSON load contracts."""
+"""Full SaveManager ownership/schema audit and nontrivial JSON load contracts."""
 
 import hashlib, json, re, runpy, struct, subprocess
 from prepare_save_manager import ROOT, OUT, OWN, prepare, methods, load_defaults, prepared_load

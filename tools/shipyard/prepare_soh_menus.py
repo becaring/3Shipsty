@@ -1,4 +1,4 @@
-"""Project complete modern menu implementations against the canonical UI types."""
+"""Generate the modern menu implementations against the UI types."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path

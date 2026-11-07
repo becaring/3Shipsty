@@ -1,4 +1,4 @@
-"""Project the current AudioPlayer/matrix decoder and native XAudio2 backend."""
+"""Generate the AudioPlayer/matrix decoder and the native XAudio2 backend."""
 
 import argparse
 import hashlib

@@ -1,7 +1,7 @@
-"""Check in-memory autosave blockers before probing the save file.
+"""Check the in-memory conditions that block an autosave before probing the save file.
 
-Interval saves require an unpaused loaded game; soft resets retain their pause
-policy. Eligible attempts still check disk so file deletion remains visible.
+Interval saves need a loaded, unpaused game; soft resets keep their pause
+policy. Attempts that pass still check disk, so a deleted save file is noticed.
 """
 from source_anchor import replace_once
 

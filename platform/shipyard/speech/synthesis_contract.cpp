@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     waiter.join();
     CHECK(finished);
     puts("queue: copied text/language, latest-request replacement, empty cancellation, joined stop");
-    // Exact locale strings returned by the genuine 9.2.3 TTS application.
+    // Locale strings returned by the 9.2.3 TTS application.
     const char *languages[] = {"en-US", "de-DE", "fr-FR"};
     const char *phrases[] = {"Welcome to Hyrule. Open the file selection menu.",
                              "Willkommen in Hyrule. Öffne das Menü.",

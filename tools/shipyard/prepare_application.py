@@ -1,7 +1,7 @@
-"""Project and compile the complete pinned OTRGlobals application translation unit.
+"""Generate and compile the pinned OTRGlobals application translation unit.
 
-Generation records source identity; --build separately records native compilation.
-Neither operation demonstrates application execution.
+Generation records source identity; --build records native compilation separately.
+Neither step runs the application.
 """
 
 import argparse
@@ -551,7 +551,7 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
         ("Sail", "SAIL"),
         ("Anchor", "ANCHOR"),
     ]:
-        # The shutdown condition follows the real worker state. A changed CVar
+        # The shutdown condition follows the worker state. A changed CVar
         # cannot strand an enabled worker while its dependencies are destroyed.
         source = once(
             source,
@@ -985,7 +985,7 @@ def build():
     roots = [p / "soh" for p in roots if p.name == "soh"] + roots + [ROOT / "soh/soh"]
     roots = list(dict.fromkeys(roots))
     # Original and C-staged headers are fallback paths, never allowed to shadow
-    # a complete canonical C++ projection from another subsystem.
+    # a complete C++ projection from another subsystem.
     roots.sort(
         key=lambda p: (
             2

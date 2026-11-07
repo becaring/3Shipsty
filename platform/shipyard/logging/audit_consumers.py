@@ -1,4 +1,4 @@
-"""Inventory real current fmt/spdlog calls with source hashes, never infer types."""
+"""Inventory the fmt/spdlog calls with source hashes; types are never inferred."""
 from pathlib import Path
 import sys,json,hashlib
 ROOT=Path(__file__).resolve().parents[3]

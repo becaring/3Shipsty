@@ -1,4 +1,4 @@
-"""Actual guarded materializer call differential for surviving triangles."""
+"""Guarded materializer call differential for surviving triangles."""
 import subprocess
 import sys
 import tempfile

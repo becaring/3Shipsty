@@ -1,4 +1,4 @@
-"""Keep maintained projector Python readable without scanning vendored code."""
+"""Check that maintained projector Python stays readable; vendored code is not scanned."""
 
 from pathlib import Path
 import sys

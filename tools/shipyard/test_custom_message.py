@@ -1,4 +1,4 @@
-"""Full custom message source and literal audit with bounded real method execution."""
+"""Full custom message source and literal audit, with bounded execution of the methods."""
 
 import hashlib, json, re, runpy, struct, subprocess, unittest
 from pathlib import Path

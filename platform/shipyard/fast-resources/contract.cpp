@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         auto l = read<Fast::Light>(lightFactory, light, init);
         assert(l->GetPointerSize() == light.data.size());
         assert(memcmp(l->GetPointer(), light.data.data(), light.data.size()) ==
-               0); // Raw union contract, not a point-light endian claim.
+               0); // Raw union contract only.
         for (int version = 0; version < 2; ++version) {
             Bytes t(big != 0);
             t.word(2);
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
         caught = true;
     }
     assert(caught);
-    // Archive fixture framing is test-only; the runtime continues to use real O2R.
+    // Archive fixture framing is test-only; the runtime uses O2R.
     unsigned records = 0;
     if (argc == 2) {
         std::ifstream file(argv[1], std::ios::binary);

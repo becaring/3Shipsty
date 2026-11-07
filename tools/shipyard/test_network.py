@@ -1,4 +1,4 @@
-"""Actual Network.cpp loopback, native transport and declaration verification."""
+"""Network.cpp loopback, native transport and declaration verification."""
 
 import hashlib, json, runpy, subprocess, unittest
 from prepare_network import ROOT, OUT, OWN, BASE, prepare, build, value_expressions

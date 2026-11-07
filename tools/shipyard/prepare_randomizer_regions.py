@@ -1,4 +1,4 @@
-"""Hash-locked complete reachability graph for the native XDK frontend."""
+"""Hash-locked reachability graph for the native XDK frontend."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path

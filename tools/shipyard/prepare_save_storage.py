@@ -1,4 +1,4 @@
-"""Source-locked full modern SaveManager and native XContent storage boundary."""
+"""Source-locked modern SaveManager and native XContent storage boundary."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from dependency_sources import ROOT

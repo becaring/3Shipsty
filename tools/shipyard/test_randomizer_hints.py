@@ -1,4 +1,4 @@
-"""Actual Hint value methods and isolated source JSON blocks, without fake services."""
+"""Hint value methods and isolated source JSON blocks, without fake services."""
 
 import hashlib, json, re, runpy, unittest
 from prepare_randomizer_hints import ROOT, OUT, OWN, BASE, prepare, build, value_expressions

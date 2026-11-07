@@ -1,4 +1,4 @@
-"""Actual utility data/string functions and resource-bridge preservation checks."""
+"""Utility data and string functions, and checks that the resource bridges are preserved."""
 
 import collections, hashlib, json, re, runpy, subprocess
 from prepare_application_core import ROOT, OUT, OWN, UNITS, prepare, includes

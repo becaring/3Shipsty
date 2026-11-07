@@ -1,9 +1,9 @@
 """Regenerate every selected Modern Xbox compiler recipe from locked source.
 
 With --empty-owned-outputs, removes only the generated scratch directories
-named by the canonical subsystem inventory, plus its project/link directories.
-The previous XEX and receipts are copied to a timestamped preservation folder
-first. Dependency snapshots and historical checkpoints are never removed.
+named by the subsystem inventory, plus its project and link directories.
+The previous XEX and build records are first copied to a timestamped preservation
+folder. Dependency snapshots and historical checkpoints are never removed.
 """
 
 import argparse
@@ -34,8 +34,8 @@ STAGES = [
     ("prepare_codecs.py", ["--build"]),
     ("prepare_vorbis.py", ["--build"]),
     ("prepare_imgui.py", ["--compile"]),
-    # Prism's real shader builder includes the complete Fast3D, resource,
-    # audio and GUI declarations. Generate their canonical header providers
+    # Prism's shader builder includes the complete Fast3D, resource,
+    # audio and GUI declarations. Generate their header providers
     # before its isolated native compile; their full builds follow below.
     ("prepare_resources.py", []),
     ("prepare_audio.py", []),

@@ -1,4 +1,4 @@
-"""Generate the real current hook registry/dispatch for the XDK C++ frontend."""
+"""Generate the hook registry and dispatch for the XDK C++ frontend."""
 
 import argparse
 import hashlib
@@ -225,8 +225,8 @@ def prepare():
             text = "#include <cassert>\n" + text
         text = syntax(text)
         stable(OUT / "generated" / name, text)
-    # The game-effect caller needs the real action declaration and collision
-    # enum, not the editor classes. Extract their single canonical declarations
+    # The game-effect caller needs the action declaration and collision
+    # enum, not the editor classes. Extract their single declarations
     # and include them from the retained complete editor headers as well.
     cosmetic = "soh/soh/Enhancements/cosmetics/CosmeticsEditor.h"
     declaration = "void CosmeticsEditor_RandomizeAll();"

@@ -1,4 +1,4 @@
-"""Compile the exact release-enabled graphics disassembler as real C for XDK."""
+"""Compile the release-enabled graphics disassembler as C for XDK."""
 
 import argparse
 import hashlib

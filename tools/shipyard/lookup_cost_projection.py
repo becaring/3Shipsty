@@ -1,6 +1,6 @@
 """Keep per-frame resource name lookups on settled cache hits.
 
-Misses and first loads no longer move the lookup generation: they only fill keys
+Misses and first loads do not move the lookup generation: they only fill keys
 a settled lookup could not have consulted. Recorded misses stay misses, the game
 thread memoizes the static names draw code resolves every frame, and texture
 loads reuse each resource's blended-mask answer.

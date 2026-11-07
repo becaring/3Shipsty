@@ -1,7 +1,6 @@
-"""Hash-locked projection of current LUS Directory, plus reached filesystem audit.
+"""Hash-locked XDK source for the LUS Directory, plus an audit of the filesystem calls it reaches.
 
-No generator, code or build from a reference checkout is executed. Only outputs
-under the owned scratch/filesystem-xdk root are accepted.
+Nothing from a reference checkout is run. Only outputs under scratch/filesystem-xdk are accepted.
 """
 
 import argparse

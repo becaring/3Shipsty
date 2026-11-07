@@ -1,4 +1,4 @@
-"""Pinned editor inventories and original/projected real data/widget values."""
+"""Pinned editor inventories, and original versus projected data and widget values."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_application_editors import ROOT, OUT, OWN, SOURCES, prepare, includes, methods
@@ -128,8 +128,8 @@ def main():
         # float-to-uint8 conversions in that upstream method.
         data += "\n" + (OWN / "data_contract.cpp").read_text()
         stable(folder / "data.cpp", data)
-        # Extract real widget value statements without replacing/rendering SohMenu.
-        # Search records are real SearchWidget values held by this test alone.
+        # Extract widget value statements without replacing/rendering SohMenu.
+        # Search records are SearchWidget values held by this test alone.
         if not projected_flag:
             ui = (ROOT / "soh/soh/SohGui/UIWidgets.hpp").read_text()
             generated = (ROOT / "scratch/soh-ui-xdk/generated/soh/soh/SohGui/UIWidgetTypes.h").read_text()

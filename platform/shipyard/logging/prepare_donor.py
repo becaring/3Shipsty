@@ -61,7 +61,7 @@ overrun_counter_(other.overrun_counter_), v_(other.v_) {}""",
 tail_=other.tail_; overrun_counter_=other.overrun_counter_; v_=other.v_; return *this; }""",
             )
         elif rel.endswith("mpmc_blocking_q.h"):
-            # The real thread_pool uses blocking dequeue; reject unneeded timed
+            # The thread_pool uses blocking dequeue; reject unneeded timed
             # consumers by omitting dequeue_for rather than silently ignoring time.
             start = t.index("#ifndef __MINGW32__")
             otherwise = t.index("\n#else", start)

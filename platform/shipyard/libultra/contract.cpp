@@ -31,8 +31,8 @@ int main() {
     }
     osCreateMesgQueue(&queue,storage,2);
     osSendMesg(&queue,message(1),0);osSendMesg(&queue,message(2),0);
-    // Existing upstream jam condition also permits full queues; do not repair
-    // its semantics as an undocumented side effect of platform projection.
+    // The upstream jam condition also permits full queues; do not change
+    // that as a side effect of the platform port.
     assert(osJamMesg(&queue,message(3),0)==0&&queue.validCount==3);
     osSetEventMesg(OS_EVENT_VI,&queue,message(123));
     assert(__osEventStateTab[OS_EVENT_VI].queue==&queue&&__osEventStateTab[OS_EVENT_VI].msg.data32==123);

@@ -54,8 +54,8 @@ int main() {
         assert(s.extraTerms.empty());
         std::cout << s.info.name << '\n';
     }
-    // Actual shared ownership used by WidgetInfo must survive temporary options
-    // and copies, including the combobox map's complete key/value contents.
+    // Shared ownership in WidgetInfo must survive temporary options
+    // and copies, including all keys and values of the combobox map.
     WidgetInfo copy = randomAudioGenModes;
     assert(copy.options == randomAudioGenModes.options);
     assert(static_cast<ComboboxOptions *>(copy.options.get())->comboMap.size() == 5);

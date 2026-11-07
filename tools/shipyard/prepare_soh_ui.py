@@ -1,4 +1,4 @@
-"""Project complete modern widget/menu declarations without replacing their UI."""
+"""Generate the modern widget and menu declarations without replacing the UI."""
 
 import argparse
 import hashlib
@@ -136,7 +136,7 @@ def constructors(text, names):
         )
         if any(f["reference"] for f in fields):
             # A reference aggregate has no valid default/value initialization.
-            # Preserve its required reference through the real field sequence.
+            # Preserve its required reference through the field sequence.
             ctors = ""
         params = ["const WidgetOptions& base_"] if inherited else []
         init = ["WidgetOptions(base_)"] if inherited else []

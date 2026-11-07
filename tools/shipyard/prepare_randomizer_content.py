@@ -1,4 +1,4 @@
-"""Complete pinned randomizer content tables through the XDK compiler."""
+"""Pinned randomizer content tables, compiled with the XDK compiler."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from dependency_sources import ROOT
@@ -209,7 +209,7 @@ def prepare():
     for short in UNITS:
         text = texts[BASE + short]
 
-        # Include spelling resolves complete canonical providers before originals.
+        # Include spelling resolves complete providers before originals.
         def include(m):
             name = m[1]
             if name.endswith("hints.hpp"):

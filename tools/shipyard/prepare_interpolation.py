@@ -1,4 +1,4 @@
-"""Project the complete pinned SoH frame recorder/interpolator for XDK."""
+"""Generate the pinned SoH frame recorder and interpolator for XDK."""
 
 import argparse
 import hashlib

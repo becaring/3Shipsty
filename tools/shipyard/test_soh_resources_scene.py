@@ -1,4 +1,4 @@
-"""Complete Scene XML method/type/logger audit with no invented runtime services."""
+"""Scene XML method/type/logger audit with no invented runtime services."""
 
 import hashlib
 import json
@@ -68,7 +68,7 @@ namespace SOH {
         )
         table = scene[start : scene.index("SceneCommandID GetCommandID")]
         methods += [f for f in functions(scene) if f.startswith("SceneCommandID GetCommandID")]
-        # Test fixture registers only real factories whose dependencies are in
+        # Test fixture registers only factories whose dependencies are in
         # this executable. The production constructor still retains all 25.
         registrations = re.findall(
             r"sceneCommandFactories\[SceneCommandID::(\w+)\]\s*=\s*std::make_shared<(\w+FactoryXML)>\(\);", scene

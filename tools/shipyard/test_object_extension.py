@@ -1,4 +1,4 @@
-"""Differential of the reached any contract and the complete real registry."""
+"""Differential of the reached any contract and the registry."""
 
 import json
 import runpy

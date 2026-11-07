@@ -1,4 +1,4 @@
-"""Build upstream libvorbis 1.3.7 for the current application's sample decoder."""
+"""Build upstream libvorbis 1.3.7 for the application's sample decoder."""
 
 import argparse
 import hashlib

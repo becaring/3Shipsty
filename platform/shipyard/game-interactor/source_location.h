@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 namespace Shipyard {
-// Generated registration calls supply their actual caller location. There is
+// Generated registration calls supply their caller location. There is
 // deliberately no default current(): XDK cannot implement that C++20 intrinsic.
 class SourceLocation {
 public:

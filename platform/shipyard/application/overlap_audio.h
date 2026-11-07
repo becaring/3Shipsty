@@ -1,4 +1,4 @@
-// Protected by the existing OTRAudio mutex. One stamped request is outstanding;
+// Protected by the OTRAudio mutex. One stamped request is outstanding;
 // the producer waits for its completion before touching shared game/audio state.
 #pragma once
 #include "application/thread_profile.h"

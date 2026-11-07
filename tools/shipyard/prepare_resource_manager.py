@@ -1,4 +1,4 @@
-"""Project the complete current archive/loader/cache classes, never substitutes."""
+"""Generate the archive, loader and cache classes; none are replaced by substitutes."""
 
 import argparse
 import hashlib
@@ -614,7 +614,7 @@ def prepare():
         if hashlib.sha256(original.encode()).hexdigest() != expected:
             raise ValueError("Source drift: " + name)
         pending[name] = transform(name, original)
-    # Extract the actual value type, avoiding Audio's unnecessary transitive
+    # Extract the value type, avoiding Audio's unnecessary transitive
     # backend headers in Context. AudioPlayer will consume this same definition.
     original = (ROOT / "libultraship/include/ship/audio/AudioPlayer.h").read_text()
     if hashlib.sha256(original.encode()).hexdigest() != lock["audio_player_sha256"]:
@@ -695,7 +695,7 @@ def build():
         source = OUT / "generated/src/ship" / name
         obj = folder / (name.replace("/", "__").rsplit(".", 1)[0] + ".obj")
         if source.suffix == ".c":
-            # Keep real C semantics (glob uses a local named `class`). Reuse
+            # Keep C semantics (glob uses a local named `class`). Reuse
             # the already-verified semantic C projection after preprocessing.
             preprocessed = obj.with_suffix(".i")
             precommand = (

@@ -1,6 +1,6 @@
 """Emit XDK enum traits and exact modern enum declaration/consumer probes.
 
-The generated traits are included after the real enum declarations by a consumer
+The generated traits are included after the enum declarations by a consumer
 projection. This does not replace or include any application header in json.hpp.
 """
 from pathlib import Path
@@ -29,7 +29,7 @@ def generate(output, source_root=ROOT):
         block = re.search(r'RANDO_ENUM_BEGIN\(' + name + r'\)(.*?)RANDO_ENUM_END\(' + name + r'\)', source, re.S)
         if block is None:
             raise ValueError('missing actual enum: ' + name)
-        # These two actual enums use only consecutive identifiers, with no
+        # These two enums use only consecutive identifiers, with no
         # explicit values. Fail closed if a future source changes that grammar.
         items = re.findall(r'^RANDO_ENUM_ITEM\(([A-Za-z_]\w*)\)\s*$', block[1], re.M)
         residue = re.sub(r'RANDO_ENUM_ITEM\([A-Za-z_]\w*\)', '', block[1])

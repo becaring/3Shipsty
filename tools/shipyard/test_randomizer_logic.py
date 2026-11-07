@@ -1,4 +1,4 @@
-"""Actual original/projected Logic state methods and table parity, without fake services."""
+"""Original and projected Logic state methods and table parity, without fake services."""
 
 import hashlib, json, re, runpy, subprocess
 from prepare_randomizer_logic import ROOT, OUT, OWN, BASE, prepare, includes, methods
@@ -86,7 +86,7 @@ def main():
         source = projected if projected_flag else original
         chosen = [n.text.decode() for n in methods(source) if method_name(n) in SELECT]
         assert len(chosen) == len(SELECT)
-        # Preserve real static map constructors and declarations without replacing
+        # Preserve static map constructors and declarations without replacing
         # any table. Upstream and projected table definitions are compiled as-is.
         start = source.index(
             "static std::map" if projected_flag else "std::map<RandomizerGet, uint32_t> Logic::RandoGetToEquipFlag"

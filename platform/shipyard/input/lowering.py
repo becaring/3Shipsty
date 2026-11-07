@@ -1,4 +1,4 @@
-"""AST-only pair binding/contains lowering for audited standard containers."""
+"""AST-only pair binding/contains lowering for the standard containers it supports."""
 from pathlib import Path
 import runpy
 from cpp_ast import PARSER,walk

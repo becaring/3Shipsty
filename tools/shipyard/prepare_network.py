@@ -1,4 +1,4 @@
-"""Full stable Network transport and canonical remote-control declarations."""
+"""Network transport and remote-control declarations."""
 
 import argparse, hashlib, json, re, struct, subprocess
 from pathlib import Path

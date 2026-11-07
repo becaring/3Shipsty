@@ -1,4 +1,4 @@
-"""Project the complete current SoH controller editor against native LUS APIs."""
+"""Generate the SoH controller editor against the native LUS APIs."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from pathlib import Path
@@ -142,7 +142,7 @@ def project(name, text):
         text = value_expressions(text)
         # Stable configuration identifiers/classes remain SDLGamepad, which is
         # the existing native XInput mapping backend's compatibility identity.
-        # Only the visible platform description names the actual backend.
+        # Only the visible platform description names the backend.
         text = text.replace("Gamepad (SDL)", "Gamepad (XInput)").replace(
             "%s %s (SDL)", "%s %s (XInput)"
         )

@@ -1,4 +1,4 @@
-"""Complete pinned application extras; reproducible narrow XDK syntax projection."""
+"""Pinned application extras, with a narrow, reproducible XDK syntax rewrite."""
 
 import argparse, hashlib, json, re, runpy, struct, subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -182,7 +182,7 @@ def preproject(name, text):
         "NameTag_RegisterForActorWithOptions(actor, text, {});",
         "NameTag_RegisterForActorWithOptions(actor, text, NameTagOptions());",
     )
-    # JSON items() proxies use modern iterator machinery. Preserve key/value iteration via actual JSON iterators.
+    # JSON items() proxies use modern iterator machinery. Preserve key/value iteration via JSON iterators.
     text = re.sub(
         r"for \(auto& (\w+) : ([^;\n]+)\.items\(\)\) \{",
         lambda m: "for (auto "

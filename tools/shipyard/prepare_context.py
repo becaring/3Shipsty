@@ -1,4 +1,4 @@
-"""Compile actual current Context lifecycle and its console/diagnostic closure."""
+"""Compile the Context lifecycle and its console and diagnostic closure."""
 
 import argparse
 import hashlib

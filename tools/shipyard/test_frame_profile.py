@@ -1,4 +1,4 @@
-"""Run the real coarse frame accumulator on an injected deterministic clock."""
+"""Run the coarse frame accumulator on an injected deterministic clock."""
 
 import runpy
 import subprocess

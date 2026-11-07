@@ -1,7 +1,7 @@
 #pragma once
-// Explicit compiler dependency: official fmt 4.1.0, not a printf emulation.
+// Compiler dependency: fmt 4.1.0 itself, with no printf emulation.
 // Default binary32/64 formatting uses the hash-locked fmt12 Dragonbox overlay.
-// Explicit presentation/precision still has the CRT boundary in README.md.
+// An explicit presentation type or precision still goes through fmt 4.1.0's CRT formatting.
 #ifdef _XBOX
 #include <ppcintrinsics.h>
 namespace shipyard_fmt {

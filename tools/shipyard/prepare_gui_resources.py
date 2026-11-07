@@ -1,4 +1,4 @@
-"""Current font/GUI/Fast3D texture resources and the exact pinned image decoder."""
+"""Font, GUI and Fast3D texture resources and the pinned image decoder."""
 
 import argparse
 import hashlib

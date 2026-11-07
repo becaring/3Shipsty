@@ -1,4 +1,4 @@
-"""Configure the real pinned build.c.in in scratch, without running PC CMake."""
+"""Configure the pinned build.c.in in scratch, without running PC CMake."""
 
 import datetime
 import hashlib

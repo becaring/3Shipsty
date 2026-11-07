@@ -1,4 +1,4 @@
-"""Complete native content providers plus original/projected content contracts."""
+"""Native content implementations plus original and projected content contracts."""
 
 import hashlib, json, re, runpy, unittest
 from pathlib import Path
@@ -67,7 +67,7 @@ def invoke_host(source, projected, label):
 
 
 def content_host(projected):
-    # Complete real value declarations; only service-dependent methods are omitted
+    # Complete value declarations; only service-dependent methods are omitted
     # from this bounded host executable. Production compiles every method.
     bundle, _, _ = bounded_source(projected)
     source = (
@@ -212,7 +212,7 @@ int main(){
 
 def enums_host(projected):
     # Keep the repeated X-macro includes intact; both versions instantiate every
-    # real enum map. Unknown names/values and valid round trips are exercised.
+    # enum map. Unknown names/values and valid round trips are exercised.
     header = read((OUT / "generated" if projected else ROOT) / BASE / "randomizerEnumStrings.h")
     text = cpp(projected, "randomizerEnumStrings.cpp")
     text = re.sub(

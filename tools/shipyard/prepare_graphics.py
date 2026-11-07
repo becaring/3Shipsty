@@ -1,8 +1,8 @@
-"""Project the pinned 9.2.3 graphics interfaces/decoder for the XDK compiler.
+"""Prepare the pinned 9.2.3 graphics interfaces and decoder for the XDK compiler.
 
-This is an object-compilation boundary, not a substitute renderer. No reference
-tree is read after the one-time donor import; production interpreter integration
-and the real Prism/resource builder remain required.
+It only compiles objects and renders nothing. No reference tree is read after the
+one-time donor import. Interpreter integration and the Prism/resource builder are
+still needed for production.
 """
 
 import argparse
@@ -144,7 +144,7 @@ def prepare(root=ROOT, out=OUT):
     header = platform_base / "sources/graphics/shader_lower.h"
     if not header.is_file():
         raise FileNotFoundError(header)
-    # Keep exact current template bytes available for later real Prism work.
+    # Keep exact current template bytes available for later Prism work.
     write(
         out / "shaders/default.shader.hlsl",
         inputs["libultraship/src/fast/shaders/directx/default.shader.hlsl"],

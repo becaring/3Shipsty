@@ -1,4 +1,4 @@
-"""Actual ActorDB entry/table differential and unchanged migration source audit."""
+"""ActorDB entry and table differential, and an audit that the migration source is unchanged."""
 
 import hashlib
 import json
