@@ -62,7 +62,7 @@ class HygieneTests(unittest.TestCase):
     def test_github_allowlist(self):
         self.write(".github/workflows/host-tests.yml", "name: Host tests\n", tracked=True)
         self.assertEqual(hygiene.problems(self.root), [])
-        self.write(".github/ISSUE_TEMPLATE/bug.yml", "name: Bug\n", tracked=True)
+        self.write(".github/FUNDING.yml", "ko_fi: becaring\n", tracked=True)
         self.assertEqual(len(hygiene.problems(self.root)), 1)
 
     def test_checkout_meets_policy(self):

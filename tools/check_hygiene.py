@@ -42,7 +42,14 @@ MARKDOWN = {
 }
 LEGAL = {"docs/CREDITS.md"}
 LEGAL_TREES = ()
-GITHUB = {".github/workflows/host-tests.yml"}
+GITHUB = {
+    ".github/workflows/host-tests.yml",
+    ".github/workflows/require-log.yml",
+    ".github/scripts/require_log.js",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/bug.yml",
+    ".github/ISSUE_TEMPLATE/feature.yml",
+}
 DOC_WORDS = re.compile(r"\b(receipt|certificate|certified|certification|evidence|ledger|handoff)\b", re.IGNORECASE)
 DOC_NAMES = re.compile(r"\d{4}[-_]?\d{2}[-_]?\d{2}|HANDOFF|LEDGER|CHECKPOINT|INTEGRATION", re.IGNORECASE)
 

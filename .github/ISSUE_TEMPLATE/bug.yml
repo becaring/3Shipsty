@@ -1,0 +1,55 @@
+name: Bug report
+description: Something broke or looks wrong. A log is required.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every report needs your log file and a description of what happened. A report missing
+        either one closes automatically, and it reopens when you edit it to add them.
+  - type: input
+    attributes:
+      label: Release
+      description: The release ZIP you installed.
+      placeholder: 3Shipsty-1.0.0.zip
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Problem
+      options:
+        - Crash or console shutdown
+        - Won't start
+        - Graphics
+        - Audio
+        - Controls
+        - Performance
+        - Saves
+        - Randomizer
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Name the area, save file or randomizer seed if they matter.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Log
+      description: |
+        The `logs` folder is inside the 3Shipsty folder on your console, beside `3Shipsty.xex`. Copy it
+        to your PC (FTP from Aurora, FSD or XeXMenu, or a USB drive), zip it, and drag the zip into this box.
+        Copy it after the problem happens.
+      placeholder: Drag the zipped logs folder here
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Checks
+      options:
+        - label: I'm using an unmodified release and my own supported Ocarina of Time ROM.
+          required: true
+        - label: I searched the existing issues for this problem.
+          required: true
