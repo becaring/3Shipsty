@@ -1,0 +1,39 @@
+{
+  "repository": {
+    "3Shipsty-LICENSE.txt": "LICENSE",
+    "libultraship-LICENSE.txt": "libultraship/LICENSE",
+    "fast3d-LICENSE.txt": "libultraship/src/fast/LICENSE.txt",
+    "ZAPDTR-LICENSE.txt": "ZAPDTR/LICENSE",
+    "OTRExporter-LICENSE.txt": "OTRExporter/LICENSE",
+    "3drando-LICENSE.txt": "soh/soh/Enhancements/randomizer/3drando/LICENSE.md",
+    "nlohmann-json-LICENSE.txt": "platform/shipyard/json/upstream/LICENSE.MIT",
+    "thread-pool-LICENSE.txt": "platform/shipyard/thread-pool/upstream/LICENSE.txt",
+    "dr-libs-LICENSE.txt": "scratch/deps/dr-libs/LICENSE",
+    "fmt-LICENSE.txt": "scratch/deps/fmt-xdk/LICENSE.rst",
+    "imgui-LICENSE.txt": "scratch/deps/imgui/LICENSE.txt",
+    "libgfxd-LICENSE.txt": "scratch/deps/libgfxd/LICENSE",
+    "libzip-LICENSE.txt": "scratch/deps/libzip/LICENSE",
+    "ogg-COPYING.txt": "scratch/deps/ogg/COPYING",
+    "opus-COPYING.txt": "scratch/deps/opus/COPYING",
+    "opusfile-COPYING.txt": "scratch/deps/opusfile/COPYING",
+    "prism-LICENSE.txt": "scratch/deps/prism/LICENSE",
+    "spdlog-LICENSE.txt": "scratch/deps/spdlog/LICENSE",
+    "stb-LICENSE.txt": "scratch/deps/stb/LICENSE",
+    "StormLib-LICENSE.txt": "scratch/deps/stormlib/LICENSE",
+    "string-view-lite-LICENSE.txt": "scratch/deps/string-view-lite/LICENSE.txt",
+    "tinyxml2-LICENSE.txt": "scratch/deps/tinyxml2/LICENSE.txt",
+    "vorbis-COPYING.txt": "scratch/deps/vorbis/COPYING",
+    "zlib-LICENSE.txt": "scratch/deps/zlib/LICENSE",
+    "eSpeak-NG-COPYING.txt": "scratch/speech-xdk/espeak-ng/COPYING",
+    "eSpeak-NG-COPYING.APACHE.txt": "scratch/speech-xdk/espeak-ng/COPYING.APACHE",
+    "eSpeak-NG-COPYING.BSD2.txt": "scratch/speech-xdk/espeak-ng/COPYING.BSD2",
+    "eSpeak-NG-COPYING.UCD.txt": "scratch/speech-xdk/espeak-ng/COPYING.UCD"
+  },
+  "platform": {
+    "Shipyard-LICENSE.txt": "LICENSE",
+    "Shipyard-NOTICE.txt": "NOTICE.md",
+    "Shipyard-Re60-Legacy-Xenos-Renderer-LICENSE.txt": "provenance/becaring-Re60-Legacy-Xenos-Renderer-23eb15e6-LICENSE.txt",
+    "Shipyard-fast3d-LICENSE.txt": "provenance/fast3d-official-881eb68-LICENSE.txt",
+    "Shipyard-nlohmann-json-LICENSE.txt": "third_party/nlohmann-3.12.0/LICENSE.MIT"
+  }
+}
