@@ -42,22 +42,33 @@
         };
         static const size_t sizes[] = { 32u << 20, 54u << 20, 64u << 20 };
         const std::string root = Ship::Context::GetAppBundlePath();
-        const std::vector<std::string> roms = Shipyard::Rom::Find(root);
+        bool built[2] = {
+            xbox_compat::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName)),
+            xbox_compat::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot-mq.o2r", appShortName)),
+        };
+        const std::vector<std::string> roms =
+            built[0] && built[1] ? std::vector<std::string>() : Shipyard::Rom::Find(root);
         char portVersion[24];
         sprintf(portVersion, "%d.%d.%d", gBuildVersionMajor, gBuildVersionMinor, gBuildVersionPatch);
         for (size_t i = 0; i < roms.size(); ++i) {
-            std::vector<unsigned char> rom;
-            if (Shipyard::Rom::Load(roms[i], sizes, 3, rom) != Shipyard::Rom::LoadOk)
+            // The header names the archive a ROM would build, so a ROM whose archive exists is never read.
+            unsigned char head[0x40];
+            FILE* file = fopen(roms[i].c_str(), "rb");
+            const size_t read = file ? fread(head, 1, sizeof(head), file) : 0;
+            if (file)
+                fclose(file);
+            if (read != sizeof(head) || !Shipyard::Rom::ToBigEndian(head, sizeof(head)))
                 continue;
-            const uint32_t header = Shipyard::Rom::ReadBig32(&rom[0x10]);
+            const uint32_t header = Shipyard::Rom::ReadBig32(&head[0x10]);
             const RomVersion* version = NULL;
             for (size_t v = 0; v < sizeof(versions) / sizeof(versions[0]); ++v)
                 if (versions[v].header == header)
                     version = &versions[v];
-            if (version == NULL)
+            if (version == NULL || built[version->mq])
                 continue;
             const char* archive = version->mq ? "oot-mq.o2r" : "oot.o2r";
-            if (xbox_compat::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs(archive, appShortName)))
+            std::vector<unsigned char> rom;
+            if (Shipyard::Rom::Load(roms[i], sizes, 3, rom) != Shipyard::Rom::LoadOk)
                 continue;
             // Some MQ debug dumps carry a US region byte; the accepted CRC is of the restored ROM.
             if (header == OOT_PAL_GC_MQ_DBG)
@@ -118,10 +129,11 @@
             }
             WaitForSingleObject(thread, INFINITE);
             CloseHandle(thread);
-            char seconds[64];
-            sprintf(seconds, "Extracted %s in %.1f s (result %d)\n", archive, (GetTickCount() - start) / 1000.0f,
-                    job.result);
-            OutputDebugStringA(seconds);
+            char stage[320];
+            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d", archive, name.c_str(),
+                        (GetTickCount() - start) / 1000.0f, job.result);
+            Shipyard::Platform::RecordBootStage(stage, false);
+            built[version->mq] = true;
             if (job.result != 0) {
                 std::error_code ignored;
                 xbox_compat::filesystem::remove(job.request.outputPath, ignored);
