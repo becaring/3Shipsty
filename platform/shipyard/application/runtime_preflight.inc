@@ -131,7 +131,7 @@
             }
             WaitForSingleObject(thread, INFINITE);
             CloseHandle(thread);
-            char stage[512];
+            char stage[1024];
             _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d %s", archive, name.c_str(),
                         (GetTickCount() - start) / 1000.0f, job.result, stages.c_str());
             Shipyard::Platform::RecordBootStage(stage, false);
