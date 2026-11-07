@@ -22,7 +22,8 @@ from platform_base import resolve
 
 OUT = ROOT / "scratch/extractor-xdk"
 SDK = Path("C:/Program Files (x86)/Microsoft Xbox 360 SDK")
-SHIPYARD_UNITS = ("zapd/extract.cpp", "zapd/arena.cpp", "archive/stored_zip_writer.cpp", "rom/rom.cpp")
+SHIPYARD_UNITS = ("zapd/extract.cpp", "zapd/arena.cpp", "archive/stored_zip_writer.cpp",
+                  "archive/stored_zip_reader.cpp", "rom/rom.cpp")
 
 
 def prepare():

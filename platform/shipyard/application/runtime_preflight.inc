@@ -94,6 +94,9 @@
             std::string stages;
             job.request.stages = &stages;
             job.request.helpers = 3;
+            // One assets.zip copies to the console far faster than the thousands of files it replaces.
+            if (xbox_compat::filesystem::exists(root + "/assets.zip"))
+                job.request.assetBundle = root + "/assets.zip";
             job.finished = 0;
             job.result = -1;
             const DWORD start = GetTickCount();
@@ -150,8 +153,8 @@
                 std::error_code ignored;
                 xbox_compat::filesystem::remove(job.request.outputPath, ignored);
                 Shipyard::Platform::ShowError(L"Ship of Harkinian ROM extraction",
-                                              L"Building the ROM archive failed. Check that the assets folder from the "
-                                              L"release is beside the application.");
+                                              L"Building the ROM archive failed. Check that assets.zip or the assets "
+                                              L"folder from the release is beside the application.");
                 exit(1);
             }
         }
