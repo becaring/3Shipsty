@@ -1,4 +1,4 @@
-"""Check launch-directory storage policy and the linked shared selector contract."""
+"""Check the per-profile save container policy and the linked shared selector contract."""
 import json
 from pathlib import Path
 import subprocess
@@ -10,11 +10,11 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = resolve(ROOT)
 storage = (ROOT / 'platform/shipyard/save-storage/storage.cpp').read_text()
 display = (BASE / 'sources/xenos/core.cpp').read_text()
-assert 'SelectAndMount' not in storage
-assert 'Fast::InitializeNativeDisplay();' in storage
-for directory in ('config', 'logs', 'Save'):
+assert storage.count('SelectAndMount(policy, display)') == 1
+assert 'Fast::InitializeNativeDisplay, Fast::PresentNativeStartupUI' in storage
+for directory in ('config', 'logs'):
     assert 'create_directories("game:\\\\' + directory + '");' in storage
-assert 'return "game:\\\\Save";' in storage
+assert 'return "shipyard:\\\\Save";' in storage
 assert 'MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH' in storage
 assert 'XShowDeviceSelectorUI' not in storage
 report = json.loads((ROOT / 'scratch/save-storage-xdk/xdk/build.json').read_text())

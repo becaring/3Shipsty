@@ -2,7 +2,8 @@
 #include <string>
 #include "filesystem/filesystem.h"
 namespace Shipyard { namespace Storage {
-// Create the install-side config, logs and Save directories before Context/SaveManager.
+// Call on the application thread before Context/SaveManager. Shows the storage popup;
+// cancellation and mount errors propagate.
 void Mount(unsigned userIndex = 0);
 // Call only after SaveManager::ThreadPoolWait and all other writers joined.
 void Shutdown();
