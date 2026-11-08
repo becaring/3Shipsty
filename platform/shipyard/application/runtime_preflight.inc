@@ -39,12 +39,33 @@
                 InterlockedExchange(&self->finished, 1);
                 return 0;
             }
+            // A zip ends with its end-of-directory record. An archive without one is an interrupted write,
+            // so it is removed and the ROM builds it again.
+            static bool Built(const std::string& path) {
+                FILE* file = fopen(path.c_str(), "rb");
+                if (!file)
+                    return false;
+                static unsigned char tail[22 + 0xFFFF];
+                long length = 0;
+                if (fseek(file, 0, SEEK_END) == 0 && (length = ftell(file)) > 0) {
+                    length = length < (long)sizeof(tail) ? length : (long)sizeof(tail);
+                    if (fseek(file, -length, SEEK_END) != 0 || fread(tail, 1, length, file) != (size_t)length)
+                        length = 0;
+                }
+                fclose(file);
+                for (long at = length - 22; at >= 0; --at)
+                    if (tail[at] == 'P' && tail[at + 1] == 'K' && tail[at + 2] == 5 && tail[at + 3] == 6)
+                        return true;
+                std::error_code ignored;
+                xbox_compat::filesystem::remove(path, ignored);
+                return false;
+            }
         };
         static const size_t sizes[] = { 32u << 20, 54u << 20, 64u << 20 };
         const std::string root = Ship::Context::GetAppBundlePath();
         bool built[2] = {
-            xbox_compat::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName)),
-            xbox_compat::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot-mq.o2r", appShortName)),
+            Extraction::Built(Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName)),
+            Extraction::Built(Ship::Context::LocateFileAcrossAppDirs("oot-mq.o2r", appShortName)),
         };
         const std::vector<std::string> roms =
             built[0] && built[1] ? std::vector<std::string>() : Shipyard::Rom::Find(root);
@@ -85,7 +106,10 @@
             job.request.xmlDirectory = root + "/assets/xml/" + version->config;
             job.request.fileListDirectory = root + "/assets/filelists";
             job.request.configPath = root + "/assets/Config_" + version->config + ".xml";
-            job.request.outputPath = xbox_compat::filesystem::path(root + "/" + archive).make_preferred().string();
+            // The archive takes its name only once complete. A part file left by a failed run marks a retry.
+            const std::string finalPath = xbox_compat::filesystem::path(root + "/" + archive).make_preferred().string();
+            job.request.outputPath = finalPath + ".part";
+            const bool retry = xbox_compat::filesystem::exists(job.request.outputPath);
             job.request.portVersion = portVersion;
             job.request.rom = &rom;
             job.request.done = &done;
@@ -93,7 +117,8 @@
             job.request.log = &Extraction::Log;
             std::string stages;
             job.request.stages = &stages;
-            job.request.helpers = 3;
+            // A retry runs on one thread: slower, but it leaves no other extraction thread to race with.
+            job.request.helpers = retry ? 0 : 3;
             // One assets.zip copies to the console far faster than the thousands of files it replaces.
             if (xbox_compat::filesystem::exists(root + "/assets.zip"))
                 job.request.assetBundle = root + "/assets.zip";
@@ -105,6 +130,8 @@
             GlobalMemoryStatus(&memory);
             const SIZE_T freeBefore = memory.dwAvailPhys;
             SIZE_T freeLeast = freeBefore;
+            volatile long faulted = 0;
+            Shipyard::Platform::CatchWorkerFaults(&faulted);
             // A desktop-sized stack, on the hardware thread Shipyard::Async::ServiceProcessor names.
             HANDLE thread = CreateThread(NULL, 1024 * 1024, &Extraction::Run, &job, CREATE_SUSPENDED, NULL);
             if (thread == NULL) {
@@ -115,7 +142,7 @@
             ResumeThread(thread);
             const std::string name = xbox_compat::filesystem::path(roms[i]).filename().string();
             const std::shared_ptr<Ship::Gui> gui = sohFast3dWindow->GetGui();
-            while (!job.finished) {
+            while (!job.finished && !faulted) {
                 sohFast3dWindow->HandleEvents();
                 if (!sohFast3dWindow->IsFrameReady())
                     continue;
@@ -141,20 +168,30 @@
                 gui->EndDraw();
                 sohFast3dWindow->EndFrame();
             }
+            const wchar_t* failed = L"Building the ROM archive failed. Check that assets.zip or the assets folder "
+                                    L"from the release is beside the application.";
+            // The fault receipt is written; the stopped thread still holds the part file, which marks the retry.
+            if (faulted) {
+                if (!retry) {
+                    Shipyard::Platform::RequestRelaunch();
+                    Shipyard::Platform::ExitTitle();
+                }
+                Shipyard::Platform::ShowError(L"Ship of Harkinian ROM extraction", failed);
+                exit(1);
+            }
+            Shipyard::Platform::CatchWorkerFaults(NULL);
             WaitForSingleObject(thread, INFINITE);
             CloseHandle(thread);
             char stage[1024];
-            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d free=%u/%u MB %s", archive,
-                        name.c_str(), (GetTickCount() - start) / 1000.0f, job.result, (unsigned)(freeLeast >> 20),
-                        (unsigned)(freeBefore >> 20), stages.c_str());
+            _snprintf_s(stage, sizeof(stage), _TRUNCATE, "extracted %s from %s in %.1f s result=%d helpers=%d free=%u/%u MB %s",
+                        archive, name.c_str(), (GetTickCount() - start) / 1000.0f, job.result, job.request.helpers,
+                        (unsigned)(freeLeast >> 20), (unsigned)(freeBefore >> 20), stages.c_str());
             Shipyard::Platform::RecordBootStage(stage, false);
             built[version->mq] = true;
-            if (job.result != 0) {
-                std::error_code ignored;
+            std::error_code ignored;
+            if (job.result != 0 || !MoveFileA(job.request.outputPath.c_str(), finalPath.c_str())) {
                 xbox_compat::filesystem::remove(job.request.outputPath, ignored);
-                Shipyard::Platform::ShowError(L"Ship of Harkinian ROM extraction",
-                                              L"Building the ROM archive failed. Check that assets.zip or the assets "
-                                              L"folder from the release is beside the application.");
+                Shipyard::Platform::ShowError(L"Ship of Harkinian ROM extraction", failed);
                 exit(1);
             }
         }

@@ -16,4 +16,7 @@ void RecordStartupFatal(const char* operation, unsigned long code);
 // instead of the dashboard. ExitTitle returns only if no launch succeeded.
 void RequestRelaunch();
 void ExitTitle();
+// While signal is set, a fault on any other thread records its receipt, sets *signal to 1 and stops that thread,
+// so the calling thread can recover. NULL restores the default fault handling.
+void CatchWorkerFaults(volatile long* signal);
 } }

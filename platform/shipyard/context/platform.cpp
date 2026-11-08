@@ -56,10 +56,43 @@ void RecordNativeFault(const char* kind, DWORD code, const void* address, const 
     WriteFlushedFile("game:\\logs\\startup-fault.txt", line, false);
 }
 
+volatile LONG* workerFaultSignal = NULL;
+DWORD workerFaultOwner = 0;
+
+// Return addresses from the faulting frame outward. Each frame saves its caller's LR 8 bytes below the back chain.
+void FormatCallChain(const CONTEXT& context, char* text, size_t size) {
+    int length = _snprintf_s(text, size, _TRUNCATE, "lr=%08lx chain=", context.Lr);
+    DWORD sp = static_cast<DWORD>(context.Gpr1);
+    for (int frame = 0; frame < 12 && length > 0 && static_cast<size_t>(length) < size; ++frame) {
+        DWORD next = 0, lr = 0;
+        bool valid = false;
+        __try {
+            next = *reinterpret_cast<const DWORD*>(sp);
+            valid = next > sp && next - sp <= 0x100000 && !(next & 3);
+            if (valid) lr = *reinterpret_cast<const DWORD*>(next - 8);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            valid = false;
+        }
+        if (!valid) break;
+        const int added = _snprintf_s(text + length, size - length, _TRUNCATE, "%08lx,", lr);
+        if (added < 0) break;
+        length += added;
+        sp = next;
+    }
+}
+
 LONG WINAPI ShipyardUnhandledFault(EXCEPTION_POINTERS* information) {
     const EXCEPTION_RECORD* record = information ? information->ExceptionRecord : NULL;
+    char chain[192] = "";
+    if (information && information->ContextRecord) FormatCallChain(*information->ContextRecord, chain, sizeof(chain));
     RecordNativeFault("seh", record ? record->ExceptionCode : 0,
-                      record ? record->ExceptionAddress : NULL, "");
+                      record ? record->ExceptionAddress : NULL, chain);
+    volatile LONG* signal = workerFaultSignal;
+    if (signal && GetCurrentThreadId() != workerFaultOwner) {
+        // The owner thread recovers from the failed work; this worker stops here for good.
+        InterlockedExchange(signal, 1);
+        for (;;) Sleep(INFINITE);
+    }
     if (previousFaultFilter) return previousFaultFilter(information);
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -115,6 +148,15 @@ void ExitTitle() {
     // A renamed XEX fails the relaunch and falls through to the dashboard or launcher.
     if (relaunchRequested) XLaunchNewImage("game:\\3Shipsty.xex", 0);
     XLaunchNewImage(XLAUNCH_KEYWORD_DEFAULT_APP, 0);
+#endif
+}
+
+void CatchWorkerFaults(volatile long* signal) {
+#ifdef _XBOX
+    workerFaultOwner = GetCurrentThreadId();
+    workerFaultSignal = reinterpret_cast<volatile LONG*>(signal);
+#else
+    (void)signal;
 #endif
 }
 
