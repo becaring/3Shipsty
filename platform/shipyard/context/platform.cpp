@@ -11,6 +11,7 @@
 #include <stdint.h>
 #ifdef _XBOX
 #include "xenos/native_display.h"
+#include "presentation/xenos_swap_chain.h"
 #include <exception>
 #include <cstdlib>
 #endif
@@ -120,31 +121,65 @@ void ExitTitle() {
 std::string ApplicationDirectory() { return "game:"; }
 std::string BundleDirectory() { return "game:"; }
 
+#ifdef _XBOX
+// One black frame behind a system dialog. Storage startup presents before the game owns framebuffers; after that
+// the device's own Present resolves into a NULL front buffer, so the frame goes through the title's swap chain.
+static HRESULT PresentErrorFrame() {
+    HRESULT presented = Fast::PresentNativeStartupUI();
+    if (presented != E_UNEXPECTED || !Fast::xenos_device) return presented;
+    IDirect3DSurface9* back = NULL;
+    if (SUCCEEDED(Fast::xenos_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &back))) {
+        Fast::xenos_device->SetRenderTarget(0, back);
+        back->Release();
+    }
+    Fast::xenos_device->SetDepthStencilSurface(NULL);
+    presented = Fast::xenos_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1, 0);
+    return FAILED(presented) ? presented : ::Shipyard::XenosPresentationChain().Present();
+}
+#endif
+
 void ShowError(const wchar_t* title, const wchar_t* message) {
 #ifdef _XBOX
+    // The receipt names the error even when the dialog cannot be shown.
+    char detail[256];
+    unsigned length = 0;
+    for (; length < sizeof(detail) - 1 && message[length]; ++length)
+        detail[length] = message[length] < 0x80 ? static_cast<char>(message[length]) : '?';
+    detail[length] = 0;
+    RecordNativeFault("handled", 0, NULL, detail);
+    // XAM rejects a title over 32 characters or text over 256, and then shows nothing.
+    wchar_t shortTitle[33], shortMessage[256];
+    wcsncpy_s(shortTitle, title, _TRUNCATE);
+    wcsncpy_s(shortMessage, message, _TRUNCATE);
+    // XShow functions require the GPU-owned constants to be released first.
+    if (Fast::xenos_device) Fast::xenos_device->GpuDisownAll();
     const wchar_t* buttons[] = { L"OK" };
     MESSAGEBOX_RESULT result = { 0 };
     XOVERLAPPED operation = { 0 };
-    DWORD status = XShowMessageBoxUI(XUSER_INDEX_ANY, title, message, 1, buttons, 0,
+    DWORD status = ERROR_ACCESS_DENIED;
+    // A system UI that just closed, such as the storage selector, refuses a new dialog until it is gone.
+    const DWORD started = GetTickCount();
+    while (status == ERROR_ACCESS_DENIED && DWORD(GetTickCount() - started) < 10000) {
+        status = XShowMessageBoxUI(XUSER_INDEX_ANY, shortTitle, shortMessage, 1, buttons, 0,
                                    XMB_ERRORICON, &result, &operation);
+        if (status == ERROR_ACCESS_DENIED && FAILED(PresentErrorFrame())) break;
+    }
     if (status == ERROR_IO_PENDING) {
-        const DWORD started = GetTickCount();
+        const DWORD shown = GetTickCount();
         while (!XHasOverlappedIoCompleted(&operation)) {
-            // Storage initialization creates the D3D device earlier. XAM dialogs
-            // also need presentation after Context has allocated framebuffers.
-            HRESULT presented = Fast::PresentNativeStartupUI();
-            if (presented == E_UNEXPECTED && Fast::xenos_device)
-                presented = Fast::xenos_device->Present(NULL, NULL, NULL, NULL);
-            if (FAILED(presented) || DWORD(GetTickCount() - started) >= 90000) {
+            if (FAILED(PresentErrorFrame()) || DWORD(GetTickCount() - shown) >= 90000) {
                 XCancelOverlapped(&operation);
                 while (!XHasOverlappedIoCompleted(&operation)) Sleep(1);
                 break;
             }
-            Sleep(1);
         }
         status = XGetOverlappedResult(&operation, NULL, FALSE);
     }
-    if (status != ERROR_SUCCESS) OutputDebugStringA("Shipyard: native error dialog failed\n");
+    char line[64];
+    _snprintf_s(line, sizeof(line), _TRUNCATE, "dialog status=%lu\n", (unsigned long)status);
+    WriteFlushedFile("game:\\logs\\startup-fault.txt", line, true);
+    // Every console error is fatal, and a process exit powers the console off.
+    ExitTitle();
 #else
     MessageBoxW(NULL, message, title, MB_OK | MB_ICONERROR);
 #endif

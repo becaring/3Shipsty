@@ -184,7 +184,7 @@
             message = L"soh.o2r is missing or does not match this application version. Copy soh.o2r from the matching stable release beside the application.";
         else if (result == Shipyard::Application::GameArchiveMismatch)
             message = L"oot.o2r or oot-mq.o2r is from an incompatible SoH version. Delete it and restart to rebuild it from your ROM.";
-        Shipyard::Platform::ShowError(L"Ship of Harkinian resource archives", message);
+        Shipyard::Platform::ShowError(L"Ship of Harkinian archives", message);
         exit(1);
     }
     CheckAndCreateModFolder();

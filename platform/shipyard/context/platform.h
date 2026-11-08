@@ -4,6 +4,8 @@
 namespace Shipyard { namespace Platform {
 std::string ApplicationDirectory();
 std::string BundleDirectory();
+// On the console an error is fatal: the message goes into the startup receipt, and closing the dialog leaves for
+// the dashboard.
 void ShowError(const wchar_t* title, const wchar_t* message);
 // Temporary hardware-startup diagnostics. The game trace is flushed at each
 // boundary into game:\logs, including failures before logger initialization.
