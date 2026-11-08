@@ -76,7 +76,8 @@ def transform(relative, text):
             text,
             "} // namespace Ship",
             """void ConnectedPhysicalDeviceManager::RefreshNativeGamepads(bool presentation) {
-    if (presentation) ShipyardInput_RefreshGamepadsForGui(); else ShipyardInput_PumpGamepads();
+    // The game read keeps taps that the display-rate pumps saw between game frames.
+    if (presentation) ShipyardInput_RefreshGamepadsForGui(); else ShipyardInput_PumpGamepadsForGame();
     uint32_t generation = ShipyardInput_GamepadTopologyGeneration();
     if (generation != mNativeTopologyGeneration) {
         RefreshConnectedSDLGamepads();

@@ -165,6 +165,20 @@ int main() {
     assert(!ShipyardInput_GamepadHasSensor(a, 2));
     assert(ShipyardInput_GamepadSensorData(a, 2, 0, 0) == -1);
     assert(!ShipyardInput_GamepadHasLED(a));
+    // A tap seen only by a display pump between two game reads reaches the next game read once.
+    samples[1].buttons = 0;
+    ShipyardInput_PumpGamepadsForGame();
+    assert(!ShipyardInput_GamepadButton(a, ShipyardButtonStart));
+    samples[1].buttons = 0x0010;
+    ShipyardInput_PumpGamepads();
+    samples[1].buttons = 0;
+    ShipyardInput_PumpGamepads();
+    ShipyardInput_PumpGamepadsForGame();
+    assert(ShipyardInput_GamepadButton(a, ShipyardButtonStart));
+    ShipyardInput_PumpGamepads();
+    assert(ShipyardInput_GamepadButton(a, ShipyardButtonStart));
+    ShipyardInput_PumpGamepadsForGame();
+    assert(!ShipyardInput_GamepadButton(a, ShipyardButtonStart));
     ShipyardInput_StopPhysicalRumble();
-    std::cout << "physical fixture passed: slots, axes, topology, disconnect, timed/sustained rumble, capabilities\n";
+    std::cout << "physical fixture passed: slots, axes, topology, disconnect, timed/sustained rumble, capabilities, game taps\n";
 }
