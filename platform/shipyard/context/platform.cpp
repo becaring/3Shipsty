@@ -105,6 +105,18 @@ void RecordBootStage(const char* stage, bool commitToSave) {
 #endif
 }
 
+namespace {
+bool relaunchRequested;
+}
+void RequestRelaunch() { relaunchRequested = true; }
+void ExitTitle() {
+#ifdef _XBOX
+    // A renamed XEX fails the relaunch and falls through to the dashboard or launcher.
+    if (relaunchRequested) XLaunchNewImage("game:\\3Shipsty.xex", 0);
+    XLaunchNewImage(XLAUNCH_KEYWORD_DEFAULT_APP, 0);
+#endif
+}
+
 std::string ApplicationDirectory() { return "game:"; }
 std::string BundleDirectory() { return "game:"; }
 

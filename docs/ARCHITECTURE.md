@@ -160,6 +160,11 @@ Package PC-generated `espeak-ng-data` beside the game and keep
 selected little-endian data fields and PCM samples. A distribution must include
 eSpeak's GPL notices, corresponding source, and build modifications.
 
+On the console, quitting drains SaveManager, saves settings, closes storage and
+flushes the log, then launches the dashboard; the mod menu's Apply & Close
+relaunches `game:\3Shipsty.xex` because mods load only at startup. The next
+title reclaims the rest, so the teardown below runs only on hosts.
+
 Stop gameplay speech, remote, audio, and resource producers before teardown.
 Join workers and drain SaveManager while their services are still alive. Hold a
 strong Context through the resource-pool drain, then the detached codec drain.

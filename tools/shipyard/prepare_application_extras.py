@@ -89,6 +89,16 @@ def preproject(name, text):
             }
 """,
         )
+    if name.endswith("/mod_menu.cpp"):
+        # Mods load only at startup, so Apply & Close restarts the game on the console.
+        close = (
+            "                                      Ship::Context::GetInstance()->GetConsoleVariables()->Save();\n"
+            "                                      Ship::Context::GetInstance()->GetWindow()->Close();"
+        )
+        text = once(text, close, close.replace("Ship::Context::GetInstance()->GetWindow()",
+                                               "Shipyard::Platform::RequestRelaunch();\n"
+                                               "                                      Ship::Context::GetInstance()->GetWindow()", 1))
+        text = '#include "context/platform.h"\n' + text
     text = text.replace("std::filesystem", "xbox_compat::filesystem")
     text = text.replace(
         "std::reinterpret_pointer_cast<", "Shipyard::GuiCompat::ReinterpretPointerCast<"

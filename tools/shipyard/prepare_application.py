@@ -540,6 +540,21 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
         'extern "C" void DeinitOTR() {',
         'extern "C" void DeinitOTR() {\n    JoinRandoGenerationThread();',
     )
+    # Teardown after Quit left a black screen on hardware. The next title reclaims memory,
+    # threads and the GPU, so persist saves, settings and the log, then launch it.
+    source = once(
+        source,
+        'extern "C" void DeinitOTR() {\n    JoinRandoGenerationThread();',
+        """extern "C" void DeinitOTR() {
+    JoinRandoGenerationThread();
+#ifdef _XBOX
+    SaveManager_ThreadPoolWait();
+    Ship::Context::GetInstance()->GetConsoleVariables()->Save();
+    Shipyard::Storage::Shutdown();
+    if (auto logger = spdlog::default_logger()) logger->flush();
+    Shipyard::Platform::ExitTitle();
+#endif""",
+    )
     source = once(
         source,
         "    SohGui::Destroy();",
