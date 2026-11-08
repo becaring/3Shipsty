@@ -19,7 +19,7 @@ class ProfileSaveStorageTests(unittest.TestCase):
             profile = folder / 'profile'
             # The device prefixes are the only production-source change.
             source = (ROOT / 'platform/shipyard/save-storage/storage.cpp').read_text()
-            self.assertEqual(source.count('game:\\\\'), 4)
+            self.assertEqual(source.count('game:\\\\'), 6)
             self.assertEqual(source.count('shipyard:\\\\'), 4)
             source = source.replace('game:\\\\', install.as_posix() + '/')
             source = source.replace('shipyard:\\\\', profile.as_posix() + '/')
@@ -75,6 +75,10 @@ MountResult SelectAndMount(const MountPolicy& policy, const StartupDisplay& disp
 DWORD Flush(const char* mountName) { ++flushes; return strcmp(mountName, "shipyard") ? ERROR_INVALID_NAME : 0; }
 DWORD Close(const char* mountName) { ++closes; return strcmp(mountName, "shipyard") ? ERROR_INVALID_NAME : 0; }
 }}
+std::string bootStages;
+namespace Shipyard { namespace Platform {
+void RecordBootStage(const char* stage, bool) { bootStages += stage; bootStages += '\n'; }
+}}
 void require(bool condition, const char* reason) {
     if (!condition) throw std::runtime_error(reason);
 }
@@ -96,17 +100,26 @@ int main(int argc, char** argv) { try {
     write(install / "Save" / "file1.sav", "game folder save");
 
     nextSelection = ERROR_CANCELLED;
-    bool cancelled = false;
-    try { storage::Mount(); } catch (const std::exception&) { cancelled = true; }
-    require(cancelled && !fs::exists(profileRoot), "cancelled popup mounted storage");
+    storage::Mount();
+    require(!fs::exists(profileRoot), "cancelled popup created the container");
+    require(fs::path(storage::SaveDirectory()).generic_string() == (install / "Save").generic_string(),
+            "cancelled popup did not fall back to the game folder");
+    require(bootStages.find("saves-in-game-folder step=device-selection error=1223") != std::string::npos,
+            "fallback reason was not recorded");
+    storage::WriteAtomic(install / "Save" / "file2.sav", "fallback save");
+    require(read(install / "Save" / "file2.sav") == "fallback save" && flushes == 0,
+            "game folder save failed or flushed the container");
+    storage::Shutdown();
+    require(closes == 0, "game folder fallback closed a container");
     bool unmounted = false;
     try { storage::SaveDirectory(); } catch (const std::logic_error&) { unmounted = true; }
-    require(unmounted, "cancelled popup left storage usable");
+    require(unmounted, "shutdown left storage usable");
 
     nextSelection = ERROR_SUCCESS;
     storage::Mount();
     storage::Mount(1);
     require(selections == 2 && displays == 2, "repeat mount showed the popup again");
+    require(fs::exists(profileRoot / "Save" / "file2.sav"), "fallback save was not adopted into the container");
     require(fs::is_directory(install / "config") && fs::is_directory(install / "logs"),
             "config and logs were not kept in the game folder");
     const fs::path saves(storage::SaveDirectory());

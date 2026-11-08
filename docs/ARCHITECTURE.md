@@ -121,7 +121,9 @@ Packaged and console-built archives live under `game:`. Configuration is in
 `game:\config`, and logs, including the boot log `boot.txt`, are in `game:\logs`.
 Saves use `shipyard:\Save\fileN.sav` and `global.sav` in the player's
 per-profile container, which the player picks in the storage popup at startup.
-The first mount copies saves found in `game:\Save` into it. Background writes
+The first mount copies saves found in `game:\Save` into it. If the popup is
+cancelled or the console refuses the container, saves stay in `game:\Save` and
+boot.txt records the failing step and error. Background writes
 own their serialized bytes. Complete writes, file flushes, replacement, and
 XContent completion are separate operations; enqueueing a write does not persist it. A failure after replacement reports an error without promising
 rollback or power-loss recovery.

@@ -1,15 +1,19 @@
 // Saves live in a per-profile container the player picks in the storage popup;
 // config and logs stay in the game folder so they are easy to copy off.
 // Every save write flushes the container, because XContent holds writes until a flush.
+// If the popup is cancelled or the container cannot be opened, saves use game:\Save instead.
 #include "save-storage/atomic_file.h"
 #include "save-storage/storage.h"
 #include "async/native.h"
+#include "context/platform.h"
 #include "storage/device.h"
 #include "xenos/native_display.h"
+#include <stdio.h>
 namespace Shipyard { namespace Storage {
 namespace {
 Async::mutex mutex;
 bool mounted;
+bool inContainer;
 const char* const root = "shipyard";
 void Check(DWORD result, const char* operation) {
     if (result != ERROR_SUCCESS) throw Async::native_error(operation, result);
@@ -17,7 +21,9 @@ void Check(DWORD result, const char* operation) {
 void RequireMounted() {
     if (!mounted) throw std::logic_error("Shipyard save storage is not mounted");
 }
-void FlushMounted() { Check(Shipyard::Storage::Flush(root), "XContentFlush"); }
+void FlushMounted() {
+    if (inContainer) Check(Shipyard::Storage::Flush(root), "XContentFlush");
+}
 // Builds that kept saves in the game folder left them in game:\Save; the first mount copies them in.
 void AdoptGameFolderSaves() {
     WIN32_FIND_DATAA found;
@@ -39,16 +45,27 @@ void Mount(unsigned userIndex) {
     const MountPolicy policy = { userIndex, 16 * 1024 * 1024, root, "3Shipsty", L"Ship of Harkinian" };
     const StartupDisplay display = { Fast::InitializeNativeDisplay, Fast::PresentNativeStartupUI };
     const MountResult result = SelectAndMount(policy, display);
-    Check(result.status, result.stage == ContainerStage ? "XContentCreate" : "save device selection");
-    if (!xbox_compat::filesystem::is_directory("shipyard:\\Save")) {
-        xbox_compat::filesystem::create_directories("shipyard:\\Save");
-        AdoptGameFolderSaves();
+    inContainer = result.status == ERROR_SUCCESS;
+    if (inContainer) {
+        if (!xbox_compat::filesystem::is_directory("shipyard:\\Save")) {
+            xbox_compat::filesystem::create_directories("shipyard:\\Save");
+            AdoptGameFolderSaves();
+        }
+    } else {
+        // Some exploit loaders, BadAvatar among them, refuse the profile container; boot.txt keeps the reason.
+        char stage[128];
+        _snprintf_s(stage, sizeof(stage), _TRUNCATE, "saves-in-game-folder step=%s error=%lu extended=%08lx",
+                    result.stage == ContainerStage ? "XContentCreate" : "device-selection",
+                    (unsigned long)result.status, (unsigned long)result.extendedStatus);
+        Shipyard::Platform::RecordBootStage(stage, false);
+        xbox_compat::filesystem::create_directories("game:\\Save");
     }
     mounted = true;
     FlushMounted();
 }
 std::string SaveDirectory() {
     Async::lock_guard<Async::mutex> lock(mutex); RequireMounted();
+    if (!inContainer) return "game:\\Save";
     return "shipyard:\\Save";
 }
 void Commit() {
@@ -74,6 +91,7 @@ void WriteAtomic(const xbox_compat::filesystem::path& destination, const std::st
 void Shutdown() {
     Async::lock_guard<Async::mutex> lock(mutex);
     if (!mounted) return;
-    FlushMounted(); Check(Shipyard::Storage::Close(root), "XContentClose"); mounted = false;
+    if (inContainer) { FlushMounted(); Check(Shipyard::Storage::Close(root), "XContentClose"); }
+    mounted = false;
 }
 }}

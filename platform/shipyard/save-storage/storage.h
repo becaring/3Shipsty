@@ -3,7 +3,7 @@
 #include "filesystem/filesystem.h"
 namespace Shipyard { namespace Storage {
 // Call on the application thread before Context/SaveManager. Shows the storage popup;
-// cancellation and mount errors propagate.
+// cancellation or a container error falls back to saves in game:\Save.
 void Mount(unsigned userIndex = 0);
 // Call only after SaveManager::ThreadPoolWait and all other writers joined.
 void Shutdown();
