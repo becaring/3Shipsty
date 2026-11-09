@@ -143,10 +143,23 @@ namespace {
 bool relaunchRequested;
 }
 void RequestRelaunch() { relaunchRequested = true; }
+#ifdef _XBOX
+// Launchers often rename the XEX, so relaunch the one in the game folder.
+// ponytail: with several XEX files and no 3Shipsty.xex, the first one found wins.
+static bool FindTitleImage(char* path, size_t size) {
+    WIN32_FIND_DATAA found;
+    HANDLE search = FindFirstFileA("game:\\3Shipsty.xex", &found);
+    if (search == INVALID_HANDLE_VALUE) search = FindFirstFileA("game:\\*.xex", &found);
+    if (search == INVALID_HANDLE_VALUE) return false;
+    FindClose(search);
+    _snprintf_s(path, size, _TRUNCATE, "game:\\%s", found.cFileName);
+    return true;
+}
+#endif
 void ExitTitle() {
 #ifdef _XBOX
-    // A renamed XEX fails the relaunch and falls through to the dashboard or launcher.
-    if (relaunchRequested) XLaunchNewImage("game:\\3Shipsty.xex", 0);
+    char image[MAX_PATH];
+    if (relaunchRequested && FindTitleImage(image, sizeof(image))) XLaunchNewImage(image, 0);
     XLaunchNewImage(XLAUNCH_KEYWORD_DEFAULT_APP, 0);
 #endif
 }

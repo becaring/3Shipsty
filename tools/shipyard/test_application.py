@@ -329,6 +329,9 @@ int main() {
             stop.index("OTRAudio_Exit();"),
             stop.index("Shipyard::Libultra::StopTimers();"),
         )
+        # Leaving launches the next title at once; settings such as the mod order must be written first.
+        self.assertLess(stop.index("GetConsoleVariables()->Save();"), stop.index("Ship::WaitForConfigWrites();"))
+        self.assertLess(stop.index("Ship::WaitForConfigWrites();"), stop.index("Platform::ExitTitle();"))
         order = [
             "JoinRandoGenerationThread();",
             "Shipyard::Libultra::StopTimers();",

@@ -12,7 +12,7 @@ void ShowError(const wchar_t* title, const wchar_t* message);
 void RecordBootStage(const char* stage, bool commitToSave);
 void RecordStartupFailure(const char* message);
 void RecordStartupFatal(const char* operation, unsigned long code);
-// The mod menu's Apply & Close asks for a relaunch; ExitTitle then starts 3Shipsty.xex again
+// The mod menu's Apply & Close asks for a relaunch; ExitTitle then starts the game folder's XEX again
 // instead of the dashboard. ExitTitle returns only if no launch succeeded.
 void RequestRelaunch();
 void ExitTitle();

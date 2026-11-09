@@ -550,6 +550,7 @@ extern "C" void SaveManager_ThreadPoolWait() {""",
 #ifdef _XBOX
     SaveManager_ThreadPoolWait();
     Ship::Context::GetInstance()->GetConsoleVariables()->Save();
+    Ship::WaitForConfigWrites();
     Shipyard::Storage::Shutdown();
     if (auto logger = spdlog::default_logger()) logger->flush();
     Shipyard::Platform::ExitTitle();

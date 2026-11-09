@@ -28,7 +28,7 @@ def transform(name, text):
         text = once(
             text, '#include "ship/window/Window.h"', '#include "ship/window/WindowBackend.h"'
         )
-        text = once(text, "namespace Ship {", "namespace Ship {\nclass Config;")
+        text = once(text, "namespace Ship {", "namespace Ship {\nclass Config;\nvoid WaitForConfigWrites();")
     if name.endswith("/Window.h"):
         text = text.replace("#include <filesystem>", "")
         text = once(
@@ -270,6 +270,11 @@ class ShipyardConfigWriter {
     Shipyard::Async::joining_thread mWorker;
 };
 ShipyardConfigWriter sShipyardConfigWriter;
+}
+
+// Leaving for the next title ends this process at once, even mid-write.
+void WaitForConfigWrites() {
+    sShipyardConfigWriter.Wait();
 }
 
 """
