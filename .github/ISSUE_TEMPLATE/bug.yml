@@ -11,7 +11,7 @@ body:
     attributes:
       label: Release
       description: The release ZIP you installed.
-      placeholder: 3Shipsty-1.0.6.zip
+      placeholder: 3Shipsty-1.0.7.zip
     validations:
       required: true
   - type: dropdown
