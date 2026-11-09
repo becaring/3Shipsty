@@ -39,6 +39,10 @@ Back opens or closes the menu. The right stick moves the cursor, A clicks or
 drags, B right-clicks, LT and RT scroll, and R3 switches between the cursor and
 D-pad navigation. Mods go in a mods folder beside 3Shipsty.xex.
 
+To bring saves over from Ship of Harkinian on PC, copy its Save folder beside
+3Shipsty.xex. At launch, each save goes into the matching slot of your profile
+if that slot is empty.
+
 To report a problem, open a bug report at
 https://github.com/becaring/3Shipsty/issues and attach the logs folder from the
 3Shipsty folder as a zip.

@@ -24,7 +24,18 @@ void RequireMounted() {
 void FlushMounted() {
     if (inContainer) Check(Shipyard::Storage::Flush(root), "XContentFlush");
 }
-// Builds that kept saves in the game folder left them in game:\Save; the first mount copies them in.
+bool SameStamp(const std::string& marker, const FILETIME& stamp) {
+    HANDLE file = CreateFileA(marker.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    FILETIME recorded = { 0, 0 };
+    DWORD read = 0;
+    const bool same = ReadFile(file, &recorded, sizeof(recorded), &read, NULL) && read == sizeof(recorded) &&
+        CompareFileTime(&recorded, &stamp) == 0;
+    CloseHandle(file);
+    return same;
+}
+// Saves in game:\Save, from PC or from the game-folder fallback, fill empty slots at every mount.
+// A marker with the copied file's write time keeps a save deleted in game from coming back.
 void AdoptGameFolderSaves() {
     WIN32_FIND_DATAA found;
     HANDLE search = FindFirstFileA("game:\\Save\\*", &found);
@@ -32,7 +43,10 @@ void AdoptGameFolderSaves() {
     do {
         if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
         const std::string name(found.cFileName);
-        CopyFileA(("game:\\Save\\" + name).c_str(), ("shipyard:\\Save\\" + name).c_str(), TRUE);
+        const std::string target = "shipyard:\\Save\\" + name, marker = target + ".imported";
+        if (SameStamp(marker, found.ftLastWriteTime)) continue;
+        if (CopyFileA(("game:\\Save\\" + name).c_str(), target.c_str(), TRUE))
+            WriteAtomicFile(marker, &found.ftLastWriteTime, sizeof(found.ftLastWriteTime));
     } while (FindNextFileA(search, &found));
     FindClose(search);
 }
@@ -47,10 +61,8 @@ void Mount(unsigned userIndex) {
     const MountResult result = SelectAndMount(policy, display);
     inContainer = result.status == ERROR_SUCCESS;
     if (inContainer) {
-        if (!xbox_compat::filesystem::is_directory("shipyard:\\Save")) {
-            xbox_compat::filesystem::create_directories("shipyard:\\Save");
-            AdoptGameFolderSaves();
-        }
+        xbox_compat::filesystem::create_directories("shipyard:\\Save");
+        AdoptGameFolderSaves();
     } else {
         // Some exploit loaders, BadAvatar among them, refuse the profile container; boot.txt keeps the reason.
         char stage[128];

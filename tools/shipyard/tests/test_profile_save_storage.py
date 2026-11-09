@@ -20,7 +20,7 @@ class ProfileSaveStorageTests(unittest.TestCase):
             # The device prefixes are the only production-source change.
             source = (ROOT / 'platform/shipyard/save-storage/storage.cpp').read_text()
             self.assertEqual(source.count('game:\\\\'), 6)
-            self.assertEqual(source.count('shipyard:\\\\'), 4)
+            self.assertEqual(source.count('shipyard:\\\\'), 3)
             source = source.replace('game:\\\\', install.as_posix() + '/')
             source = source.replace('shipyard:\\\\', profile.as_posix() + '/')
             audit = folder / 'storage.cpp'
@@ -153,6 +153,25 @@ int main(int argc, char** argv) { try {
     storage::Mount();
     require(selections == 3, "remount did not show the popup");
     require(read(saveFile) == replacedBytes, "save lost across remount or adopted twice");
+    storage::Shutdown();
+
+    // A profile that launched before still takes PC saves into empty slots, once per copy.
+    write(install / "Save" / "file3.sav", "pc save");
+    storage::Mount();
+    require(read(saves / "file3.sav") == "pc save", "PC save did not fill an empty slot");
+    storage::Shutdown();
+    fs::remove(saves / "file3.sav");
+    storage::Mount();
+    require(!fs::exists(saves / "file3.sav"), "save deleted in game came back");
+    storage::Shutdown();
+    write(install / "Save" / "file3.sav", "newer pc save");
+    HANDLE pc = CreateFileA((install / "Save" / "file3.sav").string().c_str(), FILE_WRITE_ATTRIBUTES, 0, NULL,
+                            OPEN_EXISTING, 0, NULL);
+    FILETIME later = { 0, 0x7fffffff };
+    require(pc != INVALID_HANDLE_VALUE && SetFileTime(pc, NULL, NULL, &later), "fixture stamp failed");
+    CloseHandle(pc);
+    storage::Mount();
+    require(read(saves / "file3.sav") == "newer pc save", "newer PC save did not fill the empty slot");
     storage::Shutdown();
     std::cout << "profile storage popup/adopt/write/cancel/remount PASS\n";
     return 0;
