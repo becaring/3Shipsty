@@ -79,6 +79,8 @@ uint64_t presentLaneIntervals[18][120];
 uint64_t frequency = 0;
 uint64_t previousReportTicks = 0;
 unsigned maps = 0, nonemptyMaps = 0, replacements = 0;
+unsigned inputAges = 0, inputAgeMaxMicros = 0, permitFrames = 0;
+uint64_t inputAgeMicros = 0;
 // Last values plus a change flag make mixed-settings windows identifiable.
 int settings[8] = {};
 unsigned dimensions[7] = {};
@@ -203,6 +205,8 @@ void ResetMetadata() {
     renderDetails.Reset();
     renderedActorInstances.Begin(false);
     maps = nonemptyMaps = replacements = 0;
+    inputAges = inputAgeMaxMicros = permitFrames = 0;
+    inputAgeMicros = 0;
     haveSettings = haveDimensions = changed = false;
     memset(&renderCpu,0,sizeof(renderCpu));
     memset(&audioCpu,0,sizeof(audioCpu));
@@ -737,6 +741,14 @@ void Batch(unsigned count, unsigned nonempty, unsigned size) {
     if (!accumulator.enabled) return;
     maps += count; nonemptyMaps += nonempty; replacements += size;
 }
+void ObserveInputAge(unsigned microseconds, unsigned permitFrame) {
+    if (activeThreadSample) return;
+    if (!accumulator.enabled) return;
+    ++inputAges;
+    inputAgeMicros += microseconds;
+    if (microseconds > inputAgeMaxMicros) inputAgeMaxMicros = microseconds;
+    permitFrames += permitFrame;
+}
 void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
                 unsigned viewportHeight, unsigned windowWidth, unsigned windowHeight,
                 unsigned samples, float scale) {
@@ -769,6 +781,11 @@ void EndFrame() {
                  settings[3], settings[4], settings[5], settings[6], settings[7], dimensions[0], dimensions[1],
                  dimensions[2], dimensions[3], dimensions[4], dimensions[5], dimensions[6], multiplier, maps,
                  nonemptyMaps, replacements);
+    if (inputAges)
+        Shipyard_Log("frame-profile input_age samples=%u mean_ms=%.3f max_ms=%.3f permit_frame=%.2f "
+                     "scope=controller_read_to_first_present_submit",
+                     inputAges, double(inputAgeMicros) / inputAges / 1000.0, inputAgeMaxMicros / 1000.0,
+                     double(permitFrames) / inputAges);
     const unsigned intervalCount = accumulator.presentIntervalCount;
     if (gameSamples) {
         Shipyard_Log("frame-profile game_samples=%u game_periods=%u game_hz=%.3f game_over33=%u "

@@ -39,7 +39,8 @@ struct FramePacket {
     uint32_t masterQuest;
     int requestedFps;
     bool profile;
-    FramePacket() : commands(NULL), masterQuest(0), requestedFps(20), profile(false) {
+    uint64_t inputTicks;
+    FramePacket() : commands(NULL), masterQuest(0), requestedFps(20), profile(false), inputTicks(0) {
         memset(&depth, 0, sizeof(depth));
     }
     FramePacket& operator=(const FramePacket& other) {
@@ -55,6 +56,7 @@ struct FramePacket {
         masterQuest = other.masterQuest;
         requestedFps = other.requestedFps;
         profile = other.profile;
+        inputTicks = other.inputTicks;
         return *this;
     }
 };
@@ -93,6 +95,22 @@ static void LogException(const char* where) {
     catch (const std::exception& e) { Shipyard_Log("%s: %s", where, e.what()); }
     catch (...) { Shipyard_Log("%s: non-standard exception", where); }
 }
+static uint64_t Ticks() {
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return static_cast<uint64_t>(now.QuadPart);
+}
+static uint64_t Microseconds(uint64_t ticks) {
+    static uint64_t frequency;
+    if (!frequency) {
+        LARGE_INTEGER value;
+        QueryPerformanceFrequency(&value);
+        frequency = static_cast<uint64_t>(value.QuadPart);
+    }
+    return ticks * 1000000 / frequency;
+}
+// Slack for a game frame that runs longer than its recent peak.
+static const uint64_t PermitMarginMicros = 3000;
 
 static void WaitAudio(uint64_t generation, ModernFrameProfile::ThreadSample* sample = NULL) {
     Shipyard::Async::unique_lock<Shipyard::Async::mutex> lock(audio.mutex);
@@ -128,8 +146,28 @@ struct Session {
     Shipyard::Async::mutex depthGate;
     std::deque<ShipyardOverlapDepthResult> depthResults;
     bool inputBlocked[3];
+    // Worker only: when the last handoff released it, and how long it has since waited on render.
+    uint64_t resumedTicks, blockedTicks;
+    // Recent peak of worker time from release to publish, excluding waits on render. Render reads it.
+    volatile LONG buildMicros;
     explicit Session(void (*callback)()) : runFrame(callback), worker(BuildFrame, NULL) {
         inputBlocked[0] = inputBlocked[1] = inputBlocked[2] = false;
+        resumedTicks = blockedTicks = 0;
+        buildMicros = 0;
+    }
+    // Waits on render shrink when the worker starts later, so the estimate leaves them out.
+    struct Blocked {
+        uint64_t started;
+        Blocked() : started(onGameWorker && session ? Ticks() : 0) {}
+        ~Blocked() { if (started) session->blockedTicks += Ticks() - started; }
+    };
+    void ObserveBuild(uint64_t published) {
+        if (!resumedTicks) return;
+        const uint64_t elapsed = published - resumedTicks;
+        const LONG sample = static_cast<LONG>(Microseconds(elapsed > blockedTicks ? elapsed - blockedTicks : 0));
+        const LONG previous = buildMicros;
+        // Rise at once, fall slowly, so one quick frame does not release the next one too late.
+        InterlockedExchange(&buildMicros, sample >= previous ? sample : previous - (previous - sample) / 16);
     }
     static void BuildFrame(void* context) {
         (void)context;
@@ -215,7 +253,12 @@ static bool PublishCommands(Gfx* commands) {
     packet.depth.generation = generation;
     ModernFrameProfile::EndThreadSample();
     ModernFrameProfile::BeginThreadSample(session->tailProfile, false);
+    // This frame read the controller shortly after the previous release.
+    packet.inputTicks = session->resumedTicks;
+    session->ObserveBuild(Ticks());
     if (!session->worker.publishAndWait()) throw std::runtime_error("Game handoff aborted");
+    session->resumedTicks = Ticks();
+    session->blockedTicks = 0;
     WaitAudio(generation);
     const bool alternate = CVarGetInteger(CVAR_SETTING("AltAssets"), 1) != 0;
     if (prevAltAssets != alternate) {
@@ -239,19 +282,36 @@ struct ReplayHandoff {
     std::shared_ptr<Ship::Gui> gui;
     std::shared_ptr<Ship::ConsoleVariable> variables;
     Ship::ConsoleVariable::Snapshot& frozenVariables;
-    bool forceStop, started, submitted;
+    bool forceStop, started, submitted, permitted;
+    size_t permitAt;
     ReplayHandoff(Session& value, const GameWorker::Ticket& frame, const FramePacket& data, bool stop)
         : owner(value), ticket(frame), packet(data),
           gui(Ship::Context::GetInstance()->GetWindow()->GetGui()),
           variables(Ship::Context::GetInstance()->GetConsoleVariables()),
           frozenVariables(value.frozenVariables),
-          forceStop(stop), started(false), submitted(false) {}
+          forceStop(stop), started(false), submitted(false), permitted(false), permitAt(0) {
+        // Release the next game frame as late as its recent cost allows: it reads the controller
+        // then, so its input reaches the screen sooner. Desktop SoH reads input right before each frame.
+        const size_t frames = packet.replay.maps.size();
+        if (frames > 1 && packet.replay.fps > 0) {
+            const uint64_t period = 1000000 / static_cast<uint64_t>(packet.replay.fps);
+            const uint64_t needed = static_cast<uint64_t>(owner.buildMicros) + PermitMarginMicros;
+            const size_t covered = static_cast<size_t>((needed + period - 1) / period);
+            permitAt = covered >= frames ? 0 : frames - covered;
+        }
+    }
     void Submit() {
         if (submitted) return;
         variables->CaptureSnapshot(frozenVariables);
         variables->UseSnapshot(&frozenVariables);
         SubmitAudio(ticket.generation, packet.replay.updateRate, packet.profile);
         submitted = true;
+        if (permitAt == 0) Permit();
+    }
+    // The next callback mutates game state, so it starts only after the snapshot above.
+    void Permit() {
+        if (permitted || !submitted) return;
+        permitted = true;
         if (!forceStop) owner.worker.permitNext(ticket);
     }
     void Begin() {
@@ -317,9 +377,13 @@ static bool RenderPacket(Session& owner, const GameWorker::Ticket& ticket,
             ~VertexReuseBatchScope() { ModernVertexReuseEndBatch(); }
         } vertexReuseBatch(static_cast<unsigned>(packet.replay.maps.size()));
         for (size_t index = 0; index < packet.replay.maps.size(); ++index) {
+            if (index == handoff.permitAt) handoff.Permit();
             ModernVertexReuseBeginReplay(static_cast<unsigned>(index));
             interpreter->mXboxDiscardGameDepth = index + 1 < packet.replay.maps.size();
             window->DrawAndRunGraphicsCommands(packet.commands, packet.replay.maps[index]);
+            if (index == 0 && packet.profile && packet.inputTicks)
+                ModernFrameProfile::ObserveInputAge(static_cast<unsigned>(Microseconds(Ticks() - packet.inputTicks)),
+                                                    static_cast<unsigned>(handoff.permitAt));
             if (index == 0) {
                 if (!sampled) {
                     Shipyard_OverlapSampleDepth(&packet.depth, &depth, PrepareDepth, ReadDepth, NULL);
@@ -333,6 +397,7 @@ static bool RenderPacket(Session& owner, const GameWorker::Ticket& ticket,
     interpreter->XboxRetireGameDepth();
     interpreter->XboxPublishGameDepth();
     handoff.Submit();
+    handoff.Permit();
     ModernFrameProfile::End(ModernFrameProfile::Graphics);
     owner.PublishDepth(depth);
     renderingPacket = NULL;
@@ -366,6 +431,7 @@ extern "C" int Shipyard_OverlapDrawGui(int begin) {
     return 1;
 }
 extern "C" void Shipyard_OverlapFence(void) {
+    ModernOverlap::Session::Blocked blocked;
     if (ModernOverlap::onGameWorker && !ModernOverlap::session->worker.fencePreviousReplay())
         ModernOverlap::AbortRuntime("Game replay fence aborted");
 }
@@ -373,6 +439,7 @@ extern "C" void Shipyard_OverlapRunOnRender(void (*callback)(void*), void* conte
     if (!callback) return;
     if (!ModernOverlap::onGameWorker) { callback(context); return; }
     Shipyard_OverlapFence();
+    ModernOverlap::Session::Blocked blocked;
     if (!ModernOverlap::session->worker.runOnRender([callback, context]() { callback(context); }))
         ModernOverlap::AbortRuntime("Native render job aborted");
 }
@@ -383,11 +450,13 @@ extern "C" int Shipyard_OverlapDeferRelease(ShipyardOverlapRelease release, void
     return 1;
 }
 extern "C" void Shipyard_OverlapReleaseArena(void* owner) {
+    ModernOverlap::Session::Blocked blocked;
     if (ModernOverlap::onGameWorker &&
         !ModernOverlap::session->storage.drainOwner(ModernOverlap::session->worker, owner))
         ModernOverlap::AbortRuntime("Arena retirement aborted");
 }
 extern "C" void Shipyard_OverlapRetryAllocation(void) {
+    ModernOverlap::Session::Blocked blocked;
     if (ModernOverlap::onGameWorker &&
         !ModernOverlap::session->storage.retryAllocation(ModernOverlap::session->worker))
         ModernOverlap::AbortRuntime("Allocation retirement aborted");

@@ -178,6 +178,7 @@ void End(Phase) {}
 void EndFrame() {}
 void Settings(int, int, int, int, unsigned, int, int, int) {}
 void Batch(unsigned, unsigned, unsigned) {}
+void ObserveInputAge(unsigned, unsigned) {}
 void BeginThreadSample(ThreadSample& sample, bool enabled, bool) {
     sample.Reset(enabled);
     currentSample = &sample;
@@ -246,7 +247,10 @@ bool Fast::Fast3dWindow::DrawAndRunGraphicsCommands(Gfx* commands,
     ++accepted;
     const uint64_t original = commands->generation;
     assert(Shipyard_OverlapDrawGui(1));
-    if (original == 1) {
+    // A quick game frame is released for the last replay only, so it reads input as late as it can.
+    const bool lastReplay = vertexReuseReplayCalls == vertexReuseReplayCount;
+    if (original == 1 && !lastReplay) assert(builds == original);
+    if (original == 1 && lastReplay) {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while (builds <= original && std::chrono::steady_clock::now() < deadline) Pause(1);
         assert(builds > original);

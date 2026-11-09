@@ -140,6 +140,8 @@ void End(Phase phase);
 void Settings(int requestedFps, int targetFps, int originalFps, int updateRate,
               unsigned refresh, int lowRes, int advanced, int vsync);
 void Batch(unsigned maps, unsigned interpolated, unsigned replacements);
+// Time from a game frame's controller read to its first present, and the replay frame that released it.
+void ObserveInputAge(unsigned microseconds, unsigned permitFrame);
 void Dimensions(unsigned width, unsigned height, unsigned viewportWidth,
                 unsigned viewportHeight, unsigned windowWidth, unsigned windowHeight,
                 unsigned samples, float multiplier);
